@@ -1,0 +1,56 @@
+group 'com.lykke.me'
+version '0.0.1'
+
+buildscript {
+    ext.kotlin_version = '1.0.0'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.7.0'
+    }
+}
+
+apply plugin: "idea"
+apply plugin: "kotlin"
+apply plugin: "application"
+apply plugin: "com.google.protobuf"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile 'log4j:log4j:1.2.17'
+    compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'
+    compile 'com.microsoft.azure:azure-storage:4.0.0'
+    testCompile  'junit:junit:4.11'
+    testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+}
+
+//test.testClassesDir = project.tasks.compileTestKotlin.destinationDir
+//
+//task wrapper(type: Wrapper) {
+//    gradleVersion="2.7"
+//}
+
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.0.0-alpha-3'
+    }
+
+    generateProtoTasks.generatedFilesBaseDir = 'src'
+
+    generateProtoTasks {
+        ofSourceSet('main')
+    }
+}
+
+
+mainClassName = "com.lykke.matching.engine.AppStarterKt"
+applicationDefaultJvmArgs = ["-Xms512m", "-Xmx1g"]
+distTar.enabled = false
