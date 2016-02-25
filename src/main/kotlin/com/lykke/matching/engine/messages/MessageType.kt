@@ -3,8 +3,11 @@ package com.lykke.matching.engine.messages
 import java.util.HashMap
 
 enum class MessageType (val type: Int){
-    PING(1),
-    UPDATE_BALANCE(2);
+    PING(1)
+    ,UPDATE_BALANCE(2)
+    ,LIMIT_ORDER(3)
+    ;
+
 
     companion object {
         val typesMap = HashMap<Int, MessageType>()

@@ -40,8 +40,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     override fun insertOrUpdateWallet(wallet: Wallet) {
-        val insertOrUpdateWallet = TableOperation.insertOrReplace(wallet)
-        accountTable.execute(insertOrUpdateWallet)
+        accountTable.execute(TableOperation.insertOrReplace(wallet))
     }
 
     override fun deleteWallet(wallet: Wallet) {
@@ -53,7 +52,6 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     override fun addOperation(operation: WalletOperation) {
-        val insertOrUpdateOperation = TableOperation.insertOrReplace(operation)
-        operationsTable.execute(insertOrUpdateOperation)
+        operationsTable.execute(TableOperation.insertOrReplace(operation))
     }
 }
