@@ -19,7 +19,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     override fun processMessage(array: ByteArray) {
         val message = parse(array)
-        LOGGER.info("Processing cash operation for client ${message.accountId}, asset ${message.assetId}")
+        LOGGER.debug("Processing cash operation for client ${message.accountId}, asset ${message.assetId}")
         val client = wallets.getOrPut(message.accountId) { HashMap<String, Wallet>() }
         val wallet = client.getOrPut(message.assetId) { Wallet(message.accountId, message.assetId) }
 

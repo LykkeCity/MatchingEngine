@@ -36,7 +36,7 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
     private fun readMessage(inputStream: ObjectInputStream, outputStream: ObjectOutputStream) {
         val type = inputStream.readInt()
         if (type == MessageType.PING.type) {
-            LOGGER.info("Got ping request from $clientHostName.")
+            LOGGER.debug("Got ping request from $clientHostName.")
             //do not read, send back ping
             outputStream.writeInt(MessageType.PING.type)
             outputStream.flush()
