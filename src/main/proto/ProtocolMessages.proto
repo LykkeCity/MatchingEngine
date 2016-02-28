@@ -21,3 +21,13 @@ message LimitOrder {
     required double volume = 7;
     required double price = 8;
 }
+
+message MarketOrder {
+    required int64 uid = 1;
+    required int64 timestamp = 2;
+    required string clientId = 3;
+    required string assetId = 4;
+    required int32 orderAction = 5;
+    required string blockChain = 6;
+    required double volume = 7;
+}
