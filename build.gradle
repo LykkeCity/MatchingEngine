@@ -27,6 +27,8 @@ dependencies {
     compile 'log4j:log4j:1.2.17'
     compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'
     compile 'com.microsoft.azure:azure-storage:4.0.0'
+    compile 'com.google.code.gson:gson:2.6.2'
+
     testCompile  'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }

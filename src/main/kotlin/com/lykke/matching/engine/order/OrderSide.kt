@@ -6,6 +6,13 @@ enum class OrderSide (val side: Int) {
     Buy(1),
     Sell(2);
 
+    fun oppositeSide(): OrderSide {
+        when (this) {
+            Buy -> return Sell
+            Sell -> return Buy
+        }
+    }
+
     companion object {
         val sidesMap = HashMap<Int, OrderSide>()
 

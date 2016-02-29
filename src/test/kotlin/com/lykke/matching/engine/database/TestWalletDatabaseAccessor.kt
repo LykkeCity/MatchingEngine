@@ -1,13 +1,14 @@
 package com.lykke.matching.engine.database
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
 import java.util.HashMap
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
-
     private val wallets = HashMap<String, MutableMap<String, Wallet>>()
     private val operations = HashMap<String, WalletOperation>()
+    private val assetPairs = HashMap<String, AssetPair>()
 
     override fun loadWallets(): HashMap<String, MutableMap<String, Wallet>> {
         return wallets
@@ -46,5 +47,23 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     fun getLastOperation(clientId: String): WalletOperation? {
         return operations[clientId]
+    }
+
+    override fun loadAssetPairs(): HashMap<String, AssetPair> {
+        return assetPairs
+    }
+
+    override fun loadAssetPair(assetId: String): AssetPair {
+        return assetPairs[assetId]!!
+    }
+
+    fun addAssetPair(pair: AssetPair) {
+        assetPairs[pair.getAssetPairId()] = pair
+    }
+
+    fun clear() {
+        wallets.clear()
+        operations.clear()
+        assetPairs.clear()
     }
 }

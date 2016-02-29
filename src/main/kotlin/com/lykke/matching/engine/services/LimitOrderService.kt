@@ -5,15 +5,16 @@ import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
+import com.lykke.matching.engine.order.OrderSide.Sell
 import com.lykke.matching.engine.order.OrderStatus
 import org.apache.log4j.Logger
 import java.util.Comparator
 import java.util.Date
 import java.util.HashMap
 import java.util.PriorityQueue
-import java.util.UUID
 
-class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor): AbsractService<ProtocolMessages.LimitOrder> {
+class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
+                        private val cashOperationService: CashOperationService): AbsractService<ProtocolMessages.LimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderService::class.java.name)
@@ -38,8 +39,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
 
     override fun processMessage(array: ByteArray) {
         val message = parse(array)
-        LOGGER.debug("Got limit order from client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}")
         val orderSide = OrderSide.valueOf(message.orderAction)
+        LOGGER.debug("Got limit order from client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}, side: ${orderSide?.name}")
         if (orderSide == null) {
             LOGGER.error("Unknown order action: ${message.orderAction}")
             return
@@ -47,18 +48,19 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
 
         val order = LimitOrder(
                 partitionKey = "${message.assetId}_${orderSide.name}",
-                rowKey = UUID.randomUUID().toString(),
+                rowKey = message.uid.toString(),
                 assetId = message.assetId,
                 clientId = message.clientId,
-                executed = null,
-                isOrderTaken = "",
+                lastMatchTime = null,
                 blockChain = message.blockChain,
                 orderType = orderSide.name,
                 price = message.price,
                 createdAt = Date(message.timestamp),
                 registered = Date(),
                 status = OrderStatus.InOrderBook.name,
-                volume = message.volume
+                volume = message.volume,
+                remainingVolume = message.volume,
+                matchedOrders = null
         )
 
         addToOrderBook(order)
@@ -69,10 +71,34 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         return ProtocolMessages.LimitOrder.parseFrom(array)
     }
 
-    private fun addToOrderBook(order: LimitOrder) {
+    fun addToOrderBook(order: LimitOrder) {
         val orderBook = limitOrders.getOrPut(order.partitionKey) {
             PriorityQueue<LimitOrder>(if (order.orderType == Buy.name) LimitOrderService.BUY_COMPARATOR else LimitOrderService.SELL_COMPARATOR)
         }
         orderBook.add(order)
+    }
+
+    fun updateLimitOrder(order: LimitOrder) {
+        limitOrderDatabaseAccessor.updateLimitOrder(order)
+    }
+
+    fun moveOrdersToDone(orders: List<LimitOrder>) {
+        limitOrderDatabaseAccessor.saveLimitOrdersDone(orders)
+        limitOrderDatabaseAccessor.deleteLimitOrders(orders)
+    }
+
+    fun getOrderBook(key: String) = limitOrders[key]
+
+    fun isEnoughFunds(order: LimitOrder, volume: Double): Boolean {
+        val assetPair = cashOperationService.getAssetPair(order.assetPair) ?: return false
+
+        when (OrderSide.valueOf(order.orderType)) {
+            Sell -> {
+                return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId) >= volume
+            }
+            Buy -> {
+                return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId) >= volume * order.price
+            }
+        }
     }
 }

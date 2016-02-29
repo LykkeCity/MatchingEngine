@@ -15,8 +15,8 @@ class CashOperationServiceTest {
 
     @Before
     fun setUp() {
-         testDatabaseAccessor.insertOrUpdateWallet(Wallet("Client1", "Asset1", 100.0))
-         testDatabaseAccessor.insertOrUpdateWallet(Wallet("Client2", "Asset1", 100.0))
+        testDatabaseAccessor.insertOrUpdateWallet(Wallet("Client1", "Asset1", 100.0))
+        testDatabaseAccessor.insertOrUpdateWallet(Wallet("Client2", "Asset1", 100.0))
     }
 
     @Test

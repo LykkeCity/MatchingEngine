@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.table.CloudTable
+import com.microsoft.azure.storage.table.TableBatchOperation
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import java.util.ArrayList
@@ -12,6 +13,7 @@ import java.util.Properties
 class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     val limitOrdersTable: CloudTable
+    val limitOrdersDoneTable: CloudTable
 
     constructor(config: Properties) {
         val storageConnectionString =
@@ -22,6 +24,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         val tableClient = storageAccount.createCloudTableClient()
 
         this.limitOrdersTable = tableClient.getTableReference("LimitOrders")
+        this.limitOrdersDoneTable = tableClient.getTableReference("LimitOrdersDone")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {
@@ -36,6 +39,26 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     }
 
     override fun addLimitOrder(order: LimitOrder) {
-        limitOrdersTable.execute(TableOperation.insertOrReplace(order))
+        limitOrdersTable.execute(TableOperation.insertOrMerge(order))
+    }
+
+    override fun updateLimitOrder(order: LimitOrder) {
+        limitOrdersTable.execute(TableOperation.merge(order))
+    }
+
+    override fun deleteLimitOrders(order: List<LimitOrder>) {
+        val batchOperation = TableBatchOperation()
+        order.forEach { order ->
+            batchOperation.delete(order)
+        }
+        limitOrdersTable.execute(batchOperation)
+    }
+
+    override fun saveLimitOrdersDone(order: List<LimitOrder>) {
+        val batchOperation = TableBatchOperation()
+        order.forEach { order ->
+            batchOperation.insertOrMerge(order)
+        }
+        limitOrdersTable.execute(batchOperation)
     }
 }

@@ -4,6 +4,9 @@ import com.microsoft.azure.storage.table.TableServiceEntity
 import java.util.Date
 
 class WalletOperation: TableServiceEntity {
+    //partition key: Client Id
+    //row key: uid
+
 
     var dateTime: Date = Date()
     var assetId: String = ""

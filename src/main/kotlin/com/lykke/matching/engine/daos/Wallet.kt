@@ -3,6 +3,8 @@ package com.lykke.matching.engine.daos
 import com.microsoft.azure.storage.table.TableServiceEntity
 
 class Wallet: TableServiceEntity {
+    //partition key: Client Id
+    //row key: asset
 
     var balance: Double = 0.0
 
