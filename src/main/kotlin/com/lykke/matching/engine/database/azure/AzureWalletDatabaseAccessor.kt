@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.table.CloudTable
+import com.microsoft.azure.storage.table.TableBatchOperation
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
@@ -46,8 +47,12 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         return result
     }
 
-    override fun insertOrUpdateWallet(wallet: Wallet) {
-        accountTable.execute(TableOperation.insertOrMerge(wallet))
+    override fun insertOrUpdateWallets(wallets: List<Wallet>) {
+        val batchOperation = TableBatchOperation()
+        wallets.forEach { wallet ->
+            batchOperation.insertOrMerge(wallet)
+        }
+        accountTable.execute(batchOperation)
     }
 
     override fun deleteWallet(wallet: Wallet) {
@@ -58,8 +63,12 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         accountTable.execute(deleteWallet)
     }
 
-    override fun addOperation(operation: WalletOperation) {
-        operationsTable.execute(TableOperation.insertOrMerge(operation))
+    override fun insertOperations(operations: List<WalletOperation>) {
+        val batchOperation = TableBatchOperation()
+        operations.forEach { operation ->
+            batchOperation.insertOrMerge(operation)
+        }
+        operationsTable.execute(batchOperation)
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {

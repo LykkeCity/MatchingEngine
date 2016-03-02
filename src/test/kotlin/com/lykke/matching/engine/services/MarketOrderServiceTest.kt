@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import java.util.Date
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class MarketOrderServiceTest {
     var testDatabaseAccessor = TestMarketOrderDatabaseAccessor()
@@ -126,10 +127,54 @@ class MarketOrderServiceTest {
         assertEquals(-1000.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
         assertEquals(1500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
 
-//        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
-//        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"))
-//        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"))
-//        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"))
+        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
+        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"))
+        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"))
+        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"))
+    }
+
+    @Test
+    fun testMatchOneToMany() {
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 100.0, clientId = "Client3", orderType = Buy.name))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.4, volume = 1000.0, clientId = "Client1", orderType = Buy.name))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client1", "USD", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client3", "USD", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client4", "EUR", 2000.0))
+
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor)
+        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
+        val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
+
+        service.processMessage(buildByteArray(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
+
+        val marketOrder = testDatabaseAccessor.getLastOrder()
+        assertEquals(Matched.name, marketOrder.status)
+        assertEquals(1.41, marketOrder.price)
+        assertEquals(2, marketOrder.getMatchedOrders().size)
+
+        assertEquals(1, testLimitDatabaseAccessor.orders.size)
+        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
+
+        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
+        assertEquals(Matched.name, limitOrder.status)
+        assertEquals(1, limitOrder.getMatchedOrders().size)
+
+        assertEquals(100.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
+        assertEquals(-150.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
+        assertEquals(900.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "EUR" }?.volume)
+        assertEquals(-1260.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "USD" }?.volume)
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" && it.volume == -100.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" && it.volume == 150.0 })
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" && it.volume == -900.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" && it.volume == 1260.0 })
+
+        assertEquals(100.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
+        assertEquals(2850.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"))
+        assertEquals(900.0, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
+        assertEquals(1740.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
+        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"))
+        assertEquals(1410.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"))
     }
 
     private fun buildByteArray(order: MarketOrder): ByteArray {

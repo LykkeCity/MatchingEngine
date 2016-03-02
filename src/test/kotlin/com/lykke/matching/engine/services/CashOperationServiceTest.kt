@@ -27,7 +27,7 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(50.0, balance!!, DELTA)
 
-        val operation = testDatabaseAccessor.getLastOperation("Client1")
+        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
         assertNotNull(operation)
         assertEquals(-50.0, operation!!.amount, DELTA)
     }
@@ -41,7 +41,7 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(100.0, balance!!, DELTA)
 
-        val operation = testDatabaseAccessor.getLastOperation("Client1")
+        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
         assertNotNull(operation)
         assertEquals(100.0, operation!!.amount, DELTA)
     }
@@ -55,7 +55,7 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(100.0, balance!!, DELTA)
 
-        val operation = testDatabaseAccessor.getLastOperation("Client3")
+        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client3") }
         assertNotNull(operation)
         assertEquals(100.0, operation!!.amount, DELTA)
     }

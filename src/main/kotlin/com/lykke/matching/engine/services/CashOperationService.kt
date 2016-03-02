@@ -8,6 +8,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashMap
+import java.util.LinkedList
 
 class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor): AbsractService<ProtocolMessages.CashOperation> {
 
@@ -27,7 +28,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         wallet.addBalance(message.amount)
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
-        walletDatabaseAccessor.addOperation(WalletOperation(
+        walletDatabaseAccessor.insertOperation(WalletOperation(
                 clientId=message.accountId,
                 uid=message.uid.toString(),
                 dateTime= Date(message.date),
@@ -61,5 +62,19 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         }
 
         return 0.0
+    }
+
+    fun processWalletOperations(operations: List<WalletOperation>) {
+        val walletsToAdd = LinkedList<Wallet>()
+        operations.forEach {
+            val client = wallets.getOrPut(it.getClientId()) { HashMap<String, Wallet>() }
+            val wallet = client.getOrPut(it.assetId) { Wallet(it.getClientId(), it.assetId) }
+
+            wallet.addBalance(it.amount)
+            walletsToAdd.add(wallet)
+        }
+
+        walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
+        walletDatabaseAccessor.insertOperations(operations)
     }
 }

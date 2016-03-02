@@ -46,17 +46,17 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         limitOrdersTable.execute(TableOperation.merge(order))
     }
 
-    override fun deleteLimitOrders(order: List<LimitOrder>) {
+    override fun deleteLimitOrders(orders: List<LimitOrder>) {
         val batchOperation = TableBatchOperation()
-        order.forEach { order ->
+        orders.forEach { order ->
             batchOperation.delete(order)
         }
         limitOrdersTable.execute(batchOperation)
     }
 
-    override fun saveLimitOrdersDone(order: List<LimitOrder>) {
+    override fun saveLimitOrdersDone(orders: List<LimitOrder>) {
         val batchOperation = TableBatchOperation()
-        order.forEach { order ->
+        orders.forEach { order ->
             batchOperation.insertOrMerge(order)
         }
         limitOrdersTable.execute(batchOperation)

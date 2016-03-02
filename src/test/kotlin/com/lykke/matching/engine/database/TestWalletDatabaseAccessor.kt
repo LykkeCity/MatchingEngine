@@ -4,24 +4,27 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
 import java.util.HashMap
+import java.util.LinkedList
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
-    private val wallets = HashMap<String, MutableMap<String, Wallet>>()
-    private val operations = HashMap<String, WalletOperation>()
-    private val assetPairs = HashMap<String, AssetPair>()
+    val wallets = HashMap<String, MutableMap<String, Wallet>>()
+    val operations = LinkedList<WalletOperation>()
+    val assetPairs = HashMap<String, AssetPair>()
 
     override fun loadWallets(): HashMap<String, MutableMap<String, Wallet>> {
         return wallets
     }
 
-    override fun insertOrUpdateWallet(wallet: Wallet) {
-        val client = wallets.getOrPut(wallet.partitionKey) { HashMap<String, Wallet>() }
-        val savedWallet = client.getOrPut(wallet.rowKey) { Wallet(wallet.partitionKey, wallet.rowKey)}
-        savedWallet.balance = wallet.balance
+    override fun insertOrUpdateWallets(wallets: List<Wallet>) {
+        wallets.forEach { wallet ->
+            val client = this.wallets.getOrPut(wallet.partitionKey) { HashMap<String, Wallet>() }
+            val savedWallet = client.getOrPut(wallet.rowKey) { Wallet(wallet.partitionKey, wallet.rowKey)}
+            savedWallet.balance = wallet.balance
+        }
     }
 
     override fun deleteWallet(wallet: Wallet) {
-        val client = wallets.get(wallet.partitionKey)
+        val client = wallets[wallet.partitionKey]
         if (client != null) {
             client.remove(wallet.rowKey)
             if (client.isEmpty()) {
@@ -41,12 +44,10 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         return null
     }
 
-    override fun addOperation(operation: WalletOperation) {
-        operations.put(operation.partitionKey, operation)
-    }
-
-    fun getLastOperation(clientId: String): WalletOperation? {
-        return operations[clientId]
+    override fun insertOperations(operations: List<WalletOperation>) {
+        operations.forEach { operation ->
+            this.operations.add(operation)
+        }
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {

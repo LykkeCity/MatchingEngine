@@ -45,7 +45,7 @@ class MarketOrder: TableServiceEntity {
     fun getMatchedOrders(): MutableList<MatchedLimitOrder> {
         var result:MutableList<MatchedLimitOrder> = ArrayList()
         if (matchedOrders != null) {
-            result = Gson().fromJson(matchedOrders, Array<MatchedLimitOrder>::class.java).asList() as MutableList
+            result.addAll(Gson().fromJson(matchedOrders, Array<MatchedLimitOrder>::class.java).asList())
         }
 
         return result

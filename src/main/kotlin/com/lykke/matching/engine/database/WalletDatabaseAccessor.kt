@@ -7,10 +7,12 @@ import java.util.HashMap
 
 interface WalletDatabaseAccessor {
     fun loadWallets(): HashMap<String, MutableMap<String, Wallet>>
-    fun insertOrUpdateWallet(wallet: Wallet)
+    fun insertOrUpdateWallet(wallet: Wallet) { insertOrUpdateWallets(listOf(wallet)) }
+    fun insertOrUpdateWallets(wallets: List<Wallet>)
     fun deleteWallet(wallet: Wallet)
 
-    fun addOperation(operation: WalletOperation)
+    fun insertOperation(operation: WalletOperation) { insertOperations(listOf(operation)) }
+    fun insertOperations(operations: List<WalletOperation>)
 
     fun loadAssetPairs(): HashMap<String, AssetPair>
     fun loadAssetPair(assetId: String): AssetPair?
