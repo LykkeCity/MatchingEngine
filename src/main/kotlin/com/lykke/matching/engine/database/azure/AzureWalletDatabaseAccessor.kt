@@ -4,9 +4,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.table.CloudTable
-import com.microsoft.azure.storage.table.TableBatchOperation
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
@@ -27,12 +25,10 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
                 "DefaultEndpointsProtocol=${config.getProperty("azure.default.endpoints.protocol")};" +
                 "AccountName=${config.getProperty("azure.account.name")};" +
                 "AccountKey=${config.getProperty("azure.account.key")}"
-        val storageAccount = CloudStorageAccount.parse(storageConnectionString)
-        val tableClient = storageAccount.createCloudTableClient()
 
-        this.accountTable = tableClient.getTableReference("Accounts")
-        this.operationsTable = tableClient.getTableReference("OperationsCash")
-        this.assetsTable = tableClient.getTableReference("Dictionaries")
+        this.accountTable = getOrCreateTable(storageConnectionString, "Accounts")
+        this.operationsTable = getOrCreateTable(storageConnectionString, "OperationsCash")
+        this.assetsTable = getOrCreateTable(storageConnectionString, "Dictionaries")
     }
 
     override fun loadWallets(): HashMap<String, MutableMap<String, Wallet>> {
@@ -48,11 +44,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
-        val batchOperation = TableBatchOperation()
-        wallets.forEach { wallet ->
-            batchOperation.insertOrMerge(wallet)
-        }
-        accountTable.execute(batchOperation)
+        batchInsertOrMerge(accountTable, wallets)
     }
 
     override fun deleteWallet(wallet: Wallet) {
@@ -64,11 +56,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     override fun insertOperations(operations: List<WalletOperation>) {
-        val batchOperation = TableBatchOperation()
-        operations.forEach { operation ->
-            batchOperation.insertOrMerge(operation)
-        }
-        operationsTable.execute(batchOperation)
+        batchInsertOrMerge(operationsTable, operations)
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
