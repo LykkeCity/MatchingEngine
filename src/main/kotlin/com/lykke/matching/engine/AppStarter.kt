@@ -10,6 +10,6 @@ fun main(args: Array<String>) {
         return
     }
 
-    val config = loadConfig(args[0])
+    val config = loadLocalConfig(args[0])
     SocketServer(config).run()
 }

@@ -7,7 +7,6 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import org.apache.log4j.Logger
 import java.util.ArrayList
-import java.util.Properties
 
 class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
@@ -18,14 +17,9 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     val limitOrdersTable: CloudTable
     val limitOrdersDoneTable: CloudTable
 
-    constructor(config: Properties) {
-        val storageConnectionString =
-                "DefaultEndpointsProtocol=${config.getProperty("azure.default.endpoints.protocol")};" +
-                        "AccountName=${config.getProperty("azure.account.name")};" +
-                        "AccountKey=${config.getProperty("azure.account.key")}"
-
-        this.limitOrdersTable = getOrCreateTable(storageConnectionString, "LimitOrders")
-        this.limitOrdersDoneTable = getOrCreateTable(storageConnectionString, "LimitOrdersDone")
+    constructor(config: String?) {
+        this.limitOrdersTable = getOrCreateTable(config!!, "LimitOrders")
+        this.limitOrdersDoneTable = getOrCreateTable(config!!, "LimitOrdersDone")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {

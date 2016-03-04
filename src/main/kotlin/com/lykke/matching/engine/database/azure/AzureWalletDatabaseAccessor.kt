@@ -10,7 +10,6 @@ import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
 import org.apache.log4j.Logger
 import java.util.HashMap
-import java.util.Properties
 
 
 class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
@@ -19,22 +18,16 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
     }
 
-
     val accountTable: CloudTable
     val operationsTable: CloudTable
     val assetsTable: CloudTable
 
     private val ASSET_PAIR = "AssetPair"
 
-    constructor(config: Properties) {
-        val storageConnectionString =
-                "DefaultEndpointsProtocol=${config.getProperty("azure.default.endpoints.protocol")};" +
-                "AccountName=${config.getProperty("azure.account.name")};" +
-                "AccountKey=${config.getProperty("azure.account.key")}"
-
-        this.accountTable = getOrCreateTable(storageConnectionString, "Accounts")
-        this.operationsTable = getOrCreateTable(storageConnectionString, "OperationsCash")
-        this.assetsTable = getOrCreateTable(storageConnectionString, "Dictionaries")
+    constructor(balancesConfig: String?, dictsConfig: String?) {
+        this.accountTable = getOrCreateTable(balancesConfig!!, "Accounts")
+        this.operationsTable = getOrCreateTable(balancesConfig!!, "OperationsCash")
+        this.assetsTable = getOrCreateTable(dictsConfig!!, "Dictionaries")
     }
 
     override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
@@ -108,7 +101,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     override fun loadAssetPair(assetId: String): AssetPair? {
         try {
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AssetPair::class.java)
-            return accountTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
+            return assetsTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)
         }

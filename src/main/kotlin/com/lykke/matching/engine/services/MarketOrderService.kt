@@ -15,6 +15,7 @@ import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
+import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashSet
@@ -56,10 +57,18 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
                 matchedOrders = null
         )
 
+        if (cashOperationService.getAssetPair(message.assetId) == null) {
+            order.status = UnknownAsset.name
+            marketOrderDatabaseAccessor.addMarketOrder(order)
+            LOGGER.debug("Unknown asset: ${message.assetId}")
+            return
+        }
+
         val orderBook = limitOrderService.getOrderBook("${order.assetPair}_${orderSide.oppositeSide().name}")
         if (orderBook == null) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
+            LOGGER.debug("No liquidity for market order id: ${order.getId()}}, client: ${order.getClientId()}, asset: ${order.assetPair}, volume: ${order.volume}, side: ${order.orderType}")
             return
         }
 

@@ -10,7 +10,6 @@ import com.lykke.matching.engine.services.CashOperationService
 import com.lykke.matching.engine.services.LimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
 import org.apache.log4j.Logger
-import java.util.Properties
 import java.util.concurrent.BlockingQueue
 
 class MessageProcessor: Thread {
@@ -29,11 +28,11 @@ class MessageProcessor: Thread {
     val limitOrderService: LimitOrderService
     val marketOrderService: MarketOrderService
 
-    constructor(config: Properties, queue: BlockingQueue<MessageWrapper>) {
+    constructor(config: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config)
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config)
+        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config["BalancesInfoConnString"], config["DictsConnString"])
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["HLimitOrdersConnString"])
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config["HMarketOrdersConnString"], config["HTradesConnString"])
 
         this.cashOperationService = CashOperationService(this.walletDatabaseAccessor)
         this.limitOrderService = LimitOrderService(this.limitOrderDatabaseAccessor, cashOperationService)

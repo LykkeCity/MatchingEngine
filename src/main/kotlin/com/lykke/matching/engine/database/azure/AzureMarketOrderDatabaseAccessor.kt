@@ -6,7 +6,8 @@ import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import org.apache.log4j.Logger
-import java.util.Properties
+import java.util.HashMap
+import java.util.LinkedList
 
 class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
 
@@ -17,14 +18,9 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     val marketOrdersTable: CloudTable
     val tradesTable: CloudTable
 
-    constructor(config: Properties) {
-        val storageConnectionString =
-                "DefaultEndpointsProtocol=${config.getProperty("azure.default.endpoints.protocol")};" +
-                        "AccountName=${config.getProperty("azure.account.name")};" +
-                        "AccountKey=${config.getProperty("azure.account.key")}"
-
-        this.marketOrdersTable = getOrCreateTable(storageConnectionString, "MarketOrders")
-        this.tradesTable = getOrCreateTable(storageConnectionString, "Trades")
+    constructor(marketConfig: String?, tradesConfig: String?) {
+        this.marketOrdersTable = getOrCreateTable(marketConfig!!, "MarketOrders")
+        this.tradesTable = getOrCreateTable(tradesConfig!!, "Trades")
     }
 
     override fun addMarketOrder(order: MarketOrder) {
@@ -44,8 +40,16 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     }
 
     override fun addTrades(trades: List<Trade>) {
+        val tradesByPartition = HashMap<String, MutableList<Trade>>()
+        trades.forEach { trade ->
+            val client = tradesByPartition.getOrPut(trade.getClientId()) { LinkedList<Trade>() }
+            client.add(trade)
+        }
+
         try {
-            batchInsertOrMerge(tradesTable, trades)
+            tradesByPartition.values.forEach {
+                batchInsertOrMerge(tradesTable, it)
+            }
         } catch(e: Exception) {
             LOGGER.error("Unable to add trades, size: ${trades.size}", e)
         }
