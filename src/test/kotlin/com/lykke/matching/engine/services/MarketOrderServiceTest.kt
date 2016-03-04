@@ -39,6 +39,7 @@ class MarketOrderServiceTest {
 
     @Test
     fun testNoLiqudity() {
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 1000.0, clientId = "Client1", orderType = Buy.name))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor)

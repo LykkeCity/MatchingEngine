@@ -64,6 +64,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     fun clear() {
+        balances.clear()
         wallets.clear()
         operations.clear()
         assetPairs.clear()
