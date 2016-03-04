@@ -46,7 +46,7 @@ class LimitOrder: TableServiceEntity {
 
     fun getId() = rowKey
 
-    fun getMatchedOrders(): MutableList<MatchedMarketOrder> {
+    fun loadMatchedOrders(): MutableList<MatchedMarketOrder> {
         var result:MutableList<MatchedMarketOrder> = ArrayList()
         if (matchedOrders != null) {
             result.addAll(Gson().fromJson(matchedOrders, Array<MatchedMarketOrder>::class.java).asList())
@@ -56,17 +56,17 @@ class LimitOrder: TableServiceEntity {
     }
 
     fun addMatchedOrder(order: MatchedMarketOrder) {
-        val orders = getMatchedOrders()
+        val orders = loadMatchedOrders()
         orders.add(order)
-        setMatchedOrders(orders)
+        saveMatchedOrdersList(orders)
     }
 
-    fun setMatchedOrders(orders: List<MatchedMarketOrder>) {
+    fun saveMatchedOrdersList(orders: List<MatchedMarketOrder>) {
         this.matchedOrders = Gson().toJson(orders)
     }
 
     override fun toString(): String{
-        return "LimitOrder(id=$rowKey, assetPair='$assetPair', clientId='$clientId', orderType='$orderType', blockChain='$blockChain', price=$price, volume=$volume, remainingVolume=$remainingVolume, status='$status', createdAt=$createdAt, registered=$registered, lastMatchTime=$lastMatchTime, matchedOrders=${getMatchedOrders()})"
+        return "LimitOrder(id=$rowKey, assetPair='$assetPair', clientId='$clientId', orderType='$orderType', blockChain='$blockChain', price=$price, volume=$volume, remainingVolume=$remainingVolume, status='$status', createdAt=$createdAt, registered=$registered, lastMatchTime=$lastMatchTime, matchedOrders=${loadMatchedOrders()})"
     }
 
 

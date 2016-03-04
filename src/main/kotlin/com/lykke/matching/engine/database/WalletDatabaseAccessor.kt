@@ -6,13 +6,12 @@ import com.lykke.matching.engine.daos.WalletOperation
 import java.util.HashMap
 
 interface WalletDatabaseAccessor {
-    fun loadWallets(): HashMap<String, MutableMap<String, Wallet>>
+    fun loadBalances(): HashMap<String, MutableMap<String, Double>>
+    fun loadWallets(): HashMap<String, Wallet>
     fun insertOrUpdateWallet(wallet: Wallet) { insertOrUpdateWallets(listOf(wallet)) }
     fun insertOrUpdateWallets(wallets: List<Wallet>)
-    fun deleteWallet(wallet: Wallet)
 
-    fun insertOperation(operation: WalletOperation) { insertOperations(listOf(operation)) }
-    fun insertOperations(operations: List<WalletOperation>)
+    fun insertOperations(operations: Map<String, List<WalletOperation>>)
 
     fun loadAssetPairs(): HashMap<String, AssetPair>
     fun loadAssetPair(assetId: String): AssetPair?

@@ -42,7 +42,7 @@ class MarketOrder: TableServiceEntity {
     fun getId() = rowKey
     fun getClientId() = partitionKey
 
-    fun getMatchedOrders(): MutableList<MatchedLimitOrder> {
+    fun loadMatchedOrdersList(): MutableList<MatchedLimitOrder> {
         var result:MutableList<MatchedLimitOrder> = ArrayList()
         if (matchedOrders != null) {
             result.addAll(Gson().fromJson(matchedOrders, Array<MatchedLimitOrder>::class.java).asList())
@@ -52,12 +52,12 @@ class MarketOrder: TableServiceEntity {
     }
 
     fun addMatchedOrder(order: MatchedLimitOrder) {
-        val orders = getMatchedOrders()
+        val orders = loadMatchedOrdersList()
         orders.add(order)
-        setMatchedOrders(orders)
+        saveMatchedOrdersList(orders)
     }
 
-    fun setMatchedOrders(orders: List<MatchedLimitOrder>) {
+    fun saveMatchedOrdersList(orders: List<MatchedLimitOrder>) {
         this.matchedOrders = Gson().toJson(orders)
     }
 

@@ -7,46 +7,47 @@ import java.util.HashMap
 import java.util.LinkedList
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
-    val wallets = HashMap<String, MutableMap<String, Wallet>>()
+
+    val balances = HashMap<String, MutableMap<String, Double>>()
+    val wallets = HashMap<String, Wallet>()
     val operations = LinkedList<WalletOperation>()
     val assetPairs = HashMap<String, AssetPair>()
 
-    override fun loadWallets(): HashMap<String, MutableMap<String, Wallet>> {
+    override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
+        return balances
+    }
+
+    override fun loadWallets(): HashMap<String, Wallet> {
         return wallets
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
         wallets.forEach { wallet ->
-            val client = this.wallets.getOrPut(wallet.partitionKey) { HashMap<String, Wallet>() }
-            val savedWallet = client.getOrPut(wallet.rowKey) { Wallet(wallet.partitionKey, wallet.rowKey)}
-            savedWallet.balance = wallet.balance
-        }
-    }
-
-    override fun deleteWallet(wallet: Wallet) {
-        val client = wallets[wallet.partitionKey]
-        if (client != null) {
-            client.remove(wallet.rowKey)
-            if (client.isEmpty()) {
-                wallets.remove(wallet.partitionKey)
+            val client = balances.getOrPut(wallet.getClientId()) { HashMap<String, Double>() }
+            val updatedWallet = this.wallets.getOrPut(wallet.getClientId()) { Wallet( wallet.getClientId() ) }
+            wallet.getBalances().forEach {
+                client.put(it.asset, it.balance)
+                updatedWallet.setBalance(it.asset, it.balance)
             }
         }
     }
 
     fun getBalance(clientId: String, assetId: String): Double? {
-        val client = wallets[clientId]
+        val client = balances[clientId]
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
-                return wallet.balance
+                return wallet
             }
         }
         return null
     }
 
-    override fun insertOperations(operations: List<WalletOperation>) {
-        operations.forEach { operation ->
-            this.operations.add(operation)
+    override fun insertOperations(operations: Map<String, List<WalletOperation>>) {
+        operations.values.forEach {
+            it.forEach { operation ->
+                this.operations.add(operation)
+            }
         }
     }
 
@@ -67,4 +68,10 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         operations.clear()
         assetPairs.clear()
     }
+
+}
+fun buildWallet(clientId: String, assetId: String, balance: Double): Wallet {
+    val wallet = Wallet(clientId)
+    wallet.addBalance(assetId, balance)
+    return wallet
 }

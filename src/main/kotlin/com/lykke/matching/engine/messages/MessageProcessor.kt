@@ -55,7 +55,7 @@ class MessageProcessor: Thread {
             MessageType.LIMIT_ORDER -> {
                 limitOrderService.processMessage(message.byteArray)
             }
-            MessageType.LIMIT_ORDER -> {
+            MessageType.MARKET_ORDER -> {
                 marketOrderService.processMessage(message.byteArray)
             }
             else -> {

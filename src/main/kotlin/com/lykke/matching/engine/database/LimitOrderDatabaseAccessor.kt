@@ -8,5 +8,5 @@ interface LimitOrderDatabaseAccessor {
     fun updateLimitOrder(order: LimitOrder)
     fun deleteLimitOrders(orders: List<LimitOrder>)
 
-    fun saveLimitOrdersDone(orders: List<LimitOrder>)
+    fun addLimitOrdersDone(orders: List<LimitOrder>)
 }

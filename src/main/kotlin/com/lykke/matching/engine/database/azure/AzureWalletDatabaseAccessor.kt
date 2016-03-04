@@ -8,11 +8,17 @@ import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
+import org.apache.log4j.Logger
 import java.util.HashMap
 import java.util.Properties
 
 
 class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
+
+    companion object {
+        val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
+    }
+
 
     val accountTable: CloudTable
     val operationsTable: CloudTable
@@ -31,48 +37,81 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         this.assetsTable = getOrCreateTable(storageConnectionString, "Dictionaries")
     }
 
-    override fun loadWallets(): HashMap<String, MutableMap<String, Wallet>> {
-        val result = HashMap<String, MutableMap<String, Wallet>>()
-        val partitionQuery = TableQuery.from(Wallet::class.java)
+    override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
+        val result = HashMap<String, MutableMap<String, Double>>()
+        try {
+            val partitionQuery = TableQuery.from(Wallet::class.java)
 
-        for (wallet in accountTable.execute(partitionQuery)){
-            val map = result.getOrPut(wallet.partitionKey) { HashMap<String, Wallet>() }
-            map.put(wallet.rowKey, wallet)
+            accountTable.execute(partitionQuery).forEach { wallet ->
+                val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
+                wallet.getBalances().forEach { balance ->
+                    map.put(balance.asset, balance.balance)
+                }
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load balances", e)
+        }
+
+        return result
+    }
+
+    override fun loadWallets(): HashMap<String, Wallet> {
+        val result = HashMap<String, Wallet>()
+        try {
+            val partitionQuery = TableQuery.from(Wallet::class.java)
+
+            accountTable.execute(partitionQuery).forEach { wallet ->
+                result.put(wallet.rowKey, wallet)
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load accounts", e)
         }
 
         return result
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
-        batchInsertOrMerge(accountTable, wallets)
+        try {
+            batchInsertOrMerge(accountTable, wallets)
+        } catch(e: Exception) {
+            LOGGER.error("Unable to update accounts, size: ${wallets.size}", e)
+        }
     }
 
-    override fun deleteWallet(wallet: Wallet) {
-        val retrieveWallet = TableOperation.retrieve(wallet.partitionKey, wallet.rowKey, Wallet::class.java)
-        val entityWallet = accountTable.execute(retrieveWallet).getResultAsType<Wallet>()
-
-        val deleteWallet = TableOperation.delete(entityWallet)
-        accountTable.execute(deleteWallet)
-    }
-
-    override fun insertOperations(operations: List<WalletOperation>) {
-        batchInsertOrMerge(operationsTable, operations)
+    override fun insertOperations(operations: Map<String, List<WalletOperation>>) {
+        try {
+            operations.values.forEach { clientOperations ->
+                batchInsertOrMerge(operationsTable, clientOperations)
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to insert operations, size: ${operations.size}", e)
+        }
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
         val result = HashMap<String, AssetPair>()
-        val partitionQuery = TableQuery.from(AssetPair::class.java)
-                .where(TableQuery.generateFilterCondition("PartitionKey", EQUAL, ASSET_PAIR))
 
-        for (asset in assetsTable.execute(partitionQuery)) {
-            result[asset.getAssetPairId()] = asset
+        try {
+            val partitionQuery = TableQuery.from(AssetPair::class.java)
+                    .where(TableQuery.generateFilterCondition("PartitionKey", EQUAL, ASSET_PAIR))
+
+            for (asset in assetsTable.execute(partitionQuery)) {
+                result[asset.getAssetPairId()] = asset
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load asset pairs", e)
         }
 
         return result
     }
 
     override fun loadAssetPair(assetId: String): AssetPair? {
-        val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AssetPair::class.java)
-        return accountTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
+        try {
+            val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AssetPair::class.java)
+            return accountTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load asset: $assetId", e)
+        }
+        return null
     }
 }

@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -15,8 +15,8 @@ class CashOperationServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.insertOrUpdateWallet(Wallet("Client1", "Asset1", 100.0))
-        testDatabaseAccessor.insertOrUpdateWallet(Wallet("Client2", "Asset1", 100.0))
+        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
+        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
     }
 
     @Test

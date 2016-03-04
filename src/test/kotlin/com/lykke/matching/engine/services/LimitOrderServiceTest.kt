@@ -2,9 +2,9 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
@@ -36,8 +36,8 @@ class LimitOrderServiceTest {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF"))
 
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client1", "EUR", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client2", "USD", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
     }
 
     @Test

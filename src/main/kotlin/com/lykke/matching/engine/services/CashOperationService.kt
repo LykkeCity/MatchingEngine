@@ -16,24 +16,19 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
     }
 
+    private val balances = walletDatabaseAccessor.loadBalances()
     private val wallets = walletDatabaseAccessor.loadWallets()
     private val assetPairs = walletDatabaseAccessor.loadAssetPairs()
 
     override fun processMessage(array: ByteArray) {
         val message = parse(array)
-        LOGGER.debug("Processing cash operation for client ${message.accountId}, asset ${message.assetId}")
-        val client = wallets.getOrPut(message.accountId) { HashMap<String, Wallet>() }
-        val wallet = client.getOrPut(message.assetId) { Wallet(message.accountId, message.assetId) }
-
-        wallet.addBalance(message.amount)
-
-        walletDatabaseAccessor.insertOrUpdateWallet(wallet)
-        walletDatabaseAccessor.insertOperation(WalletOperation(
+        LOGGER.debug("Processing cash operation for client ${message.accountId}, asset ${message.assetId}, amount: ${message.amount}")
+        processWalletOperations(listOf(WalletOperation(
                 clientId=message.accountId,
                 uid=message.uid.toString(),
                 dateTime= Date(message.date),
                 asset=message.assetId,
-                amount= message.amount))
+                amount= message.amount)))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
@@ -53,11 +48,11 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     }
 
     fun getBalance(clientId: String, assetId: String): Double {
-        val client = wallets[clientId]
+        val client = balances[clientId]
         if (client != null) {
             val balance = client[assetId]
             if (balance != null) {
-                return balance.balance
+                return balance
             }
         }
 
@@ -66,15 +61,22 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     fun processWalletOperations(operations: List<WalletOperation>) {
         val walletsToAdd = LinkedList<Wallet>()
-        operations.forEach {
-            val client = wallets.getOrPut(it.getClientId()) { HashMap<String, Wallet>() }
-            val wallet = client.getOrPut(it.assetId) { Wallet(it.getClientId(), it.assetId) }
+        val operationsToAdd = HashMap<String, MutableList<WalletOperation>>()
+        operations.forEach { operation ->
+            val client = balances.getOrPut(operation.getClientId()) { HashMap<String, Double>() }
+            val balance = client.get(operation.assetId) ?: 0.0
+            client.put(operation.assetId, balance + operation.amount)
 
-            wallet.addBalance(it.amount)
-            walletsToAdd.add(wallet)
+            val wallet = wallets.getOrPut(operation.getClientId()) { Wallet( operation.getClientId() ) }
+            wallet.addBalance(operation.assetId, operation.amount)
+
+            operationsToAdd.getOrPut(operation.getClientId()) { LinkedList<WalletOperation>() }.add(operation)
+            if (!walletsToAdd.contains(wallet)) {
+                walletsToAdd.add(wallet)
+            }
         }
 
         walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
-        walletDatabaseAccessor.insertOperations(operations)
+        walletDatabaseAccessor.insertOperations(operationsToAdd)
     }
 }

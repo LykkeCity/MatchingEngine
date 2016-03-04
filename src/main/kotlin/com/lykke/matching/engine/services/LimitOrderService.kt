@@ -40,7 +40,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     override fun processMessage(array: ByteArray) {
         val message = parse(array)
         val orderSide = OrderSide.valueOf(message.orderAction)
-        LOGGER.debug("Got limit order from client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}, side: ${orderSide?.name}")
+        LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}, side: ${orderSide?.name}")
         if (orderSide == null) {
             LOGGER.error("Unknown order action: ${message.orderAction}")
             return
@@ -65,6 +65,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
 
         addToOrderBook(order)
         limitOrderDatabaseAccessor.addLimitOrder(order)
+        LOGGER.debug("Limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}, side: ${orderSide.name} added to order book")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.LimitOrder {
@@ -83,7 +84,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     }
 
     fun moveOrdersToDone(orders: List<LimitOrder>) {
-        limitOrderDatabaseAccessor.saveLimitOrdersDone(orders)
+        limitOrderDatabaseAccessor.addLimitOrdersDone(orders)
         limitOrderDatabaseAccessor.deleteLimitOrders(orders)
     }
 

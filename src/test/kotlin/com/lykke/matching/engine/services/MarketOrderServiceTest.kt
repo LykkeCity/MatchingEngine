@@ -2,10 +2,10 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
@@ -53,10 +53,10 @@ class MarketOrderServiceTest {
     fun testNotEnoughFundsClientOrder() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.6, volume = 1000.0, clientId = "Client1", orderType = Buy.name))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client1", "EUR", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 1000.0, clientId = "Client2", orderType = Buy.name))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client2", "USD", 1500.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
@@ -70,8 +70,8 @@ class MarketOrderServiceTest {
     fun testNoLiqudityToFullyFill() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 1000.0, clientId = "Client2", orderType = Buy.name))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client2", "USD", 1500.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client2", "EUR", 2000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 2000.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
@@ -86,8 +86,8 @@ class MarketOrderServiceTest {
     fun testNotEnoughFundsMarketOrder() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 1000.0, clientId = "Client3", orderType = Buy.name))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client3", "USD", 1500.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client4", "EUR", 900.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 900.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
@@ -101,8 +101,8 @@ class MarketOrderServiceTest {
     fun testMatchOneToOne() {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 1000.0, clientId = "Client3", orderType = Buy.name))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client3", "USD", 3000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client4", "EUR", 2000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 2000.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
@@ -113,14 +113,14 @@ class MarketOrderServiceTest {
         val marketOrder = testDatabaseAccessor.getLastOrder()
         assertEquals(Matched.name, marketOrder.status)
         assertEquals(1.5, marketOrder.price)
-        assertEquals(1, marketOrder.getMatchedOrders().size)
+        assertEquals(1, marketOrder.loadMatchedOrdersList().size)
 
         assertEquals(0, testLimitDatabaseAccessor.orders.size)
         assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
         assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, limitOrder.getMatchedOrders().size)
+        assertEquals(1, limitOrder.loadMatchedOrders().size)
 
         assertEquals(1000.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
         assertEquals(-1500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
@@ -138,9 +138,9 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.5, volume = 100.0, clientId = "Client3", orderType = Buy.name))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(partitionKey = "EURUSD_Buy", price = 1.4, volume = 1000.0, clientId = "Client1", orderType = Buy.name))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client1", "USD", 3000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client3", "USD", 3000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(Wallet("Client4", "EUR", 2000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 2000.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
@@ -151,14 +151,14 @@ class MarketOrderServiceTest {
         val marketOrder = testDatabaseAccessor.getLastOrder()
         assertEquals(Matched.name, marketOrder.status)
         assertEquals(1.41, marketOrder.price)
-        assertEquals(2, marketOrder.getMatchedOrders().size)
+        assertEquals(2, marketOrder.loadMatchedOrdersList().size)
 
         assertEquals(1, testLimitDatabaseAccessor.orders.size)
         assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
         assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, limitOrder.getMatchedOrders().size)
+        assertEquals(1, limitOrder.loadMatchedOrders().size)
 
         assertEquals(100.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
         assertEquals(-150.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)

@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database.azure
 
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.table.CloudTable
+import com.microsoft.azure.storage.table.DynamicTableEntity
 import com.microsoft.azure.storage.table.TableBatchOperation
 import com.microsoft.azure.storage.table.TableEntity
 
@@ -40,12 +41,16 @@ fun batchDelete(table: CloudTable, elements: List<TableEntity>) {
     var batchOperation = TableBatchOperation()
     if (elements.size <= AZURE_BATCH_SIZE) {
         elements.forEach { element ->
-            batchOperation.delete(element)
+            val entity = DynamicTableEntity(element.partitionKey, element.rowKey)
+            entity.etag = "*"
+            batchOperation.delete(entity)
         }
         table.execute(batchOperation)
     } else {
         elements.forEachIndexed { index, element ->
-            batchOperation.delete(element)
+            val entity = DynamicTableEntity(element.partitionKey, element.rowKey)
+            entity.etag = "*"
+            batchOperation.delete(entity)
             if ((index + 1) % AZURE_BATCH_SIZE == 0) {
                 table.execute(batchOperation)
                 batchOperation = TableBatchOperation()

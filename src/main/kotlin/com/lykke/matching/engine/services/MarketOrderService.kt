@@ -36,7 +36,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
     override fun processMessage(array: ByteArray) {
         val message = parse(array)
         val orderSide = OrderSide.valueOf(message.orderAction)
-        LOGGER.debug("Got market order from client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, side: ${orderSide?.name}")
+        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, side: ${orderSide?.name}")
         if (orderSide == null) {
             LOGGER.error("Unknown order action: ${message.orderAction}")
             return
@@ -93,12 +93,14 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             matchedOrders.forEach { limitOrderService.addToOrderBook(it) }
             cancelledLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
+            LOGGER.debug("No liquidity for market order id: ${marketOrder.getId()}}, client: ${marketOrder.getClientId()}, asset: ${marketOrder.assetPair}, volume: ${marketOrder.volume}, side: ${marketOrder.orderType}")
             return
         }
 
         if (!isEnoughFunds(marketOrder, totalPrice)) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.getClientId()}, asset: ${marketOrder.assetPair}, volume: ${marketOrder.volume}, side: ${marketOrder.orderType}")
             return
         }
 
@@ -176,6 +178,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             limitOrderService.updateLimitOrder(uncompletedLimitOrder as LimitOrder)
             limitOrderService.addToOrderBook(uncompletedLimitOrder as LimitOrder)
         }
+
+        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.getClientId()}, asset: ${marketOrder.assetPair}, volume: ${marketOrder.volume}, side: ${marketOrder.orderType} matched, price: ${marketOrder.price}")
     }
 
     fun isEnoughFunds(order: MarketOrder, totalPrice: Double): Boolean {

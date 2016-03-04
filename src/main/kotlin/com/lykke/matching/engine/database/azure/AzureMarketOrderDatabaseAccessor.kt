@@ -5,9 +5,14 @@ import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
+import org.apache.log4j.Logger
 import java.util.Properties
 
 class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
+
+    companion object {
+        val LOGGER = Logger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
+    }
 
     val marketOrdersTable: CloudTable
     val tradesTable: CloudTable
@@ -23,14 +28,26 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     }
 
     override fun addMarketOrder(order: MarketOrder) {
-        marketOrdersTable.execute(TableOperation.insertOrMerge(order))
+        try {
+            marketOrdersTable.execute(TableOperation.insertOrMerge(order))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to add market order: ${order.getId()}", e)
+        }
     }
 
     override fun updateMarketOrder(order: MarketOrder) {
-        marketOrdersTable.execute(TableOperation.merge(order))
+        try {
+            marketOrdersTable.execute(TableOperation.merge(order))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to update market order: ${order.getId()}", e)
+        }
     }
 
     override fun addTrades(trades: List<Trade>) {
-        batchInsertOrMerge(tradesTable, trades)
+        try {
+            batchInsertOrMerge(tradesTable, trades)
+        } catch(e: Exception) {
+            LOGGER.error("Unable to add trades, size: ${trades.size}", e)
+        }
     }
 }

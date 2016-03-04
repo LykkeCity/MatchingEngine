@@ -24,7 +24,7 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
         this.orders.removeAll(orders)
     }
 
-    override fun saveLimitOrdersDone(orders: List<LimitOrder>) {
+    override fun addLimitOrdersDone(orders: List<LimitOrder>) {
         ordersDone.addAll(orders)
     }
 
