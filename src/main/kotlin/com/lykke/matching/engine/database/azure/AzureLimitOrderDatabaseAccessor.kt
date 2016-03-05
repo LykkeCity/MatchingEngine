@@ -17,9 +17,9 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     val limitOrdersTable: CloudTable
     val limitOrdersDoneTable: CloudTable
 
-    constructor(config: String?) {
-        this.limitOrdersTable = getOrCreateTable(config!!, "LimitOrders")
-        this.limitOrdersDoneTable = getOrCreateTable(config!!, "LimitOrdersDone")
+    constructor(activeOrdersConfig: String?, historyOrdersConfig: String?) {
+        this.limitOrdersTable = getOrCreateTable(activeOrdersConfig!!, "LimitOrders")
+        this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig!!, "LimitOrdersDone")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {

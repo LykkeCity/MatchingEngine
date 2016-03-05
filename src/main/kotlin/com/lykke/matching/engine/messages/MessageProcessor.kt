@@ -31,7 +31,7 @@ class MessageProcessor: Thread {
     constructor(config: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config["BalancesInfoConnString"], config["DictsConnString"])
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["HLimitOrdersConnString"])
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["ALimitOrdersConnString"], config["HLimitOrdersConnString"])
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config["HMarketOrdersConnString"], config["HTradesConnString"])
 
         this.cashOperationService = CashOperationService(this.walletDatabaseAccessor)
