@@ -6,6 +6,8 @@ import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
@@ -46,7 +48,7 @@ class MarketOrderServiceTest {
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
 
-        service.processMessage(buildByteArray(buildMarketOrder()))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder()))
         assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
     }
 
@@ -63,7 +65,7 @@ class MarketOrderServiceTest {
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
 
-        service.processMessage(buildByteArray(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
         assertEquals(NotEnoughFunds.name, testLimitDatabaseAccessor.orders.find { it.price == 1.6 }?.status)
     }
 
@@ -78,7 +80,7 @@ class MarketOrderServiceTest {
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
 
-        service.processMessage(buildByteArray(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2000.0, orderType = Sell.name)))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2000.0, orderType = Sell.name)))
         assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
         assertEquals(InOrderBook.name, testLimitDatabaseAccessor.getLastOrder().status)
     }
@@ -94,7 +96,7 @@ class MarketOrderServiceTest {
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
 
-        service.processMessage(buildByteArray(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
         assertEquals(NotEnoughFunds.name, testDatabaseAccessor.getLastOrder().status)
     }
 
@@ -109,7 +111,7 @@ class MarketOrderServiceTest {
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
 
-        service.processMessage(buildByteArray(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
 
         val marketOrder = testDatabaseAccessor.getLastOrder()
         assertEquals(Matched.name, marketOrder.status)
@@ -147,7 +149,7 @@ class MarketOrderServiceTest {
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService)
 
-        service.processMessage(buildByteArray(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1000.0, orderType = Sell.name)))
 
         val marketOrder = testDatabaseAccessor.getLastOrder()
         assertEquals(Matched.name, marketOrder.status)
@@ -178,8 +180,8 @@ class MarketOrderServiceTest {
         assertEquals(1410.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"))
     }
 
-    private fun buildByteArray(order: MarketOrder): ByteArray {
-        return ProtocolMessages.MarketOrder.newBuilder()
+    private fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
+        return MessageWrapper(MessageType.MARKET_ORDER, ProtocolMessages.MarketOrder.newBuilder()
                 .setUid(order.rowKey.toLong())
                 .setTimestamp(order.createdAt.time)
                 .setClientId(order.getClientId())
@@ -187,11 +189,11 @@ class MarketOrderServiceTest {
                 .setOrderAction(OrderSide.valueOf(order.orderType).side)
                 .setBlockChain(order.blockChain)
                 .setVolume(order.volume)
-                .build().toByteArray()
+                .build().toByteArray(), null)
     }
 }
 
-    fun buildMarketOrder(rowKey: String = "1",
+    fun buildMarketOrder(rowKey: String = Date().time.toString(),
                          assetId: String = "EURUSD",
                          clientId: String = "Client1",
                          matchedAt: Date? = null,

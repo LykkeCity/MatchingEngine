@@ -2,6 +2,8 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -22,7 +24,7 @@ class CashOperationServiceTest {
     @Test
     fun testChangeBalance() {
         val service = CashOperationService(testDatabaseAccessor)
-        service.processMessage(buildByteArray("Client1", "Asset1", -50.0))
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(50.0, balance!!, DELTA)
@@ -35,7 +37,7 @@ class CashOperationServiceTest {
     @Test
     fun testAddNewAsset() {
         val service = CashOperationService(testDatabaseAccessor)
-        service.processMessage(buildByteArray("Client1", "Asset4", 100.0))
+        service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset4")
 
         assertNotNull(balance)
@@ -49,7 +51,7 @@ class CashOperationServiceTest {
     @Test
     fun testAddNewWallet() {
         val service = CashOperationService(testDatabaseAccessor)
-        service.processMessage(buildByteArray("Client3", "Asset2", 100.0))
+        service.processMessage(buildBalanceWrapper("Client3", "Asset2", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client3", "Asset2")
 
         assertNotNull(balance)
@@ -60,12 +62,12 @@ class CashOperationServiceTest {
         assertEquals(100.0, operation!!.amount, DELTA)
     }
 
-    private fun buildByteArray(clientId: String, assetId: String, amount: Double): ByteArray {
-        return ProtocolMessages.CashOperation.newBuilder()
+    private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
+        return MessageWrapper(MessageType.UPDATE_BALANCE, ProtocolMessages.CashOperation.newBuilder()
                 .setUid(123)
                 .setAccountId(clientId)
                 .setAssetId(assetId)
                 .setAmount(amount)
-                .setDate(123).build().toByteArray()
+                .setDate(123).build().toByteArray(), null)
     }
 }

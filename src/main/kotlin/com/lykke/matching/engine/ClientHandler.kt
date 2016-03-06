@@ -34,11 +34,11 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
     }
 
     private fun readMessage(inputStream: ObjectInputStream, outputStream: ObjectOutputStream) {
-        val type = inputStream.readInt()
+        val type = inputStream.readByte()
         if (type == MessageType.PING.type) {
             LOGGER.debug("Got ping request from $clientHostName.")
             //do not read, send back ping
-            outputStream.writeInt(MessageType.PING.type)
+            outputStream.write(byteArrayOf(MessageType.PING.type))
             outputStream.flush()
             return
         }
@@ -46,6 +46,6 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
         val size = inputStream.readInt()
         val serializedData = ByteArray(size)
         inputStream.read(serializedData, 0, size)
-        queue.put(MessageWrapper(MessageType.valueOf(type), serializedData))
+        queue.put(MessageWrapper(MessageType.valueOf(type), serializedData, outputStream))
     }
 }

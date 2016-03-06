@@ -2,8 +2,9 @@ package com.lykke.matching.engine.messages
 
 import java.util.HashMap
 
-enum class MessageType (val type: Int){
-    PING(1)
+enum class MessageType (val type: Byte){
+    RESPONSE(0)
+    ,PING(1)
     ,UPDATE_BALANCE(2)
     ,LIMIT_ORDER(3)
     ,MARKET_ORDER(4)
@@ -11,7 +12,7 @@ enum class MessageType (val type: Int){
 
 
     companion object {
-        val typesMap = HashMap<Int, MessageType>()
+        val typesMap = HashMap<Byte, MessageType>()
 
         init {
             values().forEach {
@@ -19,7 +20,7 @@ enum class MessageType (val type: Int){
             }
         }
 
-        fun valueOf(type: Int): MessageType? {
+        fun valueOf(type: Byte): MessageType? {
             return typesMap[type]
         }
     }

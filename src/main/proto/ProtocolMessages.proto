@@ -3,6 +3,10 @@ package com.lykke.matching.engine.messages;
 option java_package = "com.lykke.matching.engine.messages";
 option java_outer_classname = "ProtocolMessages";
 
+message Response {
+    required int64 uid = 1;
+}
+
 message CashOperation {
     required int64 uid = 1;
     required string accountId = 2;

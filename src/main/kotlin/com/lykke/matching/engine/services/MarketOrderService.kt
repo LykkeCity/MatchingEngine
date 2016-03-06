@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.greaterThan
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
@@ -34,8 +35,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
     init {
     }
 
-    override fun processMessage(array: ByteArray) {
-        val message = parse(array)
+    override fun processMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
         val orderSide = OrderSide.valueOf(message.orderAction)
         LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, side: ${orderSide?.name}")
         if (orderSide == null) {
@@ -73,6 +74,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         }
 
         match(order, orderBook)
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {

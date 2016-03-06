@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
@@ -37,8 +38,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         LOGGER.info("Loaded ${orders.size} limit orders on startup.")
     }
 
-    override fun processMessage(array: ByteArray) {
-        val message = parse(array)
+    override fun processMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
         val orderSide = OrderSide.valueOf(message.orderAction)
         LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}, side: ${orderSide?.name}")
         if (orderSide == null) {
@@ -66,6 +67,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         addToOrderBook(order)
         limitOrderDatabaseAccessor.addLimitOrder(order)
         LOGGER.debug("Limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, price: ${message.price}, side: ${orderSide.name} added to order book")
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.LimitOrder {

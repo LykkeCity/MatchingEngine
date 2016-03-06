@@ -5,6 +5,8 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
@@ -43,7 +45,7 @@ class LimitOrderServiceTest {
     @Test
     fun testAddLimitOrder() {
         val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor))
-        service.processMessage(buildByteArray(buildLimitOrder(price = 999.9)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
         assertNotNull(order)
@@ -60,8 +62,8 @@ class LimitOrderServiceTest {
         assertFalse { service.isEnoughFunds(buildLimitOrder(partitionKey = "EURUSD_Buy", clientId = "Client2", orderType = Buy.name, price = 2.0, volume = 501.0), 501.0) }
     }
 
-    private fun buildByteArray(order: LimitOrder): ByteArray {
-        return ProtocolMessages.LimitOrder.newBuilder()
+    private fun buildLimitOrderWrapper(order: LimitOrder): MessageWrapper {
+        return MessageWrapper(MessageType.LIMIT_ORDER, ProtocolMessages.LimitOrder.newBuilder()
                 .setUid(order.rowKey.toLong())
                 .setTimestamp(order.createdAt.time)
                 .setClientId(order.clientId)
@@ -69,11 +71,11 @@ class LimitOrderServiceTest {
                 .setOrderAction(OrderSide.valueOf(order.orderType).side)
                 .setBlockChain(order.blockChain)
                 .setVolume(order.volume)
-                .setPrice(order.price).build().toByteArray()
+                .setPrice(order.price).build().toByteArray(), null)
     }
 }
 
-fun buildLimitOrder(partitionKey: String = "EURUSD_Buy",
+fun buildLimitOrder(partitionKey: String = Date().time.toString(),
                     rowKey: String = "1",
                     assetId: String = "EURUSD",
                     clientId: String = "Client1",

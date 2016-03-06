@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.apache.log4j.Logger
 import java.util.Date
@@ -20,8 +21,8 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     private val wallets = walletDatabaseAccessor.loadWallets()
     private val assetPairs = walletDatabaseAccessor.loadAssetPairs()
 
-    override fun processMessage(array: ByteArray) {
-        val message = parse(array)
+    override fun processMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash operation for client ${message.accountId}, asset ${message.assetId}, amount: ${message.amount}")
         processWalletOperations(listOf(WalletOperation(
                 clientId=message.accountId,
@@ -29,6 +30,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
                 dateTime= Date(message.date),
                 asset=message.assetId,
                 amount= message.amount)))
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {

@@ -49,13 +49,13 @@ class MessageProcessor: Thread {
         when (message.type) {
             //MessageType.PING -> already processed by client handler
             MessageType.UPDATE_BALANCE -> {
-                cashOperationService.processMessage(message.byteArray)
+                cashOperationService.processMessage(message)
             }
             MessageType.LIMIT_ORDER -> {
-                limitOrderService.processMessage(message.byteArray)
+                limitOrderService.processMessage(message)
             }
             MessageType.MARKET_ORDER -> {
-                marketOrderService.processMessage(message.byteArray)
+                marketOrderService.processMessage(message)
             }
             else -> {
                 LOGGER.error("Unknown message type: ${message.type}")
