@@ -13,4 +13,6 @@ enum class OrderStatus {
     ,NoLiquidity
     //No liquidity
     ,UnknownAsset
+    //Cancelled
+    ,Cancelled
 }

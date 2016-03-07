@@ -1,10 +1,12 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import org.apache.log4j.Logger
 import java.util.Comparator
 import java.util.Date
@@ -25,7 +27,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
             o2.price.compareTo(o1.price)
         })
     }
-    private val limitOrders = HashMap<String, PriorityQueue<LimitOrder>>()
+    private val limitOrdersQueues = HashMap<String, PriorityQueue<LimitOrder>>()
+    private val limitOrdersMap = HashMap<String, LimitOrder>()
 
     init {
         val orders = limitOrderDatabaseAccessor.loadLimitOrders()
@@ -62,10 +65,11 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     }
 
     fun addToOrderBook(order: LimitOrder) {
-        val orderBook = limitOrders.getOrPut(order.partitionKey) {
+        val orderBook = limitOrdersQueues.getOrPut(order.partitionKey) {
             PriorityQueue<LimitOrder>(if (order.isBuySide()) LimitOrderService.BUY_COMPARATOR else LimitOrderService.SELL_COMPARATOR)
         }
         orderBook.add(order)
+        limitOrdersMap.put(order.getId(), order)
     }
 
     fun updateLimitOrder(order: LimitOrder) {
@@ -75,9 +79,10 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     fun moveOrdersToDone(orders: List<LimitOrder>) {
         limitOrderDatabaseAccessor.addLimitOrdersDone(orders)
         limitOrderDatabaseAccessor.deleteLimitOrders(orders)
+        orders.forEach { limitOrdersMap.remove(it.getId()) }
     }
 
-    fun getOrderBook(key: String) = limitOrders[key]
+    fun getOrderBook(key: String) = limitOrdersQueues[key]
 
     fun isEnoughFunds(order: LimitOrder, volume: Double): Boolean {
         val assetPair = cashOperationService.getAssetPair(order.assetPairId) ?: return false
@@ -87,5 +92,20 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         } else {
             return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId) >= volume
         }
+    }
+
+    fun cancelLimitOrder(uid: String) {
+        val order = limitOrdersMap.remove(uid)
+        if (order == null) {
+            LOGGER.debug("Unable to cancel order $uid}")
+            return
+        }
+
+        getOrderBook(Order.buildPartitionKey(order.assetPairId, order.getSide()))?.remove(order)
+        order.status = Cancelled.name
+        val list = listOf(order)
+        limitOrderDatabaseAccessor.addLimitOrdersDone(list)
+        limitOrderDatabaseAccessor.deleteLimitOrders(list)
+        LOGGER.debug("Order $uid cancelled")
     }
 }

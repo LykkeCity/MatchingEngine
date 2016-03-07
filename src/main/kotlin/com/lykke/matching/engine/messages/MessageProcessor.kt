@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.services.CashOperationService
+import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.LimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
 import org.apache.log4j.Logger
@@ -27,6 +28,7 @@ class MessageProcessor: Thread {
     val cashOperationService: CashOperationService
     val limitOrderService: LimitOrderService
     val marketOrderService: MarketOrderService
+    val limitOrderCancelService: LimitOrderCancelService
 
     constructor(config: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
@@ -34,9 +36,10 @@ class MessageProcessor: Thread {
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["ALimitOrdersConnString"], config["HLimitOrdersConnString"])
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config["HMarketOrdersConnString"], config["HTradesConnString"])
 
-        this.cashOperationService = CashOperationService(this.walletDatabaseAccessor)
-        this.limitOrderService = LimitOrderService(this.limitOrderDatabaseAccessor, cashOperationService)
-        this.marketOrderService = MarketOrderService(this.marketOrderDatabaseAccessor, limitOrderService, cashOperationService)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor)
+        this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService)
+        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService)
+        this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
     }
 
     override fun run() {
@@ -56,6 +59,9 @@ class MessageProcessor: Thread {
             }
             MessageType.MARKET_ORDER -> {
                 marketOrderService.processMessage(message)
+            }
+            MessageType.LIMIT_ORDER_CANCEL -> {
+                limitOrderCancelService.processMessage(message)
             }
             else -> {
                 LOGGER.error("Unknown message type: ${message.type}")

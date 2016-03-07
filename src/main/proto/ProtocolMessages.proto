@@ -31,3 +31,8 @@ message MarketOrder {
     required string assetPairId = 4;
     required double volume = 5;
 }
+
+message LimitOrderCancel {
+    required int64 uid = 1;
+    required int64 limitOrderId = 2;
+}

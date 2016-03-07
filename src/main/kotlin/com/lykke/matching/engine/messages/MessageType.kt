@@ -8,6 +8,7 @@ enum class MessageType (val type: Byte){
     ,UPDATE_BALANCE(2)
     ,LIMIT_ORDER(3)
     ,MARKET_ORDER(4)
+    ,LIMIT_ORDER_CANCEL(5)
     ;
 
 

@@ -23,14 +23,14 @@ class LimitOrderServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "1", price = 100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "2", price = 200.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "3", price = 300.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "4", price = 400.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "5", price = -100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "6", price = -200.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "7", price = -300.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(rowKey = "8", price = -400.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", price = 100.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", price = 200.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "4", price = 400.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF"))
@@ -70,7 +70,7 @@ class LimitOrderServiceTest {
     }
 }
 
-fun buildLimitOrder(rowKey: String = Date().time.toString(),
+fun buildLimitOrder(uid: String = Date().time.toString(),
                     assetId: String = "EURUSD",
                     clientId: String = "Client1",
                     lastMatchTime: Date? = null,
@@ -79,7 +79,7 @@ fun buildLimitOrder(rowKey: String = Date().time.toString(),
                     status: String = OrderStatus.InOrderBook.name,
                     volume:Double = 1000.0): LimitOrder =
         LimitOrder(
-                uid = rowKey,
+                uid = uid,
                 assetPairId = assetId,
                 clientId = clientId,
                 lastMatchTime = lastMatchTime,
