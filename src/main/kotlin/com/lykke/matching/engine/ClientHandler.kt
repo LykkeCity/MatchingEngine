@@ -5,8 +5,8 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import org.apache.log4j.Logger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.net.Socket
 import java.util.concurrent.BlockingQueue
 
@@ -21,8 +21,8 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
     override fun run() {
         LOGGER.info("Got connection from $clientHostName.")
         try {
-            val inputStream = ObjectInputStream(BufferedInputStream(socket.inputStream))
-            val outputStream = ObjectOutputStream(BufferedOutputStream(socket.outputStream))
+            val inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
+            val outputStream = DataOutputStream(BufferedOutputStream(socket.outputStream))
             outputStream.flush()
             while (true) {
                 readMessage(inputStream, outputStream)
@@ -33,7 +33,7 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
         }
     }
 
-    private fun readMessage(inputStream: ObjectInputStream, outputStream: ObjectOutputStream) {
+    private fun readMessage(inputStream: DataInputStream, outputStream: DataOutputStream) {
         val type = inputStream.readByte()
         if (type == MessageType.PING.type) {
             LOGGER.debug("Got ping request from $clientHostName.")

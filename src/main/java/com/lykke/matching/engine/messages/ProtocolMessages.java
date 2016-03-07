@@ -1343,57 +1343,34 @@ public final class ProtocolMessages {
         getClientIdBytes();
 
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    boolean hasAssetId();
+    boolean hasAssetPairId();
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    java.lang.String getAssetId();
+    java.lang.String getAssetPairId();
     /**
-     * <code>required string assetId = 4;</code>
-     */
-    com.google.protobuf.ByteString
-        getAssetIdBytes();
-
-    /**
-     * <code>required int32 orderAction = 5;</code>
-     */
-    boolean hasOrderAction();
-    /**
-     * <code>required int32 orderAction = 5;</code>
-     */
-    int getOrderAction();
-
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    boolean hasBlockChain();
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    java.lang.String getBlockChain();
-    /**
-     * <code>required string blockChain = 6;</code>
+     * <code>required string assetPairId = 4;</code>
      */
     com.google.protobuf.ByteString
-        getBlockChainBytes();
+        getAssetPairIdBytes();
 
     /**
-     * <code>required double volume = 7;</code>
+     * <code>required double volume = 5;</code>
      */
     boolean hasVolume();
     /**
-     * <code>required double volume = 7;</code>
+     * <code>required double volume = 5;</code>
      */
     double getVolume();
 
     /**
-     * <code>required double price = 8;</code>
+     * <code>required double price = 6;</code>
      */
     boolean hasPrice();
     /**
-     * <code>required double price = 8;</code>
+     * <code>required double price = 6;</code>
      */
     double getPrice();
   }
@@ -1412,9 +1389,7 @@ public final class ProtocolMessages {
       uid_ = 0L;
       timestamp_ = 0L;
       clientId_ = "";
-      assetId_ = "";
-      orderAction_ = 0;
-      blockChain_ = "";
+      assetPairId_ = "";
       volume_ = 0D;
       price_ = 0D;
     }
@@ -1465,27 +1440,16 @@ public final class ProtocolMessages {
             case 34: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000008;
-              assetId_ = bs;
+              assetPairId_ = bs;
               break;
             }
-            case 40: {
+            case 41: {
               bitField0_ |= 0x00000010;
-              orderAction_ = input.readInt32();
-              break;
-            }
-            case 50: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000020;
-              blockChain_ = bs;
-              break;
-            }
-            case 57: {
-              bitField0_ |= 0x00000040;
               volume_ = input.readDouble();
               break;
             }
-            case 65: {
-              bitField0_ |= 0x00000080;
+            case 49: {
+              bitField0_ |= 0x00000020;
               price_ = input.readDouble();
               break;
             }
@@ -1587,19 +1551,19 @@ public final class ProtocolMessages {
       }
     }
 
-    public static final int ASSETID_FIELD_NUMBER = 4;
-    private volatile java.lang.Object assetId_;
+    public static final int ASSETPAIRID_FIELD_NUMBER = 4;
+    private volatile java.lang.Object assetPairId_;
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    public boolean hasAssetId() {
+    public boolean hasAssetPairId() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    public java.lang.String getAssetId() {
-      java.lang.Object ref = assetId_;
+    public java.lang.String getAssetPairId() {
+      java.lang.Object ref = assetPairId_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -1607,110 +1571,53 @@ public final class ProtocolMessages {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          assetId_ = s;
+          assetPairId_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
     public com.google.protobuf.ByteString
-        getAssetIdBytes() {
-      java.lang.Object ref = assetId_;
+        getAssetPairIdBytes() {
+      java.lang.Object ref = assetPairId_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        assetId_ = b;
+        assetPairId_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
 
-    public static final int ORDERACTION_FIELD_NUMBER = 5;
-    private int orderAction_;
+    public static final int VOLUME_FIELD_NUMBER = 5;
+    private double volume_;
     /**
-     * <code>required int32 orderAction = 5;</code>
+     * <code>required double volume = 5;</code>
      */
-    public boolean hasOrderAction() {
+    public boolean hasVolume() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>required int32 orderAction = 5;</code>
-     */
-    public int getOrderAction() {
-      return orderAction_;
-    }
-
-    public static final int BLOCKCHAIN_FIELD_NUMBER = 6;
-    private volatile java.lang.Object blockChain_;
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    public boolean hasBlockChain() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
-    }
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    public java.lang.String getBlockChain() {
-      java.lang.Object ref = blockChain_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          blockChain_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    public com.google.protobuf.ByteString
-        getBlockChainBytes() {
-      java.lang.Object ref = blockChain_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        blockChain_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    public static final int VOLUME_FIELD_NUMBER = 7;
-    private double volume_;
-    /**
-     * <code>required double volume = 7;</code>
-     */
-    public boolean hasVolume() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
-    }
-    /**
-     * <code>required double volume = 7;</code>
+     * <code>required double volume = 5;</code>
      */
     public double getVolume() {
       return volume_;
     }
 
-    public static final int PRICE_FIELD_NUMBER = 8;
+    public static final int PRICE_FIELD_NUMBER = 6;
     private double price_;
     /**
-     * <code>required double price = 8;</code>
+     * <code>required double price = 6;</code>
      */
     public boolean hasPrice() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
+      return ((bitField0_ & 0x00000020) == 0x00000020);
     }
     /**
-     * <code>required double price = 8;</code>
+     * <code>required double price = 6;</code>
      */
     public double getPrice() {
       return price_;
@@ -1734,15 +1641,7 @@ public final class ProtocolMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasAssetId()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasOrderAction()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasBlockChain()) {
+      if (!hasAssetPairId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1770,19 +1669,13 @@ public final class ProtocolMessages {
         output.writeBytes(3, getClientIdBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getAssetIdBytes());
+        output.writeBytes(4, getAssetPairIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt32(5, orderAction_);
+        output.writeDouble(5, volume_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeBytes(6, getBlockChainBytes());
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeDouble(7, volume_);
-      }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        output.writeDouble(8, price_);
+        output.writeDouble(6, price_);
       }
       unknownFields.writeTo(output);
     }
@@ -1807,23 +1700,15 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getAssetIdBytes());
+          .computeBytesSize(4, getAssetPairIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(5, orderAction_);
+          .computeDoubleSize(5, volume_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, getBlockChainBytes());
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(7, volume_);
-      }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(8, price_);
+          .computeDoubleSize(6, price_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -1943,16 +1828,12 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000002);
         clientId_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
-        assetId_ = "";
+        assetPairId_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
-        orderAction_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        blockChain_ = "";
-        bitField0_ = (bitField0_ & ~0x00000020);
         volume_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000010);
         price_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -1992,21 +1873,13 @@ public final class ProtocolMessages {
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
-        result.assetId_ = assetId_;
+        result.assetPairId_ = assetPairId_;
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000010;
         }
-        result.orderAction_ = orderAction_;
+        result.volume_ = volume_;
         if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
           to_bitField0_ |= 0x00000020;
-        }
-        result.blockChain_ = blockChain_;
-        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-          to_bitField0_ |= 0x00000040;
-        }
-        result.volume_ = volume_;
-        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
-          to_bitField0_ |= 0x00000080;
         }
         result.price_ = price_;
         result.bitField0_ = to_bitField0_;
@@ -2036,17 +1909,9 @@ public final class ProtocolMessages {
           clientId_ = other.clientId_;
           onChanged();
         }
-        if (other.hasAssetId()) {
+        if (other.hasAssetPairId()) {
           bitField0_ |= 0x00000008;
-          assetId_ = other.assetId_;
-          onChanged();
-        }
-        if (other.hasOrderAction()) {
-          setOrderAction(other.getOrderAction());
-        }
-        if (other.hasBlockChain()) {
-          bitField0_ |= 0x00000020;
-          blockChain_ = other.blockChain_;
+          assetPairId_ = other.assetPairId_;
           onChanged();
         }
         if (other.hasVolume()) {
@@ -2070,13 +1935,7 @@ public final class ProtocolMessages {
         if (!hasClientId()) {
           return false;
         }
-        if (!hasAssetId()) {
-          return false;
-        }
-        if (!hasOrderAction()) {
-          return false;
-        }
-        if (!hasBlockChain()) {
+        if (!hasAssetPairId()) {
           return false;
         }
         if (!hasVolume()) {
@@ -2247,24 +2106,24 @@ public final class ProtocolMessages {
         return this;
       }
 
-      private java.lang.Object assetId_ = "";
+      private java.lang.Object assetPairId_ = "";
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public boolean hasAssetId() {
+      public boolean hasAssetPairId() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public java.lang.String getAssetId() {
-        java.lang.Object ref = assetId_;
+      public java.lang.String getAssetPairId() {
+        java.lang.Object ref = assetPairId_;
         if (!(ref instanceof java.lang.String)) {
           com.google.protobuf.ByteString bs =
               (com.google.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            assetId_ = s;
+            assetPairId_ = s;
           }
           return s;
         } else {
@@ -2272,192 +2131,84 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
       public com.google.protobuf.ByteString
-          getAssetIdBytes() {
-        java.lang.Object ref = assetId_;
+          getAssetPairIdBytes() {
+        java.lang.Object ref = assetPairId_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          assetId_ = b;
+          assetPairId_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public Builder setAssetId(
+      public Builder setAssetPairId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000008;
-        assetId_ = value;
+        assetPairId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public Builder clearAssetId() {
+      public Builder clearAssetPairId() {
         bitField0_ = (bitField0_ & ~0x00000008);
-        assetId_ = getDefaultInstance().getAssetId();
+        assetPairId_ = getDefaultInstance().getAssetPairId();
         onChanged();
         return this;
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public Builder setAssetIdBytes(
+      public Builder setAssetPairIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000008;
-        assetId_ = value;
-        onChanged();
-        return this;
-      }
-
-      private int orderAction_ ;
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public boolean hasOrderAction() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public int getOrderAction() {
-        return orderAction_;
-      }
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public Builder setOrderAction(int value) {
-        bitField0_ |= 0x00000010;
-        orderAction_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public Builder clearOrderAction() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        orderAction_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object blockChain_ = "";
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public boolean hasBlockChain() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public java.lang.String getBlockChain() {
-        java.lang.Object ref = blockChain_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            blockChain_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public com.google.protobuf.ByteString
-          getBlockChainBytes() {
-        java.lang.Object ref = blockChain_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          blockChain_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public Builder setBlockChain(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000020;
-        blockChain_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public Builder clearBlockChain() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        blockChain_ = getDefaultInstance().getBlockChain();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public Builder setBlockChainBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000020;
-        blockChain_ = value;
+        assetPairId_ = value;
         onChanged();
         return this;
       }
 
       private double volume_ ;
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public boolean hasVolume() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public double getVolume() {
         return volume_;
       }
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public Builder setVolume(double value) {
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000010;
         volume_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public Builder clearVolume() {
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000010);
         volume_ = 0D;
         onChanged();
         return this;
@@ -2465,31 +2216,31 @@ public final class ProtocolMessages {
 
       private double price_ ;
       /**
-       * <code>required double price = 8;</code>
+       * <code>required double price = 6;</code>
        */
       public boolean hasPrice() {
-        return ((bitField0_ & 0x00000080) == 0x00000080);
+        return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>required double price = 8;</code>
+       * <code>required double price = 6;</code>
        */
       public double getPrice() {
         return price_;
       }
       /**
-       * <code>required double price = 8;</code>
+       * <code>required double price = 6;</code>
        */
       public Builder setPrice(double value) {
-        bitField0_ |= 0x00000080;
+        bitField0_ |= 0x00000020;
         price_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required double price = 8;</code>
+       * <code>required double price = 6;</code>
        */
       public Builder clearPrice() {
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000020);
         price_ = 0D;
         onChanged();
         return this;
@@ -2575,48 +2326,25 @@ public final class ProtocolMessages {
         getClientIdBytes();
 
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    boolean hasAssetId();
+    boolean hasAssetPairId();
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    java.lang.String getAssetId();
+    java.lang.String getAssetPairId();
     /**
-     * <code>required string assetId = 4;</code>
-     */
-    com.google.protobuf.ByteString
-        getAssetIdBytes();
-
-    /**
-     * <code>required int32 orderAction = 5;</code>
-     */
-    boolean hasOrderAction();
-    /**
-     * <code>required int32 orderAction = 5;</code>
-     */
-    int getOrderAction();
-
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    boolean hasBlockChain();
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    java.lang.String getBlockChain();
-    /**
-     * <code>required string blockChain = 6;</code>
+     * <code>required string assetPairId = 4;</code>
      */
     com.google.protobuf.ByteString
-        getBlockChainBytes();
+        getAssetPairIdBytes();
 
     /**
-     * <code>required double volume = 7;</code>
+     * <code>required double volume = 5;</code>
      */
     boolean hasVolume();
     /**
-     * <code>required double volume = 7;</code>
+     * <code>required double volume = 5;</code>
      */
     double getVolume();
   }
@@ -2635,9 +2363,7 @@ public final class ProtocolMessages {
       uid_ = 0L;
       timestamp_ = 0L;
       clientId_ = "";
-      assetId_ = "";
-      orderAction_ = 0;
-      blockChain_ = "";
+      assetPairId_ = "";
       volume_ = 0D;
     }
 
@@ -2687,22 +2413,11 @@ public final class ProtocolMessages {
             case 34: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000008;
-              assetId_ = bs;
+              assetPairId_ = bs;
               break;
             }
-            case 40: {
+            case 41: {
               bitField0_ |= 0x00000010;
-              orderAction_ = input.readInt32();
-              break;
-            }
-            case 50: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000020;
-              blockChain_ = bs;
-              break;
-            }
-            case 57: {
-              bitField0_ |= 0x00000040;
               volume_ = input.readDouble();
               break;
             }
@@ -2804,19 +2519,19 @@ public final class ProtocolMessages {
       }
     }
 
-    public static final int ASSETID_FIELD_NUMBER = 4;
-    private volatile java.lang.Object assetId_;
+    public static final int ASSETPAIRID_FIELD_NUMBER = 4;
+    private volatile java.lang.Object assetPairId_;
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    public boolean hasAssetId() {
+    public boolean hasAssetPairId() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
-    public java.lang.String getAssetId() {
-      java.lang.Object ref = assetId_;
+    public java.lang.String getAssetPairId() {
+      java.lang.Object ref = assetPairId_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -2824,95 +2539,38 @@ public final class ProtocolMessages {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          assetId_ = s;
+          assetPairId_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>required string assetId = 4;</code>
+     * <code>required string assetPairId = 4;</code>
      */
     public com.google.protobuf.ByteString
-        getAssetIdBytes() {
-      java.lang.Object ref = assetId_;
+        getAssetPairIdBytes() {
+      java.lang.Object ref = assetPairId_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        assetId_ = b;
+        assetPairId_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
 
-    public static final int ORDERACTION_FIELD_NUMBER = 5;
-    private int orderAction_;
+    public static final int VOLUME_FIELD_NUMBER = 5;
+    private double volume_;
     /**
-     * <code>required int32 orderAction = 5;</code>
+     * <code>required double volume = 5;</code>
      */
-    public boolean hasOrderAction() {
+    public boolean hasVolume() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>required int32 orderAction = 5;</code>
-     */
-    public int getOrderAction() {
-      return orderAction_;
-    }
-
-    public static final int BLOCKCHAIN_FIELD_NUMBER = 6;
-    private volatile java.lang.Object blockChain_;
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    public boolean hasBlockChain() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
-    }
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    public java.lang.String getBlockChain() {
-      java.lang.Object ref = blockChain_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          blockChain_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string blockChain = 6;</code>
-     */
-    public com.google.protobuf.ByteString
-        getBlockChainBytes() {
-      java.lang.Object ref = blockChain_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        blockChain_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    public static final int VOLUME_FIELD_NUMBER = 7;
-    private double volume_;
-    /**
-     * <code>required double volume = 7;</code>
-     */
-    public boolean hasVolume() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
-    }
-    /**
-     * <code>required double volume = 7;</code>
+     * <code>required double volume = 5;</code>
      */
     public double getVolume() {
       return volume_;
@@ -2936,15 +2594,7 @@ public final class ProtocolMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasAssetId()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasOrderAction()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasBlockChain()) {
+      if (!hasAssetPairId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -2968,16 +2618,10 @@ public final class ProtocolMessages {
         output.writeBytes(3, getClientIdBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getAssetIdBytes());
+        output.writeBytes(4, getAssetPairIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt32(5, orderAction_);
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeBytes(6, getBlockChainBytes());
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeDouble(7, volume_);
+        output.writeDouble(5, volume_);
       }
       unknownFields.writeTo(output);
     }
@@ -3002,19 +2646,11 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getAssetIdBytes());
+          .computeBytesSize(4, getAssetPairIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(5, orderAction_);
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, getBlockChainBytes());
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(7, volume_);
+          .computeDoubleSize(5, volume_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -3134,14 +2770,10 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000002);
         clientId_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
-        assetId_ = "";
+        assetPairId_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
-        orderAction_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        blockChain_ = "";
-        bitField0_ = (bitField0_ & ~0x00000020);
         volume_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -3181,17 +2813,9 @@ public final class ProtocolMessages {
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
-        result.assetId_ = assetId_;
+        result.assetPairId_ = assetPairId_;
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000010;
-        }
-        result.orderAction_ = orderAction_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000020;
-        }
-        result.blockChain_ = blockChain_;
-        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-          to_bitField0_ |= 0x00000040;
         }
         result.volume_ = volume_;
         result.bitField0_ = to_bitField0_;
@@ -3221,17 +2845,9 @@ public final class ProtocolMessages {
           clientId_ = other.clientId_;
           onChanged();
         }
-        if (other.hasAssetId()) {
+        if (other.hasAssetPairId()) {
           bitField0_ |= 0x00000008;
-          assetId_ = other.assetId_;
-          onChanged();
-        }
-        if (other.hasOrderAction()) {
-          setOrderAction(other.getOrderAction());
-        }
-        if (other.hasBlockChain()) {
-          bitField0_ |= 0x00000020;
-          blockChain_ = other.blockChain_;
+          assetPairId_ = other.assetPairId_;
           onChanged();
         }
         if (other.hasVolume()) {
@@ -3252,13 +2868,7 @@ public final class ProtocolMessages {
         if (!hasClientId()) {
           return false;
         }
-        if (!hasAssetId()) {
-          return false;
-        }
-        if (!hasOrderAction()) {
-          return false;
-        }
-        if (!hasBlockChain()) {
+        if (!hasAssetPairId()) {
           return false;
         }
         if (!hasVolume()) {
@@ -3426,24 +3036,24 @@ public final class ProtocolMessages {
         return this;
       }
 
-      private java.lang.Object assetId_ = "";
+      private java.lang.Object assetPairId_ = "";
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public boolean hasAssetId() {
+      public boolean hasAssetPairId() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public java.lang.String getAssetId() {
-        java.lang.Object ref = assetId_;
+      public java.lang.String getAssetPairId() {
+        java.lang.Object ref = assetPairId_;
         if (!(ref instanceof java.lang.String)) {
           com.google.protobuf.ByteString bs =
               (com.google.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            assetId_ = s;
+            assetPairId_ = s;
           }
           return s;
         } else {
@@ -3451,192 +3061,84 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
       public com.google.protobuf.ByteString
-          getAssetIdBytes() {
-        java.lang.Object ref = assetId_;
+          getAssetPairIdBytes() {
+        java.lang.Object ref = assetPairId_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          assetId_ = b;
+          assetPairId_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public Builder setAssetId(
+      public Builder setAssetPairId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000008;
-        assetId_ = value;
+        assetPairId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public Builder clearAssetId() {
+      public Builder clearAssetPairId() {
         bitField0_ = (bitField0_ & ~0x00000008);
-        assetId_ = getDefaultInstance().getAssetId();
+        assetPairId_ = getDefaultInstance().getAssetPairId();
         onChanged();
         return this;
       }
       /**
-       * <code>required string assetId = 4;</code>
+       * <code>required string assetPairId = 4;</code>
        */
-      public Builder setAssetIdBytes(
+      public Builder setAssetPairIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000008;
-        assetId_ = value;
-        onChanged();
-        return this;
-      }
-
-      private int orderAction_ ;
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public boolean hasOrderAction() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public int getOrderAction() {
-        return orderAction_;
-      }
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public Builder setOrderAction(int value) {
-        bitField0_ |= 0x00000010;
-        orderAction_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required int32 orderAction = 5;</code>
-       */
-      public Builder clearOrderAction() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        orderAction_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object blockChain_ = "";
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public boolean hasBlockChain() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public java.lang.String getBlockChain() {
-        java.lang.Object ref = blockChain_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            blockChain_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public com.google.protobuf.ByteString
-          getBlockChainBytes() {
-        java.lang.Object ref = blockChain_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          blockChain_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public Builder setBlockChain(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000020;
-        blockChain_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public Builder clearBlockChain() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        blockChain_ = getDefaultInstance().getBlockChain();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string blockChain = 6;</code>
-       */
-      public Builder setBlockChainBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000020;
-        blockChain_ = value;
+        assetPairId_ = value;
         onChanged();
         return this;
       }
 
       private double volume_ ;
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public boolean hasVolume() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public double getVolume() {
         return volume_;
       }
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public Builder setVolume(double value) {
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000010;
         volume_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required double volume = 7;</code>
+       * <code>required double volume = 5;</code>
        */
       public Builder clearVolume() {
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000010);
         volume_ = 0D;
         onChanged();
         return this;
@@ -3718,16 +3220,14 @@ public final class ProtocolMessages {
       "hing.engine.messages\"\027\n\010Response\022\013\n\003uid\030" +
       "\001 \002(\003\"^\n\rCashOperation\022\013\n\003uid\030\001 \002(\003\022\021\n\ta" +
       "ccountId\030\002 \002(\t\022\014\n\004date\030\003 \002(\003\022\017\n\007assetId\030" +
-      "\004 \002(\t\022\016\n\006amount\030\005 \002(\001\"\227\001\n\nLimitOrder\022\013\n\003" +
-      "uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId" +
-      "\030\003 \002(\t\022\017\n\007assetId\030\004 \002(\t\022\023\n\013orderAction\030\005" +
-      " \002(\005\022\022\n\nblockChain\030\006 \002(\t\022\016\n\006volume\030\007 \002(\001" +
-      "\022\r\n\005price\030\010 \002(\001\"\211\001\n\013MarketOrder\022\013\n\003uid\030\001" +
-      " \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(",
-      "\t\022\017\n\007assetId\030\004 \002(\t\022\023\n\013orderAction\030\005 \002(\005\022" +
-      "\022\n\nblockChain\030\006 \002(\t\022\016\n\006volume\030\007 \002(\001B6\n\"c" +
-      "om.lykke.matching.engine.messagesB\020Proto" +
-      "colMessages"
+      "\004 \002(\t\022\016\n\006amount\030\005 \002(\001\"r\n\nLimitOrder\022\013\n\003u" +
+      "id\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030" +
+      "\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002" +
+      "(\001\022\r\n\005price\030\006 \002(\001\"d\n\013MarketOrder\022\013\n\003uid\030" +
+      "\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002" +
+      "(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001B",
+      "6\n\"com.lykke.matching.engine.messagesB\020P" +
+      "rotocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -3758,13 +3258,13 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_LimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetId", "OrderAction", "BlockChain", "Volume", "Price", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", });
     internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_com_lykke_matching_engine_messages_MarketOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetId", "OrderAction", "BlockChain", "Volume", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

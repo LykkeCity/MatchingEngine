@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.LOGGER
+import java.io.DataOutputStream
 import java.io.IOException
-import java.io.ObjectOutputStream
 
-class MessageWrapper(val type: MessageType?, val byteArray: ByteArray, val outputStream: ObjectOutputStream?) {
+class MessageWrapper(val type: MessageType?, val byteArray: ByteArray, val outputStream: DataOutputStream?) {
     fun writeResponse(response: ProtocolMessages.Response) {
         if (outputStream != null) {
             try {

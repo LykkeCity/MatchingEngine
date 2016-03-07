@@ -4,14 +4,13 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchedLimitOrder
 import com.lykke.matching.engine.daos.MatchedMarketOrder
+import com.lykke.matching.engine.daos.Order.Companion.buildPartitionKey
 import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.OrderSide
-import com.lykke.matching.engine.order.OrderSide.Buy
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -37,39 +36,30 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        val orderSide = OrderSide.valueOf(message.orderAction)
-        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetId}, volume: ${message.volume}, side: ${orderSide?.name}")
-        if (orderSide == null) {
-            LOGGER.error("Unknown order action: ${message.orderAction}")
-            return
-        }
+        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}")
 
         val order = MarketOrder(
-                rowKey = message.uid.toString(),
-                assetPair = message.assetId,
+                uid = message.uid.toString(),
+                assetPairId = message.assetPairId,
                 clientId = message.clientId,
-                matchedAt = null,
-                blockChain = message.blockChain,
-                orderType = orderSide.name,
                 createdAt = Date(message.timestamp),
                 registered = Date(),
                 status = Processing.name,
-                volume = message.volume,
-                matchedOrders = null
+                volume = message.volume
         )
 
-        if (cashOperationService.getAssetPair(message.assetId) == null) {
+        if (cashOperationService.getAssetPair(message.assetPairId) == null) {
             order.status = UnknownAsset.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
-            LOGGER.debug("Unknown asset: ${message.assetId}")
+            LOGGER.debug("Unknown asset: ${message.assetPairId}")
             return
         }
 
-        val orderBook = limitOrderService.getOrderBook("${order.assetPair}_${orderSide.oppositeSide().name}")
+        val orderBook = limitOrderService.getOrderBook(buildPartitionKey(order.assetPairId, order.getSide().oppositeSide()))
         if (orderBook == null) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
-            LOGGER.debug("No liquidity for market order id: ${order.getId()}}, client: ${order.getClientId()}, asset: ${order.assetPair}, volume: ${order.volume}, side: ${order.orderType}")
+            LOGGER.debug("No liquidity for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
             return
         }
 
@@ -82,7 +72,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
     }
 
     private fun match(marketOrder: MarketOrder, orderBook: PriorityQueue<LimitOrder>) {
-        var remainingVolume = marketOrder.volume
+        var remainingVolume = marketOrder.getAbsVolume()
         val matchedOrders = HashSet<LimitOrder>()
         val cancelledLimitOrders = HashSet<LimitOrder>()
 
@@ -104,20 +94,20 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             matchedOrders.forEach { limitOrderService.addToOrderBook(it) }
             cancelledLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
-            LOGGER.debug("No liquidity for market order id: ${marketOrder.getId()}}, client: ${marketOrder.getClientId()}, asset: ${marketOrder.assetPair}, volume: ${marketOrder.volume}, side: ${marketOrder.orderType}")
+            LOGGER.debug("No liquidity for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
             return
         }
 
         if (!isEnoughFunds(marketOrder, totalPrice)) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
-            LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.getClientId()}, asset: ${marketOrder.assetPair}, volume: ${marketOrder.volume}, side: ${marketOrder.orderType}")
+            LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
             return
         }
 
-        remainingVolume = marketOrder.volume
+        remainingVolume = marketOrder.getAbsVolume()
         val now = Date()
-        val assetPair = cashOperationService.getAssetPair(marketOrder.assetPair) ?: return
+        val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId) ?: return
 
 
         val completedLimitOrders = LinkedList<LimitOrder>()
@@ -130,19 +120,19 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             val volume = if (remainingVolume >= limitOrder.remainingVolume) limitOrder.remainingVolume else remainingVolume
             limitOrder.addMatchedOrder(MatchedMarketOrder(Id = marketOrder.getId(), Volume = limitOrder.remainingVolume))
             marketOrder.addMatchedOrder(MatchedLimitOrder(Id = limitOrder.getId(), Volume = limitOrder.remainingVolume, Price = limitOrder.price))
-            val isMarketBuy = OrderSide.valueOf(marketOrder.orderType) == Buy
+            val isMarketBuy = marketOrder.isBuySide()
             val oppositeSideVolume = limitOrder.price * volume
 
-            marketTrades.add(Trade(partitionKey = marketOrder.getClientId(), rowKey = UUID.randomUUID().toString(),
+            marketTrades.add(Trade(partitionKey = marketOrder.clientId, rowKey = UUID.randomUUID().toString(),
                     assetId = assetPair.baseAssetId, dateTime = now, limitOrderId = limitOrder.getId(),
                     marketOrderId = marketOrder.getId(), volume = if (isMarketBuy) volume else -volume))
-            cashMovements.add(WalletOperation(clientId = marketOrder.getClientId(), uid = UUID.randomUUID().toString(),
+            cashMovements.add(WalletOperation(clientId = marketOrder.clientId, uid = UUID.randomUUID().toString(),
                     asset = assetPair.baseAssetId, dateTime = now, amount = if (isMarketBuy) volume else -volume))
 
-            marketTrades.add(Trade(partitionKey = marketOrder.getClientId(), rowKey = UUID.randomUUID().toString(),
+            marketTrades.add(Trade(partitionKey = marketOrder.clientId, rowKey = UUID.randomUUID().toString(),
                     assetId = assetPair.quotingAssetId, dateTime = now, limitOrderId = limitOrder.getId(),
                     marketOrderId = marketOrder.getId(), volume = if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume))
-            cashMovements.add(WalletOperation(clientId = marketOrder.getClientId(), uid = UUID.randomUUID().toString(),
+            cashMovements.add(WalletOperation(clientId = marketOrder.clientId, uid = UUID.randomUUID().toString(),
                     asset = assetPair.quotingAssetId, dateTime = now, amount = if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume))
 
             limitTrades.add(Trade(partitionKey = limitOrder.clientId, rowKey = UUID.randomUUID().toString(),
@@ -172,7 +162,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         marketOrder.status = Matched.name
         marketOrder.matchedAt = now
-        marketOrder.price = totalPrice / marketOrder.volume
+        marketOrder.price = totalPrice / marketOrder.getAbsVolume()
         marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
         marketOrderDatabaseAccessor.addTrades(marketTrades)
         marketOrderDatabaseAccessor.addTrades(limitTrades)
@@ -190,19 +180,16 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             limitOrderService.addToOrderBook(uncompletedLimitOrder as LimitOrder)
         }
 
-        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.getClientId()}, asset: ${marketOrder.assetPair}, volume: ${marketOrder.volume}, side: ${marketOrder.orderType} matched, price: ${marketOrder.price}")
+        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume} matched, price: ${marketOrder.price}")
     }
 
     fun isEnoughFunds(order: MarketOrder, totalPrice: Double): Boolean {
-        val assetPair = cashOperationService.getAssetPair(order.assetPair) ?: return false
+        val assetPair = cashOperationService.getAssetPair(order.assetPairId) ?: return false
 
-        when (OrderSide.valueOf(order.orderType)) {
-            OrderSide.Sell -> {
-                return cashOperationService.getBalance(order.getClientId(), assetPair.baseAssetId) >= order.volume
-            }
-            Buy -> {
-                return cashOperationService.getBalance(order.getClientId(), assetPair.quotingAssetId) >= totalPrice
-            }
+        if (order.isBuySide()) {
+            return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId) >= totalPrice
+        } else {
+            return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId) >= order.getAbsVolume()
         }
     }
 }
