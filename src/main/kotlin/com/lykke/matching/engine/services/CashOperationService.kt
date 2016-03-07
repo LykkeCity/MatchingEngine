@@ -24,12 +24,14 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash operation for client ${message.accountId}, asset ${message.assetId}, amount: ${message.amount}")
-        processWalletOperations(listOf(WalletOperation(
+        val operation = WalletOperation(
                 clientId=message.accountId,
                 uid=message.uid.toString(),
                 dateTime= Date(message.date),
                 asset=message.assetId,
-                amount= message.amount)))
+                amount= message.amount)
+        processWalletOperations(listOf(operation))
+        walletDatabaseAccessor.insertOperations(mapOf(operation.getClientId() to listOf(operation)))
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
     }
 
@@ -63,22 +65,19 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     fun processWalletOperations(operations: List<WalletOperation>) {
         val walletsToAdd = LinkedList<Wallet>()
-        val operationsToAdd = HashMap<String, MutableList<WalletOperation>>()
         operations.forEach { operation ->
             val client = balances.getOrPut(operation.getClientId()) { HashMap<String, Double>() }
-            val balance = client.get(operation.assetId) ?: 0.0
+            val balance = client[operation.assetId] ?: 0.0
             client.put(operation.assetId, balance + operation.amount)
 
             val wallet = wallets.getOrPut(operation.getClientId()) { Wallet( operation.getClientId() ) }
             wallet.addBalance(operation.assetId, operation.amount)
 
-            operationsToAdd.getOrPut(operation.getClientId()) { LinkedList<WalletOperation>() }.add(operation)
             if (!walletsToAdd.contains(wallet)) {
                 walletsToAdd.add(wallet)
             }
         }
 
         walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
-        walletDatabaseAccessor.insertOperations(operationsToAdd)
     }
 }
