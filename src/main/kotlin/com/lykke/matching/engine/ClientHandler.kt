@@ -2,6 +2,7 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.utils.IntUtils
 import org.apache.log4j.Logger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -43,7 +44,9 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
             return
         }
 
-        val size = inputStream.readInt()
+        val sizeArray = ByteArray(4)
+        inputStream.read(sizeArray, 0, 4)
+        val size = IntUtils.little2big(sizeArray)
         val serializedData = ByteArray(size)
         inputStream.read(serializedData, 0, size)
         queue.put(MessageWrapper(MessageType.valueOf(type), serializedData, outputStream))

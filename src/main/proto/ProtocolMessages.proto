@@ -9,8 +9,8 @@ message Response {
 
 message CashOperation {
     required int64 uid = 1;
-    required string accountId = 2;
-    required int64 date = 3;
+    required string clientId = 2;
+    required int64 dateTime = 3;
     required string assetId = 4;
     required double amount = 5;
 }

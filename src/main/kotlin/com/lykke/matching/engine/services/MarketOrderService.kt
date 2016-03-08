@@ -52,6 +52,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             order.status = UnknownAsset.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
             LOGGER.debug("Unknown asset: ${message.assetPairId}")
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
             return
         }
 
@@ -60,6 +61,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
             LOGGER.debug("No liquidity for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
             return
         }
 
@@ -73,7 +75,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
     private fun match(marketOrder: MarketOrder, orderBook: PriorityQueue<LimitOrder>) {
         var remainingVolume = marketOrder.getAbsVolume()
-        val matchedOrders = HashSet<LimitOrder>()
+        val matchedOrders = LinkedList<LimitOrder>()
         val cancelledLimitOrders = HashSet<LimitOrder>()
 
         var totalPrice = 0.0

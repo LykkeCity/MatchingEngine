@@ -49,23 +49,27 @@ class MessageProcessor: Thread {
     }
 
     private fun processMessage(message: MessageWrapper) {
-        when (message.type) {
+        try {
+            when (message.type) {
             //MessageType.PING -> already processed by client handler
-            MessageType.UPDATE_BALANCE -> {
-                cashOperationService.processMessage(message)
+                MessageType.UPDATE_BALANCE -> {
+                    cashOperationService.processMessage(message)
+                }
+                MessageType.LIMIT_ORDER -> {
+                    limitOrderService.processMessage(message)
+                }
+                MessageType.MARKET_ORDER -> {
+                    marketOrderService.processMessage(message)
+                }
+                MessageType.LIMIT_ORDER_CANCEL -> {
+                    limitOrderCancelService.processMessage(message)
+                }
+                else -> {
+                    LOGGER.error("Unknown message type: ${message.type}")
+                }
             }
-            MessageType.LIMIT_ORDER -> {
-                limitOrderService.processMessage(message)
-            }
-            MessageType.MARKET_ORDER -> {
-                marketOrderService.processMessage(message)
-            }
-            MessageType.LIMIT_ORDER_CANCEL -> {
-                limitOrderCancelService.processMessage(message)
-            }
-            else -> {
-                LOGGER.error("Unknown message type: ${message.type}")
-            }
+        } catch (exception: Exception) {
+            LOGGER.error("Got error during message processing: ${exception.message}", exception)
         }
     }
 }

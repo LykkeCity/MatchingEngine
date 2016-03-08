@@ -422,27 +422,27 @@ public final class ProtocolMessages {
     long getUid();
 
     /**
-     * <code>required string accountId = 2;</code>
+     * <code>required string clientId = 2;</code>
      */
-    boolean hasAccountId();
+    boolean hasClientId();
     /**
-     * <code>required string accountId = 2;</code>
+     * <code>required string clientId = 2;</code>
      */
-    java.lang.String getAccountId();
+    java.lang.String getClientId();
     /**
-     * <code>required string accountId = 2;</code>
+     * <code>required string clientId = 2;</code>
      */
     com.google.protobuf.ByteString
-        getAccountIdBytes();
+        getClientIdBytes();
 
     /**
-     * <code>required int64 date = 3;</code>
+     * <code>required int64 dateTime = 3;</code>
      */
-    boolean hasDate();
+    boolean hasDateTime();
     /**
-     * <code>required int64 date = 3;</code>
+     * <code>required int64 dateTime = 3;</code>
      */
-    long getDate();
+    long getDateTime();
 
     /**
      * <code>required string assetId = 4;</code>
@@ -480,8 +480,8 @@ public final class ProtocolMessages {
     }
     private CashOperation() {
       uid_ = 0L;
-      accountId_ = "";
-      date_ = 0L;
+      clientId_ = "";
+      dateTime_ = 0L;
       assetId_ = "";
       amount_ = 0D;
     }
@@ -521,12 +521,12 @@ public final class ProtocolMessages {
             case 18: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              accountId_ = bs;
+              clientId_ = bs;
               break;
             }
             case 24: {
               bitField0_ |= 0x00000004;
-              date_ = input.readInt64();
+              dateTime_ = input.readInt64();
               break;
             }
             case 34: {
@@ -581,19 +581,19 @@ public final class ProtocolMessages {
       return uid_;
     }
 
-    public static final int ACCOUNTID_FIELD_NUMBER = 2;
-    private volatile java.lang.Object accountId_;
+    public static final int CLIENTID_FIELD_NUMBER = 2;
+    private volatile java.lang.Object clientId_;
     /**
-     * <code>required string accountId = 2;</code>
+     * <code>required string clientId = 2;</code>
      */
-    public boolean hasAccountId() {
+    public boolean hasClientId() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required string accountId = 2;</code>
+     * <code>required string clientId = 2;</code>
      */
-    public java.lang.String getAccountId() {
-      java.lang.Object ref = accountId_;
+    public java.lang.String getClientId() {
+      java.lang.Object ref = clientId_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -601,41 +601,41 @@ public final class ProtocolMessages {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          accountId_ = s;
+          clientId_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>required string accountId = 2;</code>
+     * <code>required string clientId = 2;</code>
      */
     public com.google.protobuf.ByteString
-        getAccountIdBytes() {
-      java.lang.Object ref = accountId_;
+        getClientIdBytes() {
+      java.lang.Object ref = clientId_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        accountId_ = b;
+        clientId_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
 
-    public static final int DATE_FIELD_NUMBER = 3;
-    private long date_;
+    public static final int DATETIME_FIELD_NUMBER = 3;
+    private long dateTime_;
     /**
-     * <code>required int64 date = 3;</code>
+     * <code>required int64 dateTime = 3;</code>
      */
-    public boolean hasDate() {
+    public boolean hasDateTime() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required int64 date = 3;</code>
+     * <code>required int64 dateTime = 3;</code>
      */
-    public long getDate() {
-      return date_;
+    public long getDateTime() {
+      return dateTime_;
     }
 
     public static final int ASSETID_FIELD_NUMBER = 4;
@@ -705,11 +705,11 @@ public final class ProtocolMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasAccountId()) {
+      if (!hasClientId()) {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasDate()) {
+      if (!hasDateTime()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -731,10 +731,10 @@ public final class ProtocolMessages {
         output.writeInt64(1, uid_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getAccountIdBytes());
+        output.writeBytes(2, getClientIdBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt64(3, date_);
+        output.writeInt64(3, dateTime_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, getAssetIdBytes());
@@ -757,11 +757,11 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getAccountIdBytes());
+          .computeBytesSize(2, getClientIdBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(3, date_);
+          .computeInt64Size(3, dateTime_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -885,9 +885,9 @@ public final class ProtocolMessages {
         super.clear();
         uid_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000001);
-        accountId_ = "";
+        clientId_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
-        date_ = 0L;
+        dateTime_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
         assetId_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -924,11 +924,11 @@ public final class ProtocolMessages {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.accountId_ = accountId_;
+        result.clientId_ = clientId_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.date_ = date_;
+        result.dateTime_ = dateTime_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
@@ -956,13 +956,13 @@ public final class ProtocolMessages {
         if (other.hasUid()) {
           setUid(other.getUid());
         }
-        if (other.hasAccountId()) {
+        if (other.hasClientId()) {
           bitField0_ |= 0x00000002;
-          accountId_ = other.accountId_;
+          clientId_ = other.clientId_;
           onChanged();
         }
-        if (other.hasDate()) {
-          setDate(other.getDate());
+        if (other.hasDateTime()) {
+          setDateTime(other.getDateTime());
         }
         if (other.hasAssetId()) {
           bitField0_ |= 0x00000008;
@@ -981,10 +981,10 @@ public final class ProtocolMessages {
         if (!hasUid()) {
           return false;
         }
-        if (!hasAccountId()) {
+        if (!hasClientId()) {
           return false;
         }
-        if (!hasDate()) {
+        if (!hasDateTime()) {
           return false;
         }
         if (!hasAssetId()) {
@@ -1047,24 +1047,24 @@ public final class ProtocolMessages {
         return this;
       }
 
-      private java.lang.Object accountId_ = "";
+      private java.lang.Object clientId_ = "";
       /**
-       * <code>required string accountId = 2;</code>
+       * <code>required string clientId = 2;</code>
        */
-      public boolean hasAccountId() {
+      public boolean hasClientId() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required string accountId = 2;</code>
+       * <code>required string clientId = 2;</code>
        */
-      public java.lang.String getAccountId() {
-        java.lang.Object ref = accountId_;
+      public java.lang.String getClientId() {
+        java.lang.Object ref = clientId_;
         if (!(ref instanceof java.lang.String)) {
           com.google.protobuf.ByteString bs =
               (com.google.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            accountId_ = s;
+            clientId_ = s;
           }
           return s;
         } else {
@@ -1072,85 +1072,85 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>required string accountId = 2;</code>
+       * <code>required string clientId = 2;</code>
        */
       public com.google.protobuf.ByteString
-          getAccountIdBytes() {
-        java.lang.Object ref = accountId_;
+          getClientIdBytes() {
+        java.lang.Object ref = clientId_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          accountId_ = b;
+          clientId_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>required string accountId = 2;</code>
+       * <code>required string clientId = 2;</code>
        */
-      public Builder setAccountId(
+      public Builder setClientId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000002;
-        accountId_ = value;
+        clientId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string accountId = 2;</code>
+       * <code>required string clientId = 2;</code>
        */
-      public Builder clearAccountId() {
+      public Builder clearClientId() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        accountId_ = getDefaultInstance().getAccountId();
+        clientId_ = getDefaultInstance().getClientId();
         onChanged();
         return this;
       }
       /**
-       * <code>required string accountId = 2;</code>
+       * <code>required string clientId = 2;</code>
        */
-      public Builder setAccountIdBytes(
+      public Builder setClientIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000002;
-        accountId_ = value;
+        clientId_ = value;
         onChanged();
         return this;
       }
 
-      private long date_ ;
+      private long dateTime_ ;
       /**
-       * <code>required int64 date = 3;</code>
+       * <code>required int64 dateTime = 3;</code>
        */
-      public boolean hasDate() {
+      public boolean hasDateTime() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required int64 date = 3;</code>
+       * <code>required int64 dateTime = 3;</code>
        */
-      public long getDate() {
-        return date_;
+      public long getDateTime() {
+        return dateTime_;
       }
       /**
-       * <code>required int64 date = 3;</code>
+       * <code>required int64 dateTime = 3;</code>
        */
-      public Builder setDate(long value) {
+      public Builder setDateTime(long value) {
         bitField0_ |= 0x00000004;
-        date_ = value;
+        dateTime_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required int64 date = 3;</code>
+       * <code>required int64 dateTime = 3;</code>
        */
-      public Builder clearDate() {
+      public Builder clearDateTime() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        date_ = 0L;
+        dateTime_ = 0L;
         onChanged();
         return this;
       }
@@ -3708,17 +3708,17 @@ public final class ProtocolMessages {
     java.lang.String[] descriptorData = {
       "\n\026ProtocolMessages.proto\022\"com.lykke.matc" +
       "hing.engine.messages\"\027\n\010Response\022\013\n\003uid\030" +
-      "\001 \002(\003\"^\n\rCashOperation\022\013\n\003uid\030\001 \002(\003\022\021\n\ta" +
-      "ccountId\030\002 \002(\t\022\014\n\004date\030\003 \002(\003\022\017\n\007assetId\030" +
-      "\004 \002(\t\022\016\n\006amount\030\005 \002(\001\"r\n\nLimitOrder\022\013\n\003u" +
+      "\001 \002(\003\"a\n\rCashOperation\022\013\n\003uid\030\001 \002(\003\022\020\n\010c" +
+      "lientId\030\002 \002(\t\022\020\n\010dateTime\030\003 \002(\003\022\017\n\007asset" +
+      "Id\030\004 \002(\t\022\016\n\006amount\030\005 \002(\001\"r\n\nLimitOrder\022\013" +
+      "\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010client" +
+      "Id\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030" +
+      "\005 \002(\001\022\r\n\005price\030\006 \002(\001\"d\n\013MarketOrder\022\013\n\003u" +
       "id\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030" +
-      "\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002" +
-      "(\001\022\r\n\005price\030\006 \002(\001\"d\n\013MarketOrder\022\013\n\003uid\030" +
-      "\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002" +
-      "(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\"",
-      "5\n\020LimitOrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014limi" +
-      "tOrderId\030\002 \002(\003B6\n\"com.lykke.matching.eng" +
-      "ine.messagesB\020ProtocolMessages"
+      "\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002",
+      "(\001\"5\n\020LimitOrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014l" +
+      "imitOrderId\030\002 \002(\003B6\n\"com.lykke.matching." +
+      "engine.messagesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -3743,7 +3743,7 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_CashOperation_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_CashOperation_descriptor,
-        new java.lang.String[] { "Uid", "AccountId", "Date", "AssetId", "Amount", });
+        new java.lang.String[] { "Uid", "ClientId", "DateTime", "AssetId", "Amount", });
     internal_static_com_lykke_matching_engine_messages_LimitOrder_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_com_lykke_matching_engine_messages_LimitOrder_fieldAccessorTable = new

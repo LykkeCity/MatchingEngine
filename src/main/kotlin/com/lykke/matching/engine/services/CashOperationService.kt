@@ -23,16 +23,17 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing cash operation for client ${message.accountId}, asset ${message.assetId}, amount: ${message.amount}")
+        LOGGER.debug("Processing cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}")
         val operation = WalletOperation(
-                clientId=message.accountId,
+                clientId=message.clientId,
                 uid=message.uid.toString(),
-                dateTime= Date(message.date),
+                dateTime= Date(message.dateTime),
                 asset=message.assetId,
                 amount= message.amount)
         processWalletOperations(listOf(operation))
         walletDatabaseAccessor.insertOperations(mapOf(operation.getClientId() to listOf(operation)))
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+        LOGGER.debug("Cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount} processed")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {

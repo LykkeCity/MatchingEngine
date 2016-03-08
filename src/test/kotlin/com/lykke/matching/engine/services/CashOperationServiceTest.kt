@@ -65,9 +65,9 @@ class CashOperationServiceTest {
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
         return MessageWrapper(MessageType.UPDATE_BALANCE, ProtocolMessages.CashOperation.newBuilder()
                 .setUid(123)
-                .setAccountId(clientId)
+                .setClientId(clientId)
                 .setAssetId(assetId)
                 .setAmount(amount)
-                .setDate(123).build().toByteArray(), null)
+                .setDateTime(123).build().toByteArray(), null)
     }
 }

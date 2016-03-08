@@ -97,7 +97,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     fun cancelLimitOrder(uid: String) {
         val order = limitOrdersMap.remove(uid)
         if (order == null) {
-            LOGGER.debug("Unable to cancel order $uid}")
+            LOGGER.debug("Unable to cancel order $uid: missing order or already processed")
             return
         }
 
