@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.Trade
 
 interface MarketOrderDatabaseAccessor {
     fun addMarketOrder(order: MarketOrder)
+    fun addMarketOrderWithGeneratedRowId(order: MarketOrder)
     fun updateMarketOrder(order: MarketOrder)
 
     fun addTrades(trades: List<Trade>)

@@ -7,7 +7,7 @@ import com.microsoft.azure.storage.table.TableServiceEntity
 import java.util.Date
 
 abstract class Order: TableServiceEntity {
-    //partition key: Asset_Side
+    //partition key: client_id
     //row key: uid
 
     var assetPairId: String = ""
@@ -23,7 +23,7 @@ abstract class Order: TableServiceEntity {
     constructor() {}
 
     constructor(uid: String, assetPairId: String, clientId: String, createdAt: Date, registered: Date,
-                status: String, volume: Double) : super(buildPartitionKey(assetPairId, getSide(volume)), uid) {
+                status: String, volume: Double) : super(clientId, uid) {
         this.assetPairId = assetPairId
         this.clientId = clientId
         this.createdAt = createdAt

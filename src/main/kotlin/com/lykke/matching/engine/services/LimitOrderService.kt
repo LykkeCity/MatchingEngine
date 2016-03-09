@@ -26,6 +26,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         val BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
             o2.price.compareTo(o1.price)
         })
+
+        private val ORDER_ID = "OrderId"
     }
     private val limitOrdersQueues = HashMap<String, PriorityQueue<LimitOrder>>()
     private val limitOrdersMap = HashMap<String, LimitOrder>()
@@ -43,7 +45,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}, price: ${message.price}")
 
         val order = LimitOrder(
-                uid = message.uid.toString(),
+                uid = Date().time.toString(),
                 assetPairId = message.assetPairId,
                 clientId = message.clientId,
                 price = message.price,
@@ -65,7 +67,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     }
 
     fun addToOrderBook(order: LimitOrder) {
-        val orderBook = limitOrdersQueues.getOrPut(order.partitionKey) {
+        val orderBook = limitOrdersQueues.getOrPut(Order.buildPartitionKey(order.assetPairId, order.getSide())) {
             PriorityQueue<LimitOrder>(if (order.isBuySide()) LimitOrderService.BUY_COMPARATOR else LimitOrderService.SELL_COMPARATOR)
         }
         orderBook.add(order)
@@ -77,9 +79,13 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     }
 
     fun moveOrdersToDone(orders: List<LimitOrder>) {
-        limitOrderDatabaseAccessor.addLimitOrdersDone(orders)
         limitOrderDatabaseAccessor.deleteLimitOrders(orders)
-        orders.forEach { limitOrdersMap.remove(it.getId()) }
+        orders.forEach { order ->
+            order.partitionKey = ORDER_ID
+            limitOrderDatabaseAccessor.addLimitOrderDone(order)
+            limitOrdersMap.remove(order.getId())
+            limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
+        }
     }
 
     fun getOrderBook(key: String) = limitOrdersQueues[key]
@@ -103,9 +109,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
 
         getOrderBook(Order.buildPartitionKey(order.assetPairId, order.getSide()))?.remove(order)
         order.status = Cancelled.name
-        val list = listOf(order)
-        limitOrderDatabaseAccessor.addLimitOrdersDone(list)
-        limitOrderDatabaseAccessor.deleteLimitOrders(list)
+        limitOrderDatabaseAccessor.addLimitOrderDone(order)
+        limitOrderDatabaseAccessor.deleteLimitOrders(listOf(order))
         LOGGER.debug("Order $uid cancelled")
     }
 }

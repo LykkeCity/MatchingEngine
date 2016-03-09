@@ -8,5 +8,6 @@ interface LimitOrderDatabaseAccessor {
     fun updateLimitOrder(order: LimitOrder)
     fun deleteLimitOrders(orders: List<LimitOrder>)
 
-    fun addLimitOrdersDone(orders: List<LimitOrder>)
+    fun addLimitOrderDone(order: LimitOrder)
+    fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder)
 }

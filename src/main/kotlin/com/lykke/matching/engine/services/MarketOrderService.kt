@@ -29,6 +29,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
+
+        private val ORDER_ID = "OrderId"
     }
 
     init {
@@ -39,7 +41,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}")
 
         val order = MarketOrder(
-                uid = message.uid.toString(),
+                uid = Date().time.toString(),
                 assetPairId = message.assetPairId,
                 clientId = message.clientId,
                 createdAt = Date(message.timestamp),
@@ -165,7 +167,10 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         marketOrder.status = Matched.name
         marketOrder.matchedAt = now
         marketOrder.price = totalPrice / marketOrder.getAbsVolume()
+        marketOrder.partitionKey = ORDER_ID
         marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+        marketOrderDatabaseAccessor.addMarketOrderWithGeneratedRowId(marketOrder)
+
         marketOrderDatabaseAccessor.addTrades(marketTrades)
         marketOrderDatabaseAccessor.addTrades(limitTrades)
 
