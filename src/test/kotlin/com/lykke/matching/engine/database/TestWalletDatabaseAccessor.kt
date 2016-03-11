@@ -43,12 +43,8 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         return null
     }
 
-    override fun insertOperations(operations: Map<String, List<WalletOperation>>) {
-        operations.values.forEach {
-            it.forEach { operation ->
-                this.operations.add(operation)
-            }
-        }
+    override fun insertOperation(operation: WalletOperation) {
+        this.operations.add(operation)
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {

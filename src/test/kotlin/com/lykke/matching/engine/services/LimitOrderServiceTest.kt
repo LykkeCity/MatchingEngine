@@ -9,9 +9,11 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
+import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -41,7 +43,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor))
+        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -50,7 +52,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testBalanceCheck() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor))
+        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()))
 
         assertTrue { service.isEnoughFunds(buildLimitOrder(price = 2.0, volume = -1000.0), 1000.0) }
         assertFalse { service.isEnoughFunds(buildLimitOrder( price = 2.0, volume = -1001.0), 1001.0) }

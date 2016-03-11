@@ -11,7 +11,7 @@ interface WalletDatabaseAccessor {
     fun insertOrUpdateWallet(wallet: Wallet) { insertOrUpdateWallets(listOf(wallet)) }
     fun insertOrUpdateWallets(wallets: List<Wallet>)
 
-    fun insertOperations(operations: Map<String, List<WalletOperation>>)
+    fun insertOperation(operation: WalletOperation)
 
     fun loadAssetPairs(): HashMap<String, AssetPair>
     fun loadAssetPair(assetId: String): AssetPair?

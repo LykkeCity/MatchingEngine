@@ -7,10 +7,12 @@ import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
+import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertNull
 
 class LimitOrderCancelServiceTest {
@@ -37,7 +39,7 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor)))
+        val service = LimitOrderCancelService(LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>())))
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.getId() == "3" }

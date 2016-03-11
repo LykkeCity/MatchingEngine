@@ -6,12 +6,16 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.queue.transaction.CashIn
+import com.lykke.matching.engine.queue.transaction.CashOut
+import com.lykke.matching.engine.queue.transaction.Transaction
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.concurrent.BlockingQueue
 
-class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor): AbsractService<ProtocolMessages.CashOperation> {
+class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor, private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
@@ -25,13 +29,19 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}")
         val operation = WalletOperation(
-                clientId=message.clientId,
-                uid=Date().time.toString(),
-                dateTime= Date(message.dateTime),
-                asset=message.assetId,
-                amount= message.amount)
+                clientId = message.clientId,
+                uid = Date().time.toString(),
+                dateTime = Date(message.dateTime),
+                asset = message.assetId,
+                amount = message.amount)
         processWalletOperations(listOf(operation))
-        walletDatabaseAccessor.insertOperations(mapOf(operation.getClientId() to listOf(operation)))
+        walletDatabaseAccessor.insertOperation(operation)
+
+        backendQueue.put(if (operation.amount > 0)
+                CashIn(clientId = operation.getClientId(), Amount = operation.amount, Currency = operation.assetId)
+            else
+                CashOut(clientId = operation.getClientId(), Amount = -operation.amount, Currency = operation.assetId))
+
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
         LOGGER.debug("Cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount} processed")
     }

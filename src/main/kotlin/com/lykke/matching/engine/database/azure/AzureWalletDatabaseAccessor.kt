@@ -9,7 +9,7 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
 import org.apache.log4j.Logger
-import java.util.HashMap
+import java.util.*
 
 
 class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
@@ -23,6 +23,8 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     val assetsTable: CloudTable
 
     private val ASSET_PAIR = "AssetPair"
+    private val PARTITION_KEY = "PartitionKey"
+    private val CLIENT_BALANCE = "ClientBalance"
 
     constructor(balancesConfig: String?, dictsConfig: String?) {
         this.accountTable = getOrCreateTable(balancesConfig!!, "Accounts")
@@ -33,7 +35,8 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
         val result = HashMap<String, MutableMap<String, Double>>()
         try {
-            val partitionQuery = TableQuery.from(Wallet::class.java)
+            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
+            val partitionQuery = TableQuery.from(Wallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
@@ -51,7 +54,8 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
         try {
-            val partitionQuery = TableQuery.from(Wallet::class.java)
+            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
+            val partitionQuery = TableQuery.from(Wallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 result.put(wallet.rowKey, wallet)
@@ -71,13 +75,11 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         }
     }
 
-    override fun insertOperations(operations: Map<String, List<WalletOperation>>) {
+    override fun insertOperation(operation: WalletOperation) {
         try {
-            operations.values.forEach { clientOperations ->
-                batchInsertOrMerge(operationsTable, clientOperations)
-            }
+            operationsTable.execute(TableOperation.insert(operation))
         } catch(e: Exception) {
-            LOGGER.error("Unable to insert operations, size: ${operations.size}", e)
+            LOGGER.error("Unable to insert operation: ${operation.getUid()}", e)
         }
     }
 
