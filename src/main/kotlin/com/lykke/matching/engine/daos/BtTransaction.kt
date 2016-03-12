@@ -6,37 +6,31 @@ import java.util.*
 
 class BtTransaction : TableServiceEntity {
 
-    var clientId: String?
+    var contextData: String? = null
     var created = Date()
     var requestData: String?
 
-    constructor(partitionKey: String?, rowKey: String?, clientId: String? = null, created: Date, requestData: String, clientOrderPairs: List<ClientOrderPair>? = null) : super(partitionKey, rowKey) {
-        this.clientId = clientId
+    constructor(partitionKey: String?, rowKey: String?, created: Date, requestData: String,
+                clientCashOperationPair: ClientCashOperationPair? = null, orders: Orders? = null) : super(partitionKey, rowKey) {
         this.created = created
         this.requestData = requestData
-        if (clientOrderPairs != null) {
-            addClientOrdersIds(clientOrderPairs)
+        if (clientCashOperationPair != null) {
+            addClientCashOperationPair(clientCashOperationPair)
+        }
+        if (orders != null) {
+            addOrders(orders)
         }
     }
 
-    fun loadClientOrderPairs(): MutableList<ClientOrderPair> {
-        var result:MutableList<ClientOrderPair> = ArrayList()
-        if (clientId != null) {
-            result.addAll(Gson().fromJson(clientId, Array<ClientOrderPair>::class.java).asList())
-        }
-
-        return result
+    fun addOrders(orders: Orders) {
+        this.contextData = Gson().toJson(orders)
     }
 
-    fun addClientOrdersIds(clientOrderPairs: List<ClientOrderPair>) {
-        val orders = loadClientOrderPairs()
-        orders.addAll(clientOrderPairs)
-        saveClientOrdersIds(orders)
-    }
-
-    fun saveClientOrdersIds(clientOrderPairs: List<ClientOrderPair>) {
-        this.clientId = Gson().toJson(clientOrderPairs)
+    fun addClientCashOperationPair(clientCashOperationPair: ClientCashOperationPair) {
+        this.contextData = Gson().toJson(clientCashOperationPair)
     }
 }
 
 class ClientOrderPair(val ClientId: String, val OrderId: String)
+class Orders(val MarketOrder: ClientOrderPair, val ClientOrder: ClientOrderPair)
+class ClientCashOperationPair(val ClientId: String, val CashOperationId: String)

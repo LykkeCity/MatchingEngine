@@ -2,7 +2,7 @@ package com.lykke.matching.engine.daos
 
 import com.google.gson.Gson
 import com.microsoft.azure.storage.table.TableServiceEntity
-import java.util.ArrayList
+import java.util.*
 
 class Wallet: TableServiceEntity {
     //partition key: "ClientBalance"
@@ -20,25 +20,25 @@ class Wallet: TableServiceEntity {
 
     fun addBalance(asset: String, amount: Double) {
         val assetBalances = getBalances()
-        var assetBalance = assetBalances.find { it.asset == asset }
+        var assetBalance = assetBalances.find { it.Asset == asset }
         if (assetBalance == null) {
             assetBalance = AssetBalance(asset)
             assetBalances.add(assetBalance)
         }
-        assetBalance.balance += amount
+        assetBalance.Balance += amount
 
         this.balances = Gson().toJson(assetBalances)
     }
 
     fun setBalance(asset: String, amount: Double) {
         val assetBalances = getBalances()
-        var assetBalance = assetBalances.find { it.asset == asset }
+        var assetBalance = assetBalances.find { it.Asset == asset }
         if (assetBalance == null) {
             assetBalance = AssetBalance(asset)
             assetBalances.add(assetBalance)
         }
 
-        assetBalance.balance = amount
+        assetBalance.Balance = amount
 
         this.balances = Gson().toJson(assetBalances)
     }
@@ -48,13 +48,13 @@ class Wallet: TableServiceEntity {
     }
 
     fun getBalance(asset: String): Double {
-        return getAssetBalance(asset).balance
+        return getAssetBalance(asset).Balance
     }
 
     private fun getAssetBalance(asset: String): AssetBalance {
         if (balances != null) {
             val assetsBalances = getBalances()
-            return assetsBalances.find { it.asset == asset } ?: AssetBalance(asset, 0.0)
+            return assetsBalances.find { it.Asset == asset } ?: AssetBalance(asset, 0.0)
         }
 
         return AssetBalance(asset, 0.0)
@@ -73,4 +73,4 @@ class Wallet: TableServiceEntity {
     }
 }
 
-class AssetBalance(var asset: String, var balance: Double = 0.0)
+class AssetBalance(var Asset: String, var Balance: Double = 0.0)

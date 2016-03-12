@@ -1,5 +1,5 @@
 group 'com.lykke.me'
-version '0.0.2'
+version '0.0.3'
 
 buildscript {
     ext.kotlin_version = '1.0.0'

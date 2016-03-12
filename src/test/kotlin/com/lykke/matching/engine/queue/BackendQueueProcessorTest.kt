@@ -1,9 +1,7 @@
 package com.lykke.matching.engine.queue
 
 import com.google.gson.Gson
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.ClientOrderPair
-import com.lykke.matching.engine.daos.WalletCredentials
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
@@ -46,7 +44,7 @@ class BackendQueueProcessorTest {
         val outQueueWriter = TestQueueWriter()
         val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter)
 
-        val cashIn = CashIn(clientId = "Client1", Amount = 500.0, Currency = "USD")
+        val cashIn = CashIn(TransactionId = "11", clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
         processor.processMessage(cashIn)
 
         val cashInData = Gson().fromJson(outQueueWriter.read().replace("CashIn:", ""), CashIn::class.java)
@@ -55,8 +53,7 @@ class BackendQueueProcessorTest {
         assertEquals(500.0,cashInData.Amount)
         assertEquals("TestUSD",cashInData.Currency)
 
-        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == cashInData.TransactionId && it.clientId == "Client1" })
-        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "Client1" && it.rowKey == cashInData.TransactionId && it.clientId == "Client1" })
+        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == cashInData.TransactionId && it.contextData == Gson().toJson(ClientCashOperationPair("Client1", "123")) })
     }
 
     @Test
@@ -65,7 +62,7 @@ class BackendQueueProcessorTest {
         val outQueueWriter = TestQueueWriter()
         val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter)
 
-        val cashOut = CashOut(clientId = "Client1", Amount = 500.0, Currency = "USD")
+        val cashOut = CashOut(TransactionId = "11", clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
         processor.processMessage(cashOut)
 
         val cashOutData = Gson().fromJson(outQueueWriter.read().replace("CashOut:", ""), CashOut::class.java)
@@ -75,8 +72,7 @@ class BackendQueueProcessorTest {
         assertEquals(500.0,cashOutData.Amount)
         assertEquals("TestUSD",cashOutData.Currency)
 
-        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == cashOutData.TransactionId && it.clientId == "Client1" })
-        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "Client1" && it.rowKey == cashOutData.TransactionId && it.clientId == "Client1" })
+        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == cashOutData.TransactionId && it.contextData == Gson().toJson(ClientCashOperationPair("Client1", "123")) })
     }
 
     @Test
@@ -85,9 +81,9 @@ class BackendQueueProcessorTest {
         val outQueueWriter = TestQueueWriter()
         val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter)
 
-        val swap = Swap(clientId1 = "Client1", Amount1 = 500.0, origAsset1 = "USD",
+        val swap = Swap(TransactionId = "11", clientId1 = "Client1", Amount1 = 500.0, origAsset1 = "USD",
                         clientId2 = "Client2", Amount2 = 500.0, origAsset2 = "EUR",
-                        clientOrderPairs = listOf(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2"), ClientOrderPair("Client2", "Order3")))
+                        orders = Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2")))
         processor.processMessage(swap)
 
         val swapData = Gson().fromJson(outQueueWriter.read().replace("Swap:", ""), Swap::class.java)
@@ -100,8 +96,6 @@ class BackendQueueProcessorTest {
         assertEquals("TestEUR",swap.Asset2)
 
         assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == swapData.TransactionId &&
-                it.clientId == Gson().toJson(listOf(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2"), ClientOrderPair("Client2", "Order3"))) })
-        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "Client1" && it.rowKey == swapData.TransactionId && it.clientId == "Client1" })
-        assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "Client2" && it.rowKey == swapData.TransactionId && it.clientId == "Client2" })
+                it.contextData == Gson().toJson(Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2"))) })
     }
 }

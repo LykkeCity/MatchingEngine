@@ -1,8 +1,7 @@
 package com.lykke.matching.engine.daos
 
 import com.google.gson.Gson
-import java.util.ArrayList
-import java.util.Date
+import java.util.*
 
 class MarketOrder: Order {
     //partition key: Asset_Side
@@ -17,7 +16,7 @@ class MarketOrder: Order {
 
     constructor(uid: String, assetPairId: String, clientId: String,
                 price: Double? = null, createdAt: Date, registered: Date, status: String, volume: Double,
-                matchedOrders: String? = null) : super(uid, assetPairId, clientId, createdAt, registered, status, volume) {
+                matchedOrders: String? = null, transactionId: String? = null) : super(uid, assetPairId, clientId, createdAt, registered, status, volume, transactionId) {
         this.price = price
         this.matchedOrders = matchedOrders
     }

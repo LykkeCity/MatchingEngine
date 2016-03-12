@@ -1,8 +1,7 @@
 package com.lykke.matching.engine.daos
 
 import com.google.gson.Gson
-import java.util.ArrayList
-import java.util.Date
+import java.util.*
 
 class LimitOrder: Order {
     //partition key: Asset_Side
@@ -18,7 +17,7 @@ class LimitOrder: Order {
 
     constructor(uid: String, assetPairId: String, clientId: String, lastMatchTime: Date? = null,
                 price: Double, createdAt: Date, registered: Date, status: String, volume: Double,
-                remainingVolume: Double, matchedOrders: String? = null) : super(uid, assetPairId, clientId, createdAt, registered, status, volume) {
+                remainingVolume: Double, matchedOrders: String? = null, transactionId: String? = null) : super(uid, assetPairId, clientId, createdAt, registered, status, volume, transactionId) {
         this.lastMatchTime = lastMatchTime
         this.price = price
         this.remainingVolume = remainingVolume

@@ -3,8 +3,7 @@ package com.lykke.matching.engine.database
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
-import java.util.HashMap
-import java.util.LinkedList
+import java.util.*
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
@@ -26,8 +25,8 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
             val client = balances.getOrPut(wallet.getClientId()) { HashMap<String, Double>() }
             val updatedWallet = this.wallets.getOrPut(wallet.getClientId()) { Wallet( wallet.getClientId() ) }
             wallet.getBalances().forEach {
-                client.put(it.asset, it.balance)
-                updatedWallet.setBalance(it.asset, it.balance)
+                client.put(it.Asset, it.Balance)
+                updatedWallet.setBalance(it.Asset, it.Balance)
             }
         }
     }

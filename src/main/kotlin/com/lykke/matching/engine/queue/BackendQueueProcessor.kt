@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.queue
 
 import com.lykke.matching.engine.daos.BtTransaction
+import com.lykke.matching.engine.daos.ClientCashOperationPair
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
@@ -26,14 +27,14 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
     fun processMessage(operation: Transaction) {
         try {
-            when {
-                operation is CashIn -> {
+            when (operation) {
+                is CashIn -> {
                     processBitcoinCashIn(operation)
                 }
-                operation is CashOut -> {
+                is CashOut -> {
                     processBitcoinCashOut(operation)
                 }
-                operation is Swap -> {
+                is Swap -> {
                     processBitcoinSwap(operation)
                 }
             }
@@ -56,15 +57,14 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
-        operation.TransactionId = UUID.randomUUID().toString()
         operation.MultisigAddress = walletCredentials.multiSig
         operation.Currency = asset.blockChainId
 
         val serialisedData = "CashIn:${operation.toJson()}"
 
         val now = Date()
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = "TransId", rowKey = operation.TransactionId, clientId = operation.clientId, created = now, requestData = serialisedData))
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = operation.clientId, rowKey = operation.TransactionId, clientId = operation.clientId, created = now, requestData = serialisedData))
+        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = "TransId", rowKey = operation.TransactionId,
+                created = now, requestData = serialisedData, clientCashOperationPair = ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
         outQueueWriter.write(serialisedData)
         LOGGER.debug("Wrote CashIn operation to queue [${operation.MultisigAddress}, ${operation.Amount} ${operation.Currency}]")
     }
@@ -83,7 +83,6 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
-        operation.TransactionId = UUID.randomUUID().toString()
         operation.MultisigAddress = walletCredentials.multiSig
         operation.PrivateKey = walletCredentials.privateKey
         operation.Currency = asset.blockChainId
@@ -91,8 +90,8 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         val serialisedData = "CashOut:${operation.toJson()}"
 
         val now = Date()
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = "TransId", rowKey = operation.TransactionId, clientId = operation.clientId, created = now, requestData = serialisedData))
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = operation.clientId, rowKey = operation.TransactionId, clientId = operation.clientId, created = now, requestData = serialisedData))
+        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = "TransId", rowKey = operation.TransactionId,
+                created = now, requestData = serialisedData, clientCashOperationPair = ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
         outQueueWriter.write(serialisedData)
         LOGGER.debug("Wrote CashOut operation to queue [${operation.MultisigAddress}, ${operation.Amount} ${operation.Currency}]")
     }
@@ -122,7 +121,6 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
-        operation.TransactionId = UUID.randomUUID().toString()
         operation.MultisigCustomer1 = walletCredentials1.multiSig
         operation.Asset1 = asset1.blockChainId
         operation.MultisigCustomer2 = walletCredentials2.multiSig
@@ -131,9 +129,8 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         val serialisedData = "Swap:${operation.toJson()}"
 
         val now = Date()
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = "TransId", rowKey = operation.TransactionId, created = now, requestData = serialisedData, clientOrderPairs = operation.clientOrderPairs))
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = operation.clientId1, rowKey = operation.TransactionId, clientId = operation.clientId1, created = now, requestData = serialisedData))
-        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = operation.clientId2, rowKey = operation.TransactionId, clientId = operation.clientId2, created = now, requestData = serialisedData))
+        backOfficeDatabaseAccessor.saveBitcoinTransaction(BtTransaction(partitionKey = "TransId", rowKey = operation.TransactionId,
+                created = now, requestData = serialisedData, orders = operation.orders))
         outQueueWriter.write(serialisedData)
         LOGGER.debug("Wrote Swap operation to queue [${operation.MultisigCustomer1}, ${operation.Amount1} ${operation.Asset1} to ${operation.MultisigCustomer2}, ${operation.Amount2} ${operation.Asset2}]")
     }
