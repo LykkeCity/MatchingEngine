@@ -32,5 +32,5 @@ class BtTransaction : TableServiceEntity {
 }
 
 class ClientOrderPair(val ClientId: String, val OrderId: String)
-class Orders(val MarketOrder: ClientOrderPair, val ClientOrder: ClientOrderPair)
+class Orders(val MarketOrder: ClientOrderPair, val LimitOrder: ClientOrderPair)
 class ClientCashOperationPair(val ClientId: String, val CashOperationId: String)
