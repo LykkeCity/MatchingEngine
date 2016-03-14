@@ -1,17 +1,17 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import org.apache.log4j.Logger
-import java.util.Comparator
 import java.util.Date
 import java.util.HashMap
-import java.util.PriorityQueue
+import java.util.LinkedList
+import java.util.concurrent.ConcurrentHashMap
 
 class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
                         private val cashOperationService: CashOperationService): AbsractService<ProtocolMessages.LimitOrder> {
@@ -19,17 +19,11 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderService::class.java.name)
 
-        val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
-            o1.price.compareTo(o2.price)
-        })
-
-        val BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
-            o2.price.compareTo(o1.price)
-        })
-
         private val ORDER_ID = "OrderId"
     }
-    private val limitOrdersQueues = HashMap<String, PriorityQueue<LimitOrder>>()
+
+    //asset -> side -> orderBook
+    private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, LimitOrder>()
 
     init {
@@ -67,10 +61,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     }
 
     fun addToOrderBook(order: LimitOrder) {
-        val orderBook = limitOrdersQueues.getOrPut(Order.buildPartitionKey(order.assetPairId, order.getSide())) {
-            PriorityQueue<LimitOrder>(if (order.isBuySide()) LimitOrderService.BUY_COMPARATOR else LimitOrderService.SELL_COMPARATOR)
-        }
-        orderBook.add(order)
+        val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
+        orderBook.addOrder(order)
         limitOrdersMap.put(order.getId(), order)
     }
 
@@ -107,10 +99,20 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
             return
         }
 
-        getOrderBook(Order.buildPartitionKey(order.assetPairId, order.getSide()))?.remove(order)
+        getOrderBook(order.assetPairId)?.removeOrder(order)
         order.status = Cancelled.name
         limitOrderDatabaseAccessor.addLimitOrderDone(order)
         limitOrderDatabaseAccessor.deleteLimitOrders(listOf(order))
         LOGGER.debug("Order $uid cancelled")
+    }
+
+    fun buildMarketProfile(): List<BestPrice> {
+        val result = LinkedList<BestPrice>()
+
+        limitOrdersQueues.values.forEach { book ->
+            result.add(BestPrice(book.assetId, ask = book.getAskPrice(), bid = book.getBidPrice()))
+        }
+
+        return result
     }
 }

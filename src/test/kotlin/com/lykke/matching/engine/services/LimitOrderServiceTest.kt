@@ -13,6 +13,7 @@ import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -72,7 +73,7 @@ class LimitOrderServiceTest {
     }
 }
 
-fun buildLimitOrder(uid: String = Date().time.toString(),
+fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                     assetId: String = "EURUSD",
                     clientId: String = "Client1",
                     lastMatchTime: Date? = null,

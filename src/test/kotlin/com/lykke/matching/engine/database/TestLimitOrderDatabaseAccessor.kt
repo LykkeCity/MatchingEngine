@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database
 
+import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
 import java.text.SimpleDateFormat
 import java.util.ArrayList
@@ -11,6 +12,7 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
 
     val orders = ArrayList<LimitOrder>()
     val ordersDone = ArrayList<LimitOrder>()
+    var bestPrices: List<BestPrice> = ArrayList()
 
     override fun loadLimitOrders(): List<LimitOrder> {
         return orders
@@ -55,5 +57,9 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
     fun clear() = {
         orders.clear()
         ordersDone.clear()
+    }
+
+    override fun updateBestPrices(prices: List<BestPrice>) {
+        bestPrices = prices
     }
 }

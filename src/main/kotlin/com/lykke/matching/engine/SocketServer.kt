@@ -32,7 +32,7 @@ class SocketServer {
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
         val dbConfig = loadConfig(config)["Db"] as Map<String, String>
-        val messageProcessor = MessageProcessor(dbConfig, messagesQueue)
+        val messageProcessor = MessageProcessor(config, dbConfig, messagesQueue)
         messageProcessor.start()
 
         val port = config.getInt("server.port") ?: DEFAULT_PORT

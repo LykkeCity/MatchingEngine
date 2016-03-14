@@ -17,8 +17,11 @@ import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.LimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
 import org.apache.log4j.Logger
+import java.util.Properties
+import java.util.Timer
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.fixedRateTimer
 
 class MessageProcessor: Thread {
 
@@ -42,14 +45,16 @@ class MessageProcessor: Thread {
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
 
-    constructor(config: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
+    val bestPriceBuilder: Timer
+
+    constructor(config: Properties, dbConfig: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config["BalancesInfoConnString"]!!, config["DictsConnString"]!!)
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["ALimitOrdersConnString"]!!, config["HLimitOrdersConnString"]!!)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config["HMarketOrdersConnString"]!!, config["HTradesConnString"]!!)
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config["ClientPersonalInfoConnString"]!!, config["BitCoinQueueConnectionString"]!!, config["DictsConnString"]!!)
-        this.azureQueueWriter = AzureQueueWriter(config["BitCoinQueueConnectionString"]!!)
+        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
+        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(dbConfig["ClientPersonalInfoConnString"]!!, dbConfig["BitCoinQueueConnectionString"]!!, dbConfig["DictsConnString"]!!)
+        this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
         this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService)
@@ -57,6 +62,13 @@ class MessageProcessor: Thread {
         this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter)
+
+        val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
+        this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {
+            limitOrderDatabaseAccessor.updateBestPrices(limitOrderService.buildMarketProfile())
+            LOGGER.debug("Wrote market profile")
+        }
+
     }
 
     override fun run() {

@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.ClientOrderPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
-import com.lykke.matching.engine.daos.Order.Companion.buildPartitionKey
 import com.lykke.matching.engine.daos.Orders
 import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.daos.WalletOperation
@@ -23,9 +22,9 @@ import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashSet
 import java.util.LinkedList
-import java.util.PriorityQueue
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.PriorityBlockingQueue
 
 class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
                          private val limitOrderService: LimitOrderService,
@@ -63,7 +62,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             return
         }
 
-        val orderBook = limitOrderService.getOrderBook(buildPartitionKey(order.assetPairId, order.getSide().oppositeSide()))
+        val orderBook = limitOrderService.getOrderBook(order.assetPairId)?.getOrderBook(!order.isBuySide())
         if (orderBook == null) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
@@ -80,7 +79,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         return ProtocolMessages.MarketOrder.parseFrom(array)
     }
 
-    private fun match(marketOrder: MarketOrder, orderBook: PriorityQueue<LimitOrder>) {
+    private fun match(marketOrder: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>) {
         var remainingVolume = marketOrder.getAbsVolume()
         val matchedOrders = LinkedList<LimitOrder>()
         val cancelledLimitOrders = HashSet<LimitOrder>()

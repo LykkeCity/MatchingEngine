@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.azure
 
+import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -19,6 +20,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     val limitOrdersTable: CloudTable
     val limitOrdersDoneTable: CloudTable
+    val bestPricesTable: CloudTable
 
     val DATE_FORMAT = {
         val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -26,9 +28,10 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         format
     }.invoke()
 
-    constructor(activeOrdersConfig: String, historyOrdersConfig: String) {
+    constructor(activeOrdersConfig: String, historyOrdersConfig: String, liquidityConfig: String) {
         this.limitOrdersTable = getOrCreateTable(activeOrdersConfig, "LimitOrders")
         this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig, "LimitOrdersDone")
+        this.bestPricesTable = getOrCreateTable(liquidityConfig, "MarketProfile")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {
@@ -96,6 +99,14 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             }
         } catch (e: Exception) {
             LOGGER.error("Unable to add limit done order ${order.getId()}", e)
+        }
+    }
+
+    override fun updateBestPrices(prices: List<BestPrice>) {
+        try {
+            batchInsertOrMerge(bestPricesTable, prices)
+        } catch(e: Exception) {
+            LOGGER.error("Unable to update best prices, size: ${prices.size}", e)
         }
     }
 }
