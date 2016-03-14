@@ -45,11 +45,11 @@ class MessageProcessor: Thread {
     constructor(config: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config["BalancesInfoConnString"], config["DictsConnString"])
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["ALimitOrdersConnString"], config["HLimitOrdersConnString"])
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config["HMarketOrdersConnString"], config["HTradesConnString"])
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config["ClientPersonalInfoConnString"], config["BitCoinQueueConnectionString"], config["DictsConnString"])
-        this.azureQueueWriter = AzureQueueWriter(config["BitCoinQueueConnectionString"])
+        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config["BalancesInfoConnString"]!!, config["DictsConnString"]!!)
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config["ALimitOrdersConnString"]!!, config["HLimitOrdersConnString"]!!)
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config["HMarketOrdersConnString"]!!, config["HTradesConnString"]!!)
+        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config["ClientPersonalInfoConnString"]!!, config["BitCoinQueueConnectionString"]!!, config["DictsConnString"]!!)
+        this.azureQueueWriter = AzureQueueWriter(config["BitCoinQueueConnectionString"]!!)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
         this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService)

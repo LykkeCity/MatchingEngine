@@ -19,6 +19,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -115,17 +116,17 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        val marketOrder = testDatabaseAccessor.getLastOrder()
+        val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
         assertEquals(Matched.name, marketOrder.status)
         assertEquals(1.5, marketOrder.price)
-        assertEquals(1, marketOrder.loadMatchedOrdersList().size)
+        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
 
         assertEquals(0, testLimitDatabaseAccessor.orders.size)
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
         assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, limitOrder.loadMatchedOrders().size)
+        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
 
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
         assertNotNull(testLimitDatabaseAccessor.ordersDone.find { it.partitionKey == "OrderId"})
@@ -165,17 +166,17 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        val marketOrder = testDatabaseAccessor.getLastOrder()
+        val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
         assertEquals(Matched.name, marketOrder.status)
         assertEquals(1.41, marketOrder.price)
-        assertEquals(2, marketOrder.loadMatchedOrdersList().size)
+        assertEquals(2, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
 
         assertEquals(1, testLimitDatabaseAccessor.orders.size)
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
         assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, limitOrder.loadMatchedOrders().size)
+        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
 
         assertEquals(100.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
         assertEquals(-150.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
@@ -221,7 +222,7 @@ class MarketOrderServiceTest {
     }
 }
 
-    fun buildMarketOrder(rowKey: String = Date().time.toString(),
+    fun buildMarketOrder(rowKey: String = UUID.randomUUID().toString(),
                          assetId: String = "EURUSD",
                          clientId: String = "Client1",
                          registered: Date = Date(),

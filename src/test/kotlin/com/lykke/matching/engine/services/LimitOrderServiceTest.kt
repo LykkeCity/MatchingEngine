@@ -90,6 +90,5 @@ fun buildLimitOrder(uid: String = Date().time.toString(),
                 registered = Date(),
                 status = status,
                 volume = volume,
-                remainingVolume = volume,
-                matchedOrders = null
+                remainingVolume = volume
         )

@@ -2,7 +2,7 @@ package com.lykke.matching.engine.daos
 
 import com.google.gson.Gson
 import com.microsoft.azure.storage.table.TableServiceEntity
-import java.util.*
+import java.util.ArrayList
 
 class Wallet: TableServiceEntity {
     //partition key: "ClientBalance"

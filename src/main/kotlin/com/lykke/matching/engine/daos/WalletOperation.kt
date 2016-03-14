@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.daos
 
 import com.microsoft.azure.storage.table.TableServiceEntity
-import java.util.*
+import java.util.Date
 
 class WalletOperation: TableServiceEntity {
     //partition key: Client Id

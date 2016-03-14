@@ -9,7 +9,7 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
 import org.apache.log4j.Logger
-import java.util.*
+import java.util.HashMap
 
 
 class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
@@ -26,10 +26,10 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     private val PARTITION_KEY = "PartitionKey"
     private val CLIENT_BALANCE = "ClientBalance"
 
-    constructor(balancesConfig: String?, dictsConfig: String?) {
-        this.accountTable = getOrCreateTable(balancesConfig!!, "Accounts")
-        this.operationsTable = getOrCreateTable(balancesConfig!!, "OperationsCash")
-        this.assetsTable = getOrCreateTable(dictsConfig!!, "Dictionaries")
+    constructor(balancesConfig: String, dictsConfig: String) {
+        this.accountTable = getOrCreateTable(balancesConfig, "Accounts")
+        this.operationsTable = getOrCreateTable(balancesConfig, "OperationsCash")
+        this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
 
     override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {

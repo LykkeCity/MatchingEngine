@@ -15,8 +15,7 @@ class AzureQueueWriter: QueueWriter {
 
     private val outQueue: CloudQueue
 
-    constructor(queueConnectionString: String?) {
-
+    constructor(queueConnectionString: String) {
         val storageAccount = CloudStorageAccount.parse(queueConnectionString)
         val queueClient = storageAccount.createCloudQueueClient()
         outQueue = queueClient.getQueueReference("indata")

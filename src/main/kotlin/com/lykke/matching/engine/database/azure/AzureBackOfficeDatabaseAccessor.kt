@@ -22,10 +22,10 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
     private val WALLET = "Wallet"
     private val ASSET = "Asset"
 
-    constructor(сlientPersonalInfoString: String?, bitCoinQueueString: String?, dictsConfig: String?) {
-        this.walletCredentialsTable = getOrCreateTable(сlientPersonalInfoString!!, "WalletCredentials")
-        this.bitcoinTransactionTable = getOrCreateTable(bitCoinQueueString!!, "BitCoinTransactions")
-        this.assetsTable = getOrCreateTable(dictsConfig!!, "Dictionaries")
+    constructor(сlientPersonalInfoString: String, bitCoinQueueString: String, dictsConfig: String) {
+        this.walletCredentialsTable = getOrCreateTable(сlientPersonalInfoString, "WalletCredentials")
+        this.bitcoinTransactionTable = getOrCreateTable(bitCoinQueueString, "BitCoinTransactions")
+        this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
 
     override fun loadWalletCredentials(clientId: String): WalletCredentials? {

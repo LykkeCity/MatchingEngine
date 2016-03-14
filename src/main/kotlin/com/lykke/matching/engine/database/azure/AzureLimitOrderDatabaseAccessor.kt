@@ -26,9 +26,9 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         format
     }.invoke()
 
-    constructor(activeOrdersConfig: String?, historyOrdersConfig: String?) {
-        this.limitOrdersTable = getOrCreateTable(activeOrdersConfig!!, "LimitOrders")
-        this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig!!, "LimitOrdersDone")
+    constructor(activeOrdersConfig: String, historyOrdersConfig: String) {
+        this.limitOrdersTable = getOrCreateTable(activeOrdersConfig, "LimitOrders")
+        this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig, "LimitOrdersDone")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -19,6 +20,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     }
 
     val marketOrdersTable: CloudTable
+    val matchingDataTable: CloudTable
     val tradesTable: CloudTable
 
     val DATE_FORMAT = {
@@ -27,9 +29,10 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
         format
     }.invoke()
 
-    constructor(marketConfig: String?, tradesConfig: String?) {
-        this.marketOrdersTable = getOrCreateTable(marketConfig!!, "MarketOrders")
-        this.tradesTable = getOrCreateTable(tradesConfig!!, "Trades")
+    constructor(marketConfig: String, tradesConfig: String) {
+        this.marketOrdersTable = getOrCreateTable(marketConfig, "MarketOrders")
+        this.matchingDataTable = getOrCreateTable(marketConfig, "MatchingData")
+        this.tradesTable = getOrCreateTable(tradesConfig, "Trades")
     }
 
     override fun addMarketOrder(order: MarketOrder) {
@@ -83,6 +86,22 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to add trades, size: ${trades.size}", e)
+        }
+    }
+
+    override fun addMatchingData(data: List<MatchingData>) {
+        val dataByPartition = HashMap<String, MutableList<MatchingData>>()
+        data.forEach { curData ->
+            val partition = dataByPartition.getOrPut(curData.partitionKey) { LinkedList<MatchingData>() }
+            partition.add(curData)
+        }
+
+        try {
+            dataByPartition.values.forEach {
+                batchInsertOrMerge(matchingDataTable, it)
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to add matching data, size: ${data.size}", e)
         }
     }
 }

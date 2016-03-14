@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.Trade
 import java.text.SimpleDateFormat
 import java.util.ArrayList
@@ -12,6 +13,7 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
 
     val orders = ArrayList<MarketOrder>()
     val trades = ArrayList<Trade>()
+    val matchingData = ArrayList<MatchingData>()
 
     override fun addMarketOrder(order: MarketOrder) {
         orders.add(order)
@@ -26,7 +28,6 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
                 registered = Date(),
                 status = order.status,
                 volume = order.volume,
-                matchedOrders = order.matchedOrders,
                 price = order.price
         )
         orderClientTimeKey.partitionKey = order.clientId
@@ -42,10 +43,15 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
         this.trades.addAll(trades)
     }
 
+    override fun addMatchingData(data: List<MatchingData>) {
+        this.matchingData.addAll(data)
+    }
+
     fun getLastOrder() = orders.last()
 
     fun clear() = {
         orders.clear()
         trades.clear()
+        matchingData.clear()
     }
 }

@@ -43,7 +43,6 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
                 status = order.status,
                 volume = order.volume,
                 remainingVolume = order.volume,
-                matchedOrders = order.matchedOrders,
                 lastMatchTime = order.lastMatchTime
         )
         orderClientTimeKey.partitionKey = order.clientId

@@ -5,7 +5,8 @@ import com.lykke.matching.engine.order.OrderSide
 import com.lykke.matching.engine.order.OrderSide.Buy
 import com.lykke.matching.engine.order.OrderSide.Sell
 import com.microsoft.azure.storage.table.TableServiceEntity
-import java.util.*
+import java.util.ArrayList
+import java.util.Date
 
 abstract class Order: TableServiceEntity {
     //partition key: client_id

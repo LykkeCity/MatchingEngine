@@ -10,7 +10,10 @@ import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.apache.log4j.Logger
-import java.util.*
+import java.util.Date
+import java.util.HashMap
+import java.util.LinkedList
+import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor, private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.CashOperation> {

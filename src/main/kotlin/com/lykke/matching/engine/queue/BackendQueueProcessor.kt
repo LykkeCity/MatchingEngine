@@ -8,7 +8,7 @@ import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.apache.log4j.Logger
-import java.util.*
+import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
