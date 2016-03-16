@@ -26,6 +26,9 @@ class Wallet: TableServiceEntity {
             assetBalances.add(assetBalance)
         }
         assetBalance.Balance += amount
+        if (assetBalance.Balance == 0.0) {
+            assetBalances.remove(assetBalance)
+        }
 
         this.balances = Gson().toJson(assetBalances)
     }

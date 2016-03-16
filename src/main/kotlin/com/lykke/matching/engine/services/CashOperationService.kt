@@ -31,7 +31,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         LOGGER.debug("Processing cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}")
         val operation = WalletOperation(
                 clientId = message.clientId,
-                uid = Date().time.toString(),
+                uid = UUID.randomUUID().toString(),
                 dateTime = Date(message.dateTime),
                 asset = message.assetId,
                 amount = message.amount,

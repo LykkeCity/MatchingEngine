@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.ClientOrderPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
+import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Orders
 import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.daos.WalletOperation
@@ -45,7 +46,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}")
 
         val order = MarketOrder(
-                uid = Date().time.toString(),
+                uid = UUID.randomUUID().toString(),
                 assetPairId = message.assetPairId,
                 clientId = message.clientId,
                 createdAt = Date(message.timestamp),
@@ -126,6 +127,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         val bitcoinTransactions = LinkedList<Transaction>()
         val transactionIds = LinkedList<String>()
         val matchingData = LinkedList<MatchingData>()
+        val orderTradesLinks = LinkedList<OrderTradesLink>()
 
         matchedOrders.forEach { limitOrder ->
             val volume = if (remainingVolume >= limitOrder.remainingVolume) limitOrder.remainingVolume else remainingVolume
@@ -134,27 +136,39 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             val isMarketBuy = marketOrder.isBuySide()
             val oppositeSideVolume = limitOrder.price * volume
 
-            marketTrades.add(Trade(partitionKey = marketOrder.clientId, rowKey = UUID.randomUUID().toString(),
+            var uid = UUID.randomUUID().toString()
+            marketTrades.add(Trade(partitionKey = marketOrder.clientId, rowKey = uid,
                     assetId = assetPair.baseAssetId, dateTime = now, limitOrderId = limitOrder.getId(),
                     marketOrderId = marketOrder.getId(), volume = if (isMarketBuy) volume else -volume))
+            orderTradesLinks.add(OrderTradesLink(orderId = marketOrder.getId(), tradeId = uid))
+            orderTradesLinks.add(OrderTradesLink(orderId = limitOrder.getId(), tradeId = uid))
             cashMovements.add(WalletOperation(clientId = marketOrder.clientId, uid = UUID.randomUUID().toString(),
                     asset = assetPair.baseAssetId, dateTime = now, amount = if (isMarketBuy) volume else -volume))
 
-            marketTrades.add(Trade(partitionKey = marketOrder.clientId, rowKey = UUID.randomUUID().toString(),
+            uid = UUID.randomUUID().toString()
+            marketTrades.add(Trade(partitionKey = marketOrder.clientId, rowKey = uid,
                     assetId = assetPair.quotingAssetId, dateTime = now, limitOrderId = limitOrder.getId(),
                     marketOrderId = marketOrder.getId(), volume = if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume))
+            orderTradesLinks.add(OrderTradesLink(orderId = marketOrder.getId(), tradeId = uid))
+            orderTradesLinks.add(OrderTradesLink(orderId = limitOrder.getId(), tradeId = uid))
             cashMovements.add(WalletOperation(clientId = marketOrder.clientId, uid = UUID.randomUUID().toString(),
                     asset = assetPair.quotingAssetId, dateTime = now, amount = if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume))
 
-            limitTrades.add(Trade(partitionKey = limitOrder.clientId, rowKey = UUID.randomUUID().toString(),
+            uid = UUID.randomUUID().toString()
+            limitTrades.add(Trade(partitionKey = limitOrder.clientId, rowKey = uid,
                     assetId = assetPair.baseAssetId, dateTime = now, limitOrderId = limitOrder.getId(),
                     marketOrderId = marketOrder.getId(), volume = if (isMarketBuy) -volume else volume))
+            orderTradesLinks.add(OrderTradesLink(orderId = marketOrder.getId(), tradeId = uid))
+            orderTradesLinks.add(OrderTradesLink(orderId = limitOrder.getId(), tradeId = uid))
             cashMovements.add(WalletOperation(clientId = limitOrder.clientId, uid = UUID.randomUUID().toString(),
                     asset = assetPair.baseAssetId, dateTime = now, amount = if (isMarketBuy) -volume else volume))
 
-            limitTrades.add(Trade(partitionKey = limitOrder.clientId, rowKey = UUID.randomUUID().toString(),
+            uid = UUID.randomUUID().toString()
+            limitTrades.add(Trade(partitionKey = limitOrder.clientId, rowKey = uid,
                     assetId = assetPair.quotingAssetId, dateTime = now, limitOrderId = limitOrder.getId(),
                     marketOrderId = marketOrder.getId(), volume = if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume))
+            orderTradesLinks.add(OrderTradesLink(orderId = marketOrder.getId(), tradeId = uid))
+            orderTradesLinks.add(OrderTradesLink(orderId = limitOrder.getId(), tradeId = uid))
             cashMovements.add(WalletOperation(clientId = limitOrder.clientId, uid = UUID.randomUUID().toString(),
                     asset = assetPair.quotingAssetId, dateTime = now, amount = if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume))
 
@@ -190,6 +204,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         marketOrderDatabaseAccessor.addTrades(marketTrades)
         marketOrderDatabaseAccessor.addTrades(limitTrades)
         marketOrderDatabaseAccessor.addMatchingData(matchingData)
+        marketOrderDatabaseAccessor.addOrderTradesLinks(orderTradesLinks)
 
         cashOperationService.processWalletOperations(cashMovements)
 

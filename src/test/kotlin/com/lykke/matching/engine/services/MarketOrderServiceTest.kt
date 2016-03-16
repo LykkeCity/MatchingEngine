@@ -120,6 +120,7 @@ class MarketOrderServiceTest {
         assertEquals(Matched.name, marketOrder.status)
         assertEquals(1.5, marketOrder.price)
         assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
+        assertEquals(8, testDatabaseAccessor.orderTradesLinks.size)
 
         assertEquals(0, testLimitDatabaseAccessor.orders.size)
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
@@ -170,6 +171,7 @@ class MarketOrderServiceTest {
         assertEquals(Matched.name, marketOrder.status)
         assertEquals(1.41, marketOrder.price)
         assertEquals(2, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
+        assertEquals(16, testDatabaseAccessor.orderTradesLinks.size)
 
         assertEquals(1, testLimitDatabaseAccessor.orders.size)
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)

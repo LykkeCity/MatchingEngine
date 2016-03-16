@@ -11,6 +11,7 @@ import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
@@ -39,7 +40,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}, price: ${message.price}")
 
         val order = LimitOrder(
-                uid = Date().time.toString(),
+                uid = UUID.randomUUID().toString(),
                 assetPairId = message.assetPairId,
                 clientId = message.clientId,
                 price = message.price,

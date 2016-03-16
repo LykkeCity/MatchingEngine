@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
+import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -21,6 +22,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
 
     val marketOrdersTable: CloudTable
     val matchingDataTable: CloudTable
+    val orderTradesLinksTable: CloudTable
     val tradesTable: CloudTable
 
     val DATE_FORMAT = {
@@ -32,6 +34,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     constructor(marketConfig: String, tradesConfig: String) {
         this.marketOrdersTable = getOrCreateTable(marketConfig, "MarketOrders")
         this.matchingDataTable = getOrCreateTable(marketConfig, "MatchingData")
+        this.orderTradesLinksTable = getOrCreateTable(marketConfig, "OrderTradesLinks")
         this.tradesTable = getOrCreateTable(tradesConfig, "Trades")
     }
 
@@ -102,6 +105,22 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to add matching data, size: ${data.size}", e)
+        }
+    }
+
+    override fun addOrderTradesLinks(links: List<OrderTradesLink>) {
+        val linksByPartition = HashMap<String, MutableList<OrderTradesLink>>()
+        links.forEach { curLink ->
+            val partition = linksByPartition.getOrPut(curLink.partitionKey) { LinkedList<OrderTradesLink>() }
+            partition.add(curLink)
+        }
+
+        try {
+            linksByPartition.values.forEach {
+                batchInsertOrMerge(orderTradesLinksTable, it)
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to add order trades links, size: ${links.size}", e)
         }
     }
 }
