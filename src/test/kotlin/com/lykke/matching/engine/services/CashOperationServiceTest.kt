@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 
 class CashOperationServiceTest {
@@ -65,6 +66,33 @@ class CashOperationServiceTest {
     }
 
     @Test
+    fun testResendCashIn() {
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
+        var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+        assertNotNull(balance)
+        assertEquals(150.0, balance!!, DELTA)
+
+        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
+        assertNotNull(operation)
+        assertEquals(50.0, operation!!.amount, DELTA)
+
+        val externalOperation = testDatabaseAccessor.loadExternalCashOperation("Client1", "TestId")
+        assertNotNull(externalOperation)
+
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
+        balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+        assertNotNull(balance)
+        assertEquals(150.0, balance!!, DELTA)
+
+        val cashInTransaction = transactionQueue.peek() as CashIn
+        assertNotNull(cashInTransaction)
+        assertEquals("Client1", cashInTransaction.clientId)
+        assertEquals(50.0, cashInTransaction.Amount, DELTA)
+        assertEquals("Asset1", cashInTransaction.Currency)
+    }
+
+    @Test
     fun testAddNewAsset() {
         val service = CashOperationService(testDatabaseAccessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))
@@ -92,12 +120,14 @@ class CashOperationServiceTest {
         assertEquals(100.0, operation!!.amount, DELTA)
     }
 
-    private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
+    private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString()): MessageWrapper {
         return MessageWrapper(MessageType.UPDATE_BALANCE, ProtocolMessages.CashOperation.newBuilder()
                 .setUid(123)
                 .setClientId(clientId)
                 .setAssetId(assetId)
                 .setAmount(amount)
-                .setDateTime(123).build().toByteArray(), null)
+                .setDateTime(123)
+                .setSendToBitcoin(true)
+                .setBussinesId(bussinesId).build().toByteArray(), null)
     }
 }

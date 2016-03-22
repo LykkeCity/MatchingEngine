@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
@@ -29,6 +30,15 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}")
+
+        val externalCashOperation = walletDatabaseAccessor.loadExternalCashOperation(message.clientId, message.bussinesId)
+        if (externalCashOperation != null) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
+                    .setRecordId(externalCashOperation.cashOperationId).build())
+            LOGGER.debug("Cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount} already processed")
+            return
+        }
+
         val operation = WalletOperation(
                 clientId = message.clientId,
                 uid = UUID.randomUUID().toString(),
@@ -39,13 +49,20 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         processWalletOperations(listOf(operation))
         walletDatabaseAccessor.insertOperation(operation)
 
+        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.getClientId(), message.bussinesId, operation.getUid()))
+
+
         val cashOperation = if (operation.amount > 0)
             CashIn(operation.transactionId, clientId = operation.getClientId(), Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
         else
             CashOut(operation.transactionId, clientId = operation.getClientId(), Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
-        backendQueue.put(cashOperation)
 
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+        if (message.sendToBitcoin) {
+            backendQueue.put(cashOperation)
+        }
+
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
+                .setRecordId(operation.getUid()).build())
         LOGGER.debug("Cash operation for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount} processed")
     }
 

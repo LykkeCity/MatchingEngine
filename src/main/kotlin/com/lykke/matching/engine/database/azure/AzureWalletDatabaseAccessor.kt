@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
@@ -20,6 +21,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     val accountTable: CloudTable
     val operationsTable: CloudTable
+    val externalOperationsTable: CloudTable
     val assetsTable: CloudTable
 
     private val ASSET_PAIR = "AssetPair"
@@ -29,6 +31,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     constructor(balancesConfig: String, dictsConfig: String) {
         this.accountTable = getOrCreateTable(balancesConfig, "Accounts")
         this.operationsTable = getOrCreateTable(balancesConfig, "OperationsCash")
+        this.externalOperationsTable = getOrCreateTable(balancesConfig, "ExternalOperationsCash")
         this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
 
@@ -73,6 +76,26 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         } catch(e: Exception) {
             LOGGER.error("Unable to update accounts, size: ${wallets.size}", e)
         }
+    }
+
+
+    override fun insertExternalCashOperation(operation: ExternalCashOperation) {
+        try {
+            externalOperationsTable.execute(TableOperation.insert(operation))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to insert external operation: ${operation.rowKey}", e)
+        }
+    }
+
+    override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
+        try {
+            val retrieveOperation = TableOperation.retrieve(clientId, operationId, ExternalCashOperation::class.java)
+            val operation = externalOperationsTable.execute(retrieveOperation).getResultAsType<ExternalCashOperation>()
+            return operation
+        } catch(e: Exception) {
+            LOGGER.error("Unable to check if operation processed: $clientId, $operationId", e)
+        }
+        return null
     }
 
     override fun insertOperation(operation: WalletOperation) {

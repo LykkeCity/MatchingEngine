@@ -5,6 +5,8 @@ option java_outer_classname = "ProtocolMessages";
 
 message Response {
     required int64 uid = 1;
+    optional string bussinesId = 2;
+    optional string recordId = 3;
 }
 
 message CashOperation {
@@ -13,6 +15,8 @@ message CashOperation {
     required int64 dateTime = 3;
     required string assetId = 4;
     required double amount = 5;
+    required string bussinesId = 6;
+    required bool sendToBitcoin = 7;
 }
 
 message LimitOrder {

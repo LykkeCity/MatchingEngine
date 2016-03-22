@@ -68,7 +68,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
             LOGGER.debug("No liquidity for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
             return
         }
 

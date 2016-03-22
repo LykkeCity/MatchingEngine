@@ -1,15 +1,18 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
-import java.util.*
+import java.util.HashMap
+import java.util.LinkedList
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     val balances = HashMap<String, MutableMap<String, Double>>()
     val wallets = HashMap<String, Wallet>()
     val operations = LinkedList<WalletOperation>()
+    val externalOperations = LinkedList<ExternalCashOperation>()
     val assetPairs = HashMap<String, AssetPair>()
 
     override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
@@ -42,6 +45,14 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         return null
     }
 
+    override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
+        return externalOperations.find { it.partitionKey == clientId && it.rowKey == operationId }
+    }
+
+    override fun insertExternalCashOperation(operation: ExternalCashOperation) {
+        this.externalOperations.add(operation)
+    }
+
     override fun insertOperation(operation: WalletOperation) {
         this.operations.add(operation)
     }
@@ -62,6 +73,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         balances.clear()
         wallets.clear()
         operations.clear()
+        externalOperations.clear()
         assetPairs.clear()
     }
 
