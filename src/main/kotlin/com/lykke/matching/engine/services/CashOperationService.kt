@@ -111,4 +111,14 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
         walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
     }
+
+    fun updateBalance(clientId: String, assetId: String, balance: Double) {
+        val client = balances.getOrPut(clientId) { HashMap<String, Double>() }
+        client.put(assetId, balance)
+
+        val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
+        wallet.setBalance(assetId, balance)
+
+        walletDatabaseAccessor.insertOrUpdateWallet(wallet)
+    }
 }

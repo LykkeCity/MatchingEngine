@@ -40,3 +40,10 @@ message LimitOrderCancel {
     required int64 uid = 1;
     required int64 limitOrderId = 2;
 }
+
+message BalanceUpdate {
+    required int64 uid = 1;
+    required string clientId = 2;
+    required string assetId = 3;
+    required double amount = 4;
+}

@@ -12,6 +12,7 @@ import com.lykke.matching.engine.queue.BackendQueueProcessor
 import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
 import com.lykke.matching.engine.queue.transaction.Transaction
+import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashOperationService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.LimitOrderService
@@ -41,6 +42,7 @@ class MessageProcessor: Thread {
     val limitOrderService: LimitOrderService
     val marketOrderService: MarketOrderService
     val limitOrderCancelService: LimitOrderCancelService
+    val balanceUpdateService: BalanceUpdateService
 
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
@@ -60,6 +62,7 @@ class MessageProcessor: Thread {
         this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService)
         this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue)
         this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
+        this.balanceUpdateService = BalanceUpdateService(cashOperationService)
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter)
 
@@ -82,7 +85,7 @@ class MessageProcessor: Thread {
         try {
             when (message.type) {
             //MessageType.PING -> already processed by client handler
-                MessageType.UPDATE_BALANCE -> {
+                MessageType.CASH_OPERATION -> {
                     cashOperationService.processMessage(message)
                 }
                 MessageType.LIMIT_ORDER -> {
@@ -93,6 +96,9 @@ class MessageProcessor: Thread {
                 }
                 MessageType.LIMIT_ORDER_CANCEL -> {
                     limitOrderCancelService.processMessage(message)
+                }
+                MessageType.BALANCE_UPDATE -> {
+                    balanceUpdateService.processMessage(message)
                 }
                 else -> {
                     LOGGER.error("Unknown message type: ${message.type}")

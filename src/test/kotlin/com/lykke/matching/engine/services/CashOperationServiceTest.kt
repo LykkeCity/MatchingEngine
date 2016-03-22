@@ -120,8 +120,21 @@ class CashOperationServiceTest {
         assertEquals(100.0, operation!!.amount, DELTA)
     }
 
+    @Test
+    fun testUpdateBalance() {
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val updateService = BalanceUpdateService(service)
+
+        updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
+
+        val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+        assertNotNull(balance)
+        assertEquals(999.0, balance!!, DELTA)
+
+    }
+
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString()): MessageWrapper {
-        return MessageWrapper(MessageType.UPDATE_BALANCE, ProtocolMessages.CashOperation.newBuilder()
+        return MessageWrapper(MessageType.CASH_OPERATION, ProtocolMessages.CashOperation.newBuilder()
                 .setUid(123)
                 .setClientId(clientId)
                 .setAssetId(assetId)
@@ -129,5 +142,13 @@ class CashOperationServiceTest {
                 .setDateTime(123)
                 .setSendToBitcoin(true)
                 .setBussinesId(bussinesId).build().toByteArray(), null)
+    }
+
+    private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
+        return MessageWrapper(MessageType.BALANCE_UPDATE, ProtocolMessages.BalanceUpdate.newBuilder()
+                .setUid(123)
+                .setClientId(clientId)
+                .setAssetId(assetId)
+                .setAmount(amount).build().toByteArray(), null)
     }
 }

@@ -5,10 +5,11 @@ import java.util.HashMap
 enum class MessageType (val type: Byte){
     RESPONSE(0)
     ,PING(1)
-    ,UPDATE_BALANCE(2)
+    ,CASH_OPERATION(2)
     ,LIMIT_ORDER(3)
     ,MARKET_ORDER(4)
     ,LIMIT_ORDER_CANCEL(5)
+    ,BALANCE_UPDATE(6)
     ;
 
 
