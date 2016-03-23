@@ -26,6 +26,7 @@ message LimitOrder {
     required string assetPairId = 4;
     required double volume = 5;
     required double price = 6;
+    optional bool cancelAllPreviousLimitOrders = 7;
 }
 
 message MarketOrder {

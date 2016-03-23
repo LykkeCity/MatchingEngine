@@ -8,6 +8,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import org.apache.log4j.Logger
+import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
@@ -26,6 +27,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     //asset -> side -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, LimitOrder>()
+    private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
 
     init {
         val orders = limitOrderDatabaseAccessor.loadLimitOrders()
@@ -38,6 +40,17 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}, price: ${message.price}")
+
+        if (message.cancelAllPreviousLimitOrders) {
+            val ordersToRemove = LinkedList<LimitOrder>()
+            clientLimitOrdersMap[message.clientId]?.forEach { limitOrder ->
+                if (limitOrder.assetPairId == message.assetPairId && limitOrder.isBuySide() == message.volume > 0) {
+                    cancelLimitOrder(limitOrder.getId())
+                    ordersToRemove.add(limitOrder)
+                }
+            }
+            clientLimitOrdersMap[message.clientId]?.removeAll(ordersToRemove)
+        }
 
         val order = LimitOrder(
                 uid = UUID.randomUUID().toString(),
@@ -65,6 +78,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
         orderBook.addOrder(order)
         limitOrdersMap.put(order.getId(), order)
+        clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
     }
 
     fun updateLimitOrder(order: LimitOrder) {

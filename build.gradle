@@ -2,7 +2,7 @@ group 'com.lykke.me'
 version '0.0.3'
 
 buildscript {
-    ext.kotlin_version = '1.0.0'
+    ext.kotlin_version = '1.0.1'
     repositories {
         mavenCentral()
     }
@@ -23,7 +23,6 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile 'log4j:log4j:1.2.17'
     compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'
     compile 'com.microsoft.azure:azure-storage:4.0.0'
@@ -32,13 +31,6 @@ dependencies {
     testCompile  'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
-
-//test.testClassesDir = project.tasks.compileTestKotlin.destinationDir
-//
-//task wrapper(type: Wrapper) {
-//    gradleVersion="2.7"
-//}
-
 
 protobuf {
     protoc {

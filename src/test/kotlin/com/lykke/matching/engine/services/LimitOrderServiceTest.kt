@@ -15,6 +15,7 @@ import org.junit.Test
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -26,14 +27,8 @@ class LimitOrderServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", price = 100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", price = 200.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "4", price = 400.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
+        testDatabaseAccessor.clear()
+        testWalletDatabaseAcessor.clear()
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF"))
@@ -52,6 +47,19 @@ class LimitOrderServiceTest {
     }
 
     @Test
+    fun testCancelPrevAndAddLimitOrder() {
+        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
+        assertEquals(2, testDatabaseAccessor.orders.size)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0), true))
+        assertEquals(1, testDatabaseAccessor.orders.size)
+        val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 300.0 }
+        assertNotNull(order)
+    }
+
+    @Test
     fun testBalanceCheck() {
         val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()))
 
@@ -62,14 +70,14 @@ class LimitOrderServiceTest {
         assertFalse { service.isEnoughFunds(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 501.0), 501.0) }
     }
 
-    private fun buildLimitOrderWrapper(order: LimitOrder): MessageWrapper {
+    private fun buildLimitOrderWrapper(order: LimitOrder, cancel: Boolean = false): MessageWrapper {
         return MessageWrapper(MessageType.LIMIT_ORDER, ProtocolMessages.LimitOrder.newBuilder()
                 .setUid(Date().time)
                 .setTimestamp(order.createdAt.time)
                 .setClientId(order.clientId)
                 .setAssetPairId(order.assetPairId)
                 .setVolume(order.volume)
-                .setPrice(order.price).build().toByteArray(), null)
+                .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel).build().toByteArray(), null)
     }
 }
 

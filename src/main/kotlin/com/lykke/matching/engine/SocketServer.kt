@@ -9,7 +9,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 
-class SocketServer {
+class SocketServer(val config: Properties): Runnable {
 
     companion object {
         val LOGGER = Logger.getLogger(SocketServer::class.java.name)
@@ -20,14 +20,8 @@ class SocketServer {
 
     val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
 
-    val config: Properties
 
-    constructor(config: Properties) {
-        this.config = config
-    }
-
-
-    fun run() {
+    override fun run() {
         val maxConnections = config.getInt("server.max.connections") ?: DEFAULT_MAX_CONNECTIONS
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
