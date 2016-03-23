@@ -1,7 +1,12 @@
 package com.lykke.matching.engine.queue
 
 import com.google.gson.Gson
-import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.ClientCashOperationPair
+import com.lykke.matching.engine.daos.ClientOrderPair
+import com.lykke.matching.engine.daos.ClientTradePair
+import com.lykke.matching.engine.daos.Orders
+import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
@@ -83,7 +88,9 @@ class BackendQueueProcessorTest {
 
         val swap = Swap(TransactionId = "11", clientId1 = "Client1", Amount1 = 500.0, origAsset1 = "USD",
                         clientId2 = "Client2", Amount2 = 500.0, origAsset2 = "EUR",
-                        orders = Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2")))
+                        orders = Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2"),
+                        arrayOf(ClientTradePair("Client1", "uid1"), ClientTradePair("Client1", "uid2"),
+                                ClientTradePair("Client2", "uid3"), ClientTradePair("Client2", "uid4"))))
         processor.processMessage(swap)
 
         val swapData = Gson().fromJson(outQueueWriter.read().replace("Swap:", ""), Swap::class.java)
@@ -96,6 +103,8 @@ class BackendQueueProcessorTest {
         assertEquals("TestEUR",swap.Asset2)
 
         assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == swapData.TransactionId &&
-                it.contextData == Gson().toJson(Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2"))) })
+                it.contextData == Gson().toJson(Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client1", "Order2"),
+                        arrayOf(ClientTradePair("Client1", "uid1"), ClientTradePair("Client1", "uid2"),
+                        ClientTradePair("Client2", "uid3"), ClientTradePair("Client2", "uid4")))) })
     }
 }
