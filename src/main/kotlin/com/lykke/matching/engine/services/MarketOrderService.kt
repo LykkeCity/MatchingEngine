@@ -133,8 +133,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         matchedOrders.forEach { limitOrder ->
             val volume = if (remainingVolume >= limitOrder.remainingVolume) limitOrder.remainingVolume else remainingVolume
-            matchingData.add(MatchingData(masterOrderId = marketOrder.getId(), matchedOrderId = limitOrder.getId(), volume = limitOrder.remainingVolume))
-            matchingData.add(MatchingData(masterOrderId = limitOrder.getId(), matchedOrderId = marketOrder.getId(), volume = limitOrder.remainingVolume))
+            matchingData.add(MatchingData(masterOrderId = marketOrder.getId(), matchedOrderId = limitOrder.getId(), volume = volume))
+            matchingData.add(MatchingData(masterOrderId = limitOrder.getId(), matchedOrderId = marketOrder.getId(), volume = volume))
             val isMarketBuy = marketOrder.isBuySide()
             val oppositeSideVolume = limitOrder.price * volume
 
