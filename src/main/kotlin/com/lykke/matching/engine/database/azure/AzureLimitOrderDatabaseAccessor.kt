@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.BestPrice
+import com.lykke.matching.engine.daos.Candle
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -21,6 +22,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     val limitOrdersTable: CloudTable
     val limitOrdersDoneTable: CloudTable
     val bestPricesTable: CloudTable
+    val candlesTable: CloudTable
 
     val DATE_FORMAT = {
         val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -32,6 +34,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         this.limitOrdersTable = getOrCreateTable(activeOrdersConfig, "LimitOrders")
         this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig, "LimitOrdersDone")
         this.bestPricesTable = getOrCreateTable(liquidityConfig, "MarketProfile")
+        this.candlesTable = getOrCreateTable(liquidityConfig, "FeedHistory")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {
@@ -107,6 +110,14 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             batchInsertOrMerge(bestPricesTable, prices)
         } catch(e: Exception) {
             LOGGER.error("Unable to update best prices, size: ${prices.size}", e)
+        }
+    }
+
+    override fun writeCandle(candle: Candle) {
+        try {
+            candlesTable.execute(TableOperation.insertOrMerge(candle))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to add candle ${candle.partitionKey} ${candle.rowKey}", e)
         }
     }
 }

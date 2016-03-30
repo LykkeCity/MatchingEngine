@@ -125,7 +125,11 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         val result = LinkedList<BestPrice>()
 
         limitOrdersQueues.values.forEach { book ->
-            result.add(BestPrice(book.assetId, ask = book.getAskPrice(), bid = book.getBidPrice()))
+            val askPrice = book.getAskPrice()
+            val bidPrice = book.getBidPrice()
+            if (askPrice > 0 && bidPrice > 0) {
+                result.add(BestPrice(book.assetId, ask = askPrice, bid = bidPrice))
+            }
         }
 
         return result

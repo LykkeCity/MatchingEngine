@@ -21,9 +21,11 @@ class LimitOrder: Order {
         this.remainingVolume = remainingVolume
     }
 
+    fun getAbsRemainingVolume(): Double {
+        return Math.abs(remainingVolume)
+    }
+
     override fun toString(): String{
         return "LimitOrder(id=$rowKey, assetPair='$assetPairId', clientId='$clientId', price=$price, volume=$volume, remainingVolume=$remainingVolume, status='$status', createdAt=$createdAt, registered=$registered, lastMatchTime=$lastMatchTime)"
     }
-
-
 }

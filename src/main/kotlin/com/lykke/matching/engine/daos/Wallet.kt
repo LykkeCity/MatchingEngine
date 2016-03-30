@@ -12,10 +12,9 @@ class Wallet: TableServiceEntity {
 
     constructor() {}
 
-    constructor(clientId: String, balances: String? = null) {
+    constructor(clientId: String) {
         this.partitionKey = "ClientBalance"
         this.rowKey = clientId
-        this.balances = balances
     }
 
     fun addBalance(asset: String, amount: Double) {

@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.messages
 
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
@@ -17,7 +18,9 @@ import com.lykke.matching.engine.services.CashOperationService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.LimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.TradesInfoService
 import org.apache.log4j.Logger
+import java.time.LocalDateTime
 import java.util.Properties
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
@@ -32,6 +35,7 @@ class MessageProcessor: Thread {
 
     val messagesQueue: BlockingQueue<MessageWrapper>
     val bitcoinQueue: BlockingQueue<Transaction>
+    val tradesInfoQueue: BlockingQueue<TradeInfo>
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -43,15 +47,18 @@ class MessageProcessor: Thread {
     val marketOrderService: MarketOrderService
     val limitOrderCancelService: LimitOrderCancelService
     val balanceUpdateService: BalanceUpdateService
+    val tradesInfoService: TradesInfoService
 
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
 
     val bestPriceBuilder: Timer
+    val candlesBuilder: Timer
 
     constructor(config: Properties, dbConfig: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
+        this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
@@ -60,9 +67,10 @@ class MessageProcessor: Thread {
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
         this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService)
-        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue)
+        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue, tradesInfoQueue)
         this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
+        this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter)
 
@@ -72,10 +80,17 @@ class MessageProcessor: Thread {
             LOGGER.debug("Wrote market profile")
         }
 
+        var time = LocalDateTime.now()
+//        time = time.plusMinutes(1).minusSeconds((time.second - 5).toLong()).minusNanos(time.nano.toLong())
+        val candleSaverInterval = config.getProperty("candle.saver.interval")!!.toLong()
+        this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = candleSaverInterval) {
+            tradesInfoService.saveCandles()
+        }
     }
 
     override fun run() {
         backendQueueProcessor.start()
+        tradesInfoService.start()
         while (true) {
             processMessage(messagesQueue.take())
         }

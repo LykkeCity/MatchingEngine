@@ -37,20 +37,23 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
         val result = HashMap<String, MutableMap<String, Double>>()
+        var balancesCount = 0
         try {
             val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
             val partitionQuery = TableQuery.from(Wallet::class.java).where(partitionFilter)
+
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
                 wallet.getBalances().forEach { balance ->
                     map.put(balance.Asset, balance.Balance)
+                    balancesCount++
                 }
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load balances", e)
         }
-
+        LOGGER.info("Loaded $balancesCount balances for ${result.size} clients")
         return result
     }
 

@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Orders
 import com.lykke.matching.engine.daos.Trade
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.greaterThan
@@ -32,7 +33,8 @@ import java.util.concurrent.PriorityBlockingQueue
 class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
                          private val limitOrderService: LimitOrderService,
                          private val cashOperationService: CashOperationService,
-                         private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.MarketOrder> {
+                         private val backendQueue: BlockingQueue<Transaction>,
+                         private val tradesInfoQueue: BlockingQueue<TradeInfo>): AbsractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -90,7 +92,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         var totalPrice = 0.0
         while (remainingVolume.greaterThan(0.0) && orderBook.size > 0) {
             val limitOrder = orderBook.poll()
-            val volume = if (remainingVolume >= limitOrder.remainingVolume) limitOrder.remainingVolume else remainingVolume
+            val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
+            val volume = if (remainingVolume >= limitRemainingVolume) limitRemainingVolume else remainingVolume
             if (limitOrderService.isEnoughFunds(limitOrder, volume)) {
                 matchedOrders.add(limitOrder)
                 remainingVolume -= volume
@@ -130,9 +133,11 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         val transactionIds = LinkedList<String>()
         val matchingData = LinkedList<MatchingData>()
         val orderTradesLinks = LinkedList<OrderTradesLink>()
+        val tradesInfo = LinkedList<TradeInfo>()
 
         matchedOrders.forEach { limitOrder ->
-            val volume = if (remainingVolume >= limitOrder.remainingVolume) limitOrder.remainingVolume else remainingVolume
+            val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
+            val volume = if (remainingVolume >= limitRemainingVolume) limitRemainingVolume else remainingVolume
             matchingData.add(MatchingData(masterOrderId = marketOrder.getId(), matchedOrderId = limitOrder.getId(), volume = volume))
             matchingData.add(MatchingData(masterOrderId = limitOrder.getId(), matchedOrderId = marketOrder.getId(), volume = volume))
             val isMarketBuy = marketOrder.isBuySide()
@@ -180,12 +185,12 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
                     asset = assetPair.quotingAssetId, dateTime = now, amount = if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
-            if (remainingVolume >= limitOrder.remainingVolume) {
+            if (remainingVolume >= limitRemainingVolume) {
                 limitOrder.remainingVolume = 0.0
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                limitOrder.remainingVolume -= remainingVolume
+                limitOrder.remainingVolume -= if (limitOrder.isBuySide()) remainingVolume else -remainingVolume
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
             }
@@ -194,10 +199,11 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             limitOrder.lastMatchTime = now
             limitOrder.addTransactionIds(listOf(transactionId))
             transactionIds.add(transactionId)
+            tradesInfo.add(TradeInfo(assetPair = assetPair.getAssetPairId(), isBuy = marketOrder.isBuySide(), price = limitOrder.price, date = now))
 
             bitcoinTransactions.add(Swap(TransactionId = transactionId,
-                                         clientId1 = marketOrder.clientId, Amount1 = volume, origAsset1 = if (isMarketBuy) assetPair.quotingAssetId else assetPair.baseAssetId,
-                                         clientId2 = limitOrder.clientId, Amount2 = oppositeSideVolume, origAsset2 = if (isMarketBuy) assetPair.baseAssetId else assetPair.quotingAssetId,
+                                         clientId1 = marketOrder.clientId, Amount1 = if (isMarketBuy) oppositeSideVolume else volume, origAsset1 = if (isMarketBuy) assetPair.quotingAssetId else assetPair.baseAssetId,
+                                         clientId2 = limitOrder.clientId, Amount2 = if (isMarketBuy) volume else oppositeSideVolume, origAsset2 = if (isMarketBuy) assetPair.baseAssetId else assetPair.quotingAssetId,
                                          orders = Orders(ClientOrderPair(marketOrder.clientId, marketOrder.getId()), ClientOrderPair(limitOrder.clientId, limitOrder.getId()),
                                                  clientTradePairs.toTypedArray())))
         }
@@ -229,6 +235,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         }
 
         bitcoinTransactions.forEach { backendQueue.put(it) }
+        tradesInfo.forEach { tradesInfoQueue.put(it) }
 
         LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume} matched, price: ${marketOrder.price}")
     }

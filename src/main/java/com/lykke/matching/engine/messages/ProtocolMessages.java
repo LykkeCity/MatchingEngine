@@ -52,37 +52,29 @@ public final class ProtocolMessages {
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.Response}
    */
-  public static final class Response extends
+  public  static final class Response extends
       com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.Response)
       ResponseOrBuilder {
     // Use Response.newBuilder() to construct.
-    private Response(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Response(com.google.protobuf.GeneratedMessage.Builder builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private Response(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final Response defaultInstance;
-    public static Response getDefaultInstance() {
-      return defaultInstance;
+    private Response() {
+      uid_ = 0L;
+      bussinesId_ = "";
+      recordId_ = "";
     }
 
-    public Response getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
     public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    getUnknownFields() {
       return this.unknownFields;
     }
     private Response(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
       int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -121,10 +113,11 @@ public final class ProtocolMessages {
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
+        throw new RuntimeException(e.setUnfinishedMessage(this));
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -140,21 +133,6 @@ public final class ProtocolMessages {
       return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_Response_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               com.lykke.matching.engine.messages.ProtocolMessages.Response.class, com.lykke.matching.engine.messages.ProtocolMessages.Response.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<Response> PARSER =
-        new com.google.protobuf.AbstractParser<Response>() {
-      public Response parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new Response(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<Response> getParserForType() {
-      return PARSER;
     }
 
     private int bitField0_;
@@ -174,7 +152,7 @@ public final class ProtocolMessages {
     }
 
     public static final int BUSSINESID_FIELD_NUMBER = 2;
-    private java.lang.Object bussinesId_;
+    private volatile java.lang.Object bussinesId_;
     /**
      * <code>optional string bussinesId = 2;</code>
      */
@@ -216,7 +194,7 @@ public final class ProtocolMessages {
     }
 
     public static final int RECORDID_FIELD_NUMBER = 3;
-    private java.lang.Object recordId_;
+    private volatile java.lang.Object recordId_;
     /**
      * <code>optional string recordId = 3;</code>
      */
@@ -257,11 +235,6 @@ public final class ProtocolMessages {
       }
     }
 
-    private void initFields() {
-      uid_ = 0L;
-      bussinesId_ = "";
-      recordId_ = "";
-    }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -278,7 +251,6 @@ public final class ProtocolMessages {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, uid_);
       }
@@ -288,7 +260,7 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(3, getRecordIdBytes());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
     private int memoizedSerializedSize = -1;
@@ -309,18 +281,12 @@ public final class ProtocolMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(3, getRecordIdBytes());
       }
-      size += getUnknownFields().getSerializedSize();
+      size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
 
     private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
     public static com.lykke.matching.engine.messages.ProtocolMessages.Response parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -374,12 +340,17 @@ public final class ProtocolMessages {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.Response prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.Response prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
@@ -420,10 +391,6 @@ public final class ProtocolMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -433,10 +400,6 @@ public final class ProtocolMessages {
         recordId_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
       }
 
       public com.google.protobuf.Descriptors.Descriptor
@@ -501,13 +464,13 @@ public final class ProtocolMessages {
           recordId_ = other.recordId_;
           onChanged();
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         return true;
@@ -719,12 +682,44 @@ public final class ProtocolMessages {
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.Response)
     }
 
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.Response)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.Response DEFAULT_INSTANCE;
     static {
-      defaultInstance = new Response(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.Response();
     }
 
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.Response)
+    public static com.lykke.matching.engine.messages.ProtocolMessages.Response getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<Response> PARSER =
+        new com.google.protobuf.AbstractParser<Response>() {
+      public Response parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new Response(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Response> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.Response getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
   public interface CashOperationOrBuilder extends
@@ -812,37 +807,33 @@ public final class ProtocolMessages {
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.CashOperation}
    */
-  public static final class CashOperation extends
+  public  static final class CashOperation extends
       com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.CashOperation)
       CashOperationOrBuilder {
     // Use CashOperation.newBuilder() to construct.
-    private CashOperation(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private CashOperation(com.google.protobuf.GeneratedMessage.Builder builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private CashOperation(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final CashOperation defaultInstance;
-    public static CashOperation getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public CashOperation getDefaultInstanceForType() {
-      return defaultInstance;
+    private CashOperation() {
+      uid_ = 0L;
+      clientId_ = "";
+      dateTime_ = 0L;
+      assetId_ = "";
+      amount_ = 0D;
+      bussinesId_ = "";
+      sendToBitcoin_ = false;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
     public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    getUnknownFields() {
       return this.unknownFields;
     }
     private CashOperation(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
       int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -902,10 +893,11 @@ public final class ProtocolMessages {
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
+        throw new RuntimeException(e.setUnfinishedMessage(this));
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -921,21 +913,6 @@ public final class ProtocolMessages {
       return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_CashOperation_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               com.lykke.matching.engine.messages.ProtocolMessages.CashOperation.class, com.lykke.matching.engine.messages.ProtocolMessages.CashOperation.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<CashOperation> PARSER =
-        new com.google.protobuf.AbstractParser<CashOperation>() {
-      public CashOperation parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new CashOperation(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<CashOperation> getParserForType() {
-      return PARSER;
     }
 
     private int bitField0_;
@@ -955,7 +932,7 @@ public final class ProtocolMessages {
     }
 
     public static final int CLIENTID_FIELD_NUMBER = 2;
-    private java.lang.Object clientId_;
+    private volatile java.lang.Object clientId_;
     /**
      * <code>required string clientId = 2;</code>
      */
@@ -1012,7 +989,7 @@ public final class ProtocolMessages {
     }
 
     public static final int ASSETID_FIELD_NUMBER = 4;
-    private java.lang.Object assetId_;
+    private volatile java.lang.Object assetId_;
     /**
      * <code>required string assetId = 4;</code>
      */
@@ -1069,7 +1046,7 @@ public final class ProtocolMessages {
     }
 
     public static final int BUSSINESID_FIELD_NUMBER = 6;
-    private java.lang.Object bussinesId_;
+    private volatile java.lang.Object bussinesId_;
     /**
      * <code>required string bussinesId = 6;</code>
      */
@@ -1125,15 +1102,6 @@ public final class ProtocolMessages {
       return sendToBitcoin_;
     }
 
-    private void initFields() {
-      uid_ = 0L;
-      clientId_ = "";
-      dateTime_ = 0L;
-      assetId_ = "";
-      amount_ = 0D;
-      bussinesId_ = "";
-      sendToBitcoin_ = false;
-    }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -1174,7 +1142,6 @@ public final class ProtocolMessages {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, uid_);
       }
@@ -1196,7 +1163,7 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeBool(7, sendToBitcoin_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
     private int memoizedSerializedSize = -1;
@@ -1233,18 +1200,12 @@ public final class ProtocolMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(7, sendToBitcoin_);
       }
-      size += getUnknownFields().getSerializedSize();
+      size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
 
     private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
     public static com.lykke.matching.engine.messages.ProtocolMessages.CashOperation parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1298,12 +1259,17 @@ public final class ProtocolMessages {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.CashOperation prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.CashOperation prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
@@ -1344,10 +1310,6 @@ public final class ProtocolMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -1365,10 +1327,6 @@ public final class ProtocolMessages {
         sendToBitcoin_ = false;
         bitField0_ = (bitField0_ & ~0x00000040);
         return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
       }
 
       public com.google.protobuf.Descriptors.Descriptor
@@ -1463,37 +1421,31 @@ public final class ProtocolMessages {
         if (other.hasSendToBitcoin()) {
           setSendToBitcoin(other.getSendToBitcoin());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         if (!hasClientId()) {
-          
           return false;
         }
         if (!hasDateTime()) {
-          
           return false;
         }
         if (!hasAssetId()) {
-          
           return false;
         }
         if (!hasAmount()) {
-          
           return false;
         }
         if (!hasBussinesId()) {
-          
           return false;
         }
         if (!hasSendToBitcoin()) {
-          
           return false;
         }
         return true;
@@ -1877,12 +1829,44 @@ public final class ProtocolMessages {
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.CashOperation)
     }
 
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.CashOperation)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.CashOperation DEFAULT_INSTANCE;
     static {
-      defaultInstance = new CashOperation(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.CashOperation();
     }
 
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.CashOperation)
+    public static com.lykke.matching.engine.messages.ProtocolMessages.CashOperation getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<CashOperation> PARSER =
+        new com.google.protobuf.AbstractParser<CashOperation>() {
+      public CashOperation parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new CashOperation(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<CashOperation> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.CashOperation getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
   public interface LimitOrderOrBuilder extends
@@ -1965,37 +1949,33 @@ public final class ProtocolMessages {
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrder}
    */
-  public static final class LimitOrder extends
+  public  static final class LimitOrder extends
       com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.LimitOrder)
       LimitOrderOrBuilder {
     // Use LimitOrder.newBuilder() to construct.
-    private LimitOrder(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private LimitOrder(com.google.protobuf.GeneratedMessage.Builder builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private LimitOrder(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final LimitOrder defaultInstance;
-    public static LimitOrder getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public LimitOrder getDefaultInstanceForType() {
-      return defaultInstance;
+    private LimitOrder() {
+      uid_ = 0L;
+      timestamp_ = 0L;
+      clientId_ = "";
+      assetPairId_ = "";
+      volume_ = 0D;
+      price_ = 0D;
+      cancelAllPreviousLimitOrders_ = false;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
     public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    getUnknownFields() {
       return this.unknownFields;
     }
     private LimitOrder(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
       int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -2054,10 +2034,11 @@ public final class ProtocolMessages {
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
+        throw new RuntimeException(e.setUnfinishedMessage(this));
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -2073,21 +2054,6 @@ public final class ProtocolMessages {
       return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrder_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder.class, com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<LimitOrder> PARSER =
-        new com.google.protobuf.AbstractParser<LimitOrder>() {
-      public LimitOrder parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new LimitOrder(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<LimitOrder> getParserForType() {
-      return PARSER;
     }
 
     private int bitField0_;
@@ -2122,7 +2088,7 @@ public final class ProtocolMessages {
     }
 
     public static final int CLIENTID_FIELD_NUMBER = 3;
-    private java.lang.Object clientId_;
+    private volatile java.lang.Object clientId_;
     /**
      * <code>required string clientId = 3;</code>
      */
@@ -2164,7 +2130,7 @@ public final class ProtocolMessages {
     }
 
     public static final int ASSETPAIRID_FIELD_NUMBER = 4;
-    private java.lang.Object assetPairId_;
+    private volatile java.lang.Object assetPairId_;
     /**
      * <code>required string assetPairId = 4;</code>
      */
@@ -2250,15 +2216,6 @@ public final class ProtocolMessages {
       return cancelAllPreviousLimitOrders_;
     }
 
-    private void initFields() {
-      uid_ = 0L;
-      timestamp_ = 0L;
-      clientId_ = "";
-      assetPairId_ = "";
-      volume_ = 0D;
-      price_ = 0D;
-      cancelAllPreviousLimitOrders_ = false;
-    }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -2295,7 +2252,6 @@ public final class ProtocolMessages {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, uid_);
       }
@@ -2317,7 +2273,7 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeBool(7, cancelAllPreviousLimitOrders_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
     private int memoizedSerializedSize = -1;
@@ -2354,18 +2310,12 @@ public final class ProtocolMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(7, cancelAllPreviousLimitOrders_);
       }
-      size += getUnknownFields().getSerializedSize();
+      size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
 
     private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
     public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -2419,12 +2369,17 @@ public final class ProtocolMessages {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
@@ -2465,10 +2420,6 @@ public final class ProtocolMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -2486,10 +2437,6 @@ public final class ProtocolMessages {
         cancelAllPreviousLimitOrders_ = false;
         bitField0_ = (bitField0_ & ~0x00000040);
         return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
       }
 
       public com.google.protobuf.Descriptors.Descriptor
@@ -2582,33 +2529,28 @@ public final class ProtocolMessages {
         if (other.hasCancelAllPreviousLimitOrders()) {
           setCancelAllPreviousLimitOrders(other.getCancelAllPreviousLimitOrders());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         if (!hasTimestamp()) {
-          
           return false;
         }
         if (!hasClientId()) {
-          
           return false;
         }
         if (!hasAssetPairId()) {
-          
           return false;
         }
         if (!hasVolume()) {
-          
           return false;
         }
         if (!hasPrice()) {
-          
           return false;
         }
         return true;
@@ -2948,12 +2890,44 @@ public final class ProtocolMessages {
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.LimitOrder)
     }
 
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.LimitOrder)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder DEFAULT_INSTANCE;
     static {
-      defaultInstance = new LimitOrder(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder();
     }
 
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.LimitOrder)
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<LimitOrder> PARSER =
+        new com.google.protobuf.AbstractParser<LimitOrder>() {
+      public LimitOrder parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new LimitOrder(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<LimitOrder> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrder getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
   public interface MarketOrderOrBuilder extends
@@ -3018,37 +2992,31 @@ public final class ProtocolMessages {
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MarketOrder}
    */
-  public static final class MarketOrder extends
+  public  static final class MarketOrder extends
       com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.MarketOrder)
       MarketOrderOrBuilder {
     // Use MarketOrder.newBuilder() to construct.
-    private MarketOrder(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private MarketOrder(com.google.protobuf.GeneratedMessage.Builder builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private MarketOrder(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final MarketOrder defaultInstance;
-    public static MarketOrder getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public MarketOrder getDefaultInstanceForType() {
-      return defaultInstance;
+    private MarketOrder() {
+      uid_ = 0L;
+      timestamp_ = 0L;
+      clientId_ = "";
+      assetPairId_ = "";
+      volume_ = 0D;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
     public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    getUnknownFields() {
       return this.unknownFields;
     }
     private MarketOrder(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
       int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -3097,10 +3065,11 @@ public final class ProtocolMessages {
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
+        throw new RuntimeException(e.setUnfinishedMessage(this));
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -3116,21 +3085,6 @@ public final class ProtocolMessages {
       return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MarketOrder_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder.class, com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<MarketOrder> PARSER =
-        new com.google.protobuf.AbstractParser<MarketOrder>() {
-      public MarketOrder parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new MarketOrder(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<MarketOrder> getParserForType() {
-      return PARSER;
     }
 
     private int bitField0_;
@@ -3165,7 +3119,7 @@ public final class ProtocolMessages {
     }
 
     public static final int CLIENTID_FIELD_NUMBER = 3;
-    private java.lang.Object clientId_;
+    private volatile java.lang.Object clientId_;
     /**
      * <code>required string clientId = 3;</code>
      */
@@ -3207,7 +3161,7 @@ public final class ProtocolMessages {
     }
 
     public static final int ASSETPAIRID_FIELD_NUMBER = 4;
-    private java.lang.Object assetPairId_;
+    private volatile java.lang.Object assetPairId_;
     /**
      * <code>required string assetPairId = 4;</code>
      */
@@ -3263,13 +3217,6 @@ public final class ProtocolMessages {
       return volume_;
     }
 
-    private void initFields() {
-      uid_ = 0L;
-      timestamp_ = 0L;
-      clientId_ = "";
-      assetPairId_ = "";
-      volume_ = 0D;
-    }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -3302,7 +3249,6 @@ public final class ProtocolMessages {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, uid_);
       }
@@ -3318,7 +3264,7 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeDouble(5, volume_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
     private int memoizedSerializedSize = -1;
@@ -3347,18 +3293,12 @@ public final class ProtocolMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(5, volume_);
       }
-      size += getUnknownFields().getSerializedSize();
+      size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
 
     private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
     public static com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -3412,12 +3352,17 @@ public final class ProtocolMessages {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
@@ -3458,10 +3403,6 @@ public final class ProtocolMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -3475,10 +3416,6 @@ public final class ProtocolMessages {
         volume_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000010);
         return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
       }
 
       public com.google.protobuf.Descriptors.Descriptor
@@ -3557,29 +3494,25 @@ public final class ProtocolMessages {
         if (other.hasVolume()) {
           setVolume(other.getVolume());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         if (!hasTimestamp()) {
-          
           return false;
         }
         if (!hasClientId()) {
-          
           return false;
         }
         if (!hasAssetPairId()) {
-          
           return false;
         }
         if (!hasVolume()) {
-          
           return false;
         }
         return true;
@@ -3855,12 +3788,44 @@ public final class ProtocolMessages {
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MarketOrder)
     }
 
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.MarketOrder)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder DEFAULT_INSTANCE;
     static {
-      defaultInstance = new MarketOrder(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder();
     }
 
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.MarketOrder)
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<MarketOrder> PARSER =
+        new com.google.protobuf.AbstractParser<MarketOrder>() {
+      public MarketOrder parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new MarketOrder(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<MarketOrder> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.MarketOrder getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
   public interface LimitOrderCancelOrBuilder extends
@@ -3888,37 +3853,28 @@ public final class ProtocolMessages {
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderCancel}
    */
-  public static final class LimitOrderCancel extends
+  public  static final class LimitOrderCancel extends
       com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.LimitOrderCancel)
       LimitOrderCancelOrBuilder {
     // Use LimitOrderCancel.newBuilder() to construct.
-    private LimitOrderCancel(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private LimitOrderCancel(com.google.protobuf.GeneratedMessage.Builder builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private LimitOrderCancel(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final LimitOrderCancel defaultInstance;
-    public static LimitOrderCancel getDefaultInstance() {
-      return defaultInstance;
+    private LimitOrderCancel() {
+      uid_ = 0L;
+      limitOrderId_ = 0L;
     }
 
-    public LimitOrderCancel getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
     public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    getUnknownFields() {
       return this.unknownFields;
     }
     private LimitOrderCancel(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
       int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -3950,10 +3906,11 @@ public final class ProtocolMessages {
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
+        throw new RuntimeException(e.setUnfinishedMessage(this));
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -3969,21 +3926,6 @@ public final class ProtocolMessages {
       return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel.class, com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<LimitOrderCancel> PARSER =
-        new com.google.protobuf.AbstractParser<LimitOrderCancel>() {
-      public LimitOrderCancel parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new LimitOrderCancel(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<LimitOrderCancel> getParserForType() {
-      return PARSER;
     }
 
     private int bitField0_;
@@ -4017,10 +3959,6 @@ public final class ProtocolMessages {
       return limitOrderId_;
     }
 
-    private void initFields() {
-      uid_ = 0L;
-      limitOrderId_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -4041,14 +3979,13 @@ public final class ProtocolMessages {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, uid_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt64(2, limitOrderId_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
     private int memoizedSerializedSize = -1;
@@ -4065,18 +4002,12 @@ public final class ProtocolMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(2, limitOrderId_);
       }
-      size += getUnknownFields().getSerializedSize();
+      size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
 
     private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
     public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -4130,12 +4061,17 @@ public final class ProtocolMessages {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
@@ -4176,10 +4112,6 @@ public final class ProtocolMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -4187,10 +4119,6 @@ public final class ProtocolMessages {
         limitOrderId_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
       }
 
       public com.google.protobuf.Descriptors.Descriptor
@@ -4244,17 +4172,16 @@ public final class ProtocolMessages {
         if (other.hasLimitOrderId()) {
           setLimitOrderId(other.getLimitOrderId());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         if (!hasLimitOrderId()) {
-          
           return false;
         }
         return true;
@@ -4346,12 +4273,44 @@ public final class ProtocolMessages {
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.LimitOrderCancel)
     }
 
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.LimitOrderCancel)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel DEFAULT_INSTANCE;
     static {
-      defaultInstance = new LimitOrderCancel(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel();
     }
 
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.LimitOrderCancel)
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<LimitOrderCancel> PARSER =
+        new com.google.protobuf.AbstractParser<LimitOrderCancel>() {
+      public LimitOrderCancel parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new LimitOrderCancel(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<LimitOrderCancel> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderCancel getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
   public interface BalanceUpdateOrBuilder extends
@@ -4407,37 +4366,30 @@ public final class ProtocolMessages {
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.BalanceUpdate}
    */
-  public static final class BalanceUpdate extends
+  public  static final class BalanceUpdate extends
       com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.BalanceUpdate)
       BalanceUpdateOrBuilder {
     // Use BalanceUpdate.newBuilder() to construct.
-    private BalanceUpdate(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private BalanceUpdate(com.google.protobuf.GeneratedMessage.Builder builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private BalanceUpdate(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final BalanceUpdate defaultInstance;
-    public static BalanceUpdate getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public BalanceUpdate getDefaultInstanceForType() {
-      return defaultInstance;
+    private BalanceUpdate() {
+      uid_ = 0L;
+      clientId_ = "";
+      assetId_ = "";
+      amount_ = 0D;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
     public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    getUnknownFields() {
       return this.unknownFields;
     }
     private BalanceUpdate(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
       int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -4481,10 +4433,11 @@ public final class ProtocolMessages {
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
+        throw new RuntimeException(e.setUnfinishedMessage(this));
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -4500,21 +4453,6 @@ public final class ProtocolMessages {
       return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_BalanceUpdate_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate.class, com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<BalanceUpdate> PARSER =
-        new com.google.protobuf.AbstractParser<BalanceUpdate>() {
-      public BalanceUpdate parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new BalanceUpdate(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<BalanceUpdate> getParserForType() {
-      return PARSER;
     }
 
     private int bitField0_;
@@ -4534,7 +4472,7 @@ public final class ProtocolMessages {
     }
 
     public static final int CLIENTID_FIELD_NUMBER = 2;
-    private java.lang.Object clientId_;
+    private volatile java.lang.Object clientId_;
     /**
      * <code>required string clientId = 2;</code>
      */
@@ -4576,7 +4514,7 @@ public final class ProtocolMessages {
     }
 
     public static final int ASSETID_FIELD_NUMBER = 3;
-    private java.lang.Object assetId_;
+    private volatile java.lang.Object assetId_;
     /**
      * <code>required string assetId = 3;</code>
      */
@@ -4632,12 +4570,6 @@ public final class ProtocolMessages {
       return amount_;
     }
 
-    private void initFields() {
-      uid_ = 0L;
-      clientId_ = "";
-      assetId_ = "";
-      amount_ = 0D;
-    }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -4666,7 +4598,6 @@ public final class ProtocolMessages {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, uid_);
       }
@@ -4679,7 +4610,7 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeDouble(4, amount_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
     private int memoizedSerializedSize = -1;
@@ -4704,18 +4635,12 @@ public final class ProtocolMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(4, amount_);
       }
-      size += getUnknownFields().getSerializedSize();
+      size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
 
     private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
     public static com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -4769,12 +4694,17 @@ public final class ProtocolMessages {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
@@ -4815,10 +4745,6 @@ public final class ProtocolMessages {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -4830,10 +4756,6 @@ public final class ProtocolMessages {
         amount_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
       }
 
       public com.google.protobuf.Descriptors.Descriptor
@@ -4905,25 +4827,22 @@ public final class ProtocolMessages {
         if (other.hasAmount()) {
           setAmount(other.getAmount());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         if (!hasClientId()) {
-          
           return false;
         }
         if (!hasAssetId()) {
-          
           return false;
         }
         if (!hasAmount()) {
-          
           return false;
         }
         return true;
@@ -5167,40 +5086,72 @@ public final class ProtocolMessages {
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.BalanceUpdate)
     }
 
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.BalanceUpdate)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate DEFAULT_INSTANCE;
     static {
-      defaultInstance = new BalanceUpdate(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate();
     }
 
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.BalanceUpdate)
+    public static com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<BalanceUpdate> PARSER =
+        new com.google.protobuf.AbstractParser<BalanceUpdate>() {
+      public BalanceUpdate parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new BalanceUpdate(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<BalanceUpdate> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.BalanceUpdate getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_Response_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_com_lykke_matching_engine_messages_Response_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_CashOperation_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_com_lykke_matching_engine_messages_CashOperation_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_LimitOrder_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_com_lykke_matching_engine_messages_LimitOrder_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_com_lykke_matching_engine_messages_MarketOrder_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_BalanceUpdate_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
