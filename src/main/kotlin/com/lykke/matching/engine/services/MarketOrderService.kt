@@ -56,7 +56,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
                 createdAt = Date(message.timestamp),
                 registered = Date(),
                 status = Processing.name,
-                volume = message.volume
+                volume = message.volume,
+                straight = message.straight
         )
 
         if (cashOperationService.getAssetPair(message.assetPairId) == null) {
@@ -84,20 +85,31 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         return ProtocolMessages.MarketOrder.parseFrom(array)
     }
 
+    private fun getCrossVolume(volume: Double, straight: Boolean, price: Double): Double {
+        return if (straight) volume else volume / price
+    }
+
+    private fun getVolume(volume: Double, straight: Boolean, price: Double): Double {
+        return if (straight) volume else volume * price
+    }
+
     private fun match(marketOrder: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>) {
         var remainingVolume = marketOrder.getAbsVolume()
         val matchedOrders = LinkedList<LimitOrder>()
         val cancelledLimitOrders = HashSet<LimitOrder>()
 
-        var totalPrice = 0.0
+        var totalLimitPrice = 0.0
+        var totalMarketVolume = 0.0
         while (remainingVolume.greaterThan(0.0) && orderBook.size > 0) {
             val limitOrder = orderBook.poll()
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
-            val volume = if (remainingVolume >= limitRemainingVolume) limitRemainingVolume else remainingVolume
+            val marketRemainingVolume = getCrossVolume(remainingVolume, marketOrder.straight, limitOrder.price)
+            val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
             if (limitOrderService.isEnoughFunds(limitOrder, volume)) {
                 matchedOrders.add(limitOrder)
-                remainingVolume -= volume
-                totalPrice += volume * limitOrder.price
+                remainingVolume -= getVolume(volume, marketOrder.straight, limitOrder.price)
+                totalMarketVolume += volume
+                totalLimitPrice += volume * limitOrder.price
             } else {
                 cancelledLimitOrders.add(limitOrder)
             }
@@ -112,7 +124,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             return
         }
 
-        if (!isEnoughFunds(marketOrder, totalPrice)) {
+        if (!isEnoughFunds(marketOrder, totalMarketVolume)) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
@@ -137,7 +149,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         matchedOrders.forEach { limitOrder ->
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
-            val volume = if (remainingVolume >= limitRemainingVolume) limitRemainingVolume else remainingVolume
+            val marketRemainingVolume = getCrossVolume(remainingVolume, marketOrder.straight, limitOrder.price)
+            val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
             matchingData.add(MatchingData(masterOrderId = marketOrder.getId(), matchedOrderId = limitOrder.getId(), volume = volume))
             matchingData.add(MatchingData(masterOrderId = limitOrder.getId(), matchedOrderId = marketOrder.getId(), volume = volume))
             val isMarketBuy = marketOrder.isBuySide()
@@ -185,16 +198,16 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
                     asset = assetPair.quotingAssetId, dateTime = now, amount = if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
-            if (remainingVolume >= limitRemainingVolume) {
+            if (marketRemainingVolume >= limitRemainingVolume) {
                 limitOrder.remainingVolume = 0.0
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                limitOrder.remainingVolume -= if (limitOrder.isBuySide()) remainingVolume else -remainingVolume
+                limitOrder.remainingVolume -= if (limitOrder.isBuySide()) volume else -volume
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
             }
-            remainingVolume -= volume
+            remainingVolume -= getVolume(volume, marketOrder.straight, limitOrder.price)
             val transactionId = UUID.randomUUID().toString()
             limitOrder.lastMatchTime = now
             limitOrder.addTransactionIds(listOf(transactionId))
@@ -210,7 +223,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         marketOrder.status = Matched.name
         marketOrder.matchedAt = now
-        marketOrder.price = totalPrice / marketOrder.getAbsVolume()
+        marketOrder.price = if (marketOrder.straight) totalLimitPrice / marketOrder.getAbsVolume() else marketOrder.getAbsVolume() / totalMarketVolume
         marketOrder.partitionKey = ORDER_ID
         marketOrder.addTransactionIds(transactionIds)
         marketOrderDatabaseAccessor.addMarketOrder(marketOrder)

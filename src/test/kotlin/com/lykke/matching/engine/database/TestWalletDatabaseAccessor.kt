@@ -34,7 +34,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         }
     }
 
-    fun getBalance(clientId: String, assetId: String): Double? {
+    fun getBalance(clientId: String, assetId: String): Double {
         val client = balances[clientId]
         if (client != null) {
             val wallet = client[assetId]
@@ -42,7 +42,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
                 return wallet
             }
         }
-        return null
+        return 0.0
     }
 
     override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {

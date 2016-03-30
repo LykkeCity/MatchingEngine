@@ -2988,6 +2988,15 @@ public final class ProtocolMessages {
      * <code>required double volume = 5;</code>
      */
     double getVolume();
+
+    /**
+     * <code>required bool straight = 6;</code>
+     */
+    boolean hasStraight();
+    /**
+     * <code>required bool straight = 6;</code>
+     */
+    boolean getStraight();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MarketOrder}
@@ -3006,6 +3015,7 @@ public final class ProtocolMessages {
       clientId_ = "";
       assetPairId_ = "";
       volume_ = 0D;
+      straight_ = false;
     }
 
     @java.lang.Override
@@ -3060,6 +3070,11 @@ public final class ProtocolMessages {
             case 41: {
               bitField0_ |= 0x00000010;
               volume_ = input.readDouble();
+              break;
+            }
+            case 48: {
+              bitField0_ |= 0x00000020;
+              straight_ = input.readBool();
               break;
             }
           }
@@ -3217,6 +3232,21 @@ public final class ProtocolMessages {
       return volume_;
     }
 
+    public static final int STRAIGHT_FIELD_NUMBER = 6;
+    private boolean straight_;
+    /**
+     * <code>required bool straight = 6;</code>
+     */
+    public boolean hasStraight() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>required bool straight = 6;</code>
+     */
+    public boolean getStraight() {
+      return straight_;
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -3243,6 +3273,10 @@ public final class ProtocolMessages {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (!hasStraight()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -3263,6 +3297,9 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeDouble(5, volume_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBool(6, straight_);
       }
       unknownFields.writeTo(output);
     }
@@ -3292,6 +3329,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(5, volume_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(6, straight_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -3415,6 +3456,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000008);
         volume_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000010);
+        straight_ = false;
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -3459,6 +3502,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000010;
         }
         result.volume_ = volume_;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.straight_ = straight_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -3494,6 +3541,9 @@ public final class ProtocolMessages {
         if (other.hasVolume()) {
           setVolume(other.getVolume());
         }
+        if (other.hasStraight()) {
+          setStraight(other.getStraight());
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -3513,6 +3563,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasVolume()) {
+          return false;
+        }
+        if (!hasStraight()) {
           return false;
         }
         return true;
@@ -3781,6 +3834,38 @@ public final class ProtocolMessages {
       public Builder clearVolume() {
         bitField0_ = (bitField0_ & ~0x00000010);
         volume_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private boolean straight_ ;
+      /**
+       * <code>required bool straight = 6;</code>
+       */
+      public boolean hasStraight() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>required bool straight = 6;</code>
+       */
+      public boolean getStraight() {
+        return straight_;
+      }
+      /**
+       * <code>required bool straight = 6;</code>
+       */
+      public Builder setStraight(boolean value) {
+        bitField0_ |= 0x00000020;
+        straight_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required bool straight = 6;</code>
+       */
+      public Builder clearStraight() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        straight_ = false;
         onChanged();
         return this;
       }
@@ -5175,14 +5260,15 @@ public final class ProtocolMessages {
       "r\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010cli" +
       "entId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volu" +
       "me\030\005 \002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPrev",
-      "iousLimitOrders\030\007 \001(\010\"d\n\013MarketOrder\022\013\n\003" +
+      "iousLimitOrders\030\007 \001(\010\"v\n\013MarketOrder\022\013\n\003" +
       "uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId" +
       "\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 " +
-      "\002(\001\"5\n\020LimitOrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014" +
-      "limitOrderId\030\002 \002(\003\"O\n\rBalanceUpdate\022\013\n\003u" +
-      "id\030\001 \002(\003\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 " +
-      "\002(\t\022\016\n\006amount\030\004 \002(\001B6\n\"com.lykke.matchin" +
-      "g.engine.messagesB\020ProtocolMessages"
+      "\002(\001\022\020\n\010straight\030\006 \002(\010\"5\n\020LimitOrderCance" +
+      "l\022\013\n\003uid\030\001 \002(\003\022\024\n\014limitOrderId\030\002 \002(\003\"O\n\r" +
+      "BalanceUpdate\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002" +
+      " \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001B6\n" +
+      "\"com.lykke.matching.engine.messagesB\020Pro" +
+      "tocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -5219,7 +5305,7 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_MarketOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", });
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_descriptor =
       getDescriptor().getMessageTypes().get(4);
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_fieldAccessorTable = new
