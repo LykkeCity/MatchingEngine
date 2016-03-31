@@ -65,7 +65,6 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
         operation.MultisigAddress = walletCredentials.multiSig
         operation.Currency = asset.blockChainId
-        operation.Amount = operation.Amount / asset.multiplier
 
         val serialisedData = "CashIn:${operation.toJson()}"
 
@@ -93,7 +92,6 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         operation.MultisigAddress = walletCredentials.multiSig
         operation.PrivateKey = walletCredentials.privateKey
         operation.Currency = asset.blockChainId
-        operation.Amount = operation.Amount / asset.multiplier
 
         val serialisedData = "CashOut:${operation.toJson()}"
 
@@ -131,10 +129,8 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
         operation.MultisigCustomer1 = walletCredentials1.multiSig
         operation.Asset1 = asset1.blockChainId
-        operation.Amount1 = operation.Amount1 / asset1.multiplier
         operation.MultisigCustomer2 = walletCredentials2.multiSig
         operation.Asset2 = asset2.blockChainId
-        operation.Amount2 = operation.Amount2 / asset2.multiplier
 
         val serialisedData = "Swap:${operation.toJson()}"
 
