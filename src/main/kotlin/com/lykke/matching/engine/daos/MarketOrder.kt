@@ -20,6 +20,10 @@ class MarketOrder: Order {
         this.straight = straight
     }
 
+    fun isBuySide(): Boolean {
+        return if (straight) isBuySide(volume) else !isBuySide(volume)
+    }
+
     override fun toString(): String{
         return "MarketOrder(id=$rowKey, assetPairId='$assetPairId', clientId='$partitionKey', price=$price, volume=$volume, straight=$straight, status='$status', createdAt=$createdAt, registered=$registered, matchedAt=$matchedAt"
     }

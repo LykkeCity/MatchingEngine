@@ -21,6 +21,10 @@ class LimitOrder: Order {
         this.remainingVolume = remainingVolume
     }
 
+    fun isBuySide(): Boolean {
+        return isBuySide(volume)
+    }
+
     fun getAbsRemainingVolume(): Double {
         return Math.abs(remainingVolume)
     }

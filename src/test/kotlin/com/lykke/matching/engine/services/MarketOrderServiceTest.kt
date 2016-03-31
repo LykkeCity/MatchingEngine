@@ -221,9 +221,9 @@ class MarketOrderServiceTest {
     @Test
     fun testNotStraight() {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 500.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 3000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 2000.0))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = -500.0, assetId = "EURUSD", clientId = "Client3"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1000.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
@@ -248,43 +248,43 @@ class MarketOrderServiceTest {
         assertNotNull(testLimitDatabaseAccessor.ordersDone.find { it.partitionKey == "OrderId"})
         assertNotNull(testLimitDatabaseAccessor.ordersDone.find { it.partitionKey == "Client3"})
 
-        assertEquals(500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
-        assertEquals(-750.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
-        assertEquals(-500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
-        assertEquals(750.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
+        assertEquals(-500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
+        assertEquals(750.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
+        assertEquals(500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
+        assertEquals(-750.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
 
         assertEquals(500.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        assertEquals(2250.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
-        assertEquals(750.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        assertEquals(750.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
+        assertEquals(500.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+        assertEquals(250.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         assertEquals("Client4", swap.clientId1)
-        assertEquals(500.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
+        assertEquals(750.0, swap.Amount1, DELTA)
+        assertEquals("USD", swap.origAsset1)
         assertEquals("Client3", swap.clientId2)
-        assertEquals(750.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
+        assertEquals(500.0, swap.Amount2, DELTA)
+        assertEquals("EUR", swap.origAsset2)
     }
 
     @Test
     fun testNotStraightMatchOneToMany() {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 100.0, clientId = "Client3"))
-        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.4, volume = 1000.0, clientId = "Client1"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 3000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 3000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 2000.0))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.4, volume = -100.0, clientId = "Client3"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = -1000.0, clientId = "Client1"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 3000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 2000.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, tradesInfoQueue)
 
-        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1410.0, straight = false)))
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false)))
 
         val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
         assertEquals(Matched.name, marketOrder.status)
-        assertEquals(1.41, marketOrder.price)
+        assertEquals(1.49, marketOrder.price!!, DELTA)
         assertEquals(2, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
         assertEquals(16, testDatabaseAccessor.orderTradesLinks.size)
 
@@ -295,37 +295,37 @@ class MarketOrderServiceTest {
         assertEquals(Matched.name, limitOrder.status)
         assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
 
-        assertEquals(100.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }!!.volume, DELTA)
-        assertEquals(-150.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }!!.volume, DELTA)
-        assertEquals(900.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "EUR" }!!.volume, DELTA)
-        assertEquals(-1260.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "USD" }!!.volume, DELTA)
-        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" && it.volume == -100.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" && it.volume == 150.0 })
-        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" && it.volume < -900.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" && it.volume == 1260.0 })
+        assertEquals(-100.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }!!.volume, DELTA)
+        assertEquals(140.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }!!.volume, DELTA)
+        assertEquals(-900.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "EUR" }!!.volume, DELTA)
+        assertEquals(1350.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "USD" }!!.volume, DELTA)
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" && it.volume == 100.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" && it.volume == -140.0 })
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" && it.volume < 900.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" && it.volume == -1350.0 })
 
-        assertEquals(100.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        assertEquals(2850.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        assertEquals(900.0, testWalletDatabaseAcessor.getBalance("Client1", "EUR"), DELTA)
-        assertEquals(1740.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"), DELTA)
+        assertEquals(2900.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
+        assertEquals(140.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
+        assertEquals(2100.0, testWalletDatabaseAcessor.getBalance("Client1", "EUR"), DELTA)
+        assertEquals(1350.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"), DELTA)
         assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
-        assertEquals(1410.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        assertEquals(510.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
 
         var swap = transactionQueue.take() as Swap
         assertEquals("Client4", swap.clientId1)
-        assertEquals(100.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
+        assertEquals(140.0, swap.Amount1, DELTA)
+        assertEquals("USD", swap.origAsset1)
         assertEquals("Client3", swap.clientId2)
-        assertEquals(150.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
+        assertEquals(100.0, swap.Amount2, DELTA)
+        assertEquals("EUR", swap.origAsset2)
 
         swap = transactionQueue.take() as Swap
         assertEquals("Client4", swap.clientId1)
-        assertEquals(900.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
+        assertEquals(1350.0, swap.Amount1, DELTA)
+        assertEquals("USD", swap.origAsset1)
         assertEquals("Client1", swap.clientId2)
-        assertEquals(1260.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
+        assertEquals(900.0, swap.Amount2, DELTA)
+        assertEquals("EUR", swap.origAsset2)
     }
 
 

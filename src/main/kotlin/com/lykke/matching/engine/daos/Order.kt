@@ -56,10 +56,6 @@ abstract class Order: TableServiceEntity {
         this.transactionId = Gson().toJson(orders)
     }
 
-    fun isBuySide(): Boolean {
-        return isBuySide(volume)
-    }
-
     fun getSide(): OrderSide {
         return getSide(volume)
     }

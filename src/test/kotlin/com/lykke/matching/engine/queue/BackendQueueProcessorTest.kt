@@ -37,11 +37,9 @@ class BackendQueueProcessorTest {
 
         var asset = Asset()
         asset.blockChainId = "TestUSD"
-        asset.multiplier = 2.0
         backOfficeDatabaseAccessor.assets.put("USD", asset)
         asset = Asset()
         asset.blockChainId = "TestEUR"
-        asset.multiplier = 5.0
         backOfficeDatabaseAccessor.assets.put("EUR", asset)
     }
 
@@ -57,7 +55,7 @@ class BackendQueueProcessorTest {
         val cashInData = Gson().fromJson(outQueueWriter.read().replace("CashIn:", ""), CashIn::class.java)
 
         assertEquals("TestMultiSig1",cashInData.MultisigAddress)
-        assertEquals(250.0,cashInData.Amount)
+        assertEquals(500.0,cashInData.Amount)
         assertEquals("TestUSD",cashInData.Currency)
 
         assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == cashInData.TransactionId && it.contextData == Gson().toJson(ClientCashOperationPair("Client1", "123")) })
@@ -76,7 +74,7 @@ class BackendQueueProcessorTest {
 
         assertEquals("TestMultiSig1",cashOutData.MultisigAddress)
         assertEquals("TestPrivateKey1",cashOutData.PrivateKey)
-        assertEquals(250.0,cashOutData.Amount)
+        assertEquals(500.0,cashOutData.Amount)
         assertEquals("TestUSD",cashOutData.Currency)
 
         assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == cashOutData.TransactionId && it.contextData == Gson().toJson(ClientCashOperationPair("Client1", "123")) })
@@ -98,10 +96,10 @@ class BackendQueueProcessorTest {
         val swapData = Gson().fromJson(outQueueWriter.read().replace("Swap:", ""), Swap::class.java)
 
         assertEquals("TestMultiSig1",swap.MultisigCustomer1)
-        assertEquals(250.0,swap.Amount1)
+        assertEquals(500.0,swap.Amount1)
         assertEquals("TestUSD",swap.Asset1)
         assertEquals("TestMultiSig2",swap.MultisigCustomer2)
-        assertEquals(100.0,swap.Amount2)
+        assertEquals(500.0,swap.Amount2)
         assertEquals("TestEUR",swap.Asset2)
 
         assertNotNull(backOfficeDatabaseAccessor.transactions.find { it.partitionKey == "TransId" && it.rowKey == swapData.TransactionId &&
