@@ -72,7 +72,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         if (orderBook == null) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
-            LOGGER.debug("No liquidity for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+            LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
             return
         }
@@ -120,7 +120,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             matchedOrders.forEach { limitOrderService.addToOrderBook(it) }
             cancelledLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
-            LOGGER.debug("No liquidity for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
+            LOGGER.debug("No liquidity, not enough funds on limit orders, for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume} | Unfilled: $remainingVolume")
             return
         }
 
