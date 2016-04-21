@@ -45,7 +45,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
                 dateTime = Date(message.dateTime),
                 asset = message.assetId,
                 amount = message.amount,
-                transactionId = UUID.randomUUID().toString())
+                transactionId = if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
         processWalletOperations(listOf(operation))
         walletDatabaseAccessor.insertOperation(operation)
 
@@ -79,6 +79,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             }
         }
 
+        LOGGER.debug("Got assetPair : ${assetPair.toString()}")
         return assetPair
     }
 
@@ -90,6 +91,8 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
                 return balance
             }
         }
+
+        LOGGER.debug("Unable to find balance for client $clientId, asset: $assetId")
 
         return 0.0
     }

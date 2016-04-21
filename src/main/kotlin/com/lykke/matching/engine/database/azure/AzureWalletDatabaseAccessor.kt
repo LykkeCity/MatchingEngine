@@ -59,16 +59,20 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
+        var count = 0
         try {
             val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
             val partitionQuery = TableQuery.from(Wallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 result.put(wallet.rowKey, wallet)
+                if (wallet.balances != null) count++
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load accounts", e)
         }
+
+        LOGGER.info("Loaded $count/${result.size} wallets")
 
         return result
     }
@@ -111,6 +115,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
         val result = HashMap<String, AssetPair>()
+        var count = 0
 
         try {
             val partitionQuery = TableQuery.from(AssetPair::class.java)
@@ -118,10 +123,14 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
             for (asset in assetsTable.execute(partitionQuery)) {
                 result[asset.getAssetPairId()] = asset
+                LOGGER.info("Loaded asset pair: ${asset.toString()}")
+                if (asset.baseAssetId != null && asset.quotingAssetId != null) count++
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
         }
+
+        LOGGER.info("Loaded $count/${result.size} asset pairs ")
 
         return result
     }
@@ -129,7 +138,9 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
     override fun loadAssetPair(assetId: String): AssetPair? {
         try {
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AssetPair::class.java)
-            return assetsTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
+            val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
+            LOGGER.info("Loaded asset pair: ${assetPair.toString()}")
+            return assetPair
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)
         }

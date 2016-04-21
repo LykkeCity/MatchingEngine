@@ -4,8 +4,8 @@ import com.microsoft.azure.storage.table.TableServiceEntity
 
 class AssetPair : TableServiceEntity {
 
-    var baseAssetId = ""
-    var quotingAssetId = ""
+    var baseAssetId:String? = null
+    var quotingAssetId:String?  = null
 
     constructor() {}
 
@@ -16,5 +16,9 @@ class AssetPair : TableServiceEntity {
 
     fun getAssetPairId(): String {
         return rowKey
+    }
+
+    override fun toString(): String{
+        return "AssetPair(baseAssetId=$baseAssetId, quotingAssetId=$quotingAssetId)"
     }
 }
