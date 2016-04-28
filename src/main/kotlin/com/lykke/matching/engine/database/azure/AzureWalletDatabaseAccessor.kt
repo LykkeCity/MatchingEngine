@@ -2,8 +2,8 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
@@ -45,8 +45,8 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
-                wallet.getBalances().forEach { balance ->
-                    map.put(balance.Asset, balance.Balance)
+                wallet.getBalancesList().forEach { balance ->
+                    map.put(balance.asset, balance.balance)
                     balancesCount++
                 }
             }

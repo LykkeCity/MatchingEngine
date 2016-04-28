@@ -52,17 +52,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
             clientLimitOrdersMap[message.clientId]?.removeAll(ordersToRemove)
         }
 
-        val order = LimitOrder(
-                uid = UUID.randomUUID().toString(),
-                assetPairId = message.assetPairId,
-                clientId = message.clientId,
-                price = message.price,
-                createdAt = Date(message.timestamp),
-                registered = Date(),
-                status = OrderStatus.InOrderBook.name,
-                volume = message.volume,
-                remainingVolume = message.volume
-        )
+        val order = LimitOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume,
+                message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), Date(), null, message.volume, null)
 
         addToOrderBook(order)
         limitOrderDatabaseAccessor.addLimitOrder(order)
@@ -128,7 +119,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
             val askPrice = book.getAskPrice()
             val bidPrice = book.getBidPrice()
             if (askPrice > 0 && bidPrice > 0) {
-                result.add(BestPrice(book.assetId, ask = askPrice, bid = bidPrice))
+                result.add(BestPrice(book.assetId, askPrice, bidPrice))
             }
         }
 

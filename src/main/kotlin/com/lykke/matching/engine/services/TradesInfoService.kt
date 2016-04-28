@@ -57,8 +57,7 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
             val keys = candles.keys.filter { it != time }
             keys.forEach { keyTime ->
                 candles[keyTime]?.forEach { asset ->
-                    limitOrderDatabaseAccessor.writeCandle(Candle(partitionKey = asset.key, rowKey = keyTime,
-                            data = asset.value.entries.joinToString("|")
+                    limitOrderDatabaseAccessor.writeCandle(Candle(asset.key, keyTime,asset.value.entries.joinToString("|")
                     { "O=${it.value.openPrice};C=${it.value.closePrice};H=${it.value.highPrice};L=${it.value.lowPrice};T=${it.key}" }))
                 }
                 candles.remove(keyTime)

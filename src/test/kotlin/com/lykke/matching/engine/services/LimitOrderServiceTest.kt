@@ -89,15 +89,4 @@ fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                     registered: Date = Date(),
                     status: String = OrderStatus.InOrderBook.name,
                     volume:Double = 1000.0): LimitOrder =
-        LimitOrder(
-                uid = uid,
-                assetPairId = assetId,
-                clientId = clientId,
-                lastMatchTime = lastMatchTime,
-                price = price,
-                createdAt = registered,
-                registered = Date(),
-                status = status,
-                volume = volume,
-                remainingVolume = volume
-        )
+        LimitOrder(UUID.randomUUID().toString(), assetId, clientId, volume, price, status, registered, registered, null, volume, null)

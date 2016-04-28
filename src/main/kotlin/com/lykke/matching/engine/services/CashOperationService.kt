@@ -2,8 +2,8 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -39,13 +39,8 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             return
         }
 
-        val operation = WalletOperation(
-                clientId = message.clientId,
-                uid = UUID.randomUUID().toString(),
-                dateTime = Date(message.dateTime),
-                asset = message.assetId,
-                amount = message.amount,
-                transactionId = if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
+        val operation = WalletOperation(message.clientId, UUID.randomUUID().toString(), message.assetId,
+                Date(message.dateTime), message.amount,if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
         processWalletOperations(listOf(operation))
         walletDatabaseAccessor.insertOperation(operation)
 
@@ -104,7 +99,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             val balance = client[operation.assetId] ?: 0.0
             client.put(operation.assetId, balance + operation.amount)
 
-            val wallet = wallets.getOrPut(operation.getClientId()) { Wallet( operation.getClientId() ) }
+            val wallet = wallets.getOrPut(operation.getClientId()) { Wallet(operation.getClientId()) }
             wallet.addBalance(operation.assetId, operation.amount)
 
             if (!walletsToAdd.contains(wallet)) {

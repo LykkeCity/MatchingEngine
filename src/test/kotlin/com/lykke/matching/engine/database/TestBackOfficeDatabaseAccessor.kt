@@ -1,9 +1,10 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.BtTransaction
 import com.lykke.matching.engine.daos.WalletCredentials
-import java.util.*
+import com.lykke.matching.engine.daos.bitcoin.BtTransaction
+import java.util.ArrayList
+import java.util.HashMap
 
 class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
 

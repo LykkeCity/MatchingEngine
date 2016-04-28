@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.BtTransaction
 import com.lykke.matching.engine.daos.WalletCredentials
+import com.lykke.matching.engine.daos.bitcoin.BtTransaction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation

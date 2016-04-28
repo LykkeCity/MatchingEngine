@@ -2,11 +2,11 @@ package com.lykke.matching.engine.queue
 
 import com.google.gson.Gson
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.ClientCashOperationPair
-import com.lykke.matching.engine.daos.ClientOrderPair
-import com.lykke.matching.engine.daos.ClientTradePair
-import com.lykke.matching.engine.daos.Orders
 import com.lykke.matching.engine.daos.WalletCredentials
+import com.lykke.matching.engine.daos.bitcoin.ClientCashOperationPair
+import com.lykke.matching.engine.daos.bitcoin.ClientOrderPair
+import com.lykke.matching.engine.daos.bitcoin.ClientTradePair
+import com.lykke.matching.engine.daos.bitcoin.Orders
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut

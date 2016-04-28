@@ -2,8 +2,8 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.wallet.Wallet
 import java.util.HashMap
 import java.util.LinkedList
 
@@ -26,10 +26,10 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
         wallets.forEach { wallet ->
             val client = balances.getOrPut(wallet.getClientId()) { HashMap<String, Double>() }
-            val updatedWallet = this.wallets.getOrPut(wallet.getClientId()) { Wallet( wallet.getClientId() ) }
-            wallet.getBalances().forEach {
-                client.put(it.Asset, it.Balance)
-                updatedWallet.setBalance(it.Asset, it.Balance)
+            val updatedWallet = this.wallets.getOrPut(wallet.getClientId()) { Wallet(wallet.getClientId()) }
+            wallet.getBalancesList().forEach {
+                client.put(it.asset, it.balance)
+                updatedWallet.setBalance(it.asset, it.balance)
             }
         }
     }

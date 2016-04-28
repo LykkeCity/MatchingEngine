@@ -2,8 +2,8 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
-import com.lykke.matching.engine.daos.Wallet
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.wallet.Wallet
 import java.util.HashMap
 
 interface WalletDatabaseAccessor {
