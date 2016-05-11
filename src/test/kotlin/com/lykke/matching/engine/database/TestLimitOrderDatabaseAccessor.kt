@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.Candle
+import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.LimitOrder
 import java.text.SimpleDateFormat
 import java.util.ArrayList
@@ -15,6 +16,7 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
     val ordersDone = ArrayList<LimitOrder>()
     var bestPrices: List<BestPrice> = ArrayList()
     var candles = ArrayList<Candle>()
+    var hoursCandles = ArrayList<HourCandle>()
 
     override fun loadLimitOrders(): List<LimitOrder> {
         return orders
@@ -37,18 +39,8 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
     }
 
     override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
-        val orderClientTimeKey = LimitOrder(
-                uid = Date().time.toString(),
-                assetPairId = order.assetPairId,
-                clientId = order.clientId,
-                price = order.price,
-                createdAt = order.createdAt,
-                registered = order.registered,
-                status = order.status,
-                volume = order.volume,
-                remainingVolume = order.volume,
-                lastMatchTime = order.lastMatchTime
-        )
+        val orderClientTimeKey = LimitOrder( Date().time.toString(), order.assetPairId, order.clientId, order.volume,
+                order.price, order.status, order.createdAt,order.registered, null, order.volume, order.lastMatchTime)
         orderClientTimeKey.partitionKey = order.clientId
         orderClientTimeKey.rowKey = "%s.#%02d".format(DATE_FORMAT.format(order.lastMatchTime), 0)
         ordersDone.add(orderClientTimeKey)
@@ -60,6 +52,7 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
         orders.clear()
         ordersDone.clear()
         candles.clear()
+        hoursCandles.clear()
     }
 
     override fun updateBestPrices(prices: List<BestPrice>) {
@@ -68,5 +61,14 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
 
     override fun writeCandle(candle: Candle) {
         candles.add(candle)
+    }
+
+    override fun getHoursCandles(): MutableList<HourCandle> {
+        return hoursCandles
+    }
+
+    override fun writeHourCandles(candles: List<HourCandle>) {
+        hoursCandles.clear()
+        hoursCandles.addAll(candles)
     }
 }

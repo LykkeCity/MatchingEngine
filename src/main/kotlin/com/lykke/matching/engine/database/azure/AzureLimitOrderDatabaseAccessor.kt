@@ -2,6 +2,8 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.Candle
+import com.lykke.matching.engine.daos.HourCandle
+import com.lykke.matching.engine.daos.HourCandle.MICRO
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.microsoft.azure.storage.table.CloudTable
@@ -23,6 +25,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     val limitOrdersDoneTable: CloudTable
     val bestPricesTable: CloudTable
     val candlesTable: CloudTable
+    val hourCandlesTable: CloudTable
 
     val DATE_FORMAT = {
         val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -35,6 +38,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig, "LimitOrdersDone")
         this.bestPricesTable = getOrCreateTable(liquidityConfig, "MarketProfile")
         this.candlesTable = getOrCreateTable(liquidityConfig, "FeedHistory")
+        this.hourCandlesTable = getOrCreateTable(liquidityConfig, "FeedHoursHistory")
     }
 
     override fun loadLimitOrders(): List<LimitOrder> {
@@ -118,6 +122,31 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             candlesTable.execute(TableOperation.insertOrMerge(candle))
         } catch(e: Exception) {
             LOGGER.error("Unable to add candle ${candle.partitionKey} ${candle.rowKey}", e)
+        }
+    }
+
+    override fun getHoursCandles(): MutableList<HourCandle> {
+        val result = ArrayList<HourCandle>()
+
+        try {
+            val partitionQuery = TableQuery.from(HourCandle::class.java)
+                    .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, MICRO))
+
+            for (candle in hourCandlesTable.execute(partitionQuery)) {
+                result.add(candle)
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load hour candles", e)
+        }
+
+        return result
+    }
+
+    override fun writeHourCandles(candles: List<HourCandle>) {
+        try {
+            batchInsertOrMerge(hourCandlesTable, candles)
+        } catch(e: Exception) {
+            LOGGER.error("Unable to save hour candles, size: ${candles.size}", e)
         }
     }
 }

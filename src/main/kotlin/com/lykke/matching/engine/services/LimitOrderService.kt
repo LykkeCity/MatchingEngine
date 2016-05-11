@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -13,10 +14,12 @@ import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
 class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
-                        private val cashOperationService: CashOperationService): AbsractService<ProtocolMessages.LimitOrder> {
+                        private val cashOperationService: CashOperationService,
+                        private val tradesInfoQueue: BlockingQueue<TradeInfo>): AbsractService<ProtocolMessages.LimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderService::class.java.name)
@@ -57,6 +60,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
 
         addToOrderBook(order)
         limitOrderDatabaseAccessor.addLimitOrder(order)
+        tradesInfoQueue.put(TradeInfo(order.assetPairId, order.isBuySide(), order.price, Date()))
         LOGGER.debug("Limit order id: ${message.uid}, client ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}, price: ${message.price} added to order book")
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
     }

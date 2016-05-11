@@ -54,6 +54,7 @@ class MessageProcessor: Thread {
 
     val bestPriceBuilder: Timer
     val candlesBuilder: Timer
+    val hoursCandlesBuilder: Timer
 
     constructor(config: Properties, dbConfig: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
@@ -66,8 +67,8 @@ class MessageProcessor: Thread {
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
-        this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService)
-        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue, tradesInfoQueue)
+        this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue)
         this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
@@ -81,10 +82,14 @@ class MessageProcessor: Thread {
         }
 
         var time = LocalDateTime.now()
-//        time = time.plusMinutes(1).minusSeconds((time.second - 5).toLong()).minusNanos(time.nano.toLong())
         val candleSaverInterval = config.getProperty("candle.saver.interval")!!.toLong()
         this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = candleSaverInterval) {
             tradesInfoService.saveCandles()
+        }
+
+        val hoursCandleSaverInterval = config.getProperty("hours.candle.saver.interval")!!.toLong()
+        this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second) + 60000 * (60 - time.minute)).toLong(), period = hoursCandleSaverInterval) {
+            tradesInfoService.saveHourCandles()
         }
     }
 

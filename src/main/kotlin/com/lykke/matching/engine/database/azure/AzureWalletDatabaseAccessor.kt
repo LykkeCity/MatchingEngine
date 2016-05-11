@@ -46,8 +46,10 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             accountTable.execute(partitionQuery).forEach { wallet ->
                 val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
                 wallet.getBalancesList().forEach { balance ->
-                    map.put(balance.asset, balance.balance)
-                    balancesCount++
+                    if (balance.balance != null) {
+                        map.put(balance.asset, balance.balance)
+                        balancesCount++
+                    }
                 }
             }
         } catch(e: Exception) {

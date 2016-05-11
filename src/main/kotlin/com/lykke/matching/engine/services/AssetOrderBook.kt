@@ -7,11 +7,21 @@ import java.util.concurrent.PriorityBlockingQueue
 class AssetOrderBook(val assetId: String) {
 
     val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
-        o1.price.compareTo(o2.price)
+        var result = o1.price.compareTo(o2.price)
+        if (result == 0) {
+            result = o1.createdAt.compareTo(o2.createdAt)
+        }
+
+        result
     })
 
     val BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
-        o2.price.compareTo(o1.price)
+        var result = o2.price.compareTo(o1.price)
+        if (result == 0) {
+            result = o1.createdAt.compareTo(o2.createdAt)
+        }
+
+        result
     })
 
     //TODO add time to comparators

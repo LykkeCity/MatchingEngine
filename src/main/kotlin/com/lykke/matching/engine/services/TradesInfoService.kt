@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.Candle
+import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.Tick
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
@@ -19,9 +20,14 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
         val LOGGER = Logger.getLogger(TradesInfoService::class.java.name)
     }
 
-    val formatter = SimpleDateFormat("yyyyMMddhhmm")
+    val formatter = SimpleDateFormat("yyyyMMddHHmm")
+
+    val hourFormatter = SimpleDateFormat("yyyyMMddHH")
 
     val candles = HashMap<String, HashMap<String, HashMap<Int, Tick>>>()
+    val savedHoursCandles = limitOrderDatabaseAccessor.getHoursCandles()
+    val hoursCandles = HashMap<String, Double>()
+
     val bid = "Bid"
     val ask = "Ask"
 
@@ -49,6 +55,12 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                 ticks[second] = Tick(info.price, info.price, info.price, info.price)
             }
         }
+
+        if (info.isBuy) {
+            synchronized(hoursCandles) {
+                hoursCandles.putIfAbsent(info.assetPair, info.price)
+            }
+        }
     }
 
     fun saveCandles() {
@@ -63,5 +75,22 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                 candles.remove(keyTime)
             }
         }
+    }
+
+    fun saveHourCandles() {
+        synchronized(hoursCandles) {
+            hoursCandles.keys.forEach { asset ->
+                var hourCandle = savedHoursCandles.find { it.asset == asset }
+                if (hourCandle == null) {
+                    hourCandle = HourCandle(asset, null)
+                    hourCandle.addPrice(hoursCandles[asset])
+                    savedHoursCandles.add(hourCandle)
+                } else {
+                    hourCandle.addPrice(hoursCandles[asset])
+                }
+            }
+            hoursCandles.clear()
+        }
+        limitOrderDatabaseAccessor.writeHourCandles(savedHoursCandles)
     }
 }
