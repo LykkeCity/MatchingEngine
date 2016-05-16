@@ -42,17 +42,15 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         val operation = WalletOperation(message.clientId, UUID.randomUUID().toString(), message.assetId,
                 Date(message.dateTime), message.amount,if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
         processWalletOperations(listOf(operation))
-        walletDatabaseAccessor.insertOperation(operation)
 
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.getClientId(), message.bussinesId, operation.getUid()))
 
-
-        val cashOperation = if (operation.amount > 0)
-            CashIn(operation.transactionId, clientId = operation.getClientId(), Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
-        else
-            CashOut(operation.transactionId, clientId = operation.getClientId(), Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
-
         if (message.sendToBitcoin) {
+            val cashOperation = if (operation.amount > 0)
+                CashIn(operation.transactionId, clientId = operation.getClientId(), Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
+            else
+                CashOut(operation.transactionId, clientId = operation.getClientId(), Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
+
             backendQueue.put(cashOperation)
         }
 

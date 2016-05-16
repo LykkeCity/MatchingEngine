@@ -37,10 +37,6 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(150.0, balance, DELTA)
 
-        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
-        assertNotNull(operation)
-        assertEquals(50.0, operation!!.amount, DELTA)
-
         val cashInTransaction = transactionQueue.take() as CashIn
         assertEquals("Client1", cashInTransaction.clientId)
         assertEquals(50.0, cashInTransaction.Amount, DELTA)
@@ -55,10 +51,6 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(50.0, balance, DELTA)
 
-        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
-        assertNotNull(operation)
-        assertEquals(-50.0, operation!!.amount, DELTA)
-
         val cashOutTransaction = transactionQueue.take() as CashOut
         assertEquals("Client1", cashOutTransaction.clientId)
         assertEquals(50.0, cashOutTransaction.Amount, DELTA)
@@ -72,10 +64,6 @@ class CashOperationServiceTest {
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(150.0, balance, DELTA)
-
-        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
-        assertNotNull(operation)
-        assertEquals(50.0, operation!!.amount, DELTA)
 
         val externalOperation = testDatabaseAccessor.loadExternalCashOperation("Client1", "TestId")
         assertNotNull(externalOperation)
@@ -100,10 +88,6 @@ class CashOperationServiceTest {
 
         assertNotNull(balance)
         assertEquals(100.0, balance, DELTA)
-
-        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
-        assertNotNull(operation)
-        assertEquals(100.0, operation!!.amount, DELTA)
     }
 
     @Test
@@ -114,10 +98,6 @@ class CashOperationServiceTest {
 
         assertNotNull(balance)
         assertEquals(100.0, balance, DELTA)
-
-        val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client3") }
-        assertNotNull(operation)
-        assertEquals(100.0, operation!!.amount, DELTA)
     }
 
     @Test
