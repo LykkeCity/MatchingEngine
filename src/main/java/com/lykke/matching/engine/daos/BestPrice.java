@@ -5,7 +5,7 @@ import com.microsoft.azure.storage.table.TableServiceEntity;
 import java.util.Date;
 
 public class BestPrice extends TableServiceEntity {
-    //partiotion key = "Feed"
+    //partition key = "Feed"
     //rowkey = asset
 
     public static String FEED = "Feed";
@@ -45,5 +45,9 @@ public class BestPrice extends TableServiceEntity {
 
     public void setDateTime(Date dateTime) {
         this.dateTime = dateTime;
+    }
+
+    public String getAssetId() {
+        return rowKey;
     }
 }

@@ -35,7 +35,7 @@ class CashOperationServiceTest {
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(150.0, balance!!, DELTA)
+        assertEquals(150.0, balance, DELTA)
 
         val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
         assertNotNull(operation)
@@ -53,7 +53,7 @@ class CashOperationServiceTest {
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(50.0, balance!!, DELTA)
+        assertEquals(50.0, balance, DELTA)
 
         val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
         assertNotNull(operation)
@@ -71,7 +71,7 @@ class CashOperationServiceTest {
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(150.0, balance!!, DELTA)
+        assertEquals(150.0, balance, DELTA)
 
         val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
         assertNotNull(operation)
@@ -83,7 +83,7 @@ class CashOperationServiceTest {
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
         balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(150.0, balance!!, DELTA)
+        assertEquals(150.0, balance, DELTA)
 
         val cashInTransaction = transactionQueue.peek() as CashIn
         assertNotNull(cashInTransaction)
@@ -99,7 +99,7 @@ class CashOperationServiceTest {
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset4")
 
         assertNotNull(balance)
-        assertEquals(100.0, balance!!, DELTA)
+        assertEquals(100.0, balance, DELTA)
 
         val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client1") }
         assertNotNull(operation)
@@ -113,7 +113,7 @@ class CashOperationServiceTest {
         val balance = testDatabaseAccessor.getBalance("Client3", "Asset2")
 
         assertNotNull(balance)
-        assertEquals(100.0, balance!!, DELTA)
+        assertEquals(100.0, balance, DELTA)
 
         val operation = testDatabaseAccessor.operations.find { it.getClientId() == ("Client3") }
         assertNotNull(operation)
@@ -129,7 +129,7 @@ class CashOperationServiceTest {
 
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(999.0, balance!!, DELTA)
+        assertEquals(999.0, balance, DELTA)
 
     }
 

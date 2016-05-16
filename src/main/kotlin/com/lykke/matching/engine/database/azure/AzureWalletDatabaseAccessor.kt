@@ -48,6 +48,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
                 wallet.getBalancesList().forEach { balance ->
                     if (balance.balance != null) {
                         map.put(balance.asset, balance.balance)
+                        LOGGER.debug("${wallet.clientId} ${balance.asset} -> ${balance.balance}")
                         balancesCount++
                     }
                 }

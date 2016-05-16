@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database.azure
 
 import com.microsoft.azure.storage.CloudStorageAccount
+import com.microsoft.azure.storage.blob.CloudBlobContainer
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.DynamicTableEntity
 import com.microsoft.azure.storage.table.TableBatchOperation
@@ -13,6 +14,15 @@ fun getOrCreateTable(connectionString: String, tableName: String): CloudTable {
     val cloudTable = tableClient.getTableReference(tableName)
     cloudTable.createIfNotExists()
     return cloudTable
+}
+
+fun getOrCreateBlob(connectionString: String, blobName: String): CloudBlobContainer {
+    val storageAccount = CloudStorageAccount.parse(connectionString)
+    val blobClient = storageAccount.createCloudBlobClient()
+
+    val blob = blobClient.getContainerReference(blobName)
+    blob.createIfNotExists()
+    return blob
 }
 
 val AZURE_BATCH_SIZE = 100

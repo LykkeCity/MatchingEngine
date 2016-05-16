@@ -96,8 +96,10 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
         val assetPair = cashOperationService.getAssetPair(order.assetPairId) ?: return false
 
         if (order.isBuySide()) {
+            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId!!} : ${cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!)} >= ${volume * order.price}")
             return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!) >= volume * order.price
         } else {
+            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId!!} : ${cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!)} >= $volume")
             return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!) >= volume
         }
     }

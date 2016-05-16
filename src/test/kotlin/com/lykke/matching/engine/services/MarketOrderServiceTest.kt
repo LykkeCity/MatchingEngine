@@ -158,6 +158,55 @@ class MarketOrderServiceTest {
         assertEquals("USD", swap.origAsset2)
     }
 
+//    @Test
+//    fun testMatchOneToOne123() {
+//        testWalletDatabaseAcessor.addAssetPair(AssetPair("LKK", "USD"))
+//        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKUSD", price = 0.01, volume = 100000.0, clientId = "Client3"))
+//        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 3000.0))
+//        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "LKK", 2000.0))
+//
+//        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+//        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+//        val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
+//
+//        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKUSD", volume = -100.0)))
+//
+//        val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
+//        assertEquals(Matched.name, marketOrder.status)
+//        assertEquals(1.5, marketOrder.price, DELTA)
+//        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
+//        assertEquals(8, testDatabaseAccessor.orderTradesLinks.size)
+//
+//        assertEquals(0, testLimitDatabaseAccessor.orders.size)
+//        assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
+//
+//        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
+//        assertEquals(Matched.name, limitOrder.status)
+//        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
+//
+//        assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
+//        assertNotNull(testLimitDatabaseAccessor.ordersDone.find { it.partitionKey == "OrderId"})
+//        assertNotNull(testLimitDatabaseAccessor.ordersDone.find { it.partitionKey == "Client3"})
+//
+//        assertEquals(1000.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
+//        assertEquals(-1500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
+//        assertEquals(-1000.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
+//        assertEquals(1500.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
+//
+//        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
+//        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
+//        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+//        assertEquals(1500.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+//
+//        val swap = transactionQueue.take() as Swap
+//        assertEquals("Client4", swap.clientId1)
+//        assertEquals(1000.0, swap.Amount1, DELTA)
+//        assertEquals("EUR", swap.origAsset1)
+//        assertEquals("Client3", swap.clientId2)
+//        assertEquals(1500.0, swap.Amount2, DELTA)
+//        assertEquals("USD", swap.origAsset2)
+//    }
+
     @Test
     fun testMatchOneToMany() {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
@@ -342,11 +391,11 @@ class MarketOrderServiceTest {
     }
 }
 
-    fun buildMarketOrder(rowKey: String = UUID.randomUUID().toString(),
-                         assetId: String = "EURUSD",
-                         clientId: String = "Client1",
-                         registered: Date = Date(),
-                         status: String = InOrderBook.name,
-                         straight: Boolean = true,
-                         volume: Double = 1000.0): MarketOrder =
-        MarketOrder(rowKey, assetId, clientId, volume, null, status, registered, Date(), null, null, straight)
+fun buildMarketOrder(rowKey: String = UUID.randomUUID().toString(),
+                     assetId: String = "EURUSD",
+                     clientId: String = "Client1",
+                     registered: Date = Date(),
+                     status: String = InOrderBook.name,
+                     straight: Boolean = true,
+                     volume: Double = 1000.0): MarketOrder =
+    MarketOrder(rowKey, assetId, clientId, volume, null, status, registered, Date(), null, null, straight)

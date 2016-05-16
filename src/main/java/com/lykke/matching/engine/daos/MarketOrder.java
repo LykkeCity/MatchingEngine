@@ -26,7 +26,7 @@ public class MarketOrder extends Order {
 
     @Override
     public String toString() {
-        return "LimitOrder{"  +
+        return "MarketOrder{"  +
                 "assetPairId='" + assetPairId + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", volume=" + volume +

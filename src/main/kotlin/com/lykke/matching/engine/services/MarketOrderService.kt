@@ -59,10 +59,14 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         }
 
         val orderBook = limitOrderService.getOrderBook(order.assetPairId)?.getOrderBook(!order.isBuySide())
-        if (orderBook == null) {
+        if (orderBook == null || orderBook.size == 0) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
-            LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+            if (orderBook == null) {
+                LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+            } else {
+                LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+            }
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
             return
         }

@@ -2,10 +2,12 @@ package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
@@ -15,6 +17,7 @@ import com.lykke.matching.engine.queue.azure.AzureQueueWriter
 import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashOperationService
+import com.lykke.matching.engine.services.HistoryTicksService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.LimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -41,6 +44,7 @@ class MessageProcessor: Thread {
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
+    val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
 
     val cashOperationService: CashOperationService
     val limitOrderService: LimitOrderService
@@ -48,6 +52,7 @@ class MessageProcessor: Thread {
     val limitOrderCancelService: LimitOrderCancelService
     val balanceUpdateService: BalanceUpdateService
     val tradesInfoService: TradesInfoService
+    val historyTicksService: HistoryTicksService
 
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
@@ -55,6 +60,7 @@ class MessageProcessor: Thread {
     val bestPriceBuilder: Timer
     val candlesBuilder: Timer
     val hoursCandlesBuilder: Timer
+    val historyTicksBuilder: Timer
 
     constructor(config: Properties, dbConfig: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
         this.messagesQueue = queue
@@ -64,6 +70,7 @@ class MessageProcessor: Thread {
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(dbConfig["ClientPersonalInfoConnString"]!!, dbConfig["BitCoinQueueConnectionString"]!!, dbConfig["DictsConnString"]!!)
+        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
@@ -72,6 +79,8 @@ class MessageProcessor: Thread {
         this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
+        this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, limitOrderService)
+        historyTicksService.init()
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter)
 
@@ -90,6 +99,10 @@ class MessageProcessor: Thread {
         val hoursCandleSaverInterval = config.getProperty("hours.candle.saver.interval")!!.toLong()
         this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second) + 60000 * (60 - time.minute)).toLong(), period = hoursCandleSaverInterval) {
             tradesInfoService.saveHourCandles()
+        }
+
+        this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
+            historyTicksService.buildTicks()
         }
     }
 
