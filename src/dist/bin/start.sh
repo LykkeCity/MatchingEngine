@@ -1,7 +1,40 @@
-#! /bin/bash
+#!/bin/bash
+# (c) lykke.com, 2016. All rights reserved.
 
-set LYKKE_ME_PROTOTYPE_OPTS="-Dlog4j.configuration=file:///$BASEDIR/cfg/log4j.properties"
-mkdir "$BASEDIR"/log 2>/dev/null
-mkdir "$BASEDIR"/work 2>/dev/null
+BINDIR=$(dirname "$0")
+BASEDIR=`cd "$BINDIR/.." >/dev/null; pwd`
 
-sh ./lykke-me-prototype "$BASEDIR"/cfg/application.properties
+if [ -z "$JAVACMD" ] ; then
+  if [ -z "$JAVA_HOME" ] ; then
+    JAVACMD="/usr/bin/java"
+  else
+    JAVACMD="$JAVA_HOME/bin/java"
+  fi
+fi
+
+if [ ! -x "$JAVACMD" ] ; then
+  echo "Error: JAVA_HOME is not defined correctly." 1>&2
+  echo "  We cannot execute $JAVACMD" 1>&2
+  exit 1
+fi
+
+
+CLASSPATH=$BASEDIR/lib/lykke-me-prototype-0.0.3.jar:$BASEDIR/lib/kotlin-stdlib-1.0.0.jar:$BASEDIR/lib/log4j-1.2.17.jar:$BASEDIR/lib/protobuf-java-3.0.0-beta-2.jar:$BASEDIR/lib/azure-storage-4.0.0.jar:$BASEDIR/lib/gson-2.6.2.jar:$BASEDIR/lib/kotlin-runtime-1.0.0.jar:$BASEDIR/lib/jackson-core-2.6.0.jar:$BASEDIR/lib/slf4j-api-1.7.12.jar:$BASEDIR/lib/commons-lang3-3.4.jar
+mkdir $BASEDIR/log 2>/dev/null
+cd "$BINDIR"
+
+EXECSTR="$JAVACMD -Xms1g -Xmx2g -DMatchingEngineService -server -Dlog4j.configuration=file:///"$BASEDIR"/cfg/log4j.properties $JAVA_OPTS \
+    -classpath "$CLASSPATH" \
+    -Dapp.name="start.sh" \
+    -Dapp.pid="$$" \
+    -Dapp.repo="$REPO" \
+    -Dapp.home="$BASEDIR" \
+    -Dbasedir="$BASEDIR" \
+     com.lykke.matching.engine.AppStarterKt \
+     "$BASEDIR"/cfg/application.properties"
+
+if [[ " $@ " =~ " --console " ]] ; then
+    exec $EXECSTR ${@%"--console"}
+else
+    exec $EXECSTR $@ 1>"$BASEDIR/log/out.log" 2>"$BASEDIR/log/err.log" &
+fi
