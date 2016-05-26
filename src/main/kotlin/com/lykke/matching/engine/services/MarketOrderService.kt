@@ -257,13 +257,9 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             LOGGER.error("Unknown asset pair: ${order.assetPairId}")
             return false
         }
+        val asset = if (order.isBuySide()) assetPair.quotingAssetId!! else assetPair.baseAssetId!!
 
-        if (order.isBuySide()) {
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId!!} : ${cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!)} >= $totalPrice")
-            return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!) >= totalPrice
-        } else {
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId!!} : ${cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!)} >= ${order.getAbsVolume()}")
-            return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!) >= order.getAbsVolume()
-        }
+        LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= $totalPrice")
+        return cashOperationService.getBalance(order.clientId, asset) >= totalPrice
     }
 }
