@@ -44,6 +44,20 @@ class CashOperationServiceTest {
     }
 
     @Test
+    fun testSmallCashIn() {
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", 0.01))
+        val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+        assertNotNull(balance)
+        assertEquals(100.01, balance, DELTA)
+
+        val cashInTransaction = transactionQueue.take() as CashIn
+        assertEquals("Client1", cashInTransaction.clientId)
+        assertEquals(0.01, cashInTransaction.Amount, DELTA)
+        assertEquals("Asset1", cashInTransaction.Currency)
+    }
+
+    @Test
     fun testCashOut() {
         val service = CashOperationService(testDatabaseAccessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
