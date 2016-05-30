@@ -154,10 +154,12 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
     }
 
     private fun loadAsset(assetId: String): Asset? {
-        if (assets.containsKey(assetId)) {
+        var asset = assets[assetId]
+        if (asset != null && asset.blockChainId != null) {
             return assets[assetId]
         }
-        val asset = backOfficeDatabaseAccessor.loadAsset(assetId)
+
+        asset = backOfficeDatabaseAccessor.loadAsset(assetId)
         if (asset != null) {
             assets[assetId] = asset
         }
