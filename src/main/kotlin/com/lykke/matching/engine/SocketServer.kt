@@ -8,6 +8,7 @@ import java.util.Properties
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.regex.Pattern
 
 class SocketServer(val config: Properties): Runnable {
 
@@ -36,12 +37,37 @@ class SocketServer(val config: Properties): Runnable {
 
             while (true) {
                 val clientConnection = socket.accept()
-                clientHandlerThreadPool.submit(ClientHandler(messagesQueue, clientConnection))
+                if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
+                    clientHandlerThreadPool.submit(ClientHandler(messagesQueue, clientConnection))
+                } else {
+                    clientConnection.close()
+                    LOGGER.info("Connection from host ${clientConnection.inetAddress.hostAddress} is not allowed.")
+                }
             }
         } catch (exception: Exception) {
             LOGGER.error("Got exception: ", exception)
         } finally {
             socket.close()
         }
+    }
+
+    fun isConnectionAllowed(whitelist: List<String>?, host: String): Boolean {
+        if (whitelist != null) {
+            whitelist.forEach {
+                if (Pattern.compile(it).matcher(host).matches()) {
+                    return true
+                }
+            }
+            return false
+        }
+        return true
+    }
+
+    fun getWhiteList() : List<String>? {
+        val whiteListStr = (loadConfig(config)["MatchingEngine"] as Map<String, Any>).get("WhiteList") as String?
+        if (whiteListStr != null) {
+            return whiteListStr.split(";")
+        }
+        return null
     }
 }

@@ -17,7 +17,7 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
         val LOGGER = Logger.getLogger(ClientHandler::class.java.name)
     }
 
-    var clientHostName = socket.inetAddress.canonicalHostName
+    var clientHostName = socket.inetAddress.hostAddress
 
     override fun run() {
         LOGGER.info("Got connection from $clientHostName.")
