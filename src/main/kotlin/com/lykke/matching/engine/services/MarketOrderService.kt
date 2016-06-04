@@ -174,7 +174,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             var uid = UUID.randomUUID().toString()
             marketTrades.add(Trade(marketOrder.clientId, uid,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) volume else -volume))
+                    marketOrder.getId(), if (isMarketBuy) volume else -volume, limitOrder.price))
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
@@ -184,7 +184,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             uid = UUID.randomUUID().toString()
             marketTrades.add(Trade(marketOrder.clientId, uid,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume))
+                    marketOrder.getId(), if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume, limitOrder.price))
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
@@ -194,7 +194,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             uid = UUID.randomUUID().toString()
             limitTrades.add(Trade(limitOrder.clientId, uid,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) -volume else volume))
+                    marketOrder.getId(), if (isMarketBuy) -volume else volume, limitOrder.price))
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),
@@ -204,7 +204,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             uid = UUID.randomUUID().toString()
             limitTrades.add(Trade(limitOrder.clientId, uid,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume))
+                    marketOrder.getId(), if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume, limitOrder.price))
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),

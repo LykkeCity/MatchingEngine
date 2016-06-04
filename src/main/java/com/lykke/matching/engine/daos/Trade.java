@@ -13,17 +13,19 @@ public class Trade extends TableServiceEntity {
     String limitOrderId;
     String marketOrderId;
     Double volume;
+    Double price;
 
     public Trade() {
     }
 
-    public Trade(String partitionKey, String rowKey, String assetId, Date dateTime, String limitOrderId, String marketOrderId, Double volume) {
+    public Trade(String partitionKey, String rowKey, String assetId, Date dateTime, String limitOrderId, String marketOrderId, Double volume, Double price) {
         super(partitionKey, rowKey);
         this.assetId = assetId;
         this.dateTime = dateTime;
         this.limitOrderId = limitOrderId;
         this.marketOrderId = marketOrderId;
         this.volume = volume;
+        this.price = price;
     }
 
     public String getClientId() {
@@ -70,6 +72,14 @@ public class Trade extends TableServiceEntity {
         this.volume = volume;
     }
 
+    public Double getPrice() {
+        return price;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
+    }
+
     @Override
     public String toString() {
         return "Trade(" +
@@ -79,7 +89,8 @@ public class Trade extends TableServiceEntity {
                 ", dateTime=" + dateTime +
                 ", limitOrderId='" + limitOrderId + '\'' +
                 ", marketOrderId='" + marketOrderId + '\'' +
-                ", volume=" + volume +
+                ", volume=" + price +
+                ", price=" + volume +
                 ')';
     }
 }
