@@ -22,16 +22,20 @@ class HttpLogger: Thread {
     override fun run() {
         while (true) {
             val obj = queue.take()
-            try {
-                val httpClient = HttpClientBuilder.create().build()
-                val request = HttpPost(path)
-                val params = StringEntity(obj.getJson())
-                request.addHeader("content-type", "application/json")
-                request.setEntity(params)
-                httpClient.execute(request)
-            } catch (e : Exception) {
-                LOGGER.error("Unable to write log to http: ${e.message}", e)
-            }
+            sendHttpRequest(obj)
+        }
+    }
+
+    fun sendHttpRequest(obj: LoggableObject) {
+        try {
+            val httpClient = HttpClientBuilder.create().build()
+            val request = HttpPost(path)
+            val params = StringEntity(obj.getJson())
+            request.addHeader("content-type", "application/json")
+            request.setEntity(params)
+            httpClient.execute(request)
+        } catch (e : Exception) {
+            LOGGER.error("Unable to write log to http: ${e.message}", e)
         }
     }
 }
