@@ -20,6 +20,8 @@ class LimitOrderCancelService(private val limitOrderService: LimitOrderService):
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    private var messagesCount: Long = 0
+
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got limit order cancel request id: ${message.uid}")
@@ -32,6 +34,7 @@ class LimitOrderCancelService(private val limitOrderService: LimitOrderService):
                 KeyValue(TIMESTAMP, LocalDateTime.now().format(DATE_TIME_FORMATTER)),
                 KeyValue(LIMIT_ORDER_ID, message.limitOrderId.toString())
         )))
+        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER_CANCEL, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.LimitOrderCancel {

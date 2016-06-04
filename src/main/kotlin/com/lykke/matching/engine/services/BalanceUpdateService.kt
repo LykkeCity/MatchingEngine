@@ -21,6 +21,8 @@ class BalanceUpdateService(val cashOperationService: CashOperationService): Absr
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    private var messagesCount: Long = 0
+
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing balance update for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}")
@@ -35,6 +37,7 @@ class BalanceUpdateService(val cashOperationService: CashOperationService): Absr
                 KeyValue(ASSET, message.assetId),
                 KeyValue(AMOUNT, message.amount.toString())
         )))
+        METRICS_LOGGER.log(KeyValue(ME_BALANCE_UPDATE, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.BalanceUpdate {

@@ -40,6 +40,8 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     private val wallets = walletDatabaseAccessor.loadWallets()
     private val assetPairs = walletDatabaseAccessor.loadAssetPairs()
 
+    private var messagesCount: Long = 0
+
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}, sendToBitcoin: ${message.sendToBitcoin}")
@@ -80,6 +82,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
                 KeyValue(AMOUNT, message.amount.toString()),
                 KeyValue(SEND_TO_BITCOIN, message.sendToBitcoin.toString())
         )))
+        METRICS_LOGGER.log(KeyValue(ME_CASH_OPERATION, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {

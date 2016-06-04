@@ -54,8 +54,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         private val ORDER_ID = "OrderId"
     }
 
-    init {
-    }
+    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
@@ -70,6 +69,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             LOGGER.debug("Unknown asset: ${message.assetPairId}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
             METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
+            METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
             return
         }
 
@@ -89,6 +89,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         match(order, orderBook)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
         METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
+        METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {

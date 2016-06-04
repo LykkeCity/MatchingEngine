@@ -31,8 +31,10 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val wallets = HashMap<String, WalletCredentials>()
-    val assets = HashMap<String, Asset>()
+    private val wallets = HashMap<String, WalletCredentials>()
+    private val assets = HashMap<String, Asset>()
+
+    private var messagesCount: Long = 0
 
     override fun run() {
         while (true) {
@@ -57,6 +59,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             LOGGER.error("Error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError(this.javaClass.name, "Error during message processing: ${exception.message}", exception)
         }
+        METRICS_LOGGER.log(KeyValue(ME_BACKEND_QUEUE, (++messagesCount).toString()))
     }
 
     private fun processBitcoinCashIn(operation: CashIn) {

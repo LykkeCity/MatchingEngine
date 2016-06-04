@@ -47,6 +47,8 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
     private val limitOrdersMap = HashMap<String, LimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
 
+    private var messagesCount: Long = 0
+
     init {
         val orders = limitOrderDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
@@ -89,6 +91,7 @@ class LimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDataba
                 KeyValue(PRICE, order.price.toString()),
                 KeyValue(STATUS, order.status)
         )))
+        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.LimitOrder {
