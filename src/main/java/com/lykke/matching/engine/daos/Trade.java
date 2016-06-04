@@ -84,13 +84,13 @@ public class Trade extends TableServiceEntity {
     public String toString() {
         return "Trade(" +
                 "clientId='" + partitionKey + '\'' +
-                "uid='" + rowKey + '\'' +
-                "assetId='" + assetId + '\'' +
+                ", uid='" + rowKey + '\'' +
+                ", assetId='" + assetId + '\'' +
                 ", dateTime=" + dateTime +
                 ", limitOrderId='" + limitOrderId + '\'' +
                 ", marketOrderId='" + marketOrderId + '\'' +
-                ", volume=" + price +
-                ", price=" + volume +
+                ", volume=" + volume +
+                ", price=" + price +
                 ')';
     }
 }
