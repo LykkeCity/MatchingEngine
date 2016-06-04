@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
@@ -17,6 +18,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val accountTable: CloudTable
@@ -55,6 +57,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load balances", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load balances", e)
         }
         LOGGER.info("Loaded $balancesCount balances for ${result.size} clients")
         return result
@@ -73,6 +76,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load accounts", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load accounts", e)
         }
 
         LOGGER.info("Loaded $count/${result.size} wallets")
@@ -85,6 +89,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             batchInsertOrMerge(accountTable, wallets)
         } catch(e: Exception) {
             LOGGER.error("Unable to update accounts, size: ${wallets.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update accounts, size: ${wallets.size}", e)
         }
     }
 
@@ -94,6 +99,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             externalOperationsTable.execute(TableOperation.insert(operation))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert external operation: ${operation.rowKey}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert external operation: ${operation.rowKey}", e)
         }
     }
 
@@ -104,6 +110,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             return operation
         } catch(e: Exception) {
             LOGGER.error("Unable to check if operation processed: $clientId, $operationId", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to check if operation processed: $clientId, $operationId", e)
         }
         return null
     }
@@ -113,6 +120,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             operationsTable.execute(TableOperation.insert(operation))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.getUid()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.getUid()}", e)
         }
     }
 
@@ -131,6 +139,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load asset pairs", e)
         }
 
         LOGGER.info("Loaded $count/${result.size} asset pairs ")
@@ -146,6 +155,7 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
             return assetPair
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load asset: $assetId", e)
         }
         return null
     }

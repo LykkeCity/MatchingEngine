@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.HourCandle.MICRO
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
@@ -19,6 +20,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureLimitOrderDatabaseAccessor::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val limitOrdersTable: CloudTable
@@ -51,6 +53,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load limit orders", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load limit orders", e)
         }
         return result
     }
@@ -60,6 +63,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             limitOrdersTable.execute(TableOperation.insertOrMerge(order))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit order: ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit order: ${order.getId()}", e)
         }
     }
 
@@ -68,6 +72,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             limitOrdersTable.execute(TableOperation.merge(order))
         } catch(e: Exception) {
             LOGGER.error("Unable to update limit order: ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update limit order: ${order.getId()}", e)
         }
     }
 
@@ -76,6 +81,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             batchDelete(limitOrdersTable, orders)
         } catch(e: Exception) {
             LOGGER.error("Unable to delete limit orders, size: ${orders.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to delete limit orders, size: ${orders.size}", e)
         }
     }
 
@@ -84,6 +90,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             limitOrdersDoneTable.execute(TableOperation.insertOrMerge(order))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done order ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.getId()}", e)
         }
     }
 
@@ -106,6 +113,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             }
         } catch (e: Exception) {
             LOGGER.error("Unable to add limit done order ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.getId()}", e)
         }
     }
 
@@ -114,6 +122,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             batchInsertOrMerge(bestPricesTable, prices)
         } catch(e: Exception) {
             LOGGER.error("Unable to update best prices, size: ${prices.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update best prices, size: ${prices.size}", e)
         }
     }
 
@@ -122,6 +131,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             candlesTable.execute(TableOperation.insertOrMerge(candle))
         } catch(e: Exception) {
             LOGGER.error("Unable to add candle ${candle.partitionKey} ${candle.rowKey}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add candle ${candle.partitionKey} ${candle.rowKey}", e)
         }
     }
 
@@ -137,6 +147,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load hour candles", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load hour candles", e)
         }
 
         return result
@@ -147,6 +158,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             batchInsertOrMerge(hourCandlesTable, candles)
         } catch(e: Exception) {
             LOGGER.error("Unable to save hour candles, size: ${candles.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to save hour candles, size: ${candles.size}", e)
         }
     }
 }

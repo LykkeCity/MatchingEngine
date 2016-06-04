@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.daos.bitcoin.BtTransaction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import org.apache.log4j.Logger
@@ -13,6 +14,7 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val walletCredentialsTable: CloudTable
@@ -34,6 +36,7 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
             return walletCredentialsTable.execute(retrieveWalletCredentials).getResultAsType<WalletCredentials>()
         } catch(e: Exception) {
             LOGGER.error("Unable to load wallet credentials: $clientId", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load wallet credentials: $clientId", e)
         }
         return null
     }
@@ -44,6 +47,7 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
             return assetsTable.execute(retrieveAssetAsset).getResultAsType<Asset>()
         } catch(e: Exception) {
             LOGGER.error("Unable to load assetId: $assetId", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load assetId: $assetId", e)
         }
         return null
     }
@@ -53,6 +57,7 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
             bitcoinTransactionTable.execute(TableOperation.insert(transaction))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert bitcoin transaction: ${transaction.rowKey}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert bitcoin transaction: ${transaction.rowKey}", e)
         }
     }
 }

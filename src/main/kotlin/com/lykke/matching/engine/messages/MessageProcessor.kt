@@ -11,6 +11,7 @@ import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccesso
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.queue.BackendQueueProcessor
 import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
@@ -34,6 +35,7 @@ class MessageProcessor: Thread {
 
     companion object {
         val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val messagesQueue: BlockingQueue<MessageWrapper>
@@ -135,10 +137,12 @@ class MessageProcessor: Thread {
                 }
                 else -> {
                     LOGGER.error("Unknown message type: ${message.type}")
+                    METRICS_LOGGER.logError(this.javaClass.name, "Unknown message type: ${message.type}")
                 }
             }
         } catch (exception: Exception) {
             LOGGER.error("Got error during message processing: ${exception.message}", exception)
+            METRICS_LOGGER.logError(this.javaClass.name, "Got error during message processing: ${exception.message}", exception)
         }
     }
 }

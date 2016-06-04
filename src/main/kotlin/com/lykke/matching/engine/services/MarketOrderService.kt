@@ -11,6 +11,18 @@ import com.lykke.matching.engine.daos.bitcoin.ClientTradePair
 import com.lykke.matching.engine.daos.bitcoin.Orders
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.greaterThan
+import com.lykke.matching.engine.logging.AMOUNT
+import com.lykke.matching.engine.logging.ASSET_PAIR
+import com.lykke.matching.engine.logging.CLIENT_ID
+import com.lykke.matching.engine.logging.ID
+import com.lykke.matching.engine.logging.KeyValue
+import com.lykke.matching.engine.logging.Line
+import com.lykke.matching.engine.logging.ME_MARKET_ORDER
+import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.STATUS
+import com.lykke.matching.engine.logging.STRAIGHT
+import com.lykke.matching.engine.logging.TIMESTAMP
+import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus.Matched
@@ -21,6 +33,7 @@ import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.apache.log4j.Logger
+import java.time.LocalDateTime
 import java.util.ArrayList
 import java.util.Date
 import java.util.HashSet
@@ -36,6 +49,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
 
         private val ORDER_ID = "OrderId"
     }
@@ -45,7 +59,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}")
+        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}, straight: ${message.straight}")
 
         val order = MarketOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume, null,
                 Processing.name, Date(message.timestamp), Date(), null, null, message.straight)
@@ -55,6 +69,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             marketOrderDatabaseAccessor.addMarketOrder(order)
             LOGGER.debug("Unknown asset: ${message.assetPairId}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+            METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
             return
         }
 
@@ -63,9 +78,9 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
             if (orderBook == null) {
-                LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+                LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}, straight: ${order.straight}")
             } else {
-                LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}")
+                LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}, straight: ${order.straight}")
             }
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
             return
@@ -73,6 +88,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         match(order, orderBook)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+        METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
@@ -247,7 +263,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         bitcoinTransactions.forEach { backendQueue.put(it) }
 
-        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume} matched, price: ${marketOrder.price}")
+        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}, straight: ${marketOrder.straight} matched, price: ${marketOrder.price}")
     }
 
     fun isEnoughFunds(order: MarketOrder, totalPrice: Double): Boolean {
@@ -255,11 +271,25 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         if (assetPair == null) {
             LOGGER.error("Unknown asset pair: ${order.assetPairId}")
+            METRICS_LOGGER.logError(this.javaClass.name, "Unknown asset pair: ${order.assetPairId}")
             return false
         }
         val asset = if (order.isBuySide()) assetPair.quotingAssetId!! else assetPair.baseAssetId!!
 
         LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= $totalPrice")
         return cashOperationService.getBalance(order.clientId, asset) >= totalPrice
+    }
+
+    fun getMetricLine(uid: String, order: MarketOrder): Line {
+        return Line(ME_MARKET_ORDER, arrayOf(
+                KeyValue(UID, uid),
+                KeyValue(ID, order.id),
+                KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
+                KeyValue(CLIENT_ID, order.clientId),
+                KeyValue(ASSET_PAIR, order.assetPairId),
+                KeyValue(AMOUNT, order.volume.toString()),
+                KeyValue(STRAIGHT, order.straight.toString()),
+                KeyValue(STATUS, order.status)
+        ))
     }
 }

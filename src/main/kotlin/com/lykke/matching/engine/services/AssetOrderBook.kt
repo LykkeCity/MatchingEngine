@@ -24,7 +24,6 @@ class AssetOrderBook(val assetId: String) {
         result
     })
 
-    //TODO add time to comparators
     val askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
     val bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
 

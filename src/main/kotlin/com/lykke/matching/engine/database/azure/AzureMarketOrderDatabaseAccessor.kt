@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Trade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableServiceException
@@ -18,6 +19,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val marketOrdersTable: CloudTable
@@ -43,6 +45,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             marketOrdersTable.execute(TableOperation.insertOrMerge(order))
         } catch(e: Exception) {
             LOGGER.error("Unable to add market order: ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add market order: ${order.getId()}", e)
         }
     }
 
@@ -64,7 +67,8 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
                 }
             }
         } catch (e: Exception) {
-            LOGGER.error("Unable to add market done order ${order.getId()}", e)
+            LOGGER.error("Unable to add market order ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add market order ${order.getId()}", e)
         }
     }
 
@@ -73,6 +77,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             marketOrdersTable.execute(TableOperation.merge(order))
         } catch(e: Exception) {
             LOGGER.error("Unable to update market order: ${order.getId()}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update market order: ${order.getId()}", e)
         }
     }
 
@@ -89,6 +94,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to add trades, size: ${trades.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add trades, size: ${trades.size}", e)
         }
     }
 
@@ -105,6 +111,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to add matching data, size: ${data.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add matching data, size: ${data.size}", e)
         }
     }
 
@@ -121,6 +128,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to add order trades links, size: ${links.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add order trades links, size: ${links.size}", e)
         }
     }
 }

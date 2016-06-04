@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.queue.azure
 
+import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.queue.QueueWriter
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.queue.CloudQueue
@@ -11,6 +12,7 @@ class AzureQueueWriter: QueueWriter {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureQueueWriter::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     private val outQueue: CloudQueue
@@ -30,7 +32,8 @@ class AzureQueueWriter: QueueWriter {
         try {
             outQueue.addMessage(CloudQueueMessage(data))
         } catch (e: Exception) {
-            LOGGER.error("Unable to enqueue message to azure queue: $data")
+            LOGGER.error("Unable to enqueue message to azure queue: $data", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to enqueue message to azure queue: $data", e)
         }
     }
 }
