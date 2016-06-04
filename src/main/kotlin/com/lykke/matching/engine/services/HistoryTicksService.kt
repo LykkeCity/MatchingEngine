@@ -69,7 +69,7 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
 
     fun buildTicks() {
         val dayOfWeek = LocalDate.now().dayOfWeek
-        if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+        if (dayOfWeek != DayOfWeek.SUNDAY) {
             val now = Date()
             val ticks = limitOrderService.buildMarketProfile()
             for (tick in ticks) {
