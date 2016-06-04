@@ -22,7 +22,7 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
     }
 
     override fun addMarketOrderWithGeneratedRowId(order: MarketOrder) {
-        val orderClientTimeKey = MarketOrder(Date().time.toString(), order.assetPairId, order.clientId, order.volume, null,
+        val orderClientTimeKey = MarketOrder(Date().time.toString(), order.assetPairId, order.clientId, order.volume, order.price,
                 order.status, order.createdAt, order.registered, null, null, order.straight)
         orderClientTimeKey.partitionKey = order.clientId
         orderClientTimeKey.rowKey = "%s.#%02d".format(DATE_FORMAT.format(order.matchedAt), 0)

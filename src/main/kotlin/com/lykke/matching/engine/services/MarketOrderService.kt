@@ -142,13 +142,16 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         if (!isEnoughFunds(marketOrder, if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume )) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            matchedOrders.forEach { limitOrderService.addToOrderBook(it) }
+            cancelledLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
+            skipLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
             LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
             return
         }
 
         remainingVolume = marketOrder.getAbsVolume()
         val now = Date()
-        val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId) ?: return
+        val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId)!!
 
 
         val completedLimitOrders = LinkedList<LimitOrder>()
