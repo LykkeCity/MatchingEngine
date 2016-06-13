@@ -45,6 +45,11 @@ protobuf {
     }
 }
 
+task printProperties << {
+    teamcity.each { key, val ->
+        println "##tc-property name='${key}' value='${val}'"
+    }
+}
 
 mainClassName = "com.lykke.matching.engine.AppStarterKt"
 applicationDefaultJvmArgs = ["-Xms512m", "-Xmx1g"]
