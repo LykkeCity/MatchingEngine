@@ -175,40 +175,48 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
             val clientTradePairs = ArrayList<ClientTradePair>()
 
-            var uid = UUID.randomUUID().toString()
-            marketTrades.add(Trade(marketOrder.clientId, uid,
+            var uid = Trade.generateId(now)
+            var trade = Trade(marketOrder.clientId, uid,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) volume else -volume, limitOrder.price))
+                    marketOrder.getId(), if (isMarketBuy) volume else -volume, limitOrder.price)
+            marketTrades.add(trade)
+            marketTrades.add(trade.cloneWithGeneratedId())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
                     assetPair.baseAssetId!!, now, if (isMarketBuy) volume else -volume))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
-            uid = UUID.randomUUID().toString()
-            marketTrades.add(Trade(marketOrder.clientId, uid,
+            uid = Trade.generateId(now)
+            trade = Trade(marketOrder.clientId, uid,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume, limitOrder.price))
+                    marketOrder.getId(), if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume, limitOrder.price)
+            marketTrades.add(trade)
+            marketTrades.add(trade.cloneWithGeneratedId())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
                     assetPair.quotingAssetId!!, now, if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
-            uid = UUID.randomUUID().toString()
-            limitTrades.add(Trade(limitOrder.clientId, uid,
+            uid = Trade.generateId(now)
+            trade = Trade(limitOrder.clientId, uid,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) -volume else volume, limitOrder.price))
+                    marketOrder.getId(), if (isMarketBuy) -volume else volume, limitOrder.price)
+            limitTrades.add(trade)
+            limitTrades.add(trade.cloneWithGeneratedId())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),
                     assetPair.baseAssetId!!, now, if (isMarketBuy) -volume else volume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
-            uid = UUID.randomUUID().toString()
-            limitTrades.add(Trade(limitOrder.clientId, uid,
+            uid = Trade.generateId(now)
+            trade = Trade(limitOrder.clientId, uid,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume, limitOrder.price))
+                    marketOrder.getId(), if (isMarketBuy) oppositeSideVolume else -oppositeSideVolume, limitOrder.price)
+            limitTrades.add(trade)
+            limitTrades.add(trade.cloneWithGeneratedId())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),

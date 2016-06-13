@@ -2,7 +2,9 @@ package com.lykke.matching.engine.daos;
 
 import com.microsoft.azure.storage.table.TableServiceEntity;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class Trade extends TableServiceEntity {
     //partition key: Client id
@@ -14,6 +16,10 @@ public class Trade extends TableServiceEntity {
     String marketOrderId;
     Double volume;
     Double price;
+
+    public static String DATE_TIME = "dt";
+    public static SimpleDateFormat DATE_FORMAT = initTimeFormatter();
+    private static long counter = 0;
 
     public Trade() {
     }
@@ -92,5 +98,20 @@ public class Trade extends TableServiceEntity {
                 ", volume=" + volume +
                 ", price=" + price +
                 ')';
+    }
+
+    public Trade cloneWithGeneratedId() {
+        return new Trade(DATE_TIME, rowKey, assetId, dateTime, limitOrderId, marketOrderId, volume, price);
+    }
+
+    public static String generateId(Date date) {
+        counter = ++counter % 99999;
+        return String.format("%s_%05d", DATE_FORMAT.format(date), counter);
+    }
+
+    private static SimpleDateFormat initTimeFormatter() {
+        SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
     }
 }

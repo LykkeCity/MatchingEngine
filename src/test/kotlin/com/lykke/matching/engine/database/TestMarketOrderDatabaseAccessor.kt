@@ -25,7 +25,7 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
         val orderClientTimeKey = MarketOrder(Date().time.toString(), order.assetPairId, order.clientId, order.volume, order.price,
                 order.status, order.createdAt, order.registered, null, null, order.straight)
         orderClientTimeKey.partitionKey = order.clientId
-        orderClientTimeKey.rowKey = "%s.#%02d".format(DATE_FORMAT.format(order.matchedAt), 0)
+        orderClientTimeKey.rowKey = String.format("%s.#%02d", DATE_FORMAT.format(order.matchedAt), 0)
         orders.add(orderClientTimeKey)
     }
 

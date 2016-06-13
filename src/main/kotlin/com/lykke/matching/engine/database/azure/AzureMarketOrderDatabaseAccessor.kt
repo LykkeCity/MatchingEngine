@@ -51,11 +51,12 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
 
     override fun addMarketOrderWithGeneratedRowId(order: MarketOrder) {
         var counter = 0
+        val dateString = DATE_FORMAT.format(order.matchedAt)
         try {
             while (true) {
                 try {
                     order.partitionKey = order.clientId
-                    order.rowKey = "%s.%03d".format(DATE_FORMAT.format(order.matchedAt), counter)
+                    order.rowKey = String.format("%s.%03d", dateString, counter)
                     marketOrdersTable.execute(TableOperation.insert(order))
                     return
                 } catch(e: TableServiceException) {

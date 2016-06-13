@@ -13,6 +13,9 @@ public class BtTransaction extends TableServiceEntity {
     Date created = new Date();
     String requestData;
 
+    public BtTransaction() {
+    }
+
     public BtTransaction(String rowKey, Date created, String requestData, ClientCashOperationPair clientCashOperationPair) {
         this(rowKey, created, requestData, clientCashOperationPair, null);
     }

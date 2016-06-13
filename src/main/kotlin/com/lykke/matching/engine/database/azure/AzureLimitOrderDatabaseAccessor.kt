@@ -100,7 +100,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             while (true) {
                 try {
                     order.partitionKey = order.clientId
-                    order.rowKey = "%s.%03d".format(DATE_FORMAT.format(order.lastMatchTime), counter)
+                    order.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime), counter)
                     limitOrdersDoneTable.execute(TableOperation.insert(order))
                     return
                 } catch(e: TableServiceException) {
