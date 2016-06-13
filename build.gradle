@@ -45,6 +45,9 @@ protobuf {
     }
 }
 
+task createStartScripts(type: CreateStartScripts) {
+    unixStartScriptGenerator.template = resources.text.fromFile('dist/bin/start.sh')
+}
 
 mainClassName = "com.lykke.matching.engine.AppStarterKt"
 applicationDefaultJvmArgs = ["-Xms512m", "-Xmx1g"]
