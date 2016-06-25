@@ -25,6 +25,7 @@ import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
+import java.util.HashMap
 import java.util.Properties
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
@@ -64,7 +65,10 @@ class MessageProcessor: Thread {
     val hoursCandlesBuilder: Timer
     val historyTicksBuilder: Timer
 
-    constructor(config: Properties, dbConfig: Map<String, String>, queue: BlockingQueue<MessageWrapper>) {
+    constructor(config: Properties, azureConfig: HashMap<String, Any>, queue: BlockingQueue<MessageWrapper>) {
+
+        val dbConfig = azureConfig["Db"] as Map<String, String>
+
         this.messagesQueue = queue
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -73,7 +77,7 @@ class MessageProcessor: Thread {
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(dbConfig["ClientPersonalInfoConnString"]!!, dbConfig["BitCoinQueueConnectionString"]!!, dbConfig["DictsConnString"]!!)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
-        this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!)
+        this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, azureConfig)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
         this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)

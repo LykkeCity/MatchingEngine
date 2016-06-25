@@ -7,6 +7,7 @@ import com.microsoft.azure.storage.queue.CloudQueue
 import com.microsoft.azure.storage.queue.CloudQueueMessage
 import com.sun.javaws.exceptions.InvalidArgumentException
 import org.apache.log4j.Logger
+import java.util.HashMap
 
 class AzureQueueWriter: QueueWriter {
 
@@ -17,10 +18,14 @@ class AzureQueueWriter: QueueWriter {
 
     private val outQueue: CloudQueue
 
-    constructor(queueConnectionString: String) {
+    constructor(queueConnectionString: String, azureConfig: HashMap<String, Any>) {
         val storageAccount = CloudStorageAccount.parse(queueConnectionString)
         val queueClient = storageAccount.createCloudQueueClient()
-        outQueue = queueClient.getQueueReference("indata")
+        var queueName = (azureConfig["MatchingEngine"] as Map<String, Any>).get("BackendQueueName") as String?
+        if (queueName == null) {
+            queueName = "indata"
+        }
+        outQueue = queueClient.getQueueReference(queueName)
 
         // Create the queue if it doesn't already exist.
         if (!outQueue.exists()) {

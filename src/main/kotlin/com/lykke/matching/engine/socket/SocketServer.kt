@@ -48,8 +48,7 @@ class SocketServer(val config: Properties): Runnable {
         val maxConnections = config.getInt("server.max.connections") ?: DEFAULT_MAX_CONNECTIONS
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
-        val dbConfig = loadConfig(config)["Db"] as Map<String, String>
-        val messageProcessor = MessageProcessor(config, dbConfig, messagesQueue)
+        val messageProcessor = MessageProcessor(config, loadConfig(config), messagesQueue)
         messageProcessor.start()
 
         METRICS_LOGGER.log(KeyValue(ME_STATUS, "True"))
