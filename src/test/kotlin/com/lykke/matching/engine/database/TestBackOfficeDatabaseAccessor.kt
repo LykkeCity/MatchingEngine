@@ -17,8 +17,16 @@ class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
         return credentials.get(clientId)
     }
 
+    fun addAsset(asset: Asset) {
+        assets[asset.assetId] = asset
+    }
+
     override fun loadAsset(assetId: String): Asset? {
         return assets.get(assetId)
+    }
+
+    override fun loadAssets(): MutableMap<String, Asset> {
+        return HashMap<String, Asset>()
     }
 
     override fun saveBitcoinTransaction(transaction: BtTransaction) {

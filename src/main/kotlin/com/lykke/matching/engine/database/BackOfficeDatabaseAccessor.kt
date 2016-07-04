@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.bitcoin.BtTransaction
 
 interface BackOfficeDatabaseAccessor {
     fun loadWalletCredentials(clientId: String): WalletCredentials?
+    fun loadAssets(): MutableMap<String, Asset>
     fun loadAsset(assetId: String): Asset?
     fun saveBitcoinTransaction(transaction: BtTransaction)
 }

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -25,6 +26,7 @@ class LimitOrderServiceTest {
 
     val testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
+    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     @Before
@@ -32,8 +34,8 @@ class LimitOrderServiceTest {
         testDatabaseAccessor.clear()
         testWalletDatabaseAcessor.clear()
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF"))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF", 5, 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
@@ -41,7 +43,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -50,7 +52,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
@@ -63,7 +65,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testBalanceCheck() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
 
         assertTrue { service.isEnoughFunds(buildLimitOrder(price = 2.0, volume = -1000.0), 1000.0) }
         assertFalse { service.isEnoughFunds(buildLimitOrder( price = 2.0, volume = -1001.0), 1001.0) }

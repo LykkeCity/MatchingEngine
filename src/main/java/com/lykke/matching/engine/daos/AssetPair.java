@@ -8,14 +8,18 @@ public class AssetPair extends TableServiceEntity {
 
     String baseAssetId;
     String quotingAssetId;
+    int accuracy;
+    int invertedAccuracy;
 
     public AssetPair() {
     }
 
-    public AssetPair(String baseAssetId, String quotingAssetId) {
+    public AssetPair(String baseAssetId, String quotingAssetId, int accuracy, int invertedAccuracy) {
         super(ASSET_PAIR, baseAssetId + quotingAssetId);
         this.baseAssetId = baseAssetId;
         this.quotingAssetId = quotingAssetId;
+        this.accuracy = accuracy;
+        this.invertedAccuracy = invertedAccuracy;
     }
 
     public String getBaseAssetId() {
@@ -38,8 +42,24 @@ public class AssetPair extends TableServiceEntity {
         return rowKey;
     }
 
+    public int getAccuracy() {
+        return accuracy;
+    }
+
+    public void setAccuracy(int accuracy) {
+        this.accuracy = accuracy;
+    }
+
+    public int getInvertedAccuracy() {
+        return invertedAccuracy;
+    }
+
+    public void setInvertedAccuracy(int invertedAccuracy) {
+        this.invertedAccuracy = invertedAccuracy;
+    }
+
     @Override
     public String toString() {
-        return "AssetPair(baseAssetId=" + baseAssetId + ", quotingAssetId=" + quotingAssetId + ")";
+        return "AssetPair(pairId=" + getAssetPairId() + ",baseAssetId=" + baseAssetId + ", quotingAssetId=" + quotingAssetId + ", accuracy=" + accuracy + ", invertedAccuracy=" + invertedAccuracy + ")";
     }
 }

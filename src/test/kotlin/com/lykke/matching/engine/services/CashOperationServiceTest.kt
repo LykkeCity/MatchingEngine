@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
@@ -18,6 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue
 class CashOperationServiceTest {
 
     val testDatabaseAccessor = TestWalletDatabaseAccessor()
+    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val transactionQueue = LinkedBlockingQueue<Transaction>()
     val DELTA = 1e-15
 
@@ -31,7 +33,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -45,7 +47,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testSmallCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 0.01))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -59,7 +61,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOut() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -73,7 +75,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testResendCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -96,7 +98,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewAsset() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset4")
 
@@ -106,7 +108,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewWallet() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client3", "Asset2", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client3", "Asset2")
 
@@ -116,7 +118,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testUpdateBalance() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue)
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val updateService = BalanceUpdateService(service)
 
         updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))

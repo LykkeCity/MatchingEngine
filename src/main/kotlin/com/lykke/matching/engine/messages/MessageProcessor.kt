@@ -79,7 +79,7 @@ class MessageProcessor: Thread {
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, azureConfig)
 
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue)
         this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
         this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue)
         this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)

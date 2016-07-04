@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -19,6 +20,7 @@ import kotlin.test.assertNull
 class LimitOrderCancelServiceTest {
     val testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
+    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     @Before
@@ -32,8 +34,8 @@ class LimitOrderCancelServiceTest {
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF"))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF", 5, 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
@@ -41,7 +43,7 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
+        val service = LimitOrderCancelService(LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.getId() == "3" }

@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.logging.AMOUNT
 import com.lykke.matching.engine.logging.ASSET
@@ -29,7 +31,9 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor, private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.CashOperation> {
+class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                           private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
+                           private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
@@ -38,6 +42,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     private val balances = walletDatabaseAccessor.loadBalances()
     private val wallets = walletDatabaseAccessor.loadWallets()
+    private val assets = backOfficeDatabaseAccessor.loadAssets()
     private val assetPairs = walletDatabaseAccessor.loadAssetPairs()
 
     private var messagesCount: Long = 0
@@ -87,6 +92,19 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
         return ProtocolMessages.CashOperation.parseFrom(array)
+    }
+
+    fun getAsset(assetId: String): Asset? {
+        var asset = assets[assetId]
+        if (asset == null) {
+            asset = backOfficeDatabaseAccessor.loadAsset(assetId)
+            if (asset != null) {
+                assets[assetId] = asset
+            }
+        }
+
+        LOGGER.debug("Got asset : ${asset.toString()}")
+        return asset
     }
 
     fun getAssetPair(assetPairId: String): AssetPair? {

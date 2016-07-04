@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -29,6 +31,7 @@ class MarketOrderServiceTest {
     var testDatabaseAccessor = TestMarketOrderDatabaseAccessor()
     var testLimitDatabaseAccessor = TestLimitOrderDatabaseAccessor()
     var testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
+    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val transactionQueue = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
@@ -41,6 +44,12 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.clear()
         transactionQueue.clear()
         tradesInfoQueue.clear()
+
+        testBackOfficeDatabaseAcessor.addAsset(Asset("EUR", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("JPY", 2))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "JPY", 3, 6))
     }
 
     @After
@@ -49,10 +58,9 @@ class MarketOrderServiceTest {
 
     @Test
     fun testNoLiqudity() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client1"))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -63,14 +71,13 @@ class MarketOrderServiceTest {
     @Test
     fun testNotEnoughFundsClientOrder() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.6, volume = 1000.0, clientId = "Client1"))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1500.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -81,11 +88,10 @@ class MarketOrderServiceTest {
     @Test
     fun testNoLiqudityToFullyFill() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 2000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -97,11 +103,10 @@ class MarketOrderServiceTest {
     @Test
     fun testNotEnoughFundsMarketOrder() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 900.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -111,12 +116,11 @@ class MarketOrderServiceTest {
 
     @Test
     fun testMatchOneToOne() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -160,7 +164,6 @@ class MarketOrderServiceTest {
 
     @Test
     fun testMatchOneToOneEURJPY() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "JPY"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 122.512, volume = 1000000.0, clientId = "Client3"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 122.524, volume = -1000000.0, clientId = "Client3"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "JPY", 5000000.0))
@@ -168,7 +171,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.1))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "JPY", 100.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -183,19 +186,19 @@ class MarketOrderServiceTest {
         assertEquals(2, testLimitDatabaseAccessor.orders.size)
         assertEquals(0, testLimitDatabaseAccessor.ordersDone.size)
 
-        assertEquals(0.08162465717643985, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
+        assertEquals(0.08, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
         assertEquals(-10.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "JPY" }?.volume)
-        assertEquals(-0.08162465717643985, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
+        assertEquals(-0.08, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
         assertEquals(10.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "JPY" }?.volume)
 
-        assertEquals(5000000.081624657, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
+        assertEquals(5000000.08, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(4999990.0, testWalletDatabaseAcessor.getBalance("Client3", "JPY"), DELTA)
-        assertEquals(0.018375342823560153, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+        assertEquals(0.02, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(110.0, testWalletDatabaseAcessor.getBalance("Client4", "JPY"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         assertEquals("Client4", swap.clientId1)
-        assertEquals(0.08162465717643985, swap.Amount1, DELTA)
+        assertEquals(0.08, swap.Amount1, DELTA)
         assertEquals("EUR", swap.origAsset1)
         assertEquals("Client3", swap.clientId2)
         assertEquals(10.0, swap.Amount2, DELTA)
@@ -204,11 +207,10 @@ class MarketOrderServiceTest {
 
     @Test
     fun testMatchOneToOneAfterNotEnoughFunds() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -261,14 +263,13 @@ class MarketOrderServiceTest {
 
     @Test
     fun testMatchOneToMany() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 100.0, clientId = "Client3"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.4, volume = 1000.0, clientId = "Client1"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1260.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 150.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -322,12 +323,11 @@ class MarketOrderServiceTest {
 
     @Test
     fun testNotStraight() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = -500.0, assetId = "EURUSD", clientId = "Client3"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 750.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -371,14 +371,13 @@ class MarketOrderServiceTest {
 
     @Test
     fun testNotStraightMatchOneToMany() {
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.4, volume = -100.0, clientId = "Client3"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = -1000.0, clientId = "Client1"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 3000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 3000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 2000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
         val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
@@ -429,17 +428,17 @@ class MarketOrderServiceTest {
         assertEquals(900.0, swap.Amount2, DELTA)
         assertEquals("EUR", swap.origAsset2)
     }
+}
 
-    private fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-        return MessageWrapper(MessageType.MARKET_ORDER, ProtocolMessages.MarketOrder.newBuilder()
-                .setUid(Date().time)
-                .setTimestamp(order.createdAt.time)
-                .setClientId(order.clientId)
-                .setAssetPairId(order.assetPairId)
-                .setVolume(order.volume)
-                .setStraight(order.straight)
-                .build().toByteArray(), null)
-    }
+fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
+    return MessageWrapper(MessageType.MARKET_ORDER, ProtocolMessages.MarketOrder.newBuilder()
+            .setUid(Date().time)
+            .setTimestamp(order.createdAt.time)
+            .setClientId(order.clientId)
+            .setAssetPairId(order.assetPairId)
+            .setVolume(order.volume)
+            .setStraight(order.straight)
+            .build().toByteArray(), null)
 }
 
 fun buildMarketOrder(rowKey: String = UUID.randomUUID().toString(),

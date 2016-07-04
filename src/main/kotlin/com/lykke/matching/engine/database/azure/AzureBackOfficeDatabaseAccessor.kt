@@ -7,7 +7,9 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
+import com.microsoft.azure.storage.table.TableQuery
 import org.apache.log4j.Logger
+import java.util.HashMap
 
 
 class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
@@ -39,6 +41,27 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load wallet credentials: $clientId", e)
         }
         return null
+    }
+
+    override fun loadAssets(): MutableMap<String, Asset> {
+        val result = HashMap<String, Asset>()
+
+        try {
+            val partitionQuery = TableQuery.from(Asset::class.java)
+                    .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ASSET))
+
+            for (asset in assetsTable.execute(partitionQuery)) {
+                result[asset.getAssetId()] = asset
+                LOGGER.info("Loaded asset: ${asset.toString()}")
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load assets", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load assets", e)
+        }
+
+        LOGGER.info("Loaded ${result.size} assets ")
+
+        return result
     }
 
     override fun loadAsset(assetId: String): Asset? {
