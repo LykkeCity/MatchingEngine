@@ -176,7 +176,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
             val clientTradePairs = ArrayList<ClientTradePair>()
 
-            val marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId!!)!!.accuracy)
+            val marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId!!)!!.accuracy, marketOrder.isOrigBuySide)
             var uid = Trade.generateId(now)
             var trade = Trade(marketOrder.clientId, uid,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
@@ -189,7 +189,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
                     assetPair.baseAssetId!!, now, marketRoundedVolume))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
-            val oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume, cashOperationService.getAsset(assetPair.quotingAssetId!!)!!.accuracy)
+            val oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume, cashOperationService.getAsset(assetPair.quotingAssetId!!)!!.accuracy, marketOrder.isOrigBuySide)
             uid = Trade.generateId(now)
             trade = Trade(marketOrder.clientId, uid,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
@@ -231,7 +231,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                limitOrder.remainingVolume -= RoundingUtils.round(if (limitOrder.isBuySide()) volume else -volume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy)
+                limitOrder.remainingVolume -= RoundingUtils.round(if (limitOrder.isBuySide()) volume else -volume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy, marketOrder.isOrigBuySide)
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
             }
@@ -245,8 +245,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             val asset2 = cashOperationService.getAsset(if (isMarketBuy) assetPair.baseAssetId!! else assetPair.quotingAssetId!!)!!
 
             bitcoinTransactions.add(Swap(TransactionId = transactionId,
-                                         clientId1 = marketOrder.clientId, Amount1 = RoundingUtils.round(if (isMarketBuy) oppositeSideVolume else volume, asset1.accuracy), origAsset1 = asset1.assetId,
-                                         clientId2 = limitOrder.clientId, Amount2 = RoundingUtils.round(if (isMarketBuy) volume else oppositeSideVolume, asset2.accuracy), origAsset2 = asset2.assetId,
+                                         clientId1 = marketOrder.clientId, Amount1 = RoundingUtils.round(if (isMarketBuy) oppositeSideVolume else volume, asset1.accuracy, marketOrder.isOrigBuySide), origAsset1 = asset1.assetId,
+                                         clientId2 = limitOrder.clientId, Amount2 = RoundingUtils.round(if (isMarketBuy) volume else oppositeSideVolume, asset2.accuracy, marketOrder.isOrigBuySide), origAsset2 = asset2.assetId,
                                          orders = Orders(ClientOrderPair(marketOrder.clientId, marketOrder.getId()), ClientOrderPair(limitOrder.clientId, limitOrder.getId()),
                                                  clientTradePairs.toTypedArray())))
         }
@@ -254,7 +254,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         marketOrder.status = Matched.name
         marketOrder.matchedAt = now
         marketOrder.price = RoundingUtils.round(if (marketOrder.straight) totalLimitPrice / marketOrder.getAbsVolume() else marketOrder.getAbsVolume() / totalMarketVolume
-                , cashOperationService.getAssetPair(marketOrder.assetPairId)!!.accuracy )
+                , cashOperationService.getAssetPair(marketOrder.assetPairId)!!.accuracy, marketOrder.isOrigBuySide)
         marketOrder.partitionKey = ORDER_ID
         marketOrder.addTransactionIds(transactionIds)
         marketOrderDatabaseAccessor.addMarketOrder(marketOrder)

@@ -24,6 +24,10 @@ public class MarketOrder extends Order {
         return straight ? super.isBuySide() : !super.isBuySide();
     }
 
+    public boolean isOrigBuySide() {
+        return super.isBuySide();
+    }
+
     @Override
     public String toString() {
         return "MarketOrder{"  +

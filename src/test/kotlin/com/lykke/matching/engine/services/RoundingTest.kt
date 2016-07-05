@@ -107,22 +107,22 @@ class RoundingTest {
         Assert.assertEquals(1, testLimitDatabaseAccessor.orders.size)
         Assert.assertEquals(0, testLimitDatabaseAccessor.ordersDone.size)
 
-        Assert.assertEquals(-1.12, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
+        Assert.assertEquals(-1.11, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
-        Assert.assertEquals(1.12, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
+        Assert.assertEquals(1.11, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
 
         Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        Assert.assertEquals(998.88, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(998.89, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
         Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
-        Assert.assertEquals(1.12, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(1.11, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
         Assert.assertEquals(1.0, swap.Amount1, 0.0)
         Assert.assertEquals("EUR", swap.origAsset1)
         Assert.assertEquals("Client3", swap.clientId2)
-        Assert.assertEquals(1.12, swap.Amount2, 0.0)
+        Assert.assertEquals(1.11, swap.Amount2, 0.0)
         Assert.assertEquals("USD", swap.origAsset2)
     }
 
@@ -188,13 +188,13 @@ class RoundingTest {
         Assert.assertEquals(0, testLimitDatabaseAccessor.ordersDone.size)
 
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
-        Assert.assertEquals(-0.9, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
+        Assert.assertEquals(-0.89, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "EUR" }?.volume)
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
-        Assert.assertEquals(0.9, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
+        Assert.assertEquals(0.89, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "EUR" }?.volume)
 
-        Assert.assertEquals(999.1, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
+        Assert.assertEquals(999.11, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
         Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.9, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+        Assert.assertEquals(0.89, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
         Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
@@ -202,7 +202,7 @@ class RoundingTest {
         Assert.assertEquals(1.0, swap.Amount1, 0.0)
         Assert.assertEquals("USD", swap.origAsset1)
         Assert.assertEquals("Client3", swap.clientId2)
-        Assert.assertEquals(0.9, swap.Amount2, 0.0)
+        Assert.assertEquals(0.89, swap.Amount2, 0.0)
         Assert.assertEquals("EUR", swap.origAsset2)
     }
 
@@ -267,22 +267,22 @@ class RoundingTest {
         Assert.assertEquals(1, testLimitDatabaseAccessor.orders.size)
         Assert.assertEquals(0, testLimitDatabaseAccessor.ordersDone.size)
 
-        Assert.assertEquals(-678.23, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
+        Assert.assertEquals(-678.22, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "BTC" }?.volume)
-        Assert.assertEquals(678.23, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
+        Assert.assertEquals(678.22, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "BTC" }?.volume)
 
         Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(321.77, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(321.78, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
         Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(678.23, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(678.22, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
         Assert.assertEquals(1.0, swap.Amount1, 0.0)
         Assert.assertEquals("BTC", swap.origAsset1)
         Assert.assertEquals("Client3", swap.clientId2)
-        Assert.assertEquals(678.23, swap.Amount2, 0.0)
+        Assert.assertEquals(678.22, swap.Amount2, 0.0)
         Assert.assertEquals("USD", swap.origAsset2)
     }
 
@@ -348,13 +348,13 @@ class RoundingTest {
         Assert.assertEquals(0, testLimitDatabaseAccessor.ordersDone.size)
 
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "USD" }?.volume)
-        Assert.assertEquals(-0.00147443, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "BTC" }?.volume)
+        Assert.assertEquals(-0.00147442, testDatabaseAccessor.trades.find { it.getClientId() == "Client3" && it.assetId == "BTC" }?.volume)
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "USD" }?.volume)
-        Assert.assertEquals(0.00147443, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "BTC" }?.volume)
+        Assert.assertEquals(0.00147442, testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(999.99852557, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(999.99852558, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
         Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.00147443, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(0.00147442, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
         Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
@@ -362,7 +362,7 @@ class RoundingTest {
         Assert.assertEquals(1.0, swap.Amount1, 0.0)
         Assert.assertEquals("USD", swap.origAsset1)
         Assert.assertEquals("Client3", swap.clientId2)
-        Assert.assertEquals(0.00147443, swap.Amount2, 0.0)
+        Assert.assertEquals(0.00147442, swap.Amount2, 0.0)
         Assert.assertEquals("BTC", swap.origAsset2)
     }
 }
