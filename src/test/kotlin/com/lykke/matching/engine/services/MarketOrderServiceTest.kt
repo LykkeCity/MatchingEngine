@@ -82,7 +82,7 @@ class MarketOrderServiceTest {
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))
-        assertEquals(NotEnoughFunds.name, testLimitDatabaseAccessor.orders.find { it.price == 1.6 }?.status)
+        assertEquals(NotEnoughFunds.name, testLimitDatabaseAccessor.ordersDone.find { it.price == 1.6 }?.status)
     }
 
     @Test

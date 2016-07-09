@@ -14,6 +14,7 @@ import com.microsoft.azure.storage.table.TableServiceException
 import org.apache.log4j.Logger
 import java.text.SimpleDateFormat
 import java.util.ArrayList
+import java.util.Date
 import java.util.TimeZone
 
 class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
@@ -100,7 +101,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             while (true) {
                 try {
                     order.partitionKey = order.clientId
-                    order.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime), counter)
+                    order.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), counter)
                     limitOrdersDoneTable.execute(TableOperation.insert(order))
                     return
                 } catch(e: TableServiceException) {

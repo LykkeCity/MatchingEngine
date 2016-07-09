@@ -270,8 +270,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         limitOrderService.moveOrdersToDone(completedLimitOrders)
         cancelledLimitOrders.forEach { limitOrder ->
             limitOrder.status = NotEnoughFunds.name
-            limitOrderService.updateLimitOrder(limitOrder)
         }
+        limitOrderService.moveOrdersToDone(ArrayList<LimitOrder>(cancelledLimitOrders))
 
         skipLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
 

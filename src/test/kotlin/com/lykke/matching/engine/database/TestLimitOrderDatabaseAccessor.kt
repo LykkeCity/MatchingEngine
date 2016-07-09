@@ -42,7 +42,7 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
         val orderClientTimeKey = LimitOrder( Date().time.toString(), order.assetPairId, order.clientId, order.volume,
                 order.price, order.status, order.createdAt,order.registered, null, order.volume, order.lastMatchTime)
         orderClientTimeKey.partitionKey = order.clientId
-        orderClientTimeKey.rowKey = String.format("%s.#%02d", DATE_FORMAT.format(order.lastMatchTime), 0)
+        orderClientTimeKey.rowKey = String.format("%s.#%02d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), 0)
         ordersDone.add(orderClientTimeKey)
     }
 
