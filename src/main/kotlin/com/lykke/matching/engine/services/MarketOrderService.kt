@@ -68,7 +68,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             order.status = UnknownAsset.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
             LOGGER.debug("Unknown asset: ${message.assetPairId}")
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
             METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
             METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
             return
@@ -88,7 +88,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         }
 
         match(order, orderBook)
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
         METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
         METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
     }

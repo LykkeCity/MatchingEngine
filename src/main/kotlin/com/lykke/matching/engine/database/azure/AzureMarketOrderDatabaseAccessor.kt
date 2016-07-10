@@ -55,9 +55,14 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
         try {
             while (true) {
                 try {
+                    val partitionKey = order.partitionKey
+                    val orderId = order.id
                     order.partitionKey = order.clientId
                     order.rowKey = String.format("%s.%03d", dateString, counter)
                     marketOrdersTable.execute(TableOperation.insert(order))
+
+                    order.partitionKey = partitionKey
+                    order.rowKey = orderId
                     return
                 } catch(e: TableServiceException) {
                     if (e.httpStatusCode == 409 && counter < 999) {
