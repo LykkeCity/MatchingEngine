@@ -13,7 +13,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 
-class LimitOrderCancelService(private val limitOrderService: LimitOrderService): AbsractService<ProtocolMessages.LimitOrder> {
+class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService): AbsractService<ProtocolMessages.LimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -26,7 +26,7 @@ class LimitOrderCancelService(private val limitOrderService: LimitOrderService):
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got limit order cancel request id: ${message.uid}")
 
-        limitOrderService.cancelLimitOrder(message.limitOrderId.toString())
+        genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString())
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
 
         METRICS_LOGGER.log(Line(ME_LIMIT_ORDER_CANCEL, arrayOf(

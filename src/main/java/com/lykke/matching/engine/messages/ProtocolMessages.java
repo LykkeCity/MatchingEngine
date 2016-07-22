@@ -5211,6 +5211,1753 @@ public final class ProtocolMessages {
 
   }
 
+  public interface MultiLimitOrderOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.lykke.matching.engine.messages.MultiLimitOrder)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>required int64 uid = 1;</code>
+     */
+    boolean hasUid();
+    /**
+     * <code>required int64 uid = 1;</code>
+     */
+    long getUid();
+
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    boolean hasTimestamp();
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    long getTimestamp();
+
+    /**
+     * <code>required string clientId = 3;</code>
+     */
+    boolean hasClientId();
+    /**
+     * <code>required string clientId = 3;</code>
+     */
+    java.lang.String getClientId();
+    /**
+     * <code>required string clientId = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getClientIdBytes();
+
+    /**
+     * <code>required string assetPairId = 4;</code>
+     */
+    boolean hasAssetPairId();
+    /**
+     * <code>required string assetPairId = 4;</code>
+     */
+    java.lang.String getAssetPairId();
+    /**
+     * <code>required string assetPairId = 4;</code>
+     */
+    com.google.protobuf.ByteString
+        getAssetPairIdBytes();
+
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    java.util.List<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order> 
+        getOrdersList();
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order getOrders(int index);
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    int getOrdersCount();
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    java.util.List<? extends com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder> 
+        getOrdersOrBuilderList();
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder getOrdersOrBuilder(
+        int index);
+
+    /**
+     * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+     */
+    boolean hasCancelAllPreviousLimitOrders();
+    /**
+     * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+     */
+    boolean getCancelAllPreviousLimitOrders();
+  }
+  /**
+   * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder}
+   */
+  public  static final class MultiLimitOrder extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.MultiLimitOrder)
+      MultiLimitOrderOrBuilder {
+    // Use MultiLimitOrder.newBuilder() to construct.
+    private MultiLimitOrder(com.google.protobuf.GeneratedMessage.Builder builder) {
+      super(builder);
+    }
+    private MultiLimitOrder() {
+      uid_ = 0L;
+      timestamp_ = 0L;
+      clientId_ = "";
+      assetPairId_ = "";
+      orders_ = java.util.Collections.emptyList();
+      cancelAllPreviousLimitOrders_ = false;
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private MultiLimitOrder(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              uid_ = input.readInt64();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              timestamp_ = input.readInt64();
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              clientId_ = bs;
+              break;
+            }
+            case 34: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000008;
+              assetPairId_ = bs;
+              break;
+            }
+            case 42: {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+                orders_ = new java.util.ArrayList<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order>();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              orders_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.PARSER, extensionRegistry));
+              break;
+            }
+            case 48: {
+              bitField0_ |= 0x00000010;
+              cancelAllPreviousLimitOrders_ = input.readBool();
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(e.setUnfinishedMessage(this));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
+      } finally {
+        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+          orders_ = java.util.Collections.unmodifiableList(orders_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.class, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Builder.class);
+    }
+
+    public interface OrderOrBuilder extends
+        // @@protoc_insertion_point(interface_extends:com.lykke.matching.engine.messages.MultiLimitOrder.Order)
+        com.google.protobuf.MessageOrBuilder {
+
+      /**
+       * <code>required double volume = 1;</code>
+       */
+      boolean hasVolume();
+      /**
+       * <code>required double volume = 1;</code>
+       */
+      double getVolume();
+
+      /**
+       * <code>required double price = 2;</code>
+       */
+      boolean hasPrice();
+      /**
+       * <code>required double price = 2;</code>
+       */
+      double getPrice();
+    }
+    /**
+     * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder.Order}
+     */
+    public  static final class Order extends
+        com.google.protobuf.GeneratedMessage implements
+        // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.MultiLimitOrder.Order)
+        OrderOrBuilder {
+      // Use Order.newBuilder() to construct.
+      private Order(com.google.protobuf.GeneratedMessage.Builder builder) {
+        super(builder);
+      }
+      private Order() {
+        volume_ = 0D;
+        price_ = 0D;
+      }
+
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+      getUnknownFields() {
+        return this.unknownFields;
+      }
+      private Order(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+        this();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 9: {
+                bitField0_ |= 0x00000001;
+                volume_ = input.readDouble();
+                break;
+              }
+              case 17: {
+                bitField0_ |= 0x00000002;
+                price_ = input.readDouble();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw new RuntimeException(e.setUnfinishedMessage(this));
+        } catch (java.io.IOException e) {
+          throw new RuntimeException(
+              new com.google.protobuf.InvalidProtocolBufferException(
+                  e.getMessage()).setUnfinishedMessage(this));
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.class, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder.class);
+      }
+
+      private int bitField0_;
+      public static final int VOLUME_FIELD_NUMBER = 1;
+      private double volume_;
+      /**
+       * <code>required double volume = 1;</code>
+       */
+      public boolean hasVolume() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required double volume = 1;</code>
+       */
+      public double getVolume() {
+        return volume_;
+      }
+
+      public static final int PRICE_FIELD_NUMBER = 2;
+      private double price_;
+      /**
+       * <code>required double price = 2;</code>
+       */
+      public boolean hasPrice() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required double price = 2;</code>
+       */
+      public double getPrice() {
+        return price_;
+      }
+
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized == 1) return true;
+        if (isInitialized == 0) return false;
+
+        if (!hasVolume()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!hasPrice()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeDouble(1, volume_);
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeDouble(2, price_);
+        }
+        unknownFields.writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeDoubleSize(1, volume_);
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeDoubleSize(2, price_);
+        }
+        size += unknownFields.getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder() {
+        return DEFAULT_INSTANCE.toBuilder();
+      }
+      public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order prototype) {
+        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() {
+        return this == DEFAULT_INSTANCE
+            ? new Builder() : new Builder().mergeFrom(this);
+      }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder.Order}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+          // @@protoc_insertion_point(builder_implements:com.lykke.matching.engine.messages.MultiLimitOrder.Order)
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.class, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder.class);
+        }
+
+        // Construct using com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        public Builder clear() {
+          super.clear();
+          volume_ = 0D;
+          bitField0_ = (bitField0_ & ~0x00000001);
+          price_ = 0D;
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor;
+        }
+
+        public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order getDefaultInstanceForType() {
+          return com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.getDefaultInstance();
+        }
+
+        public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order build() {
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order buildPartial() {
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order result = new com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.volume_ = volume_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          result.price_ = price_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order) {
+            return mergeFrom((com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order other) {
+          if (other == com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.getDefaultInstance()) return this;
+          if (other.hasVolume()) {
+            setVolume(other.getVolume());
+          }
+          if (other.hasPrice()) {
+            setPrice(other.getPrice());
+          }
+          this.mergeUnknownFields(other.unknownFields);
+          onChanged();
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasVolume()) {
+            return false;
+          }
+          if (!hasPrice()) {
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        private double volume_ ;
+        /**
+         * <code>required double volume = 1;</code>
+         */
+        public boolean hasVolume() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required double volume = 1;</code>
+         */
+        public double getVolume() {
+          return volume_;
+        }
+        /**
+         * <code>required double volume = 1;</code>
+         */
+        public Builder setVolume(double value) {
+          bitField0_ |= 0x00000001;
+          volume_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required double volume = 1;</code>
+         */
+        public Builder clearVolume() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          volume_ = 0D;
+          onChanged();
+          return this;
+        }
+
+        private double price_ ;
+        /**
+         * <code>required double price = 2;</code>
+         */
+        public boolean hasPrice() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required double price = 2;</code>
+         */
+        public double getPrice() {
+          return price_;
+        }
+        /**
+         * <code>required double price = 2;</code>
+         */
+        public Builder setPrice(double value) {
+          bitField0_ |= 0x00000002;
+          price_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required double price = 2;</code>
+         */
+        public Builder clearPrice() {
+          bitField0_ = (bitField0_ & ~0x00000002);
+          price_ = 0D;
+          onChanged();
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MultiLimitOrder.Order)
+      }
+
+      // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.MultiLimitOrder.Order)
+      private static final com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order DEFAULT_INSTANCE;
+      static {
+        DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order();
+      }
+
+      public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+      }
+
+      public static final com.google.protobuf.Parser<Order> PARSER =
+          new com.google.protobuf.AbstractParser<Order>() {
+        public Order parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          try {
+            return new Order(input, extensionRegistry);
+          } catch (RuntimeException e) {
+            if (e.getCause() instanceof
+                com.google.protobuf.InvalidProtocolBufferException) {
+              throw (com.google.protobuf.InvalidProtocolBufferException)
+                  e.getCause();
+            }
+            throw e;
+          }
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<Order> getParserForType() {
+        return PARSER;
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order getDefaultInstanceForType() {
+        return DEFAULT_INSTANCE;
+      }
+
+    }
+
+    private int bitField0_;
+    public static final int UID_FIELD_NUMBER = 1;
+    private long uid_;
+    /**
+     * <code>required int64 uid = 1;</code>
+     */
+    public boolean hasUid() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required int64 uid = 1;</code>
+     */
+    public long getUid() {
+      return uid_;
+    }
+
+    public static final int TIMESTAMP_FIELD_NUMBER = 2;
+    private long timestamp_;
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    public long getTimestamp() {
+      return timestamp_;
+    }
+
+    public static final int CLIENTID_FIELD_NUMBER = 3;
+    private volatile java.lang.Object clientId_;
+    /**
+     * <code>required string clientId = 3;</code>
+     */
+    public boolean hasClientId() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required string clientId = 3;</code>
+     */
+    public java.lang.String getClientId() {
+      java.lang.Object ref = clientId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          clientId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string clientId = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getClientIdBytes() {
+      java.lang.Object ref = clientId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        clientId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int ASSETPAIRID_FIELD_NUMBER = 4;
+    private volatile java.lang.Object assetPairId_;
+    /**
+     * <code>required string assetPairId = 4;</code>
+     */
+    public boolean hasAssetPairId() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>required string assetPairId = 4;</code>
+     */
+    public java.lang.String getAssetPairId() {
+      java.lang.Object ref = assetPairId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          assetPairId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string assetPairId = 4;</code>
+     */
+    public com.google.protobuf.ByteString
+        getAssetPairIdBytes() {
+      java.lang.Object ref = assetPairId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        assetPairId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int ORDERS_FIELD_NUMBER = 5;
+    private java.util.List<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order> orders_;
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    public java.util.List<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order> getOrdersList() {
+      return orders_;
+    }
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    public java.util.List<? extends com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder> 
+        getOrdersOrBuilderList() {
+      return orders_;
+    }
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    public int getOrdersCount() {
+      return orders_.size();
+    }
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order getOrders(int index) {
+      return orders_.get(index);
+    }
+    /**
+     * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+     */
+    public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder getOrdersOrBuilder(
+        int index) {
+      return orders_.get(index);
+    }
+
+    public static final int CANCELALLPREVIOUSLIMITORDERS_FIELD_NUMBER = 6;
+    private boolean cancelAllPreviousLimitOrders_;
+    /**
+     * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+     */
+    public boolean hasCancelAllPreviousLimitOrders() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+     */
+    public boolean getCancelAllPreviousLimitOrders() {
+      return cancelAllPreviousLimitOrders_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasUid()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasTimestamp()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasClientId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasAssetPairId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      for (int i = 0; i < getOrdersCount(); i++) {
+        if (!getOrders(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt64(1, uid_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt64(2, timestamp_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getClientIdBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, getAssetPairIdBytes());
+      }
+      for (int i = 0; i < orders_.size(); i++) {
+        output.writeMessage(5, orders_.get(i));
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBool(6, cancelAllPreviousLimitOrders_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(1, uid_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(2, timestamp_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, getClientIdBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getAssetPairIdBytes());
+      }
+      for (int i = 0; i < orders_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(5, orders_.get(i));
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(6, cancelAllPreviousLimitOrders_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.lykke.matching.engine.messages.MultiLimitOrder)
+        com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrderOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.class, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Builder.class);
+      }
+
+      // Construct using com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getOrdersFieldBuilder();
+        }
+      }
+      public Builder clear() {
+        super.clear();
+        uid_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        clientId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
+        assetPairId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
+        if (ordersBuilder_ == null) {
+          orders_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000010);
+        } else {
+          ordersBuilder_.clear();
+        }
+        cancelAllPreviousLimitOrders_ = false;
+        bitField0_ = (bitField0_ & ~0x00000020);
+        return this;
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor;
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder getDefaultInstanceForType() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.getDefaultInstance();
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder build() {
+        com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder buildPartial() {
+        com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder result = new com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.uid_ = uid_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.timestamp_ = timestamp_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.clientId_ = clientId_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.assetPairId_ = assetPairId_;
+        if (ordersBuilder_ == null) {
+          if (((bitField0_ & 0x00000010) == 0x00000010)) {
+            orders_ = java.util.Collections.unmodifiableList(orders_);
+            bitField0_ = (bitField0_ & ~0x00000010);
+          }
+          result.orders_ = orders_;
+        } else {
+          result.orders_ = ordersBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.cancelAllPreviousLimitOrders_ = cancelAllPreviousLimitOrders_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder) {
+          return mergeFrom((com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder other) {
+        if (other == com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.getDefaultInstance()) return this;
+        if (other.hasUid()) {
+          setUid(other.getUid());
+        }
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
+        }
+        if (other.hasClientId()) {
+          bitField0_ |= 0x00000004;
+          clientId_ = other.clientId_;
+          onChanged();
+        }
+        if (other.hasAssetPairId()) {
+          bitField0_ |= 0x00000008;
+          assetPairId_ = other.assetPairId_;
+          onChanged();
+        }
+        if (ordersBuilder_ == null) {
+          if (!other.orders_.isEmpty()) {
+            if (orders_.isEmpty()) {
+              orders_ = other.orders_;
+              bitField0_ = (bitField0_ & ~0x00000010);
+            } else {
+              ensureOrdersIsMutable();
+              orders_.addAll(other.orders_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.orders_.isEmpty()) {
+            if (ordersBuilder_.isEmpty()) {
+              ordersBuilder_.dispose();
+              ordersBuilder_ = null;
+              orders_ = other.orders_;
+              bitField0_ = (bitField0_ & ~0x00000010);
+              ordersBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getOrdersFieldBuilder() : null;
+            } else {
+              ordersBuilder_.addAllMessages(other.orders_);
+            }
+          }
+        }
+        if (other.hasCancelAllPreviousLimitOrders()) {
+          setCancelAllPreviousLimitOrders(other.getCancelAllPreviousLimitOrders());
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasUid()) {
+          return false;
+        }
+        if (!hasTimestamp()) {
+          return false;
+        }
+        if (!hasClientId()) {
+          return false;
+        }
+        if (!hasAssetPairId()) {
+          return false;
+        }
+        for (int i = 0; i < getOrdersCount(); i++) {
+          if (!getOrders(i).isInitialized()) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private long uid_ ;
+      /**
+       * <code>required int64 uid = 1;</code>
+       */
+      public boolean hasUid() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required int64 uid = 1;</code>
+       */
+      public long getUid() {
+        return uid_;
+      }
+      /**
+       * <code>required int64 uid = 1;</code>
+       */
+      public Builder setUid(long value) {
+        bitField0_ |= 0x00000001;
+        uid_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int64 uid = 1;</code>
+       */
+      public Builder clearUid() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        uid_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private long timestamp_ ;
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public long getTimestamp() {
+        return timestamp_;
+      }
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public Builder setTimestamp(long value) {
+        bitField0_ |= 0x00000002;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object clientId_ = "";
+      /**
+       * <code>required string clientId = 3;</code>
+       */
+      public boolean hasClientId() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required string clientId = 3;</code>
+       */
+      public java.lang.String getClientId() {
+        java.lang.Object ref = clientId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            clientId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string clientId = 3;</code>
+       */
+      public com.google.protobuf.ByteString
+          getClientIdBytes() {
+        java.lang.Object ref = clientId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          clientId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string clientId = 3;</code>
+       */
+      public Builder setClientId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        clientId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string clientId = 3;</code>
+       */
+      public Builder clearClientId() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        clientId_ = getDefaultInstance().getClientId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string clientId = 3;</code>
+       */
+      public Builder setClientIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        clientId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object assetPairId_ = "";
+      /**
+       * <code>required string assetPairId = 4;</code>
+       */
+      public boolean hasAssetPairId() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>required string assetPairId = 4;</code>
+       */
+      public java.lang.String getAssetPairId() {
+        java.lang.Object ref = assetPairId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            assetPairId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string assetPairId = 4;</code>
+       */
+      public com.google.protobuf.ByteString
+          getAssetPairIdBytes() {
+        java.lang.Object ref = assetPairId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          assetPairId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string assetPairId = 4;</code>
+       */
+      public Builder setAssetPairId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        assetPairId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string assetPairId = 4;</code>
+       */
+      public Builder clearAssetPairId() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        assetPairId_ = getDefaultInstance().getAssetPairId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string assetPairId = 4;</code>
+       */
+      public Builder setAssetPairIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        assetPairId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.util.List<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order> orders_ =
+        java.util.Collections.emptyList();
+      private void ensureOrdersIsMutable() {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+          orders_ = new java.util.ArrayList<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order>(orders_);
+          bitField0_ |= 0x00000010;
+         }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder> ordersBuilder_;
+
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public java.util.List<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order> getOrdersList() {
+        if (ordersBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(orders_);
+        } else {
+          return ordersBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public int getOrdersCount() {
+        if (ordersBuilder_ == null) {
+          return orders_.size();
+        } else {
+          return ordersBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order getOrders(int index) {
+        if (ordersBuilder_ == null) {
+          return orders_.get(index);
+        } else {
+          return ordersBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder setOrders(
+          int index, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order value) {
+        if (ordersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureOrdersIsMutable();
+          orders_.set(index, value);
+          onChanged();
+        } else {
+          ordersBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder setOrders(
+          int index, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder builderForValue) {
+        if (ordersBuilder_ == null) {
+          ensureOrdersIsMutable();
+          orders_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          ordersBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder addOrders(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order value) {
+        if (ordersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureOrdersIsMutable();
+          orders_.add(value);
+          onChanged();
+        } else {
+          ordersBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder addOrders(
+          int index, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order value) {
+        if (ordersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureOrdersIsMutable();
+          orders_.add(index, value);
+          onChanged();
+        } else {
+          ordersBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder addOrders(
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder builderForValue) {
+        if (ordersBuilder_ == null) {
+          ensureOrdersIsMutable();
+          orders_.add(builderForValue.build());
+          onChanged();
+        } else {
+          ordersBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder addOrders(
+          int index, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder builderForValue) {
+        if (ordersBuilder_ == null) {
+          ensureOrdersIsMutable();
+          orders_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          ordersBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder addAllOrders(
+          java.lang.Iterable<? extends com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order> values) {
+        if (ordersBuilder_ == null) {
+          ensureOrdersIsMutable();
+          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+              values, orders_);
+          onChanged();
+        } else {
+          ordersBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder clearOrders() {
+        if (ordersBuilder_ == null) {
+          orders_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000010);
+          onChanged();
+        } else {
+          ordersBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public Builder removeOrders(int index) {
+        if (ordersBuilder_ == null) {
+          ensureOrdersIsMutable();
+          orders_.remove(index);
+          onChanged();
+        } else {
+          ordersBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder getOrdersBuilder(
+          int index) {
+        return getOrdersFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder getOrdersOrBuilder(
+          int index) {
+        if (ordersBuilder_ == null) {
+          return orders_.get(index);  } else {
+          return ordersBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public java.util.List<? extends com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder> 
+           getOrdersOrBuilderList() {
+        if (ordersBuilder_ != null) {
+          return ordersBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(orders_);
+        }
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder addOrdersBuilder() {
+        return getOrdersFieldBuilder().addBuilder(
+            com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder addOrdersBuilder(
+          int index) {
+        return getOrdersFieldBuilder().addBuilder(
+            index, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .com.lykke.matching.engine.messages.MultiLimitOrder.Order orders = 5;</code>
+       */
+      public java.util.List<com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder> 
+           getOrdersBuilderList() {
+        return getOrdersFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder> 
+          getOrdersFieldBuilder() {
+        if (ordersBuilder_ == null) {
+          ordersBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.Order.Builder, com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder.OrderOrBuilder>(
+                  orders_,
+                  ((bitField0_ & 0x00000010) == 0x00000010),
+                  getParentForChildren(),
+                  isClean());
+          orders_ = null;
+        }
+        return ordersBuilder_;
+      }
+
+      private boolean cancelAllPreviousLimitOrders_ ;
+      /**
+       * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+       */
+      public boolean hasCancelAllPreviousLimitOrders() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+       */
+      public boolean getCancelAllPreviousLimitOrders() {
+        return cancelAllPreviousLimitOrders_;
+      }
+      /**
+       * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+       */
+      public Builder setCancelAllPreviousLimitOrders(boolean value) {
+        bitField0_ |= 0x00000020;
+        cancelAllPreviousLimitOrders_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
+       */
+      public Builder clearCancelAllPreviousLimitOrders() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        cancelAllPreviousLimitOrders_ = false;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MultiLimitOrder)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.MultiLimitOrder)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder();
+    }
+
+    public static com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<MultiLimitOrder> PARSER =
+        new com.google.protobuf.AbstractParser<MultiLimitOrder>() {
+      public MultiLimitOrder parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new MultiLimitOrder(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<MultiLimitOrder> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrder getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_lykke_matching_engine_messages_Response_descriptor;
   private static
@@ -5241,6 +6988,16 @@ public final class ProtocolMessages {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_com_lykke_matching_engine_messages_BalanceUpdate_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -5266,9 +7023,15 @@ public final class ProtocolMessages {
       "\002(\001\022\020\n\010straight\030\006 \002(\010\"5\n\020LimitOrderCance" +
       "l\022\013\n\003uid\030\001 \002(\003\022\024\n\014limitOrderId\030\002 \002(\003\"O\n\r" +
       "BalanceUpdate\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002" +
-      " \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001B6\n" +
-      "\"com.lykke.matching.engine.messagesB\020Pro" +
-      "tocolMessages"
+      " \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"\361\001" +
+      "\n\017MultiLimitOrder\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimest" +
+      "amp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPair" +
+      "Id\030\004 \002(\t\022I\n\006orders\030\005 \003(\01329.com.lykke.mat",
+      "ching.engine.messages.MultiLimitOrder.Or" +
+      "der\022$\n\034cancelAllPreviousLimitOrders\030\006 \001(" +
+      "\010\032&\n\005Order\022\016\n\006volume\030\001 \002(\001\022\r\n\005price\030\002 \002(" +
+      "\001B6\n\"com.lykke.matching.engine.messagesB" +
+      "\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -5318,6 +7081,18 @@ public final class ProtocolMessages {
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_BalanceUpdate_descriptor,
         new java.lang.String[] { "Uid", "ClientId", "AssetId", "Amount", });
+    internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor =
+      getDescriptor().getMessageTypes().get(6);
+    internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor,
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", });
+    internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor =
+      internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor.getNestedTypes().get(0);
+    internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor,
+        new java.lang.String[] { "Volume", "Price", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

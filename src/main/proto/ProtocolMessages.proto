@@ -49,3 +49,19 @@ message BalanceUpdate {
     required string assetId = 3;
     required double amount = 4;
 }
+
+message MultiLimitOrder {
+    required int64 uid = 1;
+    required int64 timestamp = 2;
+    required string clientId = 3;
+    required string assetPairId = 4;
+
+    message Order {
+        required double volume = 1;
+        required double price = 2;
+    }
+
+    repeated Order orders = 5;
+
+    optional bool cancelAllPreviousLimitOrders = 6;
+}

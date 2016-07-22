@@ -43,7 +43,7 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
+        val service = LimitOrderCancelService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.getId() == "3" }

@@ -44,7 +44,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
 
 class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
-                         private val limitOrderService: LimitOrderService,
+                         private val genericLimitOrderService: GenericLimitOrderService,
                          private val cashOperationService: CashOperationService,
                          private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.MarketOrder> {
 
@@ -74,7 +74,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             return
         }
 
-        val orderBook = limitOrderService.getOrderBook(order.assetPairId)?.getOrderBook(!order.isBuySide())
+        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)?.getOrderBook(!order.isBuySide())
         if (orderBook == null || orderBook.size == 0) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
@@ -120,7 +120,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
             if (marketOrder.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
-            } else if (limitOrderService.isEnoughFunds(limitOrder, volume)) {
+            } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume)) {
                 matchedOrders.add(limitOrder)
                 remainingVolume -= getVolume(volume, marketOrder.straight, limitOrder.price)
                 totalMarketVolume += volume
@@ -133,9 +133,9 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         if (remainingVolume.greaterThan(0.0)) {
             marketOrder.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
-            matchedOrders.forEach { limitOrderService.addToOrderBook(it) }
-            cancelledLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
-            skipLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
+            matchedOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
+            cancelledLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
+            skipLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
             LOGGER.debug("No liquidity, not enough funds on limit orders, for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume} | Unfilled: $remainingVolume")
             return
         }
@@ -143,9 +143,9 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         if (!isEnoughFunds(marketOrder, if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume )) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
-            matchedOrders.forEach { limitOrderService.addToOrderBook(it) }
-            cancelledLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
-            skipLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
+            matchedOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
+            cancelledLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
+            skipLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
             LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
             return
         }
@@ -267,17 +267,17 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         cashOperationService.processWalletOperations(cashMovements)
 
-        limitOrderService.moveOrdersToDone(completedLimitOrders)
+        genericLimitOrderService.moveOrdersToDone(completedLimitOrders)
         cancelledLimitOrders.forEach { limitOrder ->
             limitOrder.status = NotEnoughFunds.name
         }
-        limitOrderService.moveOrdersToDone(ArrayList<LimitOrder>(cancelledLimitOrders))
+        genericLimitOrderService.moveOrdersToDone(ArrayList<LimitOrder>(cancelledLimitOrders))
 
-        skipLimitOrders.forEach { limitOrderService.addToOrderBook(it) }
+        skipLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
 
         if (uncompletedLimitOrder != null) {
-            limitOrderService.updateLimitOrder(uncompletedLimitOrder as LimitOrder)
-            limitOrderService.addToOrderBook(uncompletedLimitOrder as LimitOrder)
+            genericLimitOrderService.updateLimitOrder(uncompletedLimitOrder as LimitOrder)
+            genericLimitOrderService.addToOrderBook(uncompletedLimitOrder as LimitOrder)
         }
 
         bitcoinTransactions.forEach { backendQueue.put(it) }

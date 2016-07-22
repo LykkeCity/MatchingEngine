@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.util.Date
 import java.util.HashMap
 
-class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor, val limitOrderService: LimitOrderService) {
+class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor, val genericLimitOrderService: GenericLimitOrderService) {
 
     private val COUNT: Long = 4000
 
@@ -71,7 +71,7 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
         val dayOfWeek = LocalDate.now().dayOfWeek
         if (dayOfWeek != DayOfWeek.SUNDAY) {
             val now = Date()
-            val ticks = limitOrderService.buildMarketProfile()
+            val ticks = genericLimitOrderService.buildMarketProfile()
             for (tick in ticks) {
                 addTicks(now.time, tick.assetId, tick.bid)
             }

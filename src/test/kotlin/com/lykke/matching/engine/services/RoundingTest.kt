@@ -53,7 +53,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0)))
@@ -93,7 +93,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0)))
@@ -133,7 +133,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0, straight = false)))
@@ -173,7 +173,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, straight = false)))
@@ -213,7 +213,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0)))
@@ -253,7 +253,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0)))
@@ -293,7 +293,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0, straight = false)))
@@ -333,7 +333,7 @@ class RoundingTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
-        val limitOrderService = LimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0, straight = false)))

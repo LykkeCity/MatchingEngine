@@ -18,10 +18,12 @@ import com.lykke.matching.engine.queue.azure.AzureQueueWriter
 import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashOperationService
+import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.HistoryTicksService
 import com.lykke.matching.engine.services.LimitOrderCancelService
-import com.lykke.matching.engine.services.LimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
@@ -50,7 +52,9 @@ class MessageProcessor: Thread {
     val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
 
     val cashOperationService: CashOperationService
-    val limitOrderService: LimitOrderService
+    val genericLimitOrderService: GenericLimitOrderService
+    val sinlgeLimitOrderService: SingleLimitOrderService
+    val multiLimitOrderService: MultiLimitOrderService
     val marketOrderService: MarketOrderService
     val limitOrderCancelService: LimitOrderCancelService
     val balanceUpdateService: BalanceUpdateService
@@ -80,19 +84,21 @@ class MessageProcessor: Thread {
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, azureConfig)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue)
-        this.limitOrderService = LimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
-        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, limitOrderService, cashOperationService, bitcoinQueue)
-        this.limitOrderCancelService = LimitOrderCancelService(limitOrderService)
+        this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService)
+        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService)
+        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue)
+        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
-        this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, limitOrderService)
+        this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
         historyTicksService.init()
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter)
 
         val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {
-            limitOrderDatabaseAccessor.updateBestPrices(limitOrderService.buildMarketProfile())
+            limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
             LOGGER.debug("Wrote market profile")
         }
 
@@ -128,7 +134,7 @@ class MessageProcessor: Thread {
                     cashOperationService.processMessage(message)
                 }
                 MessageType.LIMIT_ORDER -> {
-                    limitOrderService.processMessage(message)
+                    sinlgeLimitOrderService.processMessage(message)
                 }
                 MessageType.MARKET_ORDER -> {
                     marketOrderService.processMessage(message)
@@ -138,6 +144,9 @@ class MessageProcessor: Thread {
                 }
                 MessageType.BALANCE_UPDATE -> {
                     balanceUpdateService.processMessage(message)
+                }
+                MessageType.MULTI_LIMIT_ORDER -> {
+                    multiLimitOrderService.processMessage(message)
                 }
                 else -> {
                     LOGGER.error("Unknown message type: ${message.type}")

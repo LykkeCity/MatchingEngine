@@ -43,7 +43,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -52,7 +52,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
@@ -65,7 +65,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testBalanceCheck() {
-        val service = LimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
 
         assertTrue { service.isEnoughFunds(buildLimitOrder(price = 2.0, volume = -1000.0), 1000.0) }
         assertFalse { service.isEnoughFunds(buildLimitOrder( price = 2.0, volume = -1001.0), 1001.0) }
