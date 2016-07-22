@@ -27,12 +27,10 @@ class BackendQueueProcessorTest {
         backOfficeDatabaseAccessor.clear()
         var credentials = WalletCredentials()
         credentials.multiSig = "TestMultiSig1"
-        credentials.privateKey = "TestPrivateKey1"
         backOfficeDatabaseAccessor.credentials.put("Client1", credentials)
 
         credentials = WalletCredentials()
         credentials.multiSig = "TestMultiSig2"
-        credentials.privateKey = "TestPrivateKey2"
         backOfficeDatabaseAccessor.credentials.put("Client2", credentials)
 
         var asset = Asset()
@@ -73,7 +71,6 @@ class BackendQueueProcessorTest {
         val cashOutData = Gson().fromJson(outQueueWriter.read().replace("CashOut:", ""), CashOut::class.java)
 
         assertEquals("TestMultiSig1",cashOutData.MultisigAddress)
-        assertEquals("TestPrivateKey1",cashOutData.PrivateKey)
         assertEquals(500.0,cashOutData.Amount)
         assertEquals("TestUSD",cashOutData.Currency)
 

@@ -108,7 +108,6 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         }
 
         operation.MultisigAddress = walletCredentials.multiSig
-        operation.PrivateKey = walletCredentials.privateKey
         operation.Currency = asset.blockChainId
 
         val serialisedData = "CashOut:${operation.toJson()}"
