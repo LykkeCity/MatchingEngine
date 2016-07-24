@@ -16,6 +16,7 @@ import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
@@ -63,7 +64,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
     }
 
     private fun processBitcoinCashIn(operation: CashIn) {
-        LOGGER.debug("Writing CashIn operation to queue [${operation.clientId}, ${operation.Amount} ${operation.Currency}]")
+        LOGGER.debug("Writing CashIn operation to queue [${operation.clientId}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
         val walletCredentials = loadWalletCredentials(operation.clientId)
         if (walletCredentials == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId}")
@@ -87,12 +88,12 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
                 BtTransaction(operation.TransactionId, now, serialisedData, ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
         outQueueWriter.write(serialisedData)
-        LOGGER.info("Wrote CashIn operation to queue [${operation.MultisigAddress}, ${operation.Amount} ${operation.Currency}]")
+        LOGGER.info("Wrote CashIn operation to queue [${operation.MultisigAddress}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
         METRICS_LOGGER.log(getMetricLine("CashIn", serialisedData))
     }
 
     private fun processBitcoinCashOut(operation: CashOut) {
-        LOGGER.debug("Writing CashOut operation to queue [${operation.clientId}, ${operation.Amount} ${operation.Currency}]")
+        LOGGER.debug("Writing CashOut operation to queue [${operation.clientId}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
         val walletCredentials = loadWalletCredentials(operation.clientId)
         if (walletCredentials == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId}")
@@ -116,12 +117,12 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
                 BtTransaction(operation.TransactionId, now, serialisedData, ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
         outQueueWriter.write(serialisedData)
-        LOGGER.info("Wrote CashOut operation to queue [${operation.MultisigAddress}, ${operation.Amount} ${operation.Currency}]")
+        LOGGER.info("Wrote CashOut operation to queue [${operation.MultisigAddress}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
         METRICS_LOGGER.log(getMetricLine("CashOut", serialisedData))
     }
 
     private fun processBitcoinSwap(operation: Swap) {
-        LOGGER.debug("Writing Swap operation to queue [${operation.clientId1}, ${operation.Amount1} ${operation.origAsset1} to ${operation.clientId2}, ${operation.Amount2} ${operation.origAsset2}]")
+        LOGGER.debug("Writing Swap operation to queue [${operation.clientId1}, ${RoundingUtils.roundForPrint(operation.Amount1)} ${operation.origAsset1} to ${operation.clientId2}, ${RoundingUtils.roundForPrint(operation.Amount2)} ${operation.origAsset2}]")
         val walletCredentials1 = loadWalletCredentials(operation.clientId1)
         if (walletCredentials1 == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId1}")
@@ -160,7 +161,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
                 BtTransaction(operation.TransactionId, now, serialisedData, operation.orders))
         outQueueWriter.write(serialisedData)
-        LOGGER.info("Wrote Swap operation to queue [${operation.MultisigCustomer1}, ${operation.Amount1} ${operation.Asset1} to ${operation.MultisigCustomer2}, ${operation.Amount2} ${operation.Asset2}]")
+        LOGGER.info("Wrote Swap operation to queue [${operation.MultisigCustomer1}, ${RoundingUtils.roundForPrint(operation.Amount1)} ${operation.Asset1} to ${operation.MultisigCustomer2}, ${RoundingUtils.roundForPrint(operation.Amount2)} ${operation.Asset2}]")
         METRICS_LOGGER.log(getMetricLine("Swap", serialisedData))
     }
 

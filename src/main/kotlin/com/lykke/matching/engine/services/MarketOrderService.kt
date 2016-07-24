@@ -59,7 +59,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${message.volume}, straight: ${message.straight}")
+        LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
         val order = MarketOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume, null,
                 Processing.name, Date(message.timestamp), Date(), null, null, message.straight)
@@ -79,9 +79,9 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
             if (orderBook == null) {
-                LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}, straight: ${order.straight}")
+                LOGGER.debug("No liquidity, empty order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}")
             } else {
-                LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${order.volume}, straight: ${order.straight}")
+                LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.getId()}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}")
             }
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.getId()).build())
             return
@@ -136,7 +136,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             matchedOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
             cancelledLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
             skipLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
-            LOGGER.debug("No liquidity, not enough funds on limit orders, for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume} | Unfilled: $remainingVolume")
+            LOGGER.debug("No liquidity, not enough funds on limit orders, for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)} | Unfilled: $remainingVolume")
             return
         }
 
@@ -146,7 +146,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             matchedOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
             cancelledLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
             skipLimitOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
-            LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}")
+            LOGGER.debug("Not enough funds for market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
             return
         }
 
@@ -282,7 +282,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         bitcoinTransactions.forEach { backendQueue.put(it) }
 
-        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${marketOrder.volume}, straight: ${marketOrder.straight} matched, price: ${marketOrder.price}")
+        LOGGER.debug("Market order id: ${marketOrder.getId()}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}, straight: ${marketOrder.straight} matched, price: ${RoundingUtils.roundForPrint(marketOrder.price)}")
     }
 
     fun isEnoughFunds(order: MarketOrder, totalPrice: Double): Boolean {
@@ -296,7 +296,7 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
         val asset = if (order.isBuySide()) assetPair.quotingAssetId!! else assetPair.baseAssetId!!
         val roundedPrice = RoundingUtils.round(totalPrice, cashOperationService.getAsset(asset)!!.accuracy, true)
 
-        LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= $roundedPrice")
+        LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= ${RoundingUtils.roundForPrint(roundedPrice)}")
         return cashOperationService.getBalance(order.clientId, asset) >= roundedPrice
     }
 

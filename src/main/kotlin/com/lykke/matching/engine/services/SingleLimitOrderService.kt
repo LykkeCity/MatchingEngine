@@ -17,6 +17,7 @@ import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
@@ -33,7 +34,7 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService): 
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${message.volume}, price: ${message.price}")
+        LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}")
 
         val order = LimitOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume,
                 message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), Date(), null, message.volume, null)
@@ -44,7 +45,7 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService): 
 
         limitOrderService.processLimitOrder(order)
 
-        LOGGER.info("Limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${order.volume}, price: ${order.price} added to order book")
+        LOGGER.info("Limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
 
         METRICS_LOGGER.log(Line(ME_LIMIT_ORDER, arrayOf(

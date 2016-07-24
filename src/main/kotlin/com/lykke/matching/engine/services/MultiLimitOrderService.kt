@@ -17,6 +17,7 @@ import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
@@ -64,7 +65,7 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
 
         orders.forEach { order ->
             limitOrderService.processLimitOrder(order)
-            LOGGER.info("Part of multi limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${order.volume}, price: ${order.price} added to order book")
+            LOGGER.info("Part of multi limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
 
             METRICS_LOGGER.log(Line(ME_LIMIT_ORDER, arrayOf(
                     KeyValue(UID, message.uid.toString()),

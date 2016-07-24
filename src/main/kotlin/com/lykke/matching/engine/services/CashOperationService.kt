@@ -23,6 +23,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Transaction
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
@@ -49,13 +50,13 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}, sendToBitcoin: ${message.sendToBitcoin}")
+        LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}, sendToBitcoin: ${message.sendToBitcoin}")
 
         val externalCashOperation = walletDatabaseAccessor.loadExternalCashOperation(message.clientId, message.bussinesId)
         if (externalCashOperation != null) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
                     .setRecordId(externalCashOperation.cashOperationId).build())
-            LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}, sendToBitcoin: ${message.sendToBitcoin} already processed")
+            LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}, sendToBitcoin: ${message.sendToBitcoin} already processed")
             return
         }
 
@@ -76,7 +77,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
                 .setRecordId(operation.getUid()).build())
-        LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${message.amount}, sendToBitcoin: ${message.sendToBitcoin} processed")
+        LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}, sendToBitcoin: ${message.sendToBitcoin} processed")
 
         METRICS_LOGGER.log(Line(ME_CASH_OPERATION, arrayOf(
                 KeyValue(UID, message.uid.toString()),

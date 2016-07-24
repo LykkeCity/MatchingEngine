@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.Date
@@ -84,10 +85,10 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
         val assetPair = cashOperationService.getAssetPair(order.assetPairId) ?: return false
 
         if (order.isBuySide()) {
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId!!} : ${cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!)} >= ${volume * order.price}")
+            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId!!} : ${RoundingUtils.roundForPrint(cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!))} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
             return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!) >= volume * order.price
         } else {
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId!!} : ${cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!)} >= $volume")
+            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId!!} : ${RoundingUtils.roundForPrint(cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!))} >= ${RoundingUtils.roundForPrint(volume)}")
             return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId!!) >= volume
         }
     }
