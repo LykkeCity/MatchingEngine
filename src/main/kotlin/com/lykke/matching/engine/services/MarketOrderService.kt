@@ -294,9 +294,10 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             return false
         }
         val asset = if (order.isBuySide()) assetPair.quotingAssetId!! else assetPair.baseAssetId!!
+        val roundedPrice = RoundingUtils.round(totalPrice, cashOperationService.getAsset(asset)!!.accuracy, true)
 
-        LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= $totalPrice")
-        return cashOperationService.getBalance(order.clientId, asset) >= totalPrice
+        LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= $roundedPrice")
+        return cashOperationService.getBalance(order.clientId, asset) >= roundedPrice
     }
 
     fun getMetricLine(uid: String, order: MarketOrder): Line {

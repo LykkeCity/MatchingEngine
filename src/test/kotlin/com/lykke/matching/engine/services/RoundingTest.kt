@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.After
@@ -37,8 +38,10 @@ class RoundingTest {
 
         testBackOfficeDatabaseAcessor.addAsset(Asset("EUR", 2))
         testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("JPY", 2))
         testBackOfficeDatabaseAcessor.addAsset(Asset("BTC", 8))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "JPY", 3, 6))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC", "USD", 3, 8))
     }
 
@@ -364,5 +367,20 @@ class RoundingTest {
         Assert.assertEquals("Client3", swap.clientId2)
         Assert.assertEquals(0.00147442, swap.Amount2, 0.0)
         Assert.assertEquals("BTC", swap.origAsset2)
+    }
+
+    @Test
+    fun testNotStraightBuyEURJPY() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 116.356, volume = 1000.0, clientId = "Client3"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "JPY", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.00999999999999999))
+
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
+        val service = MarketOrderService(testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue)
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 1.16, straight = false)))
+        
+        Assert.assertEquals(NotEnoughFunds.name, testDatabaseAccessor.getLastOrder().status)
     }
 }

@@ -34,7 +34,7 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Got multi limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, ${message.getOrdersList()}")
+        LOGGER.debug("Got multi limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}")
 
         val orders = HashSet<LimitOrder>()
         var cancelBuySide = false
@@ -79,7 +79,6 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
-        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.MultiLimitOrder {
