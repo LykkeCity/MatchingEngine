@@ -25,6 +25,7 @@ import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
+import com.lykke.matching.engine.utils.QueueSizeLogger
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.HashMap
@@ -115,6 +116,11 @@ class MessageProcessor: Thread {
 
         this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
             historyTicksService.buildTicks()
+        }
+
+        val queueSizeLogger = QueueSizeLogger(messagesQueue)
+        fixedRateTimer(name = "QueueSizeLogger", initialDelay = 300000, period = 300000) {
+            queueSizeLogger.log()
         }
     }
 
