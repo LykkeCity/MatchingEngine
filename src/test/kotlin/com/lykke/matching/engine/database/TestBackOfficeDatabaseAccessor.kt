@@ -12,6 +12,9 @@ class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
     val assets = HashMap<String, Asset>()
     val transactions = ArrayList<BtTransaction>()
 
+    fun addWalletCredentials(wallet: WalletCredentials) {
+        credentials[wallet.clientId] = wallet
+    }
 
     override fun loadWalletCredentials(clientId: String): WalletCredentials? {
         return credentials.get(clientId)

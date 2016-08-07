@@ -20,4 +20,8 @@ public class WalletCredentials extends TableServiceEntity {
     public void setMultiSig(String multiSig) {
         this.multiSig = multiSig;
     }
+
+    public String getClientId() {
+        return rowKey;
+    }
 }

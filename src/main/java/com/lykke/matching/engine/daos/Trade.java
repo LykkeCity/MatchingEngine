@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.TimeZone;
 
 public class Trade extends TableServiceEntity {
-    //partition key: Client id
     //row key: generated uid
 
     String assetId;
@@ -17,6 +16,12 @@ public class Trade extends TableServiceEntity {
     Double volume;
     Double price;
 
+    String addressFrom;
+    String addressTo;
+
+    String clientId;
+    String multisig;
+
     public static String DATE_TIME = "dt";
     public static SimpleDateFormat DATE_FORMAT = initTimeFormatter();
     private static long counter = 0;
@@ -24,18 +29,34 @@ public class Trade extends TableServiceEntity {
     public Trade() {
     }
 
-    public Trade(String partitionKey, String rowKey, String assetId, Date dateTime, String limitOrderId, String marketOrderId, Double volume, Double price) {
+    public Trade(String partitionKey, String rowKey, String clientId, String multisig, String assetId, Date dateTime, String limitOrderId, String marketOrderId, Double volume, Double price, String addressFrom, String addressTo) {
         super(partitionKey, rowKey);
+        this.clientId = clientId;
+        this.multisig = multisig;
         this.assetId = assetId;
         this.dateTime = dateTime;
         this.limitOrderId = limitOrderId;
         this.marketOrderId = marketOrderId;
         this.volume = volume;
         this.price = price;
+        this.addressFrom = addressFrom;
+        this.addressTo = addressTo;
     }
 
     public String getClientId() {
-        return partitionKey;
+        return clientId != null ? clientId : partitionKey;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getMultisig() {
+        return multisig;
+    }
+
+    public void setMultisig(String multisig) {
+        this.multisig = multisig;
     }
 
     public String getAssetId() {
@@ -86,10 +107,27 @@ public class Trade extends TableServiceEntity {
         this.price = price;
     }
 
+    public String getAddressFrom() {
+        return addressFrom;
+    }
+
+    public void setAddressFrom(String addressFrom) {
+        this.addressFrom = addressFrom;
+    }
+
+    public String getAddressTo() {
+        return addressTo;
+    }
+
+    public void setAddressTo(String addressTo) {
+        this.addressTo = addressTo;
+    }
+
     @Override
     public String toString() {
         return "Trade(" +
-                "clientId='" + partitionKey + '\'' +
+                "clientId='" + getClientId() + '\'' +
+                "multisig='" + multisig + '\'' +
                 ", uid='" + rowKey + '\'' +
                 ", assetId='" + assetId + '\'' +
                 ", dateTime=" + dateTime +
@@ -97,11 +135,17 @@ public class Trade extends TableServiceEntity {
                 ", marketOrderId='" + marketOrderId + '\'' +
                 ", volume=" + volume +
                 ", price=" + price +
+                ", addressFrom=" + addressFrom +
+                ", addressTo=" + addressTo +
                 ')';
     }
 
     public Trade cloneWithGeneratedId() {
-        return new Trade(DATE_TIME, rowKey, assetId, dateTime, limitOrderId, marketOrderId, volume, price);
+        return new Trade(DATE_TIME, rowKey, clientId, multisig, assetId, dateTime, limitOrderId, marketOrderId, volume, price, addressFrom, addressTo);
+    }
+
+    public Trade cloneWithMultisig() {
+        return new Trade(multisig, rowKey, clientId, multisig, assetId, dateTime, limitOrderId, marketOrderId, volume, price, addressFrom, addressTo);
     }
 
     public static String generateId(Date date) {

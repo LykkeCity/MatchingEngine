@@ -90,7 +90,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     override fun addTrades(trades: List<Trade>) {
         val tradesByPartition = HashMap<String, MutableList<Trade>>()
         trades.forEach { trade ->
-            val client = tradesByPartition.getOrPut(trade.getClientId()) { LinkedList<Trade>() }
+            val client = tradesByPartition.getOrPut(trade.partitionKey) { LinkedList<Trade>() }
             client.add(trade)
         }
 

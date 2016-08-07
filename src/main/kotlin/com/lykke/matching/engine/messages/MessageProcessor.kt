@@ -88,7 +88,7 @@ class MessageProcessor: Thread {
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService)
-        this.marketOrderService = MarketOrderService(marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)

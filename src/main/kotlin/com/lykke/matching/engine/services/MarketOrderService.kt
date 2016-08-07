@@ -5,10 +5,12 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Trade
+import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.bitcoin.ClientOrderPair
 import com.lykke.matching.engine.daos.bitcoin.ClientTradePair
 import com.lykke.matching.engine.daos.bitcoin.Orders
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.logging.AMOUNT
@@ -37,13 +39,15 @@ import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.ArrayList
 import java.util.Date
+import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
 
-class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
+class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
+                         private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
                          private val genericLimitOrderService: GenericLimitOrderService,
                          private val cashOperationService: CashOperationService,
                          private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.MarketOrder> {
@@ -54,6 +58,8 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         private val ORDER_ID = "OrderId"
     }
+
+    private val wallets = HashMap<String, WalletCredentials>()
 
     private var messagesCount: Long = 0
 
@@ -176,13 +182,19 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
             val clientTradePairs = ArrayList<ClientTradePair>()
 
+            val marketMultisig = loadWalletCredentials(marketOrder.clientId).multiSig
+            val limitMultisig = loadWalletCredentials(limitOrder.clientId).multiSig
+
             val marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId!!)!!.accuracy, marketOrder.isOrigBuySide)
             var uid = Trade.generateId(now)
-            var trade = Trade(marketOrder.clientId, uid,
+            var trade = Trade(marketOrder.clientId, uid, marketOrder.clientId, marketMultisig,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), marketRoundedVolume, limitOrder.price)
+                    marketOrder.getId(), marketRoundedVolume, limitOrder.price,
+                    if (marketRoundedVolume > 0.0) limitMultisig else marketMultisig,
+                    if (marketRoundedVolume > 0.0) marketMultisig else limitMultisig)
             marketTrades.add(trade)
             marketTrades.add(trade.cloneWithGeneratedId())
+            marketTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
@@ -191,11 +203,14 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
             val oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -oppositeSideVolume else oppositeSideVolume, cashOperationService.getAsset(assetPair.quotingAssetId!!)!!.accuracy, marketOrder.isOrigBuySide)
             uid = Trade.generateId(now)
-            trade = Trade(marketOrder.clientId, uid,
+            trade = Trade(marketOrder.clientId, uid, marketOrder.clientId, marketMultisig,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), oppositeRoundedVolume, limitOrder.price)
+                    marketOrder.getId(), oppositeRoundedVolume, limitOrder.price,
+                    if (oppositeRoundedVolume > 0.0) limitMultisig else marketMultisig,
+                    if (oppositeRoundedVolume > 0.0) marketMultisig else limitMultisig)
             marketTrades.add(trade)
             marketTrades.add(trade.cloneWithGeneratedId())
+            marketTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
@@ -203,11 +218,14 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
-            trade = Trade(limitOrder.clientId, uid,
+            trade = Trade(limitOrder.clientId, uid, limitOrder.clientId, limitMultisig,
                     assetPair.baseAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), -marketRoundedVolume, limitOrder.price)
+                    marketOrder.getId(), -marketRoundedVolume, limitOrder.price,
+                    if (-marketRoundedVolume > 0.0) marketMultisig else limitMultisig,
+                    if (-marketRoundedVolume > 0.0) limitMultisig else marketMultisig)
             limitTrades.add(trade)
             limitTrades.add(trade.cloneWithGeneratedId())
+            limitTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),
@@ -215,11 +233,14 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             uid = Trade.generateId(now)
-            trade = Trade(limitOrder.clientId, uid,
+            trade = Trade(limitOrder.clientId, uid, limitOrder.clientId, limitMultisig,
                     assetPair.quotingAssetId!!, now, limitOrder.getId(),
-                    marketOrder.getId(), -oppositeRoundedVolume, limitOrder.price)
+                    marketOrder.getId(), -oppositeRoundedVolume, limitOrder.price,
+                    if (-oppositeRoundedVolume > 0.0) marketMultisig else limitMultisig,
+                    if (-oppositeRoundedVolume > 0.0) limitMultisig else marketMultisig)
             limitTrades.add(trade)
             limitTrades.add(trade.cloneWithGeneratedId())
+            limitTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.getId(), uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.getId(), uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),
@@ -298,6 +319,18 @@ class MarketOrderService(private val marketOrderDatabaseAccessor: MarketOrderDat
 
         LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= ${RoundingUtils.roundForPrint(roundedPrice)}")
         return cashOperationService.getBalance(order.clientId, asset) >= roundedPrice
+    }
+
+    private fun loadWalletCredentials(clientId: String): WalletCredentials {
+        if (wallets.containsKey(clientId)) {
+            return wallets[clientId]!!
+        }
+        val wallet = backOfficeDatabaseAccessor.loadWalletCredentials(clientId)
+        if (wallet != null) {
+            wallets[clientId] = wallet
+        }
+
+        return wallet ?: WalletCredentials()
     }
 
     fun getMetricLine(uid: String, order: MarketOrder): Line {
