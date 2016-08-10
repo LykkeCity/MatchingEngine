@@ -32,6 +32,26 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
         this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
 
+    override fun loadAllWalletCredentials(): MutableMap<String, WalletCredentials> {
+        val result = HashMap<String, WalletCredentials>()
+
+        try {
+            val partitionQuery = TableQuery.from(WalletCredentials::class.java)
+                    .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, WALLET))
+
+            for (wallet in walletCredentialsTable.execute(partitionQuery)) {
+                result[wallet.clientId] = wallet
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load wallet credentials", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load wallet credentials", e)
+        }
+
+        LOGGER.info("Loaded ${result.size} wallet credentials")
+
+        return result
+    }
+
     override fun loadWalletCredentials(clientId: String): WalletCredentials? {
         try {
             val retrieveWalletCredentials = TableOperation.retrieve(WALLET, clientId, WalletCredentials::class.java)

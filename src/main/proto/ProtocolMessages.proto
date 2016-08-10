@@ -65,3 +65,8 @@ message MultiLimitOrder {
 
     optional bool cancelAllPreviousLimitOrders = 6;
 }
+
+message WalletCredentialsReload {
+    required int64 uid = 1;
+    optional string clientId = 2;
+}

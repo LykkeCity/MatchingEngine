@@ -11,6 +11,7 @@ enum class MessageType (val type: Byte){
     ,LIMIT_ORDER_CANCEL(5)
     ,BALANCE_UPDATE(6)
     ,MULTI_LIMIT_ORDER(7)
+    ,WALLET_CREDENTIALS_RELOAD(20)
     ;
 
 

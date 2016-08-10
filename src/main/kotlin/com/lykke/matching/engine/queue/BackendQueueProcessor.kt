@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.queue
 
+import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.daos.bitcoin.BtTransaction
 import com.lykke.matching.engine.daos.bitcoin.ClientCashOperationPair
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -25,14 +25,14 @@ import java.util.concurrent.BlockingQueue
 
 class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                             private val inQueue: BlockingQueue<Transaction>,
-                            private val outQueueWriter: QueueWriter): Thread() {
+                            private val outQueueWriter: QueueWriter,
+                            private val walletCredentialsCache: WalletCredentialsCache): Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(BackendQueueProcessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val wallets = HashMap<String, WalletCredentials>()
     private val assets = HashMap<String, Asset>()
 
     private var messagesCount: Long = 0
@@ -65,7 +65,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
     private fun processBitcoinCashIn(operation: CashIn) {
         LOGGER.debug("Writing CashIn operation to queue [${operation.clientId}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
-        val walletCredentials = loadWalletCredentials(operation.clientId)
+        val walletCredentials = walletCredentialsCache.getWalletCredentials(operation.clientId)
         if (walletCredentials == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId}")
             METRICS_LOGGER.logError(this.javaClass.name, "No wallet credentials for client ${operation.clientId}")
@@ -94,7 +94,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
     private fun processBitcoinCashOut(operation: CashOut) {
         LOGGER.debug("Writing CashOut operation to queue [${operation.clientId}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
-        val walletCredentials = loadWalletCredentials(operation.clientId)
+        val walletCredentials = walletCredentialsCache.getWalletCredentials(operation.clientId)
         if (walletCredentials == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId}")
             METRICS_LOGGER.logError(this.javaClass.name, "No wallet credentials for client ${operation.clientId}")
@@ -123,13 +123,13 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
     private fun processBitcoinSwap(operation: Swap) {
         LOGGER.debug("Writing Swap operation to queue [${operation.clientId1}, ${RoundingUtils.roundForPrint(operation.Amount1)} ${operation.origAsset1} to ${operation.clientId2}, ${RoundingUtils.roundForPrint(operation.Amount2)} ${operation.origAsset2}]")
-        val walletCredentials1 = loadWalletCredentials(operation.clientId1)
+        val walletCredentials1 = walletCredentialsCache.getWalletCredentials(operation.clientId1)
         if (walletCredentials1 == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId1}")
             METRICS_LOGGER.logError(this.javaClass.name, "No wallet credentials for client ${operation.clientId1}")
             return
         }
-        val walletCredentials2 = loadWalletCredentials(operation.clientId2)
+        val walletCredentials2 = walletCredentialsCache.getWalletCredentials(operation.clientId2)
         if (walletCredentials2 == null) {
             LOGGER.error("No wallet credentials for client ${operation.clientId2}")
             METRICS_LOGGER.logError(this.javaClass.name, "No wallet credentials for client ${operation.clientId2}")
@@ -163,18 +163,6 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
         outQueueWriter.write(serialisedData)
         LOGGER.info("Wrote Swap operation to queue [${operation.MultisigCustomer1}, ${RoundingUtils.roundForPrint(operation.Amount1)} ${operation.Asset1} to ${operation.MultisigCustomer2}, ${RoundingUtils.roundForPrint(operation.Amount2)} ${operation.Asset2}]")
         METRICS_LOGGER.log(getMetricLine("Swap", serialisedData))
-    }
-
-    private fun loadWalletCredentials(clientId: String): WalletCredentials? {
-        if (wallets.containsKey(clientId)) {
-            return wallets[clientId]
-        }
-        val wallet = backOfficeDatabaseAccessor.loadWalletCredentials(clientId)
-        if (wallet != null) {
-            wallets[clientId] = wallet
-        }
-
-        return wallet
     }
 
     private fun loadAsset(assetId: String): Asset? {

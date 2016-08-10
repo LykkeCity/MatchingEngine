@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.queue
 
 import com.google.gson.Gson
+import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.daos.bitcoin.ClientCashOperationPair
@@ -21,6 +22,7 @@ import kotlin.test.assertNotNull
 class BackendQueueProcessorTest {
 
     val backOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
 
     @Before
     fun setUp() {
@@ -39,13 +41,15 @@ class BackendQueueProcessorTest {
         asset = Asset()
         asset.blockChainId = "TestEUR"
         backOfficeDatabaseAccessor.assets.put("EUR", asset)
+
+        walletCredentialsCache.reloadCache()
     }
 
     @Test
     fun testCashIn() {
         val inQueue = LinkedBlockingQueue<Transaction>()
         val outQueueWriter = TestQueueWriter()
-        val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter)
+        val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter, walletCredentialsCache)
 
         val cashIn = CashIn(TransactionId = "11", clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
         processor.processMessage(cashIn)
@@ -63,7 +67,7 @@ class BackendQueueProcessorTest {
     fun testCashOut() {
         val inQueue = LinkedBlockingQueue<Transaction>()
         val outQueueWriter = TestQueueWriter()
-        val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter)
+        val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter, walletCredentialsCache)
 
         val cashOut = CashOut(TransactionId = "11", clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
         processor.processMessage(cashOut)
@@ -81,7 +85,7 @@ class BackendQueueProcessorTest {
     fun testSwap() {
         val inQueue = LinkedBlockingQueue<Transaction>()
         val outQueueWriter = TestQueueWriter()
-        val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter)
+        val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter, walletCredentialsCache)
 
         val swap = Swap(TransactionId = "11", clientId1 = "Client1", Amount1 = 500.0, origAsset1 = "USD",
                         clientId2 = "Client2", Amount2 = 500.0, origAsset2 = "EUR",

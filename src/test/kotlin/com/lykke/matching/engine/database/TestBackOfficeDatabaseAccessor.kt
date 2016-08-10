@@ -16,8 +16,16 @@ class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
         credentials[wallet.clientId] = wallet
     }
 
+    override fun loadAllWalletCredentials(): MutableMap<String, WalletCredentials> {
+        val result = HashMap<String, WalletCredentials>()
+        credentials.keys.forEach {
+            result[it] = credentials[it]!!
+        }
+        return result
+    }
+
     override fun loadWalletCredentials(clientId: String): WalletCredentials? {
-        return credentials.get(clientId)
+        return credentials[clientId]
     }
 
     fun addAsset(asset: Asset) {
@@ -25,7 +33,7 @@ class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
     }
 
     override fun loadAsset(assetId: String): Asset? {
-        return assets.get(assetId)
+        return assets[assetId]
     }
 
     override fun loadAssets(): MutableMap<String, Asset> {

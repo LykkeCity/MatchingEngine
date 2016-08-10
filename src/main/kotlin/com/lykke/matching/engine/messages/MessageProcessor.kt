@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.messages
 
+import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
@@ -65,6 +66,8 @@ class MessageProcessor: Thread {
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
 
+    val walletCredentialsCache: WalletCredentialsCache
+
     val bestPriceBuilder: Timer
     val candlesBuilder: Timer
     val hoursCandlesBuilder: Timer
@@ -84,26 +87,27 @@ class MessageProcessor: Thread {
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, azureConfig)
 
+        this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
+
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue)
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, walletCredentialsCache)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
         historyTicksService.init()
 
-        this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter)
+        this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
 
         val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
-            LOGGER.debug("Wrote market profile")
         }
 
-        var time = LocalDateTime.now()
+        val time = LocalDateTime.now()
         val candleSaverInterval = config.getProperty("candle.saver.interval")!!.toLong()
         this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = candleSaverInterval) {
             tradesInfoService.saveCandles()
