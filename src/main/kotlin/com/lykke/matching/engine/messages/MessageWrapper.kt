@@ -11,6 +11,7 @@ class MessageWrapper(val type: MessageType?, val byteArray: ByteArray, val clien
         val LOGGER = Logger.getLogger(MessageWrapper::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
+
     fun writeResponse(response: ProtocolMessages.Response) {
         if (clientHandler != null) {
             try {

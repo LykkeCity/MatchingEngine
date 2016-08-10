@@ -26,6 +26,7 @@ import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
+import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
@@ -62,6 +63,7 @@ class MessageProcessor: Thread {
     val balanceUpdateService: BalanceUpdateService
     val tradesInfoService: TradesInfoService
     val historyTicksService: HistoryTicksService
+    val walletCredentialsService: WalletCredentialsCacheService
 
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
@@ -98,6 +100,7 @@ class MessageProcessor: Thread {
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
+        this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
         historyTicksService.init()
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
@@ -157,6 +160,9 @@ class MessageProcessor: Thread {
                 }
                 MessageType.MULTI_LIMIT_ORDER -> {
                     multiLimitOrderService.processMessage(message)
+                }
+                MessageType.WALLET_CREDENTIALS_RELOAD -> {
+                    walletCredentialsService.processMessage(message)
                 }
                 else -> {
                     LOGGER.error("Unknown message type: ${message.type}")
