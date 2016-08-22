@@ -34,6 +34,9 @@ public class HourCandle extends TableServiceEntity {
     public void addPrice(Double price) {
         LinkedList<Double> prices = getPricesList();
         prices.add(price);
+        while (prices.size() < 20) {
+            prices.add(price);
+        }
         if (prices.size() > 20 ) {
             prices.removeFirst();
         }
