@@ -5,7 +5,7 @@ import com.lykke.matching.engine.socket.ClientHandler
 import org.apache.log4j.Logger
 import java.io.IOException
 
-class MessageWrapper(val type: MessageType?, val byteArray: ByteArray, val clientHandler: ClientHandler?) {
+class MessageWrapper(val type: Byte, val byteArray: ByteArray, val clientHandler: ClientHandler?) {
 
     companion object {
         val LOGGER = Logger.getLogger(MessageWrapper::class.java.name)

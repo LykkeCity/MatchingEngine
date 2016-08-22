@@ -69,7 +69,7 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
         val serializedData = ByteArray(size)
         inputStream.read(serializedData, 0, size)
         incomingSize += 1 + size
-        queue.put(MessageWrapper(MessageType.Companion.valueOf(type), serializedData, this))
+        queue.put(MessageWrapper(type, serializedData, this))
     }
 
     fun writeOutput(byteArray: ByteArray) {

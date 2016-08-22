@@ -141,7 +141,8 @@ class MessageProcessor: Thread {
 
     private fun processMessage(message: MessageWrapper) {
         try {
-            when (message.type) {
+            val messageType = MessageType.Companion.valueOf(message.type)
+            when (messageType) {
             //MessageType.PING -> already processed by client handler
                 MessageType.CASH_OPERATION -> {
                     cashOperationService.processMessage(message)

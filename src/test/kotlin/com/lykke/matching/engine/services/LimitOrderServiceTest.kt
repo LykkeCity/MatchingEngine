@@ -75,7 +75,7 @@ class LimitOrderServiceTest {
     }
 
     private fun buildLimitOrderWrapper(order: LimitOrder, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper(MessageType.LIMIT_ORDER, ProtocolMessages.LimitOrder.newBuilder()
+        return MessageWrapper(MessageType.LIMIT_ORDER.type, ProtocolMessages.LimitOrder.newBuilder()
                 .setUid(Date().time)
                 .setTimestamp(order.createdAt.time)
                 .setClientId(order.clientId)

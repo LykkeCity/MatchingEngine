@@ -456,7 +456,7 @@ class MarketOrderServiceTest {
 }
 
 fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-    return MessageWrapper(MessageType.MARKET_ORDER, ProtocolMessages.MarketOrder.newBuilder()
+    return MessageWrapper(MessageType.MARKET_ORDER.type, ProtocolMessages.MarketOrder.newBuilder()
             .setUid(Date().time)
             .setTimestamp(order.createdAt.time)
             .setClientId(order.clientId)
