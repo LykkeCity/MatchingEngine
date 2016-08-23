@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
@@ -17,7 +18,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
                                private val cashOperationService: CashOperationService,
-                               private val tradesInfoQueue: BlockingQueue<TradeInfo>) {
+                               private val tradesInfoQueue: BlockingQueue<TradeInfo>,
+                               private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>) {
 
     companion object {
         val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -52,6 +54,7 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
         orderBook.addOrder(order)
         limitOrdersMap.put(order.getId(), order)
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
+        quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
     fun updateLimitOrder(order: LimitOrder) {

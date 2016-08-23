@@ -77,3 +77,12 @@ message SubscribeToBalanceUpdate {
 message BalanceNotification {
     required string clientId = 1;
 }
+
+message SubscribeToQuotesUpdate {
+}
+
+message QuotesUpdate {
+    required string assetId = 1;
+    required double price = 2;
+    required double volume = 3;
+}
