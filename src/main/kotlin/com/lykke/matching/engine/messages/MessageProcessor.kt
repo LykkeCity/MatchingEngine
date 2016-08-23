@@ -13,6 +13,8 @@ import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.notification.BalanceUpdateHandler
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.queue.BackendQueueProcessor
 import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
@@ -47,6 +49,7 @@ class MessageProcessor: Thread {
     val messagesQueue: BlockingQueue<MessageWrapper>
     val bitcoinQueue: BlockingQueue<Transaction>
     val tradesInfoQueue: BlockingQueue<TradeInfo>
+    val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -65,6 +68,8 @@ class MessageProcessor: Thread {
     val historyTicksService: HistoryTicksService
     val walletCredentialsService: WalletCredentialsCacheService
 
+    val balanceUpdateHandler: BalanceUpdateHandler
+
     val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
 
@@ -82,6 +87,7 @@ class MessageProcessor: Thread {
         this.messagesQueue = queue
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
+        this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
@@ -91,7 +97,7 @@ class MessageProcessor: Thread {
 
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
 
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService)
@@ -100,8 +106,11 @@ class MessageProcessor: Thread {
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
-        this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
         historyTicksService.init()
+
+        this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
+        this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
+        balanceUpdateHandler.start()
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
 
@@ -134,6 +143,7 @@ class MessageProcessor: Thread {
     override fun run() {
         backendQueueProcessor.start()
         tradesInfoService.start()
+
         while (true) {
             processMessage(messagesQueue.take())
         }
@@ -164,6 +174,9 @@ class MessageProcessor: Thread {
                 }
                 MessageType.WALLET_CREDENTIALS_RELOAD -> {
                     walletCredentialsService.processMessage(message)
+                }
+                MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
+                    balanceUpdateHandler.subscribe(message.clientHandler!!)
                 }
                 else -> {
                     LOGGER.error("Unknown message type: ${message.type}")

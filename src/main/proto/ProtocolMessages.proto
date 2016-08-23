@@ -70,3 +70,10 @@ message WalletCredentialsReload {
     required int64 uid = 1;
     optional string clientId = 2;
 }
+
+message SubscribeToBalanceUpdate {
+}
+
+message BalanceNotification {
+    required string clientId = 1;
+}

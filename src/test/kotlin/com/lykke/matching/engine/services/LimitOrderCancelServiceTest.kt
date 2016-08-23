@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -22,6 +23,7 @@ class LimitOrderCancelServiceTest {
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
+    val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
     @Before
     fun setUp() {
@@ -43,7 +45,7 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
+        val service = LimitOrderCancelService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), balanceNotificationQueue), tradesInfoQueue))
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.getId() == "3" }

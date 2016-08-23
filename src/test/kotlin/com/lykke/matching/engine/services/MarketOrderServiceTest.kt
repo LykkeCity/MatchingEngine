@@ -14,6 +14,7 @@ import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.order.OrderStatus.InOrderBook
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
@@ -36,6 +37,7 @@ class MarketOrderServiceTest {
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val transactionQueue = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
+    val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAcessor)
 
     val DELTA = 1e-9
@@ -69,7 +71,7 @@ class MarketOrderServiceTest {
     fun testNoLiqudity() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client1"))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -86,7 +88,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1500.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -100,7 +102,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 2000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -115,7 +117,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 900.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -129,7 +131,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -196,7 +198,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.1))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "JPY", 100.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -235,7 +237,7 @@ class MarketOrderServiceTest {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -294,7 +296,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 150.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -352,7 +354,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 500.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 750.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 
@@ -402,7 +404,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 3000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 2000.0))
 
-        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue)
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue)
         val service = MarketOrderService(testBackOfficeDatabaseAcessor,testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache)
 

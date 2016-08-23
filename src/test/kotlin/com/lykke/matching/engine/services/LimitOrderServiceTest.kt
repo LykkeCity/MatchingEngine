@@ -10,6 +10,7 @@ import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Before
@@ -43,7 +44,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -52,7 +53,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue))
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
@@ -65,7 +66,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testBalanceCheck() {
-        val service = GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>()), tradesInfoQueue)
+        val service = GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue)
 
         assertTrue { service.isEnoughFunds(buildLimitOrder(price = 2.0, volume = -1000.0), 1000.0) }
         assertFalse { service.isEnoughFunds(buildLimitOrder( price = 2.0, volume = -1001.0), 1001.0) }

@@ -20,6 +20,7 @@ import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Transaction
@@ -28,13 +29,15 @@ import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.HashMap
+import java.util.HashSet
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                            private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
-                           private val backendQueue: BlockingQueue<Transaction>): AbsractService<ProtocolMessages.CashOperation> {
+                           private val backendQueue: BlockingQueue<Transaction>,
+                           private val notificationQueue: BlockingQueue<BalanceUpdateNotification>): AbsractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
@@ -137,20 +140,24 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     fun processWalletOperations(operations: List<WalletOperation>) {
         val walletsToAdd = LinkedList<Wallet>()
+        val clients = HashSet<String>()
         operations.forEach { operation ->
-            val client = balances.getOrPut(operation.getClientId()) { HashMap<String, Double>() }
+            val client = balances.getOrPut(operation.clientId) { HashMap<String, Double>() }
             val balance = client[operation.assetId] ?: 0.0
             client.put(operation.assetId, balance + operation.amount)
 
-            val wallet = wallets.getOrPut(operation.getClientId()) { Wallet(operation.getClientId()) }
+            val wallet = wallets.getOrPut(operation.getClientId()) { Wallet(operation.clientId) }
             wallet.addBalance(operation.assetId, operation.amount)
 
             if (!walletsToAdd.contains(wallet)) {
                 walletsToAdd.add(wallet)
             }
+            clients.add(operation.clientId)
         }
 
         walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
+
+        clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
     }
 
     fun updateBalance(clientId: String, assetId: String, balance: Double) {
@@ -161,5 +168,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         wallet.setBalance(assetId, balance)
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
+
+        notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 }
