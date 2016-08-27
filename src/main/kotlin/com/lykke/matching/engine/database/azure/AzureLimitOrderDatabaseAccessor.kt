@@ -56,6 +56,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
             LOGGER.error("Unable to load limit orders", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load limit orders", e)
         }
+        LOGGER.info("Loaded ${result.size} active limit orders")
         return result
     }
 

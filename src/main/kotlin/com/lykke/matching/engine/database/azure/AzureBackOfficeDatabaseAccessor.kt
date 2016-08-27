@@ -71,8 +71,7 @@ class AzureBackOfficeDatabaseAccessor : BackOfficeDatabaseAccessor {
                     .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ASSET))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.getAssetId()] = asset
-                LOGGER.info("Loaded asset: ${asset.toString()}")
+                result[asset.assetId] = asset
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load assets", e)

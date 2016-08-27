@@ -47,10 +47,9 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
-                wallet.getBalancesList().forEach { balance ->
+                wallet.balancesList.forEach { balance ->
                     if (balance.balance != null) {
                         map.put(balance.asset, balance.balance)
-                        LOGGER.debug("${wallet.clientId} ${balance.asset} -> ${balance.balance}")
                         balancesCount++
                     }
                 }
@@ -65,21 +64,17 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
-        var count = 0
         try {
             val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
             val partitionQuery = TableQuery.from(Wallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
                 result.put(wallet.rowKey, wallet)
-                if (wallet.balances != null) count++
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load accounts", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load accounts", e)
         }
-
-        LOGGER.info("Loaded $count/${result.size} wallets")
 
         return result
     }
@@ -119,30 +114,25 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         try {
             operationsTable.execute(TableOperation.insert(operation))
         } catch(e: Exception) {
-            LOGGER.error("Unable to insert operation: ${operation.getUid()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.getUid()}", e)
+            LOGGER.error("Unable to insert operation: ${operation.uid}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)
         }
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
         val result = HashMap<String, AssetPair>()
-        var count = 0
 
         try {
             val partitionQuery = TableQuery.from(AssetPair::class.java)
                     .where(TableQuery.generateFilterCondition("PartitionKey", EQUAL, ASSET_PAIR))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.getAssetPairId()] = asset
-                LOGGER.info("Loaded asset pair: ${asset.toString()}")
-                if (asset.baseAssetId != null && asset.quotingAssetId != null) count++
+                result[asset.assetPairId] = asset
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load asset pairs", e)
         }
-
-        LOGGER.info("Loaded $count/${result.size} asset pairs ")
 
         return result
     }
@@ -151,7 +141,6 @@ class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
         try {
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AssetPair>()
-            LOGGER.info("Loaded asset pair: ${assetPair.toString()}")
             return assetPair
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)
