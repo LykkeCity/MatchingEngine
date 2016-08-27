@@ -18,6 +18,10 @@ public class RoundingUtils {
         return new BigDecimal(value).setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, roundUp ? ROUND_UP : ROUND_DOWN).doubleValue();
     }
 
+    public static Double round(Double value, int accuracy) {
+        return new BigDecimal(value).setScale(accuracy, ROUND_HALF_UP).doubleValue();
+    }
+
     public static String roundForPrint(Double value) {
         return FORMAT.format(value);
     }

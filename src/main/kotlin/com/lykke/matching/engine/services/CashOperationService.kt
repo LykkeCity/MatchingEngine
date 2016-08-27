@@ -67,19 +67,19 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
                 Date(message.dateTime), message.amount,if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
         processWalletOperations(listOf(operation))
 
-        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.getClientId(), message.bussinesId, operation.getUid()))
+        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.uid))
 
         if (message.sendToBitcoin) {
             val cashOperation = if (operation.amount > 0.0)
-                CashIn(operation.transactionId, clientId = operation.getClientId(), Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
+                CashIn(operation.transactionId, clientId = operation.clientId, Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.uid)
             else
-                CashOut(operation.transactionId, clientId = operation.getClientId(), Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.getUid())
+                CashOut(operation.transactionId, clientId = operation.clientId, Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.uid)
 
             backendQueue.put(cashOperation)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
-                .setRecordId(operation.getUid()).build())
+                .setRecordId(operation.uid).build())
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}, sendToBitcoin: ${message.sendToBitcoin} processed")
 
         METRICS_LOGGER.log(Line(ME_CASH_OPERATION, arrayOf(
@@ -98,13 +98,17 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         return ProtocolMessages.CashOperation.parseFrom(array)
     }
 
-    fun getAsset(assetId: String): Asset? {
+    fun getAsset(assetId: String): Asset {
         var asset = assets[assetId]
         if (asset == null) {
             asset = backOfficeDatabaseAccessor.loadAsset(assetId)
             if (asset != null) {
                 assets[assetId] = asset
             }
+        }
+
+        if (asset == null) {
+            throw Exception("Unable to find asset pair $assetId")
         }
 
         LOGGER.debug("Got asset : ${asset.toString()}")
@@ -144,10 +148,14 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         operations.forEach { operation ->
             val client = balances.getOrPut(operation.clientId) { HashMap<String, Double>() }
             val balance = client[operation.assetId] ?: 0.0
-            client.put(operation.assetId, balance + operation.amount)
+            val asset = getAsset(operation.assetId)
 
-            val wallet = wallets.getOrPut(operation.getClientId()) { Wallet(operation.clientId) }
-            wallet.addBalance(operation.assetId, operation.amount)
+            val newBalance = RoundingUtils.round(balance + operation.amount, asset.accuracy)
+
+            client.put(operation.assetId,newBalance)
+
+            val wallet = wallets.getOrPut(operation.clientId) { Wallet(operation.clientId) }
+            wallet.setBalance(operation.assetId, newBalance)
 
             if (!walletsToAdd.contains(wallet)) {
                 walletsToAdd.add(wallet)
