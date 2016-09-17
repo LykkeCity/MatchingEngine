@@ -10,14 +10,22 @@ public class MarketOrder extends Order {
     Date matchedAt;
     boolean straight;
 
+    Double dustSize;
+
     public MarketOrder() {
     }
 
     public MarketOrder(String uid, String assetPairId, String clientId, Double volume, Double price, String status,
                        Date createdAt, Date registered, String transactionId, Date matchedAt, boolean straight) {
+        this(uid, assetPairId, clientId, volume, price, status, createdAt, registered, transactionId, matchedAt, straight, 0.0d);
+    }
+
+    public MarketOrder(String uid, String assetPairId, String clientId, Double volume, Double price, String status,
+                       Date createdAt, Date registered, String transactionId, Date matchedAt, boolean straight, Double dustSize) {
         super(uid, assetPairId, clientId, volume, price, status, createdAt, registered, transactionId);
         this.matchedAt = matchedAt;
         this.straight = straight;
+        this.dustSize = dustSize;
     }
 
     public boolean isBuySide() {
@@ -34,6 +42,7 @@ public class MarketOrder extends Order {
                 "assetPairId='" + assetPairId + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", volume=" + volume +
+                ", dustSize=" + dustSize +
                 ", price=" + price +
                 ", straight=" + straight +
                 ", status='" + status + '\'' +
@@ -58,5 +67,13 @@ public class MarketOrder extends Order {
 
     public void setStraight(boolean straight) {
         this.straight = straight;
+    }
+
+    public Double getDustSize() {
+        return dustSize;
+    }
+
+    public void setDustSize(Double dustSize) {
+        this.dustSize = dustSize;
     }
 }

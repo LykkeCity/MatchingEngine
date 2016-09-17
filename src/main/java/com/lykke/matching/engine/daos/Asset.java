@@ -7,13 +7,19 @@ public class Asset extends TableServiceEntity {
 
     String blockChainId;
     int accuracy;
+    Double dustLimit;
 
     public Asset() {
     }
 
     public Asset(String assetId, int accuracy) {
+        this(assetId, accuracy, 0.0d);
+    }
+
+    public Asset(String assetId, int accuracy, Double dustLimit) {
         super(ASSET, assetId);
         this.accuracy = accuracy;
+        this.dustLimit = dustLimit;
     }
 
     public String getBlockChainId() {
@@ -34,6 +40,14 @@ public class Asset extends TableServiceEntity {
 
     public String getAssetId() {
         return rowKey;
+    }
+
+    public Double getDustLimit() {
+        return dustLimit;
+    }
+
+    public void setDustLimit(Double dustLimit) {
+        this.dustLimit = dustLimit;
     }
 
     @Override

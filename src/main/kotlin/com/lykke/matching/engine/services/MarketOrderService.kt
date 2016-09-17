@@ -154,9 +154,33 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        remainingVolume = marketOrder.absVolume
-        val now = Date()
         val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId)!!
+
+        val isMarketBuy = marketOrder.isBuySide
+        val marketAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.quotingAssetId!! else assetPair.baseAssetId!!)!!
+        val limitAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.baseAssetId!! else assetPair.quotingAssetId!!)!!
+
+        if (marketAsset.dustLimit > 0.0) {
+            val balance = cashOperationService.getBalance(marketOrder.clientId, marketAsset.assetId)
+            if (marketOrder.straight) {
+                if (balance - marketOrder.absVolume < marketAsset.dustLimit) {
+                    marketOrder.dustSize = RoundingUtils.parseDouble(balance - marketOrder.absVolume, marketAsset.accuracy).toDouble()
+                    marketOrder.volume = if (marketOrder.isOrigBuySide) balance else - balance
+                }
+            } else {
+                val marketVolume = if(marketOrder.isBuySide) totalLimitPrice else totalMarketVolume
+                val lastLimitOrder = matchedOrders.last
+                if (balance - Math.abs(marketVolume) < marketAsset.dustLimit) {
+                    marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(marketVolume)) * lastLimitOrder.price, assetPair.accuracy).toDouble()
+                    marketOrder.volume = RoundingUtils.parseDouble(marketOrder.volume + marketOrder.dustSize, assetPair.accuracy).toDouble()
+                }
+            }
+        }
+
+        remainingVolume = marketOrder.absVolume
+        totalLimitPrice = 0.0
+        totalMarketVolume = 0.0
+        val now = Date()
 
         val completedLimitOrders = LinkedList<LimitOrder>()
         var uncompletedLimitOrder: LimitOrder? = null
@@ -174,7 +198,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
             matchingData.add(MatchingData(marketOrder.id, limitOrder.id, volume))
             matchingData.add(MatchingData(limitOrder.id, marketOrder.id, volume))
-            val isMarketBuy = marketOrder.isBuySide
             val oppositeSideVolume = limitOrder.price * volume
 
             val clientTradePairs = ArrayList<ClientTradePair>()
@@ -259,14 +282,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             limitOrder.addTransactionIds(listOf(transactionId))
             transactionIds.add(transactionId)
 
-            val asset1 = cashOperationService.getAsset(if (isMarketBuy) assetPair.quotingAssetId!! else assetPair.baseAssetId!!)!!
-            val asset2 = cashOperationService.getAsset(if (isMarketBuy) assetPair.baseAssetId!! else assetPair.quotingAssetId!!)!!
-
             bitcoinTransactions.add(Swap(TransactionId = transactionId,
-                                         clientId1 = marketOrder.clientId, Amount1 = RoundingUtils.round(if (isMarketBuy) oppositeSideVolume else volume, asset1.accuracy, marketOrder.isOrigBuySide), origAsset1 = asset1.assetId,
-                                         clientId2 = limitOrder.clientId, Amount2 = RoundingUtils.round(if (isMarketBuy) volume else oppositeSideVolume, asset2.accuracy, marketOrder.isOrigBuySide), origAsset2 = asset2.assetId,
+                                         clientId1 = marketOrder.clientId, Amount1 = RoundingUtils.round(if (isMarketBuy) oppositeSideVolume else volume, marketAsset.accuracy, marketOrder.isOrigBuySide), origAsset1 = marketAsset.assetId,
+                                         clientId2 = limitOrder.clientId, Amount2 = RoundingUtils.round(if (isMarketBuy) volume else oppositeSideVolume, limitAsset.accuracy, marketOrder.isOrigBuySide), origAsset2 = limitAsset.assetId,
                                          orders = Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id), ClientOrderPair(limitOrder.clientId, limitOrder.id),
                                                  clientTradePairs.toTypedArray())))
+
+            totalMarketVolume += volume
+            totalLimitPrice += volume * limitOrder.price
         }
 
         marketOrder.status = Matched.name
