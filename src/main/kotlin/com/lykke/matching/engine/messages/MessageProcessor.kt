@@ -6,11 +6,13 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureSharedDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
@@ -34,6 +36,7 @@ import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
+import java.util.Date
 import java.util.HashMap
 import java.util.Properties
 import java.util.Timer
@@ -59,6 +62,7 @@ class MessageProcessor: Thread {
     val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
+    val sharedDatabaseAccessor: SharedDatabaseAccessor
 
     val cashOperationService: CashOperationService
     val genericLimitOrderService: GenericLimitOrderService
@@ -99,6 +103,7 @@ class MessageProcessor: Thread {
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(dbConfig["ClientPersonalInfoConnString"]!!, dbConfig["BitCoinQueueConnectionString"]!!, dbConfig["DictsConnString"]!!)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
+        this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(dbConfig["SharedStorageConnString"]!!)
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, azureConfig)
 
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
@@ -147,6 +152,10 @@ class MessageProcessor: Thread {
         val queueSizeLogger = QueueSizeLogger(messagesQueue)
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = 300000, period = 300000) {
             queueSizeLogger.log()
+        }
+
+        fixedRateTimer(name = "StatusUpdater", initialDelay = 0, period = 30000) {
+            sharedDatabaseAccessor.updateKeepAlive(Date())
         }
     }
 
