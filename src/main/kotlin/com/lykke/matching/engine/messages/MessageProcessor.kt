@@ -104,7 +104,7 @@ class MessageProcessor: Thread {
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(dbConfig["ClientPersonalInfoConnString"]!!, dbConfig["BitCoinQueueConnectionString"]!!, dbConfig["DictsConnString"]!!)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(dbConfig["SharedStorageConnString"]!!)
-        this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, azureConfig)
+        this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, (azureConfig["MatchingEngine"] as Map<*, *>)["BackendQueueName"] as String? ?: "indata")
 
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
 
@@ -207,7 +207,7 @@ class MessageProcessor: Thread {
             }
         } catch (exception: Exception) {
             LOGGER.error("Got error during message processing: ${exception.message}", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "Got error during message processing: ${exception.message}", exception)
+            METRICS_LOGGER.logError(this.javaClass.name, "Got error during message processing", exception)
         }
     }
 }

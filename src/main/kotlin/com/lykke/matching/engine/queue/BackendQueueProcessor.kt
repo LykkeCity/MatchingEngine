@@ -58,7 +58,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             }
         } catch (exception: Exception) {
             LOGGER.error("Error during message processing: ${exception.message}", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "Error during message processing: ${exception.message}", exception)
+            METRICS_LOGGER.logError(this.javaClass.name, "Error during message processing", exception)
         }
         METRICS_LOGGER.log(KeyValue(ME_BACKEND_QUEUE, (++messagesCount).toString()))
     }

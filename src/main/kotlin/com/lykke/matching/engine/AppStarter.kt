@@ -31,8 +31,11 @@ fun main(args: Array<String>) {
     teeLog("Java-Info: " + System.getProperty("java.vm.name") + " (" + System.getProperty("java.version") + ")")
 
     val config = loadLocalConfig(args[0])
+    val azureConfig = loadConfig(config)
+    val dbConfig = azureConfig["Db"] as Map<String, String>
 
-    MetricsLogger.init(config.getProperty("metric.logger.key.value"), config.getProperty("metric.logger.line"))
+    MetricsLogger.init(config.getProperty("metric.logger.key.value"), config.getProperty("metric.logger.line"),
+            dbConfig["SharedStorageConnString"]!!, azureConfig["SlackNotificationsQueueName"] as String? ?: "app-err-notifications")
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config.getProperty("metric.logger.key.value")))
 

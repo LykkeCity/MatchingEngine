@@ -73,7 +73,7 @@ class SocketServer(val config: Properties): Runnable {
             }
         } catch (exception: Exception) {
             LOGGER.error("Got exception: ", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "Fatal exception: ${exception.message}", exception)
+            METRICS_LOGGER.logError(this.javaClass.name, "Fatal exception", exception)
         } finally {
             METRICS_LOGGER.log(KeyValue(ME_STATUS, "False"))
             socket.close()

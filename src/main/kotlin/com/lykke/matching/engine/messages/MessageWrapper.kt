@@ -19,7 +19,7 @@ class MessageWrapper(val type: Byte, val byteArray: ByteArray, val clientHandler
                 clientHandler.writeOutput(toByteArray(MessageType.RESPONSE.type, response.serializedSize, response.toByteArray()))
             } catch (exception: IOException){
                 LOGGER.error("Unable to write response: ${exception.message}", exception)
-                METRICS_LOGGER.logError(this.javaClass.name, "Unable to write response: ${exception.message}", exception)
+                METRICS_LOGGER.logError(this.javaClass.name, "Unable to write response", exception)
             }
         }
     }
