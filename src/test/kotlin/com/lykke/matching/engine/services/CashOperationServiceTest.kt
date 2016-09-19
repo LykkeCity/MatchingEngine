@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -28,6 +29,10 @@ class CashOperationServiceTest {
     @Before
     fun setUp() {
         testDatabaseAccessor.clear()
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset1", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset2", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset3", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset4", 2))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
         transactionQueue.clear()
@@ -129,6 +134,21 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(999.0, balance, DELTA)
 
+    }
+
+    @Test
+    fun testRounding() {
+        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
+        val updateService = BalanceUpdateService(service)
+
+        updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 29.99))
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", -0.01))
+
+        val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+
+        assertNotNull(balance)
+
+        assertEquals("29.98", balance.toString())
     }
 
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString()): MessageWrapper {
