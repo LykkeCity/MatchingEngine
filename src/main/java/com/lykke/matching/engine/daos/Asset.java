@@ -13,7 +13,7 @@ public class Asset extends TableServiceEntity {
     }
 
     public Asset(String assetId, int accuracy) {
-        this(assetId, accuracy, 0.0d);
+        this(assetId, accuracy, null);
     }
 
     public Asset(String assetId, int accuracy, Double dustLimit) {

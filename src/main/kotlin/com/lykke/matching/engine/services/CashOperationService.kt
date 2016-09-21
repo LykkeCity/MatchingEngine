@@ -150,9 +150,9 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             val balance = client[operation.assetId] ?: 0.0
             val asset = getAsset(operation.assetId)
 
-            val newBalance = RoundingUtils.round(balance + operation.amount, asset.accuracy)
+            val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
 
-            client.put(operation.assetId,newBalance)
+            client.put(operation.assetId, newBalance)
 
             val wallet = wallets.getOrPut(operation.clientId) { Wallet(operation.clientId) }
             wallet.setBalance(operation.assetId, newBalance)

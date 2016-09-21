@@ -25,7 +25,7 @@ public class RoundingUtils {
         return FORMAT.format(value);
     }
 
-    public static BigDecimal round(Double value, int accuracy) {
+    public static BigDecimal parseDouble(Double value, int accuracy) {
         return new BigDecimal(value).setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
     }
 }
