@@ -277,7 +277,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume - marketRoundedVolume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy).toDouble()
+                limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy).toDouble()
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
             }

@@ -20,6 +20,7 @@ import com.lykke.matching.engine.order.OrderStatus.InOrderBook
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
+import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.After
@@ -317,6 +318,10 @@ class MarketOrderServiceTest {
         assertEquals(1, testLimitDatabaseAccessor.orders.size)
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
 
+        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
+        assertEquals(100.0, activeLimitOrder.remainingVolume, DELTA)
+        assertEquals(Processing.name, activeLimitOrder.status)
+
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
         assertEquals(Matched.name, limitOrder.status)
         assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
@@ -424,6 +429,11 @@ class MarketOrderServiceTest {
 
         assertEquals(1, testLimitDatabaseAccessor.orders.size)
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
+
+        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
+        assertEquals(-100.0, activeLimitOrder.remainingVolume, DELTA)
+        assertEquals(Processing.name, activeLimitOrder.status)
+
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
         assertEquals(Matched.name, limitOrder.status)
