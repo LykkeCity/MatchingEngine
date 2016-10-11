@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.logging.AMOUNT
 import com.lykke.matching.engine.logging.ASSET_PAIR
 import com.lykke.matching.engine.logging.CLIENT_ID
@@ -20,8 +21,8 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
+import java.util.ArrayList
 import java.util.Date
-import java.util.HashSet
 import java.util.UUID
 
 class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): AbsractService<ProtocolMessages.MultiLimitOrder> {
@@ -37,7 +38,8 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got multi limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}")
 
-        val orders = HashSet<LimitOrder>()
+        val orders = ArrayList<LimitOrder>(message.ordersList.size)
+
         var cancelBuySide = false
         var cancelSellSide = false
 
@@ -54,17 +56,28 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
             }
         }
 
+        val ordersToCancel = ArrayList<LimitOrder>()
+
         if (message.cancelAllPreviousLimitOrders) {
             if (cancelBuySide) {
-                limitOrderService.cancelAllPreviousOrders(message.clientId, message.assetPairId, true)
+                ordersToCancel.addAll(limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, true))
             }
             if (cancelSellSide) {
-                limitOrderService.cancelAllPreviousOrders(message.clientId, message.assetPairId, false)
+                ordersToCancel.addAll(limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, false))
             }
         }
 
+        val orderBook = limitOrderService.getOrderBook(message.assetPairId)
+
+        ordersToCancel.forEach { order ->
+            orderBook.removeOrder(order)
+        }
+
         orders.forEach { order ->
-            limitOrderService.processLimitOrder(order)
+            orderBook.addOrder(order)
+            limitOrderService.addOrder(order)
+            limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide, order.price, Date()))
+
             LOGGER.info("Part of multi limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
 
             METRICS_LOGGER.log(Line(ME_LIMIT_ORDER, arrayOf(
@@ -78,6 +91,10 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
                     KeyValue(STATUS, order.status)
             )))
         }
+
+        limitOrderService.setOrderBook(message.assetPairId, orderBook)
+        limitOrderService.cancelLimitOrders(ordersToCancel)
+        limitOrderService.addOrders(orders)
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
     }

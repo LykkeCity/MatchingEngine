@@ -46,15 +46,28 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
     fun processLimitOrder(order: LimitOrder) {
         addToOrderBook(order)
         limitOrderDatabaseAccessor.addLimitOrder(order)
-        tradesInfoQueue.put(TradeInfo(order.assetPairId, order.isBuySide(), order.price, Date()))
+        putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide, order.price, Date()))
     }
 
     fun addToOrderBook(order: LimitOrder) {
         val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
         orderBook.addOrder(order)
-        limitOrdersMap.put(order.getId(), order)
+        addOrder(order)
+    }
+
+    fun addOrder(order: LimitOrder) {
+        limitOrdersMap.put(order.id, order)
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
         quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
+    }
+
+    fun addOrders(orders: List<LimitOrder>) {
+        orders.forEach { order ->
+            limitOrdersMap.put(order.id, order)
+            clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
+            quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
+        }
+        limitOrderDatabaseAccessor.addLimitOrders(orders)
     }
 
     fun updateLimitOrder(order: LimitOrder) {
@@ -66,28 +79,43 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
         orders.forEach { order ->
             order.partitionKey = ORDER_ID
             limitOrderDatabaseAccessor.addLimitOrderDone(order)
-            limitOrdersMap.remove(order.getId())
+            limitOrdersMap.remove(order.id)
             limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
         }
+    }
+
+    fun getAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean): List<LimitOrder> {
+        val ordersToRemove = LinkedList<LimitOrder>()
+        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
+            if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide == isBuy) {
+                ordersToRemove.add(limitOrder)
+            }
+        }
+        clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
+        return ordersToRemove
     }
 
     fun cancelAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean) {
         val ordersToRemove = LinkedList<LimitOrder>()
         clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
             if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide == isBuy) {
-                cancelLimitOrder(limitOrder.getId())
+                cancelLimitOrder(limitOrder.id)
                 ordersToRemove.add(limitOrder)
             }
         }
         clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
     }
 
-    fun getOrderBook(key: String) = limitOrdersQueues[key]
+    fun getOrderBook(key: String) = limitOrdersQueues[key] ?: AssetOrderBook(key)
+
+    fun setOrderBook(key: String, book: AssetOrderBook){
+        limitOrdersQueues[key] = book
+    }
 
     fun isEnoughFunds(order: LimitOrder, volume: Double): Boolean {
         val assetPair = cashOperationService.getAssetPair(order.assetPairId) ?: return false
 
-        if (order.isBuySide()) {
+        if (order.isBuySide) {
             LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId!!} : ${RoundingUtils.roundForPrint(cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!))} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
             return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId!!) >= volume * order.price
         } else {
@@ -103,11 +131,28 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
             return
         }
 
-        getOrderBook(order.assetPairId)?.removeOrder(order)
+        getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
         limitOrderDatabaseAccessor.addLimitOrderDone(order)
         limitOrderDatabaseAccessor.deleteLimitOrders(listOf(order))
         LOGGER.debug("Order $uid cancelled")
+    }
+
+    fun cancelLimitOrders(orders: List<LimitOrder>) {
+        orders.forEach { order ->
+            limitOrdersMap.remove(order.id)
+            order.status = Cancelled.name
+        }
+        limitOrderDatabaseAccessor.deleteLimitOrders(orders)
+        limitOrderDatabaseAccessor.addLimitOrdersDone(orders)
+    }
+
+    fun removeOrder(uid: String) : LimitOrder? {
+        return limitOrdersMap.remove(uid)
+    }
+
+    fun putTradeInfo(tradeInfo: TradeInfo) {
+        tradesInfoQueue.put(tradeInfo)
     }
 
     fun buildMarketProfile(): List<BestPrice> {

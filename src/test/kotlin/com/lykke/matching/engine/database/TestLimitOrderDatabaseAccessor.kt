@@ -26,6 +26,10 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
         orders.add(order)
     }
 
+    override fun addLimitOrders(orders: List<LimitOrder>) {
+        this.orders.addAll(orders)
+    }
+
     override fun updateLimitOrder(order: LimitOrder) {
         //nothing to do, already in memory
     }
@@ -36,6 +40,10 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
 
     override fun addLimitOrderDone(order: LimitOrder) {
         ordersDone.add(order)
+    }
+
+    override fun addLimitOrdersDone(orders: List<LimitOrder>) {
+        ordersDone.addAll(orders)
     }
 
     override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
