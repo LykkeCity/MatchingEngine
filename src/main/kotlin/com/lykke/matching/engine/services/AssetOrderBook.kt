@@ -35,4 +35,18 @@ class AssetOrderBook(val assetId: String) {
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: 0.0
     fun getBidPrice() = bidOrderBook.peek()?.price ?: 0.0
+
+    fun copy() : AssetOrderBook {
+        val book = AssetOrderBook(assetId)
+
+        askOrderBook.forEach {
+            book.askOrderBook.put(it)
+        }
+
+        bidOrderBook.forEach {
+            book.bidOrderBook.put(it)
+        }
+
+        return book
+    }
 }

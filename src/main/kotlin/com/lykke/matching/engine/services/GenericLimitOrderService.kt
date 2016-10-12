@@ -139,12 +139,16 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
     }
 
     fun cancelLimitOrders(orders: List<LimitOrder>) {
+        val ordersToCancel = ArrayList<LimitOrder>(orders.size)
         orders.forEach { order ->
-            limitOrdersMap.remove(order.id)
-            order.status = Cancelled.name
+            val ord = limitOrdersMap.remove(order.id)
+            if (ord != null) {
+                ord.status = Cancelled.name
+                ordersToCancel.add(ord)
+            }
         }
-        limitOrderDatabaseAccessor.deleteLimitOrders(orders)
-        limitOrderDatabaseAccessor.addLimitOrdersDone(orders)
+        limitOrderDatabaseAccessor.addLimitOrdersDone(ordersToCancel)
+        limitOrderDatabaseAccessor.deleteLimitOrders(ordersToCancel)
     }
 
     fun removeOrder(uid: String) : LimitOrder? {

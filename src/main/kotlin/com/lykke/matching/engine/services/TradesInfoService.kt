@@ -56,7 +56,7 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
             }
         }
 
-        if (info.isBuy) {
+        if (!info.isBuy) {
             synchronized(hoursCandles) {
                 hoursCandles.putIfAbsent(info.assetPair, info.price)
             }

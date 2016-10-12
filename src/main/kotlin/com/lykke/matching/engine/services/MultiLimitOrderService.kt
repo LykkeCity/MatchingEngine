@@ -67,7 +67,7 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService): A
             }
         }
 
-        val orderBook = limitOrderService.getOrderBook(message.assetPairId)
+        val orderBook = limitOrderService.getOrderBook(message.assetPairId).copy()
 
         ordersToCancel.forEach { order ->
             orderBook.removeOrder(order)
