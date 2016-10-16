@@ -150,7 +150,7 @@ class MessageProcessor: Thread {
         }
 
         val queueSizeLogger = QueueSizeLogger(messagesQueue)
-        fixedRateTimer(name = "QueueSizeLogger", initialDelay = 300000, period = 300000) {
+        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.getProperty("queue.size.logger.interval")!!.toLong(), period = config.getProperty("queue.size.logger.interval")!!.toLong()) {
             queueSizeLogger.log()
         }
 
