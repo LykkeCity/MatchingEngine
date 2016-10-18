@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database
 
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
@@ -11,6 +12,7 @@ interface MarketOrderDatabaseAccessor {
     fun updateMarketOrder(order: MarketOrder)
 
     fun addTrades(trades: List<Trade>)
+    fun addLkkTrades(trades: List<LkkTrade>)
     fun addMatchingData(data: List<MatchingData>)
     fun addOrderTradesLinks(links: List<OrderTradesLink>)
 }

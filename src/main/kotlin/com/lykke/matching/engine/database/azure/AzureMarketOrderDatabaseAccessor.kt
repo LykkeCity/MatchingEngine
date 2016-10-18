@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.azure
 
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
@@ -26,6 +27,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     val matchingDataTable: CloudTable
     val orderTradesLinksTable: CloudTable
     val tradesTable: CloudTable
+    val lkkTradesTable: CloudTable
 
     val DATE_FORMAT = {
         val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -38,6 +40,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
         this.matchingDataTable = getOrCreateTable(marketConfig, "MatchingData")
         this.orderTradesLinksTable = getOrCreateTable(marketConfig, "OrderTradesLinks")
         this.tradesTable = getOrCreateTable(tradesConfig, "Trades")
+        this.lkkTradesTable = getOrCreateTable(tradesConfig, "LkkTrades")
     }
 
     override fun addMarketOrder(order: MarketOrder) {
@@ -101,6 +104,15 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
         } catch(e: Exception) {
             LOGGER.error("Unable to add trades, size: ${trades.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add trades, size: ${trades.size}", e)
+        }
+    }
+
+    override fun addLkkTrades(trades: List<LkkTrade>) {
+        try {
+            batchInsertOrMerge(lkkTradesTable, trades)
+        } catch(e: Exception) {
+            LOGGER.error("Unable to add lkk trades, size: ${trades.size}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add lkk trades, size: ${trades.size}", e)
         }
     }
 

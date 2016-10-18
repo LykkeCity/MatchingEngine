@@ -112,7 +112,8 @@ class MessageProcessor: Thread {
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, walletCredentialsCache)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, walletCredentialsCache,
+                config.getProperty("lykke.trades.history.enabled")!!.toBoolean(), config.getProperty("lykke.trades.history.asset")!!)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)

@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
@@ -50,7 +51,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val genericLimitOrderService: GenericLimitOrderService,
                          private val cashOperationService: CashOperationService,
                          private val backendQueue: BlockingQueue<Transaction>,
-                         private val walletCredentialsCache: WalletCredentialsCache): AbsractService<ProtocolMessages.MarketOrder> {
+                         private val walletCredentialsCache: WalletCredentialsCache,
+                         private val lkkTradesHistoryEnabled: Boolean,
+                         private val lkkTradesAsset: String): AbsractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -186,6 +189,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         var uncompletedLimitOrder: LimitOrder? = null
         val marketTrades = LinkedList<Trade>()
         val limitTrades = LinkedList<Trade>()
+        val lkkTrades = LinkedList<LkkTrade>()
         val cashMovements = LinkedList<WalletOperation>()
         val bitcoinTransactions = LinkedList<Transaction>()
         val transactionIds = LinkedList<String>()
@@ -273,10 +277,16 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             if (marketRemainingVolume >= limitRemainingVolume) {
+                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId.equals(lkkTradesAsset) || assetPair.quotingAssetId.equals(lkkTradesAsset))) {
+                    lkkTrades.add(LkkTrade(now, limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume))
+                }
                 limitOrder.remainingVolume = 0.0
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
+                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId.equals(lkkTradesAsset) || assetPair.quotingAssetId.equals(lkkTradesAsset))) {
+                    lkkTrades.add(LkkTrade(now, limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume))
+                }
                 limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy).toDouble()
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
@@ -311,6 +321,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         marketOrderDatabaseAccessor.addTrades(limitTrades)
         marketOrderDatabaseAccessor.addMatchingData(matchingData)
         marketOrderDatabaseAccessor.addOrderTradesLinks(orderTradesLinks)
+        marketOrderDatabaseAccessor.addLkkTrades(lkkTrades)
 
         cashOperationService.processWalletOperations(cashMovements)
 

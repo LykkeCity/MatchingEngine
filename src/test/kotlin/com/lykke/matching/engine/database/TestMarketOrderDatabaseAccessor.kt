@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database
 
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
@@ -14,6 +15,7 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
 
     val orders = ArrayList<MarketOrder>()
     val trades = ArrayList<Trade>()
+    val lkkTrades = ArrayList<LkkTrade>()
     val matchingData = ArrayList<MatchingData>()
     val orderTradesLinks = ArrayList<OrderTradesLink>()
 
@@ -35,6 +37,10 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
 
     override fun addTrades(trades: List<Trade>) {
         this.trades.addAll(trades)
+    }
+
+    override fun addLkkTrades(trades: List<LkkTrade>) {
+        this.lkkTrades.addAll(trades)
     }
 
     override fun addMatchingData(data: List<MatchingData>) {
