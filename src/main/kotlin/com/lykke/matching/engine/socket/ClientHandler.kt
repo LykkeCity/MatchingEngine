@@ -73,9 +73,11 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
     }
 
     fun writeOutput(byteArray: ByteArray) {
-        outgoingSize += byteArray.size
-        outputStream!!.write(byteArray)
-        outputStream!!.flush()
+        if (socket.isConnected && !socket.isClosed) {
+            outgoingSize += byteArray.size
+            outputStream!!.write(byteArray)
+            outputStream!!.flush()
+        }
     }
 
     fun isConnected(): Boolean {
