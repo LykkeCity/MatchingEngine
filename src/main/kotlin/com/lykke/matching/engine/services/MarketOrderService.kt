@@ -212,7 +212,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val marketMultisig = walletCredentialsCache.getWalletCredentials(marketOrder.clientId)!!.multiSig
             val limitMultisig = walletCredentialsCache.getWalletCredentials(limitOrder.clientId)!!.multiSig
 
-            val marketBalance = cashOperationService.getBalance(marketOrder.clientId, assetPair.baseAssetId)
+            val marketBalance = cashOperationService.getBalance(marketOrder.clientId, if (marketOrder.isBuySide) assetPair.quotingAssetId else assetPair.baseAssetId)
             //in case of non-straight orders, avoid negative balance due to rounding of asset pair
             if (marketAsset.dustLimit != null && marketBalance > 0.0 && marketBalance - Math.abs(marketRoundedVolume) < marketAsset.dustLimit) marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
 
