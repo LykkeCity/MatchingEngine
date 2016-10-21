@@ -35,7 +35,8 @@ fun main(args: Array<String>) {
     val dbConfig = azureConfig["Db"] as Map<String, String>
 
     MetricsLogger.init(config.getProperty("metric.logger.key.value"), config.getProperty("metric.logger.line"),
-            dbConfig["SharedStorageConnString"]!!, azureConfig["SlackNotificationsQueueName"] as String? ?: "app-err-notifications")
+            dbConfig["SharedStorageConnString"]!!, azureConfig["SlackNotificationsQueueName"] as String? ?: "app-err-notifications",
+            config.getProperty("metric.logger.size").toInt())
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config.getProperty("metric.logger.key.value")))
 
@@ -48,7 +49,6 @@ private fun teeLog(message: String) {
 }
 
 internal class ShutdownHook(val link: String) : Thread() {
-
     init {
         this.name = "ShutdownHook"
     }

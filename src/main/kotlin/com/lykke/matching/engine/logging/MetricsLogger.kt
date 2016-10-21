@@ -16,12 +16,14 @@ class MetricsLogger {
         var KEY_VALUE_LINK: String? = null
         var LINE_LINK: String? = null
 
-        fun init(keyValueLink: String, lineLink: String, azureQueueConnectionString: String, queueName: String) {
+        fun init(keyValueLink: String, lineLink: String, azureQueueConnectionString: String, queueName: String, httpLoggerSize: Int) {
             this.KEY_VALUE_LINK = keyValueLink
             this.LINE_LINK = lineLink
 
-            HttpLogger(keyValueLink, KEY_VALUE_QUEUE).start()
-            HttpLogger(lineLink, LINE_QUEUE).start()
+            for (i in 1..httpLoggerSize) {
+                HttpLogger(keyValueLink, KEY_VALUE_QUEUE).start()
+                HttpLogger(lineLink, LINE_QUEUE).start()
+            }
 
             AzureQueueLogger(azureQueueConnectionString, queueName, ERROR_QUEUE).start()
         }
