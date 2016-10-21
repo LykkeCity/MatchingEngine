@@ -3,7 +3,6 @@ package com.lykke.matching.engine.daos;
 import com.google.gson.Gson;
 import com.lykke.matching.engine.order.OrderSide;
 import com.microsoft.azure.storage.table.TableServiceEntity;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -32,7 +31,7 @@ abstract public class Order extends TableServiceEntity {
     }
 
     public Order(String uid, String assetPairId, String clientId, Double volume, Double price, String status, Date createdAt, Date registered, String transactionId) {
-        super(clientId, uid);
+        super(assetPairId, uid);
         this.assetPairId = assetPairId;
         this.clientId = clientId;
         this.volume = volume;

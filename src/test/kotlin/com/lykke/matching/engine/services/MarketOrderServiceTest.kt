@@ -250,7 +250,7 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        var marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "Client4" }!!
+        var marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "EURUSD" }!!
         assertEquals(NotEnoughFunds.name, marketOrder.status)
 
         testDatabaseAccessor.orders.clear()
