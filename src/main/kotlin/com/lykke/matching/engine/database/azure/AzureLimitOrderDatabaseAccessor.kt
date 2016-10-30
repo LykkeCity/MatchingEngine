@@ -98,7 +98,9 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     override fun addLimitOrderDone(order: LimitOrder) {
         try {
-            limitOrdersDoneTable.execute(TableOperation.insertOrMerge(order))
+            if (order.remainingVolume != order.volume) {
+                limitOrdersDoneTable.execute(TableOperation.insertOrMerge(order))
+            }
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done order ${order.getId()}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.getId()}", e)
@@ -107,7 +109,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     override fun addLimitOrdersDone(orders: List<LimitOrder>) {
         try {
-            batchInsertOrMerge(limitOrdersDoneTable, orders)
+            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume })
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done orders, size: ${orders.size}", e)
