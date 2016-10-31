@@ -196,13 +196,15 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val matchingData = LinkedList<MatchingData>()
         val orderTradesLinks = LinkedList<OrderTradesLink>()
 
+        var marketBalance = cashOperationService.getBalance(marketOrder.clientId, if (marketOrder.isBuySide) assetPair.quotingAssetId else assetPair.baseAssetId)
+
         matchedOrders.forEach { limitOrder ->
             val limitRemainingVolume = limitOrder.absRemainingVolume
             val marketRemainingVolume = getCrossVolume(remainingVolume, marketOrder.straight, limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
 
             var marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId!!).accuracy, marketOrder.isOrigBuySide)
-            val oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -limitOrder.price * volume else limitOrder.price * volume, cashOperationService.getAsset(assetPair.quotingAssetId!!).accuracy, marketOrder.isBuySide)
+            var oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -limitOrder.price * volume else limitOrder.price * volume, cashOperationService.getAsset(assetPair.quotingAssetId!!).accuracy, marketOrder.isBuySide)
 
             matchingData.add(MatchingData(marketOrder.id, limitOrder.id, marketRoundedVolume))
             matchingData.add(MatchingData(limitOrder.id, marketOrder.id, marketRoundedVolume))
@@ -212,9 +214,18 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val marketMultisig = walletCredentialsCache.getWalletCredentials(marketOrder.clientId)!!.multiSig
             val limitMultisig = walletCredentialsCache.getWalletCredentials(limitOrder.clientId)!!.multiSig
 
-            val marketBalance = cashOperationService.getBalance(marketOrder.clientId, if (marketOrder.isBuySide) assetPair.quotingAssetId else assetPair.baseAssetId)
             //in case of non-straight orders, avoid negative balance due to rounding of asset pair
             if (marketAsset.dustLimit != null && marketBalance > 0.0 && marketBalance - Math.abs(marketRoundedVolume) < marketAsset.dustLimit) marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+
+            if (marketOrder.isBuySide) {
+                if (marketBalance <Math.abs(oppositeRoundedVolume)) {
+                    oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
+                }
+            } else {
+                if (marketBalance < Math.abs(marketRoundedVolume)) {
+                    marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                }
+            }
 
             var uid = Trade.generateId(now)
             var trade = Trade(marketOrder.clientId, uid, marketOrder.clientId, marketMultisig,
@@ -306,6 +317,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
             totalMarketVolume += volume
             totalLimitPrice += volume * limitOrder.price
+            marketBalance -= if (marketOrder.straight) Math.abs(marketRoundedVolume) else Math.abs(oppositeRoundedVolume)
         }
 
         marketOrder.status = Matched.name

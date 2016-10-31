@@ -47,12 +47,14 @@ class RoundingTest {
         testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAcessor.addAsset(Asset("JPY", 2))
         testBackOfficeDatabaseAcessor.addAsset(Asset("BTC", 8))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("LKK", 0))
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Wallet", "Client3", "Client3-Multisig"))
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Wallet", "Client4", "Client4-Multisig"))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "JPY", 3, 6))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC", "USD", 3, 8))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC", "EUR", 3, 8))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC", "LKK", 2, 8))
 
         this.walletCredentialsCache.reloadCache()
     }
@@ -379,6 +381,28 @@ class RoundingTest {
         Assert.assertEquals("Client3", swap.clientId2)
         Assert.assertEquals(0.00147442, swap.Amount2, 0.0)
         Assert.assertEquals("BTC", swap.origAsset2)
+    }
+
+    @Test
+    fun testNotStraightSellBTCMultiLevel() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14925.09, volume = -1.34, clientId = "Client3"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14950.18, volume = -1.34, clientId = "Client3"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14975.27, volume = -1.34, clientId = "Client3"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "LKK", 50800.0))
+
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache, true, "LKK")
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = -50800.0, straight = false)))
+
+        val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrder.status)
+        Assert.assertEquals(14945.59, marketOrder.price, DELTA)
+
+        Assert.assertEquals(50800.0, testWalletDatabaseAcessor.getBalance("Client3", "LKK"), DELTA)
+        Assert.assertEquals(0.0, testWalletDatabaseAcessor.getBalance("Client4", "LKK"), DELTA)
     }
 
     @Test
