@@ -40,6 +40,7 @@ import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.ArrayList
 import java.util.Date
+import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
 import java.util.UUID
@@ -81,15 +82,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)?.getOrderBook(!order.isBuySide)
-        if (orderBook == null || orderBook.size == 0) {
+        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide)
+        if (orderBook.size == 0) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
-            if (orderBook == null) {
-                LOGGER.debug("No liquidity, empty order book, for market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}")
-            } else {
-                LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}")
-            }
+            LOGGER.debug("No liquidity, no orders in order book, for market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.id).build())
             return
         }
@@ -120,18 +117,24 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         var totalLimitPrice = 0.0
         var totalMarketVolume = 0.0
+        val limitBalances = HashMap<String, Double>()
+
+        val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId)!!
         while (remainingVolume.greaterThan(0.0) && orderBook.size > 0) {
             val limitOrder = orderBook.poll()
             val limitRemainingVolume = limitOrder.absRemainingVolume
             val marketRemainingVolume = getCrossVolume(remainingVolume, marketOrder.straight, limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
+            val limitBalance = limitBalances[limitOrder.clientId] ?: cashOperationService.getBalance(limitOrder.clientId, if (limitOrder.isBuySide) assetPair.quotingAssetId else assetPair.baseAssetId)
+            val limitVolume = Math.abs(if (limitOrder.isBuySide) volume * limitOrder.price else volume)
             if (marketOrder.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
-            } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume)) {
+            } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume) && limitBalance >= limitVolume) {
                 matchedOrders.add(limitOrder)
                 remainingVolume -= getVolume(volume, marketOrder.straight, limitOrder.price)
                 totalMarketVolume += volume
                 totalLimitPrice += volume * limitOrder.price
+                limitBalances[limitOrder.clientId] = limitBalance - limitVolume
             } else {
                 cancelledLimitOrders.add(limitOrder)
             }
@@ -156,8 +159,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             LOGGER.debug("Not enough funds for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
             return
         }
-
-        val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId)!!
 
         val isMarketBuy = marketOrder.isBuySide
         val marketAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.quotingAssetId!! else assetPair.baseAssetId!!)
