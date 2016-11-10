@@ -57,7 +57,8 @@ class MarketOrderServiceTest {
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Wallet", "Client2", "Client2-Multisig"))
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Wallet", "Client3", "Client3-Multisig"))
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Wallet", "Client4", "Client4-Multisig"))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("EUR", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("LKK", 0, 0.0))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("EUR", 2, 0.0))
         testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAcessor.addAsset(Asset("JPY", 2))
         testBackOfficeDatabaseAcessor.addAsset(Asset("BTC", 8, 0.00001))
@@ -65,7 +66,9 @@ class MarketOrderServiceTest {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "JPY", 3, 6))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC", "USD", 8, 8))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC", "LKK", 6, 8))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC1", "USD", 3, 7))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("LKK", "EUR", 5, 2))
 
         this.walletCredentialsCache.reloadCache()
     }
@@ -372,6 +375,140 @@ class MarketOrderServiceTest {
         assertEquals("Client1", swap.clientId2)
         assertEquals(1260.0, swap.Amount2, DELTA)
         assertEquals("USD", swap.origAsset2)
+    }
+
+    @Test
+    fun testMatchOneToMany2016Nov10() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKEUR", price = 0.04412, volume = -20000.0, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKEUR", price = 0.04421, volume = -20000.0, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKEUR", price = 0.04431, volume = -20000.0, clientId = "Client1"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "LKK", 6569074.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 7500.02))
+
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache, true, "LKK")
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKEUR", volume = 50000.0)))
+
+        val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
+        assertEquals(Matched.name, marketOrder.status)
+        assertEquals(0.0442, marketOrder.price, DELTA)
+        assertEquals(3, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
+        assertEquals(24, testDatabaseAccessor.orderTradesLinks.size)
+
+        assertEquals(1, testLimitDatabaseAccessor.orders.size)
+        assertEquals(4, testLimitDatabaseAccessor.ordersDone.size)
+
+        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
+        assertEquals(-10000.0, activeLimitOrder.remainingVolume, DELTA)
+        assertEquals(Processing.name, activeLimitOrder.status)
+
+        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
+        assertEquals(Matched.name, limitOrder.status)
+        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
+
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "EUR" && it.volume == 882.4})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "EUR" && it.volume == 884.2})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client1" && it.assetId == "EUR" && it.volume == 443.1})
+        assertEquals(6, testDatabaseAccessor.trades.filter { it.getClientId() == "Client4" && it.assetId == "LKK" && it.volume == 20000.0}.size)
+        assertEquals(3, testDatabaseAccessor.trades.filter { it.getClientId() == "Client4" && it.assetId == "LKK" && it.volume == 10000.0}.size)
+
+        assertEquals(2209.7, testWalletDatabaseAcessor.getBalance("Client1", "EUR"), DELTA)
+        assertEquals(6519074.0, testWalletDatabaseAcessor.getBalance("Client1", "LKK"), DELTA)
+        assertEquals(5290.32, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+        assertEquals(50000.0, testWalletDatabaseAcessor.getBalance("Client4", "LKK"), DELTA)
+
+        var swap = transactionQueue.take() as Swap
+        assertEquals("Client4", swap.clientId1)
+        assertEquals(882.4, swap.Amount1, DELTA)
+        assertEquals("EUR", swap.origAsset1)
+        assertEquals("Client1", swap.clientId2)
+        assertEquals(20000.0, swap.Amount2, DELTA)
+        assertEquals("LKK", swap.origAsset2)
+
+        swap = transactionQueue.take() as Swap
+        assertEquals("Client4", swap.clientId1)
+        assertEquals(884.2, swap.Amount1, DELTA)
+        assertEquals("EUR", swap.origAsset1)
+        assertEquals("Client1", swap.clientId2)
+        assertEquals(20000.0, swap.Amount2, DELTA)
+        assertEquals("LKK", swap.origAsset2)
+
+        swap = transactionQueue.take() as Swap
+        assertEquals("Client4", swap.clientId1)
+        assertEquals(443.1, swap.Amount1, DELTA)
+        assertEquals("EUR", swap.origAsset1)
+        assertEquals("Client1", swap.clientId2)
+        assertEquals(10000.0, swap.Amount2, DELTA)
+        assertEquals("LKK", swap.origAsset2)
+    }
+
+    @Test
+    fun testMatchOneToMany2016Nov10_2() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 13611.625476, volume = 1.463935, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 13586.531910, volume = 1.463935, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 13561.438344, volume = 1.463935, clientId = "Client1"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "LKK", 100000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 12.67565686))
+
+        val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
+        val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, walletCredentialsCache, true, "LKK")
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = 50000.0, straight = false)))
+
+        val marketOrder = testDatabaseAccessor.orders.find { it.partitionKey == "OrderId" }!!
+        assertEquals(Matched.name, marketOrder.status)
+        assertEquals(13591.395424, marketOrder.price, DELTA)
+        assertEquals(3, testDatabaseAccessor.matchingData.filter { it.partitionKey == marketOrder.getId() }.size)
+        assertEquals(24, testDatabaseAccessor.orderTradesLinks.size)
+
+        assertEquals(1, testLimitDatabaseAccessor.orders.size)
+        assertEquals(4, testLimitDatabaseAccessor.ordersDone.size)
+
+        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
+        assertEquals(0.712908, activeLimitOrder.remainingVolume, DELTA)
+        assertEquals(Processing.name, activeLimitOrder.status)
+
+        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
+        assertEquals(Matched.name, limitOrder.status)
+        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.partitionKey == limitOrder.getId() }.size)
+
+        assertEquals(6, testDatabaseAccessor.trades.filter { it.getClientId() == "Client1" && it.assetId == "BTC" && it.volume == 1.463935}.size)
+        assertEquals(3, testDatabaseAccessor.trades.filter { it.getClientId() == "Client1" && it.assetId == "BTC" && it.volume == 0.75102654}.size)
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "LKK" && it.volume == 19926.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "LKK" && it.volume == 19889.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.getClientId() == "Client4" && it.assetId == "LKK" && it.volume == 10185.0})
+
+        assertEquals(3.67889654, testWalletDatabaseAcessor.getBalance("Client1", "BTC"), DELTA)
+        assertEquals(50000.0, testWalletDatabaseAcessor.getBalance("Client1", "LKK"), DELTA)
+        assertEquals(8.99676032, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
+        assertEquals(50000.0, testWalletDatabaseAcessor.getBalance("Client4", "LKK"), DELTA)
+
+        var swap = transactionQueue.take() as Swap
+        assertEquals("Client4", swap.clientId1)
+        assertEquals(1.463935, swap.Amount1, DELTA)
+        assertEquals("BTC", swap.origAsset1)
+        assertEquals("Client1", swap.clientId2)
+        assertEquals(19926.0, swap.Amount2, DELTA)
+        assertEquals("LKK", swap.origAsset2)
+
+        swap = transactionQueue.take() as Swap
+        assertEquals("Client4", swap.clientId1)
+        assertEquals(1.463935, swap.Amount1, DELTA)
+        assertEquals("BTC", swap.origAsset1)
+        assertEquals("Client1", swap.clientId2)
+        assertEquals(19889.0, swap.Amount2, DELTA)
+        assertEquals("LKK", swap.origAsset2)
+
+        swap = transactionQueue.take() as Swap
+        assertEquals("Client4", swap.clientId1)
+        assertEquals(0.75102654, swap.Amount1, DELTA)
+        assertEquals("BTC", swap.origAsset1)
+        assertEquals("Client1", swap.clientId2)
+        assertEquals(10185.0, swap.Amount2, DELTA)
+        assertEquals("LKK", swap.origAsset2)
     }
 
     @Test
