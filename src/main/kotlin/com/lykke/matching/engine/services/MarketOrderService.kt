@@ -208,9 +208,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             var marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId!!).accuracy, marketOrder.isOrigBuySide)
             var oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -limitOrder.price * volume else limitOrder.price * volume, cashOperationService.getAsset(assetPair.quotingAssetId!!).accuracy, marketOrder.isBuySide)
 
+            LOGGER.debug("Matching with limit order ${limitOrder.id}, price ${limitOrder.price}, " +
+                    "marketVolume ${if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume}, " +
+                    "limitVolume ${if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume}")
+
             if ((!marketOrder.straight) && (index == matchedOrders.size - 1)) {
                 oppositeRoundedVolume = Math.signum(marketOrder.volume) * (RoundingUtils.round(Math.abs(marketOrder.volume), limitAsset.accuracy, marketOrder.isBuySide) - Math.abs(totalLimitVolume))
                 marketRoundedVolume = RoundingUtils.round(- oppositeRoundedVolume / limitOrder.price, cashOperationService.getAsset(assetPair.baseAssetId!!).accuracy, marketOrder.isOrigBuySide)
+                LOGGER.debug("Rounding last matched limit order trade: $marketRoundedVolume")
             }
 
             matchingData.add(MatchingData(marketOrder.id, limitOrder.id, marketRoundedVolume))
@@ -222,17 +227,26 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val limitMultisig = walletCredentialsCache.getWalletCredentials(limitOrder.clientId)!!.multiSig
 
             //in case of non-straight orders, avoid negative balance due to rounding of asset pair
-            if (marketAsset.dustLimit != null && marketAsset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(marketRoundedVolume) < marketAsset.dustLimit) marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+            if (marketAsset.dustLimit != null && marketAsset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(marketRoundedVolume) < marketAsset.dustLimit) {
+                marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                LOGGER.debug("Adjusting volume due to dust: $marketRoundedVolume")
+            }
 
             if (marketOrder.isBuySide) {
                 if (marketBalance < Math.abs(oppositeRoundedVolume)) {
                     oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
+                    LOGGER.debug("Adjusting volume due to low balance and rounding: $oppositeRoundedVolume")
                 }
             } else {
                 if (marketBalance < Math.abs(marketRoundedVolume)) {
                     marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                    LOGGER.debug("Adjusting volume due to low balance and rounding: $marketRoundedVolume")
                 }
             }
+
+            LOGGER.debug("Corrected volumes: " +
+                    "marketVolume ${if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume}, " +
+                    "limitVolume ${if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume}")
 
             var uid = Trade.generateId(now)
             var trade = Trade(marketOrder.clientId, uid, marketOrder.clientId, marketMultisig,

@@ -111,7 +111,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             throw Exception("Unable to find asset pair $assetId")
         }
 
-        LOGGER.debug("Got asset : ${asset.toString()}")
         return asset
     }
 
@@ -124,7 +123,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             }
         }
 
-        LOGGER.debug("Got assetPair : ${assetPair.toString()}")
         return assetPair
     }
 
