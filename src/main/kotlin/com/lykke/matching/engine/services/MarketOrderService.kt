@@ -227,9 +227,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val limitMultisig = walletCredentialsCache.getWalletCredentials(limitOrder.clientId)!!.multiSig
 
             //in case of non-straight orders, avoid negative balance due to rounding of asset pair
-            if (marketAsset.dustLimit != null && marketAsset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(marketRoundedVolume) < marketAsset.dustLimit) {
-                marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
-                LOGGER.debug("Adjusting volume due to dust: $marketRoundedVolume")
+            if (marketAsset.dustLimit != null && marketAsset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume) < marketAsset.dustLimit) {
+                if (isMarketBuy) {
+                    oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
+                    LOGGER.debug("Adjusting volume due to dust: $oppositeRoundedVolume")
+                } else {
+                    marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                    LOGGER.debug("Adjusting volume due to dust: $marketRoundedVolume")
+                }
             }
 
             if (marketOrder.isBuySide) {
@@ -339,7 +344,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             totalMarketVolume += volume
             totalLimitPrice += volume * limitOrder.price
             totalLimitVolume += Math.abs(if (marketOrder.straight) marketRoundedVolume else oppositeRoundedVolume)
-            marketBalance -= Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume)
+            marketBalance = RoundingUtils.parseDouble(marketBalance - Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume), marketAsset.accuracy).toDouble()
         }
 
         marketOrder.status = Matched.name
