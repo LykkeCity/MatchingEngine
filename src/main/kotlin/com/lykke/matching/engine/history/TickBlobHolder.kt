@@ -8,20 +8,26 @@ import java.util.StringJoiner
 
 class TickBlobHolder {
     val name: String
-    var ticks: LinkedList<Double>
+    var askTicks = LinkedList<Double>()
+    var bidTicks = LinkedList<Double>()
 
     constructor(name: String, blob: CloudBlob?) {
         this.name = name
-        ticks = parseBlob(blob)
+        parseBlob(blob)
     }
 
-    fun addTick(tick: Double) {
-        ticks.add(tick)
-        while (ticks.size < 4000) {
-            ticks.add(tick)
+    fun addTick(askPrice: Double, bidPrice: Double) {
+        addTick(askPrice, askTicks)
+        addTick(bidPrice, bidTicks)
+    }
+
+    fun addTick(price: Double, prices: LinkedList<Double>) {
+        prices.add(price)
+        while (prices.size < 4000) {
+            prices.add(price)
         }
-        if (ticks.size > 4000) {
-            ticks.removeFirst()
+        if (prices.size > 4000) {
+            prices.removeFirst()
         }
     }
 
@@ -30,7 +36,9 @@ class TickBlobHolder {
         val data = getBlobValue(blob)
         if (data != null) {
             for (price in data.split(";")) {
-                result.add(price.toDouble())
+                val prices = price.split(",")
+                askTicks.add(prices[0].toDouble())
+                bidTicks.add(prices[1].toDouble())
             }
         }
         return result
@@ -47,8 +55,8 @@ class TickBlobHolder {
 
     fun convertToString(): String {
         val joiner = StringJoiner(";")
-        for (tick in ticks) {
-            joiner.add(tick.toString())
+        for (i in 0..askTicks.size-1) {
+            joiner.add("${askTicks[i]},${bidTicks[i]}")
         }
         return joiner.toString()
     }

@@ -40,8 +40,8 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
         blobs.forEach { blob ->
             blob.downloadAttributes()
             val names = blob.name.split("_")
-            val assetPair = names[0]
-            val period = names[1]
+            val assetPair = names[1]
+            val period = names[2]
 
             when (period) {
                 ONE_HOUR -> {
@@ -73,33 +73,33 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
             val now = Date()
             val ticks = genericLimitOrderService.buildMarketProfile()
             for (tick in ticks) {
-                addTicks(now.time, tick.assetId, tick.ask)
+                addTicks(now.time, tick.assetId, tick.ask, tick.bid)
             }
             saveTicks(now.time)
         }
     }
 
-    fun addTicks(now: Long, asset: String, price: Double) {
-        addTick(oneHourTicks, asset, ONE_HOUR, price)
+    fun addTicks(now: Long, asset: String, ask: Double, bid: Double) {
+        addTick(oneHourTicks, asset, ONE_HOUR, ask, bid)
         if (oneDayLastUpdateTime + oneDayUpdateInterval < now ) {
-            addTick(oneDayTicks, asset, ONE_DAY, price)
+            addTick(oneDayTicks, asset, ONE_DAY, ask, bid)
         }
         if (threeDaysLastUpdateTime + threeDaysUpdateInterval < now ) {
-            addTick(threeDaysTicks, asset, THREE_DAYS, price)
+            addTick(threeDaysTicks, asset, THREE_DAYS, ask, bid)
         }
         if (oneMonthLastUpdateTime + oneMonthUpdateInterval < now ) {
-            addTick(oneMonthTicks, asset, ONE_MONTH, price)
+            addTick(oneMonthTicks, asset, ONE_MONTH, ask, bid)
         }
         if (oneYearLastUpdateTime + oneYearUpdateInterval < now ) {
-            addTick(oneYearTicks, asset, ONE_YEAR, price)
+            addTick(oneYearTicks, asset, ONE_YEAR, ask, bid)
         }        
     }
     
-    fun addTick(ticks: HashMap<String, TickBlobHolder>, asset: String, suffix: String, price: Double) {
+    fun addTick(ticks: HashMap<String, TickBlobHolder>, asset: String, suffix: String, ask: Double, bid: Double) {
         if (!ticks.containsKey(asset)) {
-            ticks[asset] = TickBlobHolder("${asset}_$suffix",null)
+            ticks[asset] = TickBlobHolder("BA_${asset}_$suffix", null)
         }
-        ticks[asset]!!.addTick(price)
+        ticks[asset]!!.addTick(ask, bid)
     }
 
     fun saveTicks(now: Long) {

@@ -27,7 +27,7 @@ class AzureHistoryTicksDatabaseAccessor: HistoryTicksDatabaseAccessor {
         try {
             // Loop over blobs within the container and output the URI to each of them.
             for (blobItem in historyBlobContainer.listBlobs()) {
-                if (blobItem is CloudBlob) {
+                if (blobItem is CloudBlob && blobItem.name.startsWith("BA_")) {
                     result.add(blobItem)
                 }
             }
