@@ -97,7 +97,13 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
     
     fun addTick(ticks: HashMap<String, TickBlobHolder>, asset: String, suffix: String, ask: Double, bid: Double) {
         if (!ticks.containsKey(asset)) {
-            ticks[asset] = TickBlobHolder("BA_${asset}_$suffix", null)
+            val blob = historyTicksDatabaseAccessor.loadHistoryTick(asset, suffix)
+            if (blob != null) {
+                ticks[asset] =  TickBlobHolder(blob.name, blob)
+            } else {
+                ticks[asset] = TickBlobHolder("BA_${asset}_$suffix", null)
+            }
+
         }
         ticks[asset]!!.addTick(ask, bid)
     }
