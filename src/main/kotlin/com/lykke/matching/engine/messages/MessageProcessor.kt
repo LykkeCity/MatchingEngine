@@ -19,6 +19,9 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
+import com.lykke.matching.engine.outgoing.ConnectionsHolder
+import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.SocketServer
 import com.lykke.matching.engine.queue.BackendQueueProcessor
 import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
@@ -56,6 +59,7 @@ class MessageProcessor: Thread {
     val tradesInfoQueue: BlockingQueue<TradeInfo>
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
     val quotesNotificationQueue: BlockingQueue<QuotesUpdate>
+    val orderBooksQueue: BlockingQueue<OrderBook>
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -97,6 +101,7 @@ class MessageProcessor: Thread {
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
         this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
         this.quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+        this.orderBooksQueue = LinkedBlockingQueue<OrderBook>()
 
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
@@ -110,9 +115,9 @@ class MessageProcessor: Thread {
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService)
-        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, walletCredentialsCache,
+        this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue)
+        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, walletCredentialsCache,
                 config.getProperty("lykke.trades.history.enabled")!!.toBoolean(), config.getProperty("lykke.trades.history.asset")!!)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
@@ -129,6 +134,11 @@ class MessageProcessor: Thread {
         quotesUpdateHandler.start()
 
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
+
+        val connectionsHolder = ConnectionsHolder(orderBooksQueue)
+        connectionsHolder.start()
+
+        SocketServer(config, connectionsHolder).start()
 
         val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {

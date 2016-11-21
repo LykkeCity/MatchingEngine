@@ -33,6 +33,7 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
+import com.lykke.matching.engine.outgoing.OrderBook
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.utils.RoundingUtils
@@ -52,6 +53,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val genericLimitOrderService: GenericLimitOrderService,
                          private val cashOperationService: CashOperationService,
                          private val backendQueue: BlockingQueue<Transaction>,
+                         private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
                          private val lkkTradesAsset: String): AbsractService<ProtocolMessages.MarketOrder> {
@@ -378,6 +380,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
 
         bitcoinTransactions.forEach { backendQueue.put(it) }
+
+        orderBookQueue.put(OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide, now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).copy().getOrderBook(!marketOrder.isBuySide)))
 
         LOGGER.debug("Market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}, straight: ${marketOrder.straight} matched, price: ${RoundingUtils.roundForPrint(marketOrder.price)}")
     }

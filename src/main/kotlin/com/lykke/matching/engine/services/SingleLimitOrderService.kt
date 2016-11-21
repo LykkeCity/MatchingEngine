@@ -7,12 +7,14 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.outgoing.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
-class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService): AbsractService<ProtocolMessages.LimitOrder> {
+class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService, val orderBookQueue: BlockingQueue<OrderBook>): AbsractService<ProtocolMessages.LimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -25,14 +27,17 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService): 
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}")
 
+        val now = Date()
         val order = LimitOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume,
-                message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), Date(), null, message.volume, null)
+                message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, null, message.volume, null)
 
         if (message.cancelAllPreviousLimitOrders) {
             limitOrderService.cancelAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide)
         }
 
         limitOrderService.processLimitOrder(order)
+
+        orderBookQueue.put(OrderBook(message.assetPairId, order.isBuySide, now, limitOrderService.getOrderBook(message.assetPairId).copy().getOrderBook(order.isBuySide)))
 
         LOGGER.info("Limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
