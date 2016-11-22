@@ -1,5 +1,6 @@
-package com.lykke.matching.engine.outgoing
+package com.lykke.matching.engine.outgoing.socket
 
+import com.lykke.matching.engine.outgoing.JsonSerializable
 import org.apache.log4j.Logger
 import java.io.BufferedOutputStream
 import java.io.DataOutputStream
@@ -8,7 +9,7 @@ import java.net.SocketException
 import java.util.HashSet
 import java.util.concurrent.BlockingQueue
 
-class Connection(val socket: Socket, val inputQueue: BlockingQueue<OrderBook>) : Thread() {
+class Connection(val socket: Socket, val inputQueue: BlockingQueue<JsonSerializable>) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(Connection::class.java.name)
@@ -27,8 +28,8 @@ class Connection(val socket: Socket, val inputQueue: BlockingQueue<OrderBook>) :
             outputStream.flush()
 
             while (true) {
-                val orderBook = inputQueue.take()
-                writePrice(orderBook, outputStream)
+                val item = inputQueue.take()
+                writePrice(item, outputStream)
             }
         } catch (e: SocketException) {
             LOGGER.error("Order book subscriber disconnected: $clientHostName")
@@ -41,8 +42,8 @@ class Connection(val socket: Socket, val inputQueue: BlockingQueue<OrderBook>) :
         }
     }
 
-    private fun writePrice(orderBook: OrderBook, stream : DataOutputStream) {
-        stream.write(toByteArray(orderBook.toJson().toByteArray()))
+    private fun writePrice(item: JsonSerializable, stream : DataOutputStream) {
+        stream.write(toByteArray(item.toJson().toByteArray()))
         stream.flush()
     }
 

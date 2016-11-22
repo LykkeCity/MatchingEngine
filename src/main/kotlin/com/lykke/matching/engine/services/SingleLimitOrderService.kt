@@ -7,6 +7,7 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.outgoing.JsonSerializable
 import com.lykke.matching.engine.outgoing.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
@@ -14,7 +15,9 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService, val orderBookQueue: BlockingQueue<OrderBook>): AbsractService<ProtocolMessages.LimitOrder> {
+class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
+                              val orderBookQueue: BlockingQueue<JsonSerializable>,
+                              val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbsractService<ProtocolMessages.LimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -37,7 +40,9 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService, v
 
         limitOrderService.processLimitOrder(order)
 
-        orderBookQueue.put(OrderBook(message.assetPairId, order.isBuySide, now, limitOrderService.getOrderBook(message.assetPairId).copy().getOrderBook(order.isBuySide)))
+        val orderBook = OrderBook(message.assetPairId, order.isBuySide, now, limitOrderService.getOrderBook(message.assetPairId).copy().getOrderBook(order.isBuySide))
+        orderBookQueue.put(orderBook)
+        rabbitOrderBookQueue.put(orderBook)
 
         LOGGER.info("Limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())

@@ -19,9 +19,10 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
-import com.lykke.matching.engine.outgoing.ConnectionsHolder
-import com.lykke.matching.engine.outgoing.OrderBook
-import com.lykke.matching.engine.outgoing.SocketServer
+import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
+import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
+import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.queue.BackendQueueProcessor
 import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
@@ -59,7 +60,8 @@ class MessageProcessor: Thread {
     val tradesInfoQueue: BlockingQueue<TradeInfo>
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
     val quotesNotificationQueue: BlockingQueue<QuotesUpdate>
-    val orderBooksQueue: BlockingQueue<OrderBook>
+    val orderBooksQueue: BlockingQueue<JsonSerializable>
+    val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable>
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -101,7 +103,8 @@ class MessageProcessor: Thread {
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
         this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
         this.quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-        this.orderBooksQueue = LinkedBlockingQueue<OrderBook>()
+        this.orderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
+        this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
 
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
@@ -115,9 +118,9 @@ class MessageProcessor: Thread {
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue)
-        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, walletCredentialsCache,
+        this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
+        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
                 config.getProperty("lykke.trades.history.enabled")!!.toBoolean(), config.getProperty("lykke.trades.history.asset")!!)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
@@ -139,6 +142,9 @@ class MessageProcessor: Thread {
         connectionsHolder.start()
 
         SocketServer(config, connectionsHolder).start()
+        RabbitMqPublisher(config.getProperty("lykke.rabbit.host"), config.getProperty("lykke.rabbit.port")!!.toInt(),
+                config.getProperty("lykke.rabbit.username"), config.getProperty("lykke.rabbit.password"),
+                config.getProperty("lykke.rabbit.exchange.orderbook"), rabbitOrderBooksQueue).start()
 
         val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {

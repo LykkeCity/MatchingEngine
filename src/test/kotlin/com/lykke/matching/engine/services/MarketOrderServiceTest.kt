@@ -21,7 +21,7 @@ import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.JsonSerializable
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.After
@@ -40,7 +40,8 @@ class MarketOrderServiceTest {
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val transactionQueue = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
+    val orderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAcessor)
@@ -87,7 +88,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder()))
         assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
@@ -104,7 +105,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))
         assertEquals(NotEnoughFunds.name, testLimitDatabaseAccessor.ordersDone.find { it.price == 1.6 }?.status)
@@ -119,7 +120,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1500.0)))
         assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
@@ -133,7 +134,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -2000.0)))
         assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
@@ -148,7 +149,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
         assertEquals(NotEnoughFunds.name, testDatabaseAccessor.getLastOrder().status)
@@ -162,7 +163,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
@@ -229,7 +230,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))
 
@@ -268,7 +269,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
@@ -327,7 +328,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
@@ -391,7 +392,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKEUR", volume = 50000.0)))
 
@@ -458,7 +459,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = 50000.0, straight = false)))
 
@@ -524,7 +525,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKGBP", volume = -982.78, straight = false)))
 
@@ -580,7 +581,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -750.0, straight = false)))
 
@@ -630,7 +631,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false)))
 
@@ -694,7 +695,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.02)))
 
@@ -750,7 +751,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 88.23, straight = false)))
 
@@ -806,7 +807,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 20.0, straight = false)))
 
@@ -863,7 +864,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.54, straight = false)))
 
@@ -920,7 +921,7 @@ class MarketOrderServiceTest {
 
         val cashOperationService = CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, transactionQueue, balanceNotificationQueue)
         val limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, walletCredentialsCache, true, "LKK")
+        val service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, cashOperationService, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, "LKK")
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 20.0, straight = false)))
 

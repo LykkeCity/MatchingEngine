@@ -1,6 +1,7 @@
-package com.lykke.matching.engine.outgoing
+package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.getInt
+import com.lykke.matching.engine.outgoing.JsonSerializable
 import org.apache.log4j.Logger
 import java.net.ServerSocket
 import java.util.Properties
@@ -27,7 +28,7 @@ class SocketServer(val config: Properties, val connectionsHolder: ConnectionsHol
 
             while (true) {
                 val clientConnection = socket.accept()
-                val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>())
+                val connection = Connection(clientConnection, LinkedBlockingQueue<JsonSerializable>())
                 clientHandlerThreadPool.submit(connection)
                 connectionsHolder.addConnection(connection)
             }

@@ -13,7 +13,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.JsonSerializable
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Before
 import org.junit.Test
@@ -32,7 +32,8 @@ class LimitOrderServiceTest {
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
+    val orderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
 
     @Before
     fun setUp() {
@@ -48,7 +49,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue, quotesNotificationQueue), orderBookQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -57,7 +58,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue, quotesNotificationQueue), orderBookQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), LinkedBlockingQueue<BalanceUpdateNotification>()), tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)

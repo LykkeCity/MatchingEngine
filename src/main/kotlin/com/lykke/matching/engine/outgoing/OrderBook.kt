@@ -1,12 +1,11 @@
 package com.lykke.matching.engine.outgoing
 
-import com.google.gson.Gson
 import com.lykke.matching.engine.daos.LimitOrder
 import java.util.ArrayList
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
 
-class OrderBook {
+class OrderBook: JsonSerializable {
     val assetPair: String
     val isBuy: Boolean
     val timestamp: Date
@@ -32,10 +31,6 @@ class OrderBook {
 
     fun addVolumePrice(volume: Double, price: Double) {
         prices.add(VolumePrice(volume, price))
-    }
-
-    fun toJson():String {
-        return Gson().toJson(this)
     }
 }
 

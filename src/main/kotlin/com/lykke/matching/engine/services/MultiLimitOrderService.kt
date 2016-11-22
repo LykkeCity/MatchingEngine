@@ -6,6 +6,7 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.outgoing.JsonSerializable
 import com.lykke.matching.engine.outgoing.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
@@ -14,7 +15,9 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService, val orderBookQueue: BlockingQueue<OrderBook>): AbsractService<ProtocolMessages.MultiLimitOrder> {
+class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
+                             val orderBookQueue: BlockingQueue<JsonSerializable>,
+                             val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbsractService<ProtocolMessages.MultiLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -81,10 +84,14 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService, va
 
         val orderBookCopy = orderBook.copy()
         if (buySide) {
-            orderBookQueue.put(OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true)))
+            val orderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
+            orderBookQueue.put(orderBook)
+            rabbitOrderBookQueue.put(orderBook)
         }
         if (sellSide) {
-            orderBookQueue.put(OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false)))
+            val orderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
+            orderBookQueue.put(orderBook)
+            rabbitOrderBookQueue.put(orderBook)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
