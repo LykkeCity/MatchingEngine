@@ -3,14 +3,7 @@ package com.lykke.matching.engine.logging
 import com.google.gson.Gson
 import java.util.Arrays
 
-class Line: LoggableObject {
-    val Id: String
-    var Data: Array<KeyValue>
-
-    constructor(Id: String, Data: Array<KeyValue>) {
-        this.Id = Id
-        this.Data = Data
-    }
+class Line(val Id: String, var Data: Array<KeyValue>) : LoggableObject {
 
     fun addKeyValue(keyValue: KeyValue) {
         Data.plus(keyValue)

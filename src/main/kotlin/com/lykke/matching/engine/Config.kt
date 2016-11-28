@@ -9,7 +9,7 @@ import java.util.HashMap
 import java.util.Properties
 
 fun loadLocalConfig(path: String): Properties {
-    var props = Properties()
+    val props = Properties()
     props.load(FileInputStream(path))
     return props
 }

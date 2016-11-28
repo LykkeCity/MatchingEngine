@@ -3,8 +3,12 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.Candle
 import com.lykke.matching.engine.daos.HourCandle
-import com.lykke.matching.engine.daos.HourCandle.MICRO
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.azure.AzureBestPrice
+import com.lykke.matching.engine.daos.azure.AzureCandle
+import com.lykke.matching.engine.daos.azure.AzureHourCandle
+import com.lykke.matching.engine.daos.azure.AzureHourCandle.MICRO
+import com.lykke.matching.engine.daos.azure.AzureLimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
@@ -17,10 +21,10 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.TimeZone
 
-class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
+class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersConfig: String, liquidityConfig: String) : LimitOrderDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(AzureLimitOrderDatabaseAccessor::class.java.name)
+        val LOGGER = Logger.getLogger(LimitOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -36,7 +40,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         format
     }.invoke()
 
-    constructor(activeOrdersConfig: String, historyOrdersConfig: String, liquidityConfig: String) {
+    init {
         this.limitOrdersTable = getOrCreateTable(activeOrdersConfig, "LimitOrders")
         this.limitOrdersDoneTable = getOrCreateTable(historyOrdersConfig, "LimitOrdersDone")
         this.bestPricesTable = getOrCreateTable(liquidityConfig, "MarketProfile")
@@ -47,11 +51,9 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     override fun loadLimitOrders(): List<LimitOrder> {
         val result = ArrayList<LimitOrder>()
         try {
-            val partitionQuery = TableQuery.from(LimitOrder::class.java)
+            val partitionQuery = TableQuery.from(AzureLimitOrder::class.java)
 
-            for (order in limitOrdersTable.execute(partitionQuery)){
-                result.add(order)
-            }
+            limitOrdersTable.execute(partitionQuery).mapTo(result) { it.toLimitOrder() }
         } catch(e: Exception) {
             LOGGER.error("Unable to load limit orders", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load limit orders", e)
@@ -62,16 +64,16 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     override fun addLimitOrder(order: LimitOrder) {
         try {
-            limitOrdersTable.execute(TableOperation.insertOrMerge(order))
+            limitOrdersTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to add limit order: ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit order: ${order.getId()}", e)
+            LOGGER.error("Unable to add limit order: ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit order: ${order.id}", e)
         }
     }
 
     override fun addLimitOrders(orders: List<LimitOrder>) {
         try {
-            batchInsertOrMerge(limitOrdersTable, orders)
+            batchInsertOrMerge(limitOrdersTable, orders.map(::AzureLimitOrder))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit order, size: ${orders.size}", e)
@@ -80,16 +82,16 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     override fun updateLimitOrder(order: LimitOrder) {
         try {
-            limitOrdersTable.execute(TableOperation.merge(order))
+            limitOrdersTable.execute(TableOperation.merge(AzureLimitOrder(order)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to update limit order: ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update limit order: ${order.getId()}", e)
+            LOGGER.error("Unable to update limit order: ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update limit order: ${order.id}", e)
         }
     }
 
     override fun deleteLimitOrders(orders: List<LimitOrder>) {
         try {
-            batchDelete(limitOrdersTable, orders)
+            batchDelete(limitOrdersTable, orders.map(::AzureLimitOrder))
         } catch(e: Exception) {
             LOGGER.error("Unable to delete limit orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to delete limit orders, size: ${orders.size}", e)
@@ -99,17 +101,17 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     override fun addLimitOrderDone(order: LimitOrder) {
         try {
             if (order.remainingVolume != order.volume) {
-                limitOrdersDoneTable.execute(TableOperation.insertOrMerge(order))
+                limitOrdersDoneTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order)))
             }
         } catch(e: Exception) {
-            LOGGER.error("Unable to add limit done order ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.getId()}", e)
+            LOGGER.error("Unable to add limit done order ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.id}", e)
         }
     }
 
     override fun addLimitOrdersDone(orders: List<LimitOrder>) {
         try {
-            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume })
+            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume }.map(::AzureLimitOrder))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done orders, size: ${orders.size}", e)
@@ -119,11 +121,12 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
     override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
         var counter = 0
         try {
+            val azureOrder = AzureLimitOrder(order)
             while (true) {
                 try {
-                    order.partitionKey = order.clientId
-                    order.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), counter)
-                    limitOrdersDoneTable.execute(TableOperation.insert(order))
+                    azureOrder.partitionKey = azureOrder.clientId
+                    azureOrder.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), counter)
+                    limitOrdersDoneTable.execute(TableOperation.insert(azureOrder))
                     return
                 } catch(e: TableServiceException) {
                     if (e.httpStatusCode == 409 && counter < 999) {
@@ -134,14 +137,14 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
                 }
             }
         } catch (e: Exception) {
-            LOGGER.error("Unable to add limit done order ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.getId()}", e)
+            LOGGER.error("Unable to add limit done order ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done order ${order.id}", e)
         }
     }
 
     override fun updateBestPrices(prices: List<BestPrice>) {
         try {
-            batchInsertOrMerge(bestPricesTable, prices)
+            batchInsertOrMerge(bestPricesTable, prices.map { AzureBestPrice(it.asset, it.ask, it.bid) })
         } catch(e: Exception) {
             LOGGER.error("Unable to update best prices, size: ${prices.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update best prices, size: ${prices.size}", e)
@@ -150,10 +153,10 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     override fun writeCandle(candle: Candle) {
         try {
-            candlesTable.execute(TableOperation.insertOrMerge(candle))
+            candlesTable.execute(TableOperation.insertOrMerge(AzureCandle(candle.asset, candle.time, candle.data)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to add candle ${candle.partitionKey} ${candle.rowKey}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add candle ${candle.partitionKey} ${candle.rowKey}", e)
+            LOGGER.error("Unable to add candle ${candle.asset} ${candle.time}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add candle ${candle.asset} ${candle.time}", e)
         }
     }
 
@@ -161,12 +164,10 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
         val result = ArrayList<HourCandle>()
 
         try {
-            val partitionQuery = TableQuery.from(HourCandle::class.java)
+            val partitionQuery = TableQuery.from(AzureHourCandle::class.java)
                     .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, MICRO))
 
-            for (candle in hourCandlesTable.execute(partitionQuery)) {
-                result.add(candle)
-            }
+            hourCandlesTable.execute(partitionQuery).mapTo(result) { HourCandle(it.asset, it.pricesList) }
         } catch(e: Exception) {
             LOGGER.error("Unable to load hour candles", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load hour candles", e)
@@ -177,7 +178,7 @@ class AzureLimitOrderDatabaseAccessor: LimitOrderDatabaseAccessor {
 
     override fun writeHourCandles(candles: List<HourCandle>) {
         try {
-            batchInsertOrMerge(hourCandlesTable, candles)
+            batchInsertOrMerge(hourCandlesTable, candles.map { AzureHourCandle(it.asset, it.prices) })
         } catch(e: Exception) {
             LOGGER.error("Unable to save hour candles, size: ${candles.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to save hour candles, size: ${candles.size}", e)

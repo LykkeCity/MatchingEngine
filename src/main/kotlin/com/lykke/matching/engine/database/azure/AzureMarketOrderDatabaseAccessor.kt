@@ -5,6 +5,12 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.MatchingData
 import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Trade
+import com.lykke.matching.engine.daos.azure.AzureLkkTrade
+import com.lykke.matching.engine.daos.azure.AzureMarketOrder
+import com.lykke.matching.engine.daos.azure.AzureMatchingData
+import com.lykke.matching.engine.daos.azure.AzureOrderTradesLink
+import com.lykke.matching.engine.daos.azure.AzureTrade
+import com.lykke.matching.engine.daos.azure.AzureTrade.DATE_TIME
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
@@ -16,7 +22,7 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.TimeZone
 
-class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
+class AzureMarketOrderDatabaseAccessor(marketConfig: String, tradesConfig: String) : MarketOrderDatabaseAccessor {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
@@ -35,7 +41,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
         format
     }.invoke()
 
-    constructor(marketConfig: String, tradesConfig: String) {
+    init {
         this.marketOrdersTable = getOrCreateTable(marketConfig, "MarketOrders")
         this.matchingDataTable = getOrCreateTable(marketConfig, "MatchingData")
         this.orderTradesLinksTable = getOrCreateTable(marketConfig, "OrderTradesLinks")
@@ -45,10 +51,10 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
 
     override fun addMarketOrder(order: MarketOrder) {
         try {
-            marketOrdersTable.execute(TableOperation.insertOrMerge(order))
+            marketOrdersTable.execute(TableOperation.insertOrMerge(AzureMarketOrder(order)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to add market order: ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add market order: ${order.getId()}", e)
+            LOGGER.error("Unable to add market order: ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add market order: ${order.id}", e)
         }
     }
 
@@ -56,16 +62,12 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
         var counter = 0
         val dateString = DATE_FORMAT.format(order.matchedAt)
         try {
+            val azureOrder = AzureMarketOrder(order)
             while (true) {
                 try {
-                    val partitionKey = order.partitionKey
-                    val orderId = order.id
-                    order.partitionKey = order.clientId
-                    order.rowKey = String.format("%s.%03d", dateString, counter)
-                    marketOrdersTable.execute(TableOperation.insert(order))
-
-                    order.partitionKey = partitionKey
-                    order.rowKey = orderId
+                    azureOrder.partitionKey = azureOrder.clientId
+                    azureOrder.rowKey = String.format("%s.%03d", dateString, counter)
+                    marketOrdersTable.execute(TableOperation.insert(azureOrder))
                     return
                 } catch(e: TableServiceException) {
                     if (e.httpStatusCode == 409 && counter < 999) {
@@ -76,25 +78,30 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
                 }
             }
         } catch (e: Exception) {
-            LOGGER.error("Unable to add market order ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add market order ${order.getId()}", e)
+            LOGGER.error("Unable to add market order ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add market order ${order.id}", e)
         }
     }
 
     override fun updateMarketOrder(order: MarketOrder) {
         try {
-            marketOrdersTable.execute(TableOperation.merge(order))
+            marketOrdersTable.execute(TableOperation.merge(AzureMarketOrder(order)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to update market order: ${order.getId()}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update market order: ${order.getId()}", e)
+            LOGGER.error("Unable to update market order: ${order.id}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update market order: ${order.id}", e)
         }
     }
 
     override fun addTrades(trades: List<Trade>) {
-        val tradesByPartition = HashMap<String, MutableList<Trade>>()
+        val tradesByPartition = HashMap<String, MutableList<AzureTrade>>()
         trades.forEach { trade ->
-            val client = tradesByPartition.getOrPut(trade.partitionKey) { LinkedList<Trade>() }
-            client.add(trade)
+            val client = tradesByPartition.getOrPut(trade.clientId) { LinkedList<AzureTrade>() }
+            val azureTrade = AzureTrade(trade.clientId, trade.uid, trade.clientId, trade.multisig, trade.assetId, trade.dateTime, trade.limitOrderId, trade.marketOrderId, trade.volume, trade.price, trade.addressFrom, trade.addressTo)
+            client.add(azureTrade)
+            val date = tradesByPartition.getOrPut(DATE_TIME) { LinkedList<AzureTrade>() }
+            date.add(azureTrade.cloneWithGeneratedId())
+            val multisig = tradesByPartition.getOrPut(trade.multisig) { LinkedList<AzureTrade>() }
+            multisig.add(azureTrade.cloneWithMultisig())
         }
 
         try {
@@ -109,7 +116,7 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
 
     override fun addLkkTrades(trades: List<LkkTrade>) {
         try {
-            batchInsertOrMerge(lkkTradesTable, trades)
+            batchInsertOrMerge(lkkTradesTable, trades.map { AzureLkkTrade(it.assetPair, it.price, it.volume, it.date) })
         } catch(e: Exception) {
             LOGGER.error("Unable to add lkk trades, size: ${trades.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add lkk trades, size: ${trades.size}", e)
@@ -117,10 +124,10 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     }
 
     override fun addMatchingData(data: List<MatchingData>) {
-        val dataByPartition = HashMap<String, MutableList<MatchingData>>()
+        val dataByPartition = HashMap<String, MutableList<AzureMatchingData>>()
         data.forEach { curData ->
-            val partition = dataByPartition.getOrPut(curData.partitionKey) { LinkedList<MatchingData>() }
-            partition.add(curData)
+            val partition = dataByPartition.getOrPut(curData.masterOrderId) { LinkedList<AzureMatchingData>() }
+            partition.add(AzureMatchingData(curData.masterOrderId, curData.matchedOrderId, curData.volume))
         }
 
         try {
@@ -134,10 +141,10 @@ class AzureMarketOrderDatabaseAccessor: MarketOrderDatabaseAccessor {
     }
 
     override fun addOrderTradesLinks(links: List<OrderTradesLink>) {
-        val linksByPartition = HashMap<String, MutableList<OrderTradesLink>>()
+        val linksByPartition = HashMap<String, MutableList<AzureOrderTradesLink>>()
         links.forEach { curLink ->
-            val partition = linksByPartition.getOrPut(curLink.partitionKey) { LinkedList<OrderTradesLink>() }
-            partition.add(curLink)
+            val partition = linksByPartition.getOrPut(curLink.orderId) { LinkedList<AzureOrderTradesLink>() }
+            partition.add(AzureOrderTradesLink(curLink.orderId, curLink.tradeId))
         }
 
         try {

@@ -79,7 +79,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
-        operation.MultisigAddress = walletCredentials.multiSig
+        operation.MultisigAddress = walletCredentials.multisig
         operation.Currency = asset.blockChainId
 
         val serialisedData = "CashIn:${operation.toJson()}"
@@ -108,7 +108,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
-        operation.MultisigAddress = walletCredentials.multiSig
+        operation.MultisigAddress = walletCredentials.multisig
         operation.Currency = asset.blockChainId
 
         val serialisedData = "CashOut:${operation.toJson()}"
@@ -150,16 +150,16 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
-        operation.MultisigCustomer1 = walletCredentials1.multiSig
+        operation.MultisigCustomer1 = walletCredentials1.multisig
         operation.Asset1 = asset1.blockChainId
-        operation.MultisigCustomer2 = walletCredentials2.multiSig
+        operation.MultisigCustomer2 = walletCredentials2.multisig
         operation.Asset2 = asset2.blockChainId
 
         val serialisedData = "Swap:${operation.toJson()}"
 
         val now = Date()
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
-                BtTransaction(operation.TransactionId, now, serialisedData, operation.orders))
+                BtTransaction(operation.TransactionId, now, serialisedData, null, operation.orders))
         outQueueWriter.write(serialisedData)
         LOGGER.info("Wrote Swap operation to queue [${operation.MultisigCustomer1}, ${RoundingUtils.roundForPrint(operation.Amount1)} ${operation.Asset1} to ${operation.MultisigCustomer2}, ${RoundingUtils.roundForPrint(operation.Amount2)} ${operation.Asset2}]")
         METRICS_LOGGER.log(getMetricLine("Swap", serialisedData))

@@ -3,16 +3,9 @@ package com.lykke.matching.engine.cache
 import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 
-class WalletCredentialsCache {
-
-    private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
+class WalletCredentialsCache(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor) {
 
     private var wallets: MutableMap<String, WalletCredentials>
-
-    constructor(backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor) {
-        this.backOfficeDatabaseAccessor = backOfficeDatabaseAccessor
-        wallets = this.backOfficeDatabaseAccessor.loadAllWalletCredentials()
-    }
 
     fun getWalletCredentials(clientId: String): WalletCredentials? {
         if (wallets.containsKey(clientId)) {
@@ -32,5 +25,9 @@ class WalletCredentialsCache {
 
     fun reloadClient(clientId: String) {
         wallets[clientId] = backOfficeDatabaseAccessor.loadWalletCredentials(clientId)!!
+    }
+
+    init {
+        wallets = this.backOfficeDatabaseAccessor.loadAllWalletCredentials()
     }
 }

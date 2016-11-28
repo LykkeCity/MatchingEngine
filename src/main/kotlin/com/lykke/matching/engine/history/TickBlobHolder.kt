@@ -6,15 +6,9 @@ import java.util.LinkedList
 import java.util.StringJoiner
 
 
-class TickBlobHolder {
-    val name: String
+class TickBlobHolder(val name: String, blob: CloudBlob?) {
     var askTicks = LinkedList<Double>()
     var bidTicks = LinkedList<Double>()
-
-    constructor(name: String, blob: CloudBlob?) {
-        this.name = name
-        parseBlob(blob)
-    }
 
     fun addTick(askPrice: Double, bidPrice: Double) {
         addTick(askPrice, askTicks)
@@ -59,5 +53,9 @@ class TickBlobHolder {
             joiner.add("${askTicks[i]},${bidTicks[i]}")
         }
         return joiner.toString()
+    }
+
+    init {
+        parseBlob(blob)
     }
 }

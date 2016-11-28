@@ -29,9 +29,9 @@ class AssetOrderBook(val assetId: String) {
 
     fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
 
-    fun addOrder(order: LimitOrder) = getOrderBook(order.isBuySide).add(order)
+    fun addOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).add(order)
 
-    fun removeOrder(order: LimitOrder) = getOrderBook(order.isBuySide).remove(order)
+    fun removeOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).remove(order)
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: 0.0
     fun getBidPrice() = bidOrderBook.peek()?.price ?: 0.0

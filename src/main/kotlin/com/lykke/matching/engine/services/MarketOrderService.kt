@@ -63,8 +63,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
-
-        private val ORDER_ID = "OrderId"
     }
 
     private var messagesCount: Long = 0
@@ -73,8 +71,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
-        val order = MarketOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume, null,
-                Processing.name, Date(message.timestamp), Date(), null, null, message.straight)
+        val uid = UUID.randomUUID().toString()
+        val order = MarketOrder(uid, uid, message.assetPairId, message.clientId, message.volume, null,
+        Processing.name, Date(message.timestamp), Date(), null, message.straight)
 
         if (cashOperationService.getAssetPair(message.assetPairId) == null) {
             order.status = UnknownAsset.name
@@ -86,7 +85,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide)
+        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
         if (orderBook.size == 0) {
             order.status = NoLiquidity.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
@@ -114,7 +113,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     }
 
     private fun match(marketOrder: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>) {
-        var remainingVolume = marketOrder.absVolume
+        var remainingVolume = marketOrder.getAbsVolume()
         val matchedOrders = LinkedList<LimitOrder>()
         val skipLimitOrders = HashSet<LimitOrder>()
         val cancelledLimitOrders = HashSet<LimitOrder>()
@@ -126,11 +125,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val assetPair = cashOperationService.getAssetPair(marketOrder.assetPairId)!!
         while (remainingVolume.greaterThan(0.0) && orderBook.size > 0) {
             val limitOrder = orderBook.poll()
-            val limitRemainingVolume = limitOrder.absRemainingVolume
+            val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
             val marketRemainingVolume = getCrossVolume(remainingVolume, marketOrder.straight, limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
-            val limitBalance = limitBalances[limitOrder.clientId] ?: cashOperationService.getBalance(limitOrder.clientId, if (limitOrder.isBuySide) assetPair.quotingAssetId else assetPair.baseAssetId)
-            val limitVolume = Math.abs(if (limitOrder.isBuySide) volume * limitOrder.price else volume)
+            val limitBalance = limitBalances[limitOrder.clientId] ?: cashOperationService.getBalance(limitOrder.clientId, if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+            val limitVolume = Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume)
             if (marketOrder.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
             } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume) && limitBalance >= limitVolume) {
@@ -154,7 +153,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        if (!isEnoughFunds(marketOrder, if(marketOrder.isBuySide) totalLimitPrice else totalMarketVolume )) {
+        if (!isEnoughFunds(marketOrder, if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume )) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             matchedOrders.forEach { genericLimitOrderService.addToOrderBook(it) }
@@ -164,28 +163,28 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val isMarketBuy = marketOrder.isBuySide
-        val marketAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.quotingAssetId!! else assetPair.baseAssetId!!)
-        val limitAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.baseAssetId!! else assetPair.quotingAssetId!!)
+        val isMarketBuy = marketOrder.isBuySide()
+        val marketAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
+        val limitAsset = cashOperationService.getAsset(if (isMarketBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
 
         if (marketAsset.dustLimit!= null && marketAsset.dustLimit > 0.0) {
             val balance = cashOperationService.getBalance(marketOrder.clientId, marketAsset.assetId)
             if (marketOrder.straight) {
-                if (balance - marketOrder.absVolume < marketAsset.dustLimit) {
-                    marketOrder.dustSize = RoundingUtils.parseDouble(balance - marketOrder.absVolume, marketAsset.accuracy).toDouble()
-                    marketOrder.volume = if (marketOrder.isOrigBuySide) balance else - balance
+                if (balance - marketOrder.getAbsVolume() < marketAsset.dustLimit) {
+                    marketOrder.dustSize = RoundingUtils.parseDouble(balance - marketOrder.getAbsVolume(), marketAsset.accuracy).toDouble()
+                    marketOrder.volume = if (marketOrder.isOrigBuySide()) balance else - balance
                 }
             } else {
-                val marketVolume = if(marketOrder.isBuySide) totalLimitPrice else totalMarketVolume
+                val marketVolume = if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume
                 val lastLimitOrder = matchedOrders.last
                 if (balance - Math.abs(marketVolume) < marketAsset.dustLimit) {
                     marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(marketVolume)) * lastLimitOrder.price, assetPair.accuracy).toDouble()
-                    marketOrder.volume = RoundingUtils.parseDouble(marketOrder.volume + marketOrder.dustSize, assetPair.accuracy).toDouble()
+                    marketOrder.volume = RoundingUtils.parseDouble(marketOrder.volume + marketOrder.dustSize!!, assetPair.accuracy).toDouble()
                 }
             }
         }
 
-        remainingVolume = marketOrder.absVolume
+        remainingVolume = marketOrder.getAbsVolume()
         totalLimitPrice = 0.0
         var totalLimitVolume = 0.0
         totalMarketVolume = 0.0
@@ -202,33 +201,33 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val matchingData = LinkedList<MatchingData>()
         val orderTradesLinks = LinkedList<OrderTradesLink>()
 
-        var marketBalance = cashOperationService.getBalance(marketOrder.clientId, if (marketOrder.isBuySide) assetPair.quotingAssetId else assetPair.baseAssetId)
+        var marketBalance = cashOperationService.getBalance(marketOrder.clientId, if (marketOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 
         matchedOrders.forEachIndexed { index, limitOrder ->
-            val limitRemainingVolume = limitOrder.absRemainingVolume
+            val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
             val marketRemainingVolume = getCrossVolume(remainingVolume, marketOrder.straight, limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
 
-            var marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId!!).accuracy, marketOrder.isOrigBuySide)
-            var oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -limitOrder.price * volume else limitOrder.price * volume, cashOperationService.getAsset(assetPair.quotingAssetId!!).accuracy, marketOrder.isBuySide)
+            var marketRoundedVolume = RoundingUtils.round(if (isMarketBuy) volume else -volume, cashOperationService.getAsset(assetPair.baseAssetId).accuracy, marketOrder.isOrigBuySide())
+            var oppositeRoundedVolume = RoundingUtils.round(if (isMarketBuy) -limitOrder.price * volume else limitOrder.price * volume, cashOperationService.getAsset(assetPair.quotingAssetId).accuracy, marketOrder.isBuySide())
 
             LOGGER.debug("Matching with limit order ${limitOrder.id}, price ${limitOrder.price}, " +
                     "marketVolume ${if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume}, " +
                     "limitVolume ${if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume}")
 
             if ((!marketOrder.straight) && (index == matchedOrders.size - 1)) {
-                oppositeRoundedVolume = Math.signum(marketOrder.volume) * (RoundingUtils.round(Math.abs(marketOrder.volume), limitAsset.accuracy, marketOrder.isBuySide) - Math.abs(totalLimitVolume))
-                marketRoundedVolume = RoundingUtils.round(- oppositeRoundedVolume / limitOrder.price, cashOperationService.getAsset(assetPair.baseAssetId!!).accuracy, marketOrder.isOrigBuySide)
+                oppositeRoundedVolume = Math.signum(marketOrder.volume) * (RoundingUtils.round(Math.abs(marketOrder.volume), limitAsset.accuracy, marketOrder.isBuySide()) - Math.abs(totalLimitVolume))
+                marketRoundedVolume = RoundingUtils.round(- oppositeRoundedVolume / limitOrder.price, cashOperationService.getAsset(assetPair.baseAssetId).accuracy, marketOrder.isOrigBuySide())
                 LOGGER.debug("Rounding last matched limit order trade: $marketRoundedVolume")
             }
 
             matchingData.add(MatchingData(marketOrder.id, limitOrder.id, marketRoundedVolume))
-            matchingData.add(MatchingData(limitOrder.id, marketOrder.id, marketRoundedVolume))
+            matchingData.add(MatchingData(limitOrder.id, marketOrder.id, oppositeRoundedVolume))
 
             val clientTradePairs = ArrayList<ClientTradePair>()
 
-            val marketMultisig = walletCredentialsCache.getWalletCredentials(marketOrder.clientId)!!.multiSig
-            val limitMultisig = walletCredentialsCache.getWalletCredentials(limitOrder.clientId)!!.multiSig
+            val marketMultisig = walletCredentialsCache.getWalletCredentials(marketOrder.clientId)!!.multisig
+            val limitMultisig = walletCredentialsCache.getWalletCredentials(limitOrder.clientId)!!.multisig
 
             //in case of non-straight orders, avoid negative balance due to rounding of asset pair
             if (marketAsset.dustLimit != null && marketAsset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume) < marketAsset.dustLimit) {
@@ -241,7 +240,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 }
             }
 
-            if (marketOrder.isBuySide) {
+            if (marketOrder.isBuySide()) {
                 if (marketBalance < Math.abs(oppositeRoundedVolume)) {
                     oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
                     LOGGER.debug("Adjusting volume due to low balance and rounding: $oppositeRoundedVolume")
@@ -258,82 +257,74 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     "limitVolume ${if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume}")
 
             var uid = Trade.generateId(now)
-            var trade = Trade(marketOrder.clientId, uid, marketOrder.clientId, marketMultisig,
-                    assetPair.baseAssetId!!, now, limitOrder.id,
+            var trade = Trade(marketOrder.clientId, uid, marketMultisig,
+                    assetPair.baseAssetId, now, limitOrder.id,
                     marketOrder.id, marketRoundedVolume, limitOrder.price,
                     if (marketRoundedVolume > 0.0) limitMultisig else marketMultisig,
                     if (marketRoundedVolume > 0.0) marketMultisig else limitMultisig)
             marketTrades.add(trade)
-            marketTrades.add(trade.cloneWithGeneratedId())
-            marketTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
-                    assetPair.baseAssetId!!, now, marketRoundedVolume))
+                    assetPair.baseAssetId, now, marketRoundedVolume, null))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
-            trade = Trade(marketOrder.clientId, uid, marketOrder.clientId, marketMultisig,
-                    assetPair.quotingAssetId!!, now, limitOrder.id,
+            trade = Trade(marketOrder.clientId, uid, marketMultisig,
+                    assetPair.quotingAssetId, now, limitOrder.id,
                     marketOrder.id, oppositeRoundedVolume, limitOrder.price,
                     if (oppositeRoundedVolume > 0.0) limitMultisig else marketMultisig,
                     if (oppositeRoundedVolume > 0.0) marketMultisig else limitMultisig)
             marketTrades.add(trade)
-            marketTrades.add(trade.cloneWithGeneratedId())
-            marketTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(marketOrder.clientId, UUID.randomUUID().toString(),
-                    assetPair.quotingAssetId!!, now, oppositeRoundedVolume))
+                    assetPair.quotingAssetId, now, oppositeRoundedVolume, null))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
-            trade = Trade(limitOrder.clientId, uid, limitOrder.clientId, limitMultisig,
-                    assetPair.baseAssetId!!, now, limitOrder.id,
+            trade = Trade(limitOrder.clientId, uid, limitMultisig,
+                    assetPair.baseAssetId, now, limitOrder.id,
                     marketOrder.id, -marketRoundedVolume, limitOrder.price,
                     if (-marketRoundedVolume > 0.0) marketMultisig else limitMultisig,
                     if (-marketRoundedVolume > 0.0) limitMultisig else marketMultisig)
             limitTrades.add(trade)
-            limitTrades.add(trade.cloneWithGeneratedId())
-            limitTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),
-                    assetPair.baseAssetId!!, now, -marketRoundedVolume))
+                    assetPair.baseAssetId, now, -marketRoundedVolume, null))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             uid = Trade.generateId(now)
-            trade = Trade(limitOrder.clientId, uid, limitOrder.clientId, limitMultisig,
-                    assetPair.quotingAssetId!!, now, limitOrder.id,
+            trade = Trade(limitOrder.clientId, uid, limitMultisig,
+                    assetPair.quotingAssetId, now, limitOrder.id,
                     marketOrder.id, -oppositeRoundedVolume, limitOrder.price,
                     if (-oppositeRoundedVolume > 0.0) marketMultisig else limitMultisig,
                     if (-oppositeRoundedVolume > 0.0) limitMultisig else marketMultisig)
             limitTrades.add(trade)
-            limitTrades.add(trade.cloneWithGeneratedId())
-            limitTrades.add(trade.cloneWithMultisig())
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(limitOrder.clientId, UUID.randomUUID().toString(),
-                    assetPair.quotingAssetId!!, now, -oppositeRoundedVolume))
+                    assetPair.quotingAssetId, now, -oppositeRoundedVolume, null))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             if (marketRemainingVolume >= limitRemainingVolume) {
-                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId.equals(lkkTradesAsset) || assetPair.quotingAssetId.equals(lkkTradesAsset))) {
-                    lkkTrades.add(LkkTrade(now, limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume))
+                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId == lkkTradesAsset || assetPair.quotingAssetId == lkkTradesAsset)) {
+                    lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))
                 }
                 limitOrder.remainingVolume = 0.0
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId.equals(lkkTradesAsset) || assetPair.quotingAssetId.equals(lkkTradesAsset))) {
-                    lkkTrades.add(LkkTrade(now, limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume))
+                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId == lkkTradesAsset || assetPair.quotingAssetId == lkkTradesAsset)) {
+                    lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume, now))
                 }
                 limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy).toDouble()
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
             }
 
-            remainingVolume = RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), marketOrder.straight, limitOrder.price), cashOperationService.getAsset(assetPair.baseAssetId!!).accuracy, marketOrder.isOrigBuySide)
+            remainingVolume = RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), marketOrder.straight, limitOrder.price), cashOperationService.getAsset(assetPair.baseAssetId).accuracy, marketOrder.isOrigBuySide())
             val transactionId = UUID.randomUUID().toString()
             limitOrder.lastMatchTime = now
             limitOrder.addTransactionIds(listOf(transactionId))
@@ -353,9 +344,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         marketOrder.status = Matched.name
         marketOrder.matchedAt = now
-        marketOrder.price = RoundingUtils.round(if (marketOrder.straight) totalLimitPrice / marketOrder.absVolume else marketOrder.absVolume / totalMarketVolume
-                , cashOperationService.getAssetPair(marketOrder.assetPairId)!!.accuracy, marketOrder.isOrigBuySide)
-        marketOrder.partitionKey = ORDER_ID
+        marketOrder.price = RoundingUtils.round(if (marketOrder.straight) totalLimitPrice / marketOrder.getAbsVolume() else marketOrder.getAbsVolume() / totalMarketVolume
+                , cashOperationService.getAssetPair(marketOrder.assetPairId)!!.accuracy, marketOrder.isOrigBuySide())
         marketOrder.addTransactionIds(transactionIds)
         marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
         marketOrderDatabaseAccessor.addMarketOrderWithGeneratedRowId(marketOrder)
@@ -383,9 +373,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         bitcoinTransactions.forEach { backendQueue.put(it) }
 
-        val orderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide, now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).copy().getOrderBook(!marketOrder.isBuySide))
-        orderBookQueue.put(orderBook)
-        rabbitOrderBookQueue.put(orderBook)
+        val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).copy().getOrderBook(!marketOrder.isBuySide()))
+        orderBookQueue.put(newOrderBook)
+        rabbitOrderBookQueue.put(newOrderBook)
 
         LOGGER.debug("Market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}, straight: ${marketOrder.straight} matched, price: ${RoundingUtils.roundForPrint(marketOrder.price)}")
     }
@@ -398,7 +388,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             METRICS_LOGGER.logError(this.javaClass.name, "Unknown asset pair: ${order.assetPairId}")
             return false
         }
-        val asset = if (order.isBuySide) assetPair.quotingAssetId!! else assetPair.baseAssetId!!
+        val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val roundedPrice = RoundingUtils.round(totalPrice, cashOperationService.getAsset(asset).accuracy, true)
 
         LOGGER.debug("${order.clientId} $asset : ${cashOperationService.getBalance(order.clientId, asset)} >= ${RoundingUtils.roundForPrint(roundedPrice)}")

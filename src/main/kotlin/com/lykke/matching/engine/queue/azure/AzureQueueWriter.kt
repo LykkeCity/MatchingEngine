@@ -7,7 +7,7 @@ import com.microsoft.azure.storage.queue.CloudQueue
 import com.microsoft.azure.storage.queue.CloudQueueMessage
 import org.apache.log4j.Logger
 
-class AzureQueueWriter: QueueWriter {
+class AzureQueueWriter(queueConnectionString: String, queueName: String) : QueueWriter {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureQueueWriter::class.java.name)
@@ -16,22 +16,21 @@ class AzureQueueWriter: QueueWriter {
 
     private val outQueue: CloudQueue
 
-    constructor(queueConnectionString: String, queueName: String) {
-        val storageAccount = CloudStorageAccount.parse(queueConnectionString)
-        val queueClient = storageAccount.createCloudQueueClient()
-        outQueue = queueClient.getQueueReference(queueName)
-
-        if (!outQueue.exists()) {
-            throw Exception("Azure $queueName queue does not exists")
-        }
-    }
-
     override fun write(data: String) {
         try {
             outQueue.addMessage(CloudQueueMessage(data))
         } catch (e: Exception) {
             LOGGER.error("Unable to enqueue message to azure queue: $data", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to enqueue message to azure queue: $data", e)
+        }
+    }
+
+    init {
+        val storageAccount = CloudStorageAccount.parse(queueConnectionString)
+        val queueClient = storageAccount.createCloudQueueClient()
+        outQueue = queueClient.getQueueReference(queueName)
+        if (!outQueue.exists()) {
+            throw Exception("Azure $queueName queue does not exists")
         }
     }
 }

@@ -11,6 +11,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import java.util.HashMap
+import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 
 class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
@@ -39,7 +40,7 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
 
     fun process(info: TradeInfo) {
         val asset = "${info.assetPair}_${if (info.isBuy) bid else ask}"
-        val dateTime = LocalDateTime.ofInstant(info.date.toInstant(), ZoneId.of("UTC"));
+        val dateTime = LocalDateTime.ofInstant(info.date.toInstant(), ZoneId.of("UTC"))
         val time = formatter.format(info.date)
         val second = dateTime.second
 
@@ -69,7 +70,7 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
             val keys = candles.keys.filter { it != time }
             keys.forEach { keyTime ->
                 candles[keyTime]?.forEach { asset ->
-                    limitOrderDatabaseAccessor.writeCandle(Candle(asset.key, keyTime,asset.value.entries.joinToString("|")
+                    limitOrderDatabaseAccessor.writeCandle(Candle(asset.key, keyTime, asset.value.entries.joinToString("|")
                     { "O=${it.value.openPrice};C=${it.value.closePrice};H=${it.value.highPrice};L=${it.value.lowPrice};T=${it.key}" }))
                 }
                 candles.remove(keyTime)
@@ -82,7 +83,7 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
             hoursCandles.keys.forEach { asset ->
                 var hourCandle = savedHoursCandles.find { it.asset == asset }
                 if (hourCandle == null) {
-                    hourCandle = HourCandle(asset, null)
+                    hourCandle = HourCandle(asset, LinkedList())
                     hourCandle.addPrice(hoursCandles[asset])
                     savedHoursCandles.add(hourCandle)
                 } else {

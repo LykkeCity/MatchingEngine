@@ -73,7 +73,7 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
             val now = Date()
             val ticks = genericLimitOrderService.buildMarketProfile()
             for (tick in ticks) {
-                addTicks(now.time, tick.assetId, tick.ask, tick.bid)
+                addTicks(now.time, tick.asset, tick.ask, tick.bid)
             }
             saveTicks(now.time)
         }

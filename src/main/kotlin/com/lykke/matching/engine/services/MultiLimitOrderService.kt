@@ -37,8 +37,9 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         var cancelSellSide = false
 
         message.ordersList.forEach { currentOrder ->
-            orders.add(LimitOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, currentOrder.volume,
-                    currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, null, currentOrder.volume, null))
+            val uid = UUID.randomUUID().toString()
+            orders.add(LimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
+                    currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null))
 
             if (message.cancelAllPreviousLimitOrders) {
                 if (currentOrder.volume > 0) {
@@ -72,8 +73,8 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         orders.forEach { order ->
             orderBook.addOrder(order)
             limitOrderService.addOrder(order)
-            limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide, order.price, now))
-            if (order.isBuySide) buySide = true else sellSide = true
+            limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, now))
+            if (order.isBuySide()) buySide = true else sellSide = true
 
             LOGGER.info("Part of multi limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
         }
@@ -84,14 +85,14 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
 
         val orderBookCopy = orderBook.copy()
         if (buySide) {
-            val orderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
-            orderBookQueue.put(orderBook)
-            rabbitOrderBookQueue.put(orderBook)
+            val newOrderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSide) {
-            val orderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
-            orderBookQueue.put(orderBook)
-            rabbitOrderBookQueue.put(orderBook)
+            val newOrderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())

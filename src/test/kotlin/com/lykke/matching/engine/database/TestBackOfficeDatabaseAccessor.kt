@@ -37,7 +37,7 @@ class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
     }
 
     override fun loadAssets(): MutableMap<String, Asset> {
-        return HashMap<String, Asset>()
+        return HashMap()
     }
 
     override fun saveBitcoinTransaction(transaction: BtTransaction) {

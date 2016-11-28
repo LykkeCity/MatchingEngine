@@ -93,7 +93,7 @@ class SocketServer(val config: Properties): Runnable {
     }
 
     fun getWhiteList() : List<String>? {
-        val whiteListStr = (loadConfig(config)["MatchingEngine"] as Map<String, Any>).get("WhiteList") as String?
+        val whiteListStr = (loadConfig(config)["MatchingEngine"] as Map<String, Any>)["WhiteList"] as String?
         if (whiteListStr != null) {
             return whiteListStr.split(";")
         }

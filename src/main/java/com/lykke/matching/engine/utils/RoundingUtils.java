@@ -1,14 +1,13 @@
 package com.lykke.matching.engine.utils;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import org.jetbrains.annotations.NotNull;
 
 import static java.math.BigDecimal.*;
 
 public class RoundingUtils {
-    private static DecimalFormat FORMAT = initFormat();
+    private static final DecimalFormat FORMAT = initFormat();
 
     private static DecimalFormat initFormat() {
         DecimalFormat df = new DecimalFormat("#.#");

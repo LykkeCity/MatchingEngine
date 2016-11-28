@@ -28,7 +28,7 @@ fun getOrCreateBlob(connectionString: String, blobName: String): CloudBlobContai
 val AZURE_BATCH_SIZE = 100
 
 fun batchInsertOrMerge(table: CloudTable, elements: List<TableEntity>) {
-    if (elements.size == 0) {
+    if (elements.isEmpty()) {
         return
     }
 
@@ -52,7 +52,7 @@ fun batchInsertOrMerge(table: CloudTable, elements: List<TableEntity>) {
     }
 }
 fun batchDelete(table: CloudTable, elements: List<TableEntity>) {
-    if (elements.size == 0) {
+    if (elements.isEmpty()) {
         return
     }
 

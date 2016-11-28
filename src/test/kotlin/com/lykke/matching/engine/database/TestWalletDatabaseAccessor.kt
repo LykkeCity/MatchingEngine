@@ -25,9 +25,9 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
         wallets.forEach { wallet ->
-            val client = balances.getOrPut(wallet.getClientId()) { HashMap<String, Double>() }
-            val updatedWallet = this.wallets.getOrPut(wallet.getClientId()) { Wallet(wallet.getClientId()) }
-            wallet.getBalancesList().forEach {
+            val client = balances.getOrPut(wallet.clientId,  { HashMap<String, Double>() })
+            val updatedWallet = this.wallets.getOrPut(wallet.clientId) { Wallet(wallet.clientId) }
+            wallet.balances.values.forEach {
                 client.put(it.asset, it.balance)
                 updatedWallet.setBalance(it.asset, it.balance)
             }
@@ -46,7 +46,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
-        return externalOperations.find { it.partitionKey == clientId && it.rowKey == operationId }
+        return externalOperations.find { it.clientId == clientId && it.externalId == operationId }
     }
 
     override fun insertExternalCashOperation(operation: ExternalCashOperation) {
@@ -66,7 +66,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     fun addAssetPair(pair: AssetPair) {
-        assetPairs[pair.getAssetPairId()] = pair
+        assetPairs[pair.assetPairId] = pair
     }
 
     fun clear() {
@@ -80,6 +80,6 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 }
 fun buildWallet(clientId: String, assetId: String, balance: Double): Wallet {
     val wallet = Wallet(clientId)
-    wallet.addBalance(assetId, balance)
+    wallet.setBalance(assetId, balance)
     return wallet
 }

@@ -31,16 +31,17 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
         LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}")
 
         val now = Date()
-        val order = LimitOrder(UUID.randomUUID().toString(), message.assetPairId, message.clientId, message.volume,
-                message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, null, message.volume, null)
+        val uid = UUID.randomUUID().toString()
+        val order = LimitOrder(uid, uid, message.assetPairId, message.clientId, message.volume,
+                message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null)
 
         if (message.cancelAllPreviousLimitOrders) {
-            limitOrderService.cancelAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide)
+            limitOrderService.cancelAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide())
         }
 
         limitOrderService.processLimitOrder(order)
 
-        val orderBook = OrderBook(message.assetPairId, order.isBuySide, now, limitOrderService.getOrderBook(message.assetPairId).copy().getOrderBook(order.isBuySide))
+        val orderBook = OrderBook(message.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(message.assetPairId).copy().getOrderBook(order.isBuySide()))
         orderBookQueue.put(orderBook)
         rabbitOrderBookQueue.put(orderBook)
 

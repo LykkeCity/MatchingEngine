@@ -29,10 +29,10 @@ class CashOperationServiceTest {
     @Before
     fun setUp() {
         testDatabaseAccessor.clear()
-        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset1", 2))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset2", 2))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset3", 2))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset4", 2))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset1", 2, "Asset1"))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset2", 2, "Asset2"))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset3", 2, "Asset3"))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset4", 2, "Asset4"))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
         transactionQueue.clear()

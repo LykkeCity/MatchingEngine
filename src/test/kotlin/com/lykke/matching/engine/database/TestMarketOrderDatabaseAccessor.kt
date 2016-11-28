@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.OrderTradesLink
 import com.lykke.matching.engine.daos.Trade
 import java.text.SimpleDateFormat
 import java.util.ArrayList
-import java.util.Date
 
 class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
 
@@ -24,11 +23,6 @@ class TestMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
     }
 
     override fun addMarketOrderWithGeneratedRowId(order: MarketOrder) {
-        val orderClientTimeKey = MarketOrder(Date().time.toString(), order.assetPairId, order.clientId, order.volume, order.price,
-                order.status, order.createdAt, order.registered, null, null, order.straight)
-        orderClientTimeKey.partitionKey = order.clientId
-        orderClientTimeKey.rowKey = String.format("%s.#%02d", DATE_FORMAT.format(order.matchedAt), 0)
-        orders.add(orderClientTimeKey)
     }
 
     override fun updateMarketOrder(order: MarketOrder) {

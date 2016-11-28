@@ -16,7 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue
 val LOGGER = Logger.getLogger("AppStarter")
 
 fun main(args: Array<String>) {
-    if (args.size == 0) {
+    if (args.isEmpty()) {
         LOGGER.error("Config file is not provided, stopping application")
         return
     }
@@ -54,7 +54,7 @@ internal class ShutdownHook(val link: String) : Thread() {
     }
 
     override fun run() {
-        LOGGER.info("Stoppping application")
+        LOGGER.info("Stopping application")
         HttpLogger(link, LinkedBlockingQueue<LoggableObject>()).sendHttpRequest(KeyValue(ME_STATUS, "False"))
     }
 }

@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.LimitOrder
 import java.text.SimpleDateFormat
 import java.util.ArrayList
-import java.util.Date
 
 class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
 
@@ -47,11 +46,6 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
     }
 
     override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
-        val orderClientTimeKey = LimitOrder( Date().time.toString(), order.assetPairId, order.clientId, order.volume,
-                order.price, order.status, order.createdAt,order.registered, null, order.volume, order.lastMatchTime)
-        orderClientTimeKey.partitionKey = order.clientId
-        orderClientTimeKey.rowKey = String.format("%s.#%02d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), 0)
-        ordersDone.add(orderClientTimeKey)
     }
 
     fun getLastOrder() = orders.last()

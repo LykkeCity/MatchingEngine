@@ -2,7 +2,7 @@ package com.lykke.matching.engine.queue.transaction
 
 import com.lykke.matching.engine.daos.bitcoin.Orders
 
-class Swap(var TransactionId: String? = null, var MultisigCustomer1: String? = null, var Amount1: Double, var Asset1: String? = null,
+class Swap(var TransactionId: String, var MultisigCustomer1: String? = null, var Amount1: Double, var Asset1: String? = null,
            var MultisigCustomer2: String? = null, var Amount2: Double, var Asset2: String? = null,
            @Transient var clientId1: String, @Transient var origAsset1: String,
            @Transient var clientId2: String, @Transient var origAsset2: String,

@@ -38,8 +38,8 @@ class LimitOrderCancelServiceTest {
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
@@ -50,7 +50,7 @@ class LimitOrderCancelServiceTest {
         val service = LimitOrderCancelService(GenericLimitOrderService(testDatabaseAccessor, CashOperationService(testWalletDatabaseAcessor, testBackOfficeDatabaseAcessor, LinkedBlockingQueue<Transaction>(), balanceNotificationQueue), tradesInfoQueue, quotesNotificationQueue))
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
-        val order = testDatabaseAccessor.loadLimitOrders().find { it.getId() == "3" }
+        val order = testDatabaseAccessor.loadLimitOrders().find { it.id == "3" }
         assertNull(order)
         assertEquals(7, testDatabaseAccessor.loadLimitOrders().size)
     }

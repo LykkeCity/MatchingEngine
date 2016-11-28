@@ -40,8 +40,8 @@ class LimitOrderServiceTest {
         testDatabaseAccessor.clear()
         testWalletDatabaseAcessor.clear()
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "USD", 5, 5))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EUR", "CHF", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
@@ -99,4 +99,4 @@ fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                     registered: Date = Date(),
                     status: String = OrderStatus.InOrderBook.name,
                     volume:Double = 1000.0): LimitOrder =
-        LimitOrder(uid, assetId, clientId, volume, price, status, registered, registered, null, volume, null)
+        LimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)

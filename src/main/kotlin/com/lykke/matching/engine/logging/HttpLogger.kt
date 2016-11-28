@@ -6,17 +6,9 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
-class HttpLogger: Thread {
+class HttpLogger(val path: String, val queue: BlockingQueue<LoggableObject>) : Thread() {
     companion object {
         val LOGGER = Logger.getLogger(HttpLogger::class.java.name)
-    }
-
-    val path: String
-    val queue: BlockingQueue<LoggableObject>
-
-    constructor(path: String, queue: BlockingQueue<LoggableObject>) : super() {
-        this.path = path
-        this.queue = queue
     }
 
     override fun run() {
@@ -32,7 +24,7 @@ class HttpLogger: Thread {
             val request = HttpPost(path)
             val params = StringEntity(obj.getJson())
             request.addHeader("content-type", "application/json")
-            request.setEntity(params)
+            request.entity = params
             httpClient.execute(request)
         } catch (e : Exception) {
             LOGGER.error("Unable to write log to http: ${e.message}", e)

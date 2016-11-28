@@ -48,14 +48,14 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor: Thread {
+class MessageProcessor(config: Properties, azureConfig: HashMap<String, Any>, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val messagesQueue: BlockingQueue<MessageWrapper>
+    val messagesQueue: BlockingQueue<MessageWrapper> = queue
     val bitcoinQueue: BlockingQueue<Transaction>
     val tradesInfoQueue: BlockingQueue<TradeInfo>
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
@@ -94,18 +94,14 @@ class MessageProcessor: Thread {
     val hoursCandlesBuilder: Timer
     val historyTicksBuilder: Timer
 
-    constructor(config: Properties, azureConfig: HashMap<String, Any>, queue: BlockingQueue<MessageWrapper>) {
-
+    init {
         val dbConfig = azureConfig["Db"] as Map<String, String>
-
-        this.messagesQueue = queue
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
         this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
         this.quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
         this.orderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
-
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
@@ -113,9 +109,7 @@ class MessageProcessor: Thread {
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(dbConfig["SharedStorageConnString"]!!)
         this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, (azureConfig["MatchingEngine"] as Map<*, *>)["BackendQueueName"] as String? ?: "indata")
-
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
-
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
@@ -126,51 +120,39 @@ class MessageProcessor: Thread {
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
-
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
         historyTicksService.init()
-
         this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
         balanceUpdateHandler.start()
-
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
         quotesUpdateHandler.start()
-
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
-
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
-
         SocketServer(config, connectionsHolder).start()
         RabbitMqPublisher(config.getProperty("lykke.rabbit.host"), config.getProperty("lykke.rabbit.port")!!.toInt(),
                 config.getProperty("lykke.rabbit.username"), config.getProperty("lykke.rabbit.password"),
                 config.getProperty("lykke.rabbit.exchange.orderbook"), rabbitOrderBooksQueue).start()
-
         val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
         }
-
         val time = LocalDateTime.now()
         val candleSaverInterval = config.getProperty("candle.saver.interval")!!.toLong()
         this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = candleSaverInterval) {
             tradesInfoService.saveCandles()
         }
-
         val hoursCandleSaverInterval = config.getProperty("hours.candle.saver.interval")!!.toLong()
         this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second) + 60000 * (60 - time.minute)).toLong(), period = hoursCandleSaverInterval) {
             tradesInfoService.saveHourCandles()
         }
-
         this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
             historyTicksService.buildTicks()
         }
-
         val queueSizeLogger = QueueSizeLogger(messagesQueue)
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.getProperty("queue.size.logger.interval")!!.toLong(), period = config.getProperty("queue.size.logger.interval")!!.toLong()) {
             queueSizeLogger.log()
         }
-
         fixedRateTimer(name = "StatusUpdater", initialDelay = 0, period = 30000) {
             sharedDatabaseAccessor.updateKeepAlive(Date())
         }
