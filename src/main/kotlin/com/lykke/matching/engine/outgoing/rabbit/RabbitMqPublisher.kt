@@ -1,6 +1,9 @@
 package com.lykke.matching.engine.outgoing.rabbit
 
 import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
 import org.apache.log4j.Logger
 import java.io.IOException
 import java.util.concurrent.BlockingQueue
