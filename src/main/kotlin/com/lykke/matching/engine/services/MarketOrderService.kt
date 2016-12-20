@@ -169,19 +169,40 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         if (marketAsset.dustLimit!= null && marketAsset.dustLimit > 0.0) {
             val balance = cashOperationService.getBalance(marketOrder.clientId, marketAsset.assetId)
-            if (marketOrder.straight) {
-                if (balance - marketOrder.getAbsVolume() < marketAsset.dustLimit) {
-                    marketOrder.dustSize = RoundingUtils.parseDouble(balance - marketOrder.getAbsVolume(), marketAsset.accuracy).toDouble()
+            if (marketOrder.straight && isMarketBuy) {
+                val lastLimitOrder = matchedOrders.last
+                if (balance - Math.abs(totalLimitPrice) < marketAsset.dustLimit) {
+                    marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(totalLimitPrice)) * lastLimitOrder.price, marketAsset.accuracy).toDouble()
                     marketOrder.volume = if (marketOrder.isOrigBuySide()) balance else - balance
                 }
-            } else {
+            } else if (marketOrder.straight && !isMarketBuy) {
+                if (balance - Math.abs(marketOrder.volume) < marketAsset.dustLimit) {
+                    marketOrder.dustSize = RoundingUtils.parseDouble(balance - Math.abs(marketOrder.volume), marketAsset.accuracy).toDouble()
+                    marketOrder.volume = RoundingUtils.parseDouble(Math.signum(marketOrder.volume) * (Math.abs(marketOrder.volume) + marketOrder.dustSize!!), marketAsset.accuracy).toDouble()
+                }
+            } else if (!marketOrder.straight) {
                 val marketVolume = if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume
                 val lastLimitOrder = matchedOrders.last
                 if (balance - Math.abs(marketVolume) < marketAsset.dustLimit) {
                     marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(marketVolume)) * lastLimitOrder.price, assetPair.accuracy).toDouble()
-                    marketOrder.volume = RoundingUtils.parseDouble(marketOrder.volume + marketOrder.dustSize!!, assetPair.accuracy).toDouble()
+                    marketOrder.volume = RoundingUtils.parseDouble(Math.signum(marketOrder.volume) * (Math.abs(marketOrder.volume) + marketOrder.dustSize!!), assetPair.accuracy).toDouble()
                 }
             }
+
+//            if (marketOrder.straight) {
+//                val marketVolume = if (!isMarketBuy) totalLimitPrice else totalMarketVolume
+//                if (balance - Math.abs(marketVolume) < marketAsset.dustLimit) {
+//                    marketOrder.dustSize = RoundingUtils.parseDouble(balance - Math.abs(marketVolume), marketAsset.accuracy).toDouble()
+//                    marketOrder.volume = if (marketOrder.isOrigBuySide) balance else - balance
+//                }
+//            } else {
+//                val marketVolume = if(marketOrder.isBuySide) totalLimitPrice else totalMarketVolume
+//                val lastLimitOrder = matchedOrders.last
+//                if (balance - Math.abs(marketVolume) < marketAsset.dustLimit) {
+//                    marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(marketVolume)) * lastLimitOrder.price, assetPair.accuracy).toDouble()
+//                    marketOrder.volume = RoundingUtils.parseDouble(marketOrder.volume + marketOrder.dustSize, assetPair.accuracy).toDouble()
+//                }
+//            }
         }
 
         remainingVolume = marketOrder.getAbsVolume()
