@@ -1,8 +1,8 @@
 group 'com.lykke.me'
-version '0.1.0'
+version '0.1'
 
 buildscript {
-    ext.kotlin_version = '1.0.4'
+    ext.kotlin_version = '1.0.5'
     repositories {
         mavenCentral()
     }
@@ -49,6 +49,18 @@ protobuf {
 task printProperties << {
     teamcity.each { key, val ->
         println "##tc-property name='${key}' value='${val}'"
+    }
+}
+
+jar {
+    if (project.hasProperty('teamcity')) {
+        manifest {
+            attributes 'Revision-number': teamcity['build.vcs.number'], 'Build-number': teamcity['build.number'], 'Version': version + '.' + teamcity['build.number']
+        }
+    } else {
+        manifest {
+            attributes 'Revision-number': 'localBuild', 'Build-number': 'localBuild', 'Version': version + '.000'
+        }
     }
 }
 

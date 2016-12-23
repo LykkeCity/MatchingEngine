@@ -17,9 +17,9 @@ class AzureSharedDatabaseAccessor(sharedConfig: String) : SharedDatabaseAccessor
 
     val monitoringTable: CloudTable
 
-    override fun updateKeepAlive(date: Date) {
+    override fun updateKeepAlive(date: Date, version: String?) {
         try {
-            monitoringTable.execute(TableOperation.insertOrMerge(AzureKeepAliveUpdate(date)))
+            monitoringTable.execute(TableOperation.insertOrMerge(AzureKeepAliveUpdate(date, version)))
         } catch(e: Exception) {
             LOGGER.error("Unable to update keep alive", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update keep alive", e)

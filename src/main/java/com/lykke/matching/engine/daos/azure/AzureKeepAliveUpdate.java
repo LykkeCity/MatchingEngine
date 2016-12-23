@@ -8,14 +8,12 @@ public class AzureKeepAliveUpdate extends TableServiceEntity {
     private static final String MATCHING_ENGINE = "MatchingEngine";
 
     private Date dateTime;
+    private String version;
 
-    public AzureKeepAliveUpdate() {
-        super(MONITORING, MATCHING_ENGINE);
-    }
-
-    public AzureKeepAliveUpdate(Date date) {
+    public AzureKeepAliveUpdate(Date date, String version) {
         super(MONITORING, MATCHING_ENGINE);
         this.dateTime = date;
+        this.version = version;
     }
 
     public Date getDateTime() {
@@ -24,5 +22,13 @@ public class AzureKeepAliveUpdate extends TableServiceEntity {
 
     public void setDateTime(Date dateTime) {
         this.dateTime = dateTime;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 }

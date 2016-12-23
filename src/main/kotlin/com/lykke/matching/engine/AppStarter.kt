@@ -6,7 +6,7 @@ import com.lykke.matching.engine.logging.LoggableObject
 import com.lykke.matching.engine.logging.ME_STATUS
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.socket.SocketServer
-import com.lykke.quotes.provider.utils.AppVersion
+import com.lykke.matching.engine.utils.AppVersion
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -24,9 +24,7 @@ fun main(args: Array<String>) {
     teeLog("Application launched at " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")))
     teeLog("Revision-number: " + AppVersion.REVISION_NUMBER)
     teeLog("Build-number: " + AppVersion.BUILD_NUMBER)
-    teeLog("Build-time: " + AppVersion.BUILD_TIME)
-    teeLog("Build-Jdk: " + AppVersion.BUILD_JDK)
-    teeLog("Build-project: " + AppVersion.PROJECT_NAME)
+    teeLog("Version: " + AppVersion.VERSION)
     teeLog("Working-dir: " + File(".").absolutePath)
     teeLog("Java-Info: " + System.getProperty("java.vm.name") + " (" + System.getProperty("java.version") + ")")
 

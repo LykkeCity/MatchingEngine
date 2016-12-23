@@ -37,6 +37,7 @@ import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.WalletCredentialsCacheService
+import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
@@ -154,7 +155,7 @@ class MessageProcessor(config: Properties, azureConfig: HashMap<String, Any>, qu
             queueSizeLogger.log()
         }
         fixedRateTimer(name = "StatusUpdater", initialDelay = 0, period = 30000) {
-            sharedDatabaseAccessor.updateKeepAlive(Date())
+            sharedDatabaseAccessor.updateKeepAlive(Date(), AppVersion.VERSION)
         }
     }
 

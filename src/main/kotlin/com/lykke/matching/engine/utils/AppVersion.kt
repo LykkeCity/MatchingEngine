@@ -1,4 +1,4 @@
-package com.lykke.quotes.provider.utils
+package com.lykke.matching.engine.utils
 
 import java.net.InetAddress
 import java.text.SimpleDateFormat
@@ -10,9 +10,7 @@ object AppVersion {
 
     val REVISION_NUMBER: String?
     val BUILD_NUMBER: String?
-    val BUILD_TIME: String?
-    val BUILD_JDK: String?
-    val PROJECT_NAME: String?
+    val VERSION: String?
 
     val INSTANCE_UNIQUE_ID: String?
 
@@ -24,13 +22,11 @@ object AppVersion {
             while (urls.hasMoreElements()) {
                 try {
                     val manifest = Manifest(urls.nextElement().openStream())
-                    val a = manifest.mainAttributes
+                    attributes.putAll(manifest.mainAttributes)
                 } catch (e: Exception) {
                     println("Fail to read manifest file: " + e.message)
                 }
-
             }
-
         } catch (e: Exception) {
             println("Error while reading manifest: " + e.message)
             e.printStackTrace()
@@ -38,13 +34,11 @@ object AppVersion {
 
         REVISION_NUMBER = attributes.getValue("Revision-number")
         BUILD_NUMBER = attributes.getValue("Build-number")
-        BUILD_TIME = attributes.getValue("Build-time")
-        BUILD_JDK = attributes.getValue("Build-Jdk")
-        PROJECT_NAME = attributes.getValue("Buildserver-projectname")
+        VERSION = attributes.getValue("Version")
     }
 
     init {
-        var prefix = ""
+        var prefix: String
         try {
             prefix = InetAddress.getLocalHost().hostName + " "
         } catch (t: Throwable) {
