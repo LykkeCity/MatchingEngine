@@ -8,7 +8,6 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.JsonSerializable
 import com.lykke.matching.engine.outgoing.OrderBook
-import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.Date
@@ -75,8 +74,6 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
             limitOrderService.addOrder(order)
             limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, now))
             if (order.isBuySide()) buySide = true else sellSide = true
-
-            LOGGER.info("Part of multi limit order id: ${message.uid}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
         }
 
         limitOrderService.setOrderBook(message.assetPairId, orderBook)
