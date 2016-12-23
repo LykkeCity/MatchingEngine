@@ -58,7 +58,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
-                         private val lkkTradesAsset: String): AbsractService<ProtocolMessages.MarketOrder> {
+                         private val lkkTradesAssets: Set<String>): AbsractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -309,14 +309,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             if (marketRemainingVolume >= limitRemainingVolume) {
-                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId == lkkTradesAsset || assetPair.quotingAssetId == lkkTradesAsset)) {
+                if (lkkTradesHistoryEnabled && (lkkTradesAssets.contains(assetPair.baseAssetId) || lkkTradesAssets.contains(assetPair.quotingAssetId))) {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))
                 }
                 limitOrder.remainingVolume = 0.0
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                if (lkkTradesHistoryEnabled && (assetPair.baseAssetId == lkkTradesAsset || assetPair.quotingAssetId == lkkTradesAsset)) {
+                if (lkkTradesHistoryEnabled && (lkkTradesAssets.contains(assetPair.baseAssetId) || lkkTradesAssets.contains(assetPair.quotingAssetId))) {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume, now))
                 }
                 limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, cashOperationService.getAssetPair(limitOrder.assetPairId)!!.accuracy).toDouble()

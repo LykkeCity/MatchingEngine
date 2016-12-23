@@ -116,7 +116,7 @@ class MessageProcessor(config: Properties, azureConfig: HashMap<String, Any>, qu
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
-                config.getProperty("lykke.trades.history.enabled")!!.toBoolean(), config.getProperty("lykke.trades.history.asset")!!)
+                config.getProperty("lykke.trades.history.enabled")!!.toBoolean(), config.getProperty("lykke.trades.history.asset")!!.split(";").toSet())
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
