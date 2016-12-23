@@ -1,0 +1,7 @@
+version: "2"
+services:
+  me:
+    image: orangedev1/lykke_me
+    command: lykke-me-prototype/bin/start.sh --console
+    volumes:
+          - LOGS_DIR:/lykke-me-prototype/log
