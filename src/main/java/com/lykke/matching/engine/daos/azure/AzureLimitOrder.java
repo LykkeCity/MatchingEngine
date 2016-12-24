@@ -13,16 +13,16 @@ public class AzureLimitOrder extends AzureOrder {
     public AzureLimitOrder() {
     }
 
-    public AzureLimitOrder(String uid, String assetPairId, String clientId, Double volume, Double price,
+    public AzureLimitOrder(String partitionKey, String uid, String assetPairId, String clientId, Double volume, Double price,
                            String status, Date createdAt, Date registered, String transactionId, Double remainingVolume, Date lastMatchTime) {
-        super(ORDER_ID, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
+        super(partitionKey, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
         this.transactionId = transactionId;
         this.remainingVolume = remainingVolume;
         this.lastMatchTime = lastMatchTime;
     }
 
-    public AzureLimitOrder(LimitOrder order) {
-        super(ORDER_ID, order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
+    public AzureLimitOrder(String partitionKey, LimitOrder order) {
+        super(partitionKey, order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
         this.addTransactionIds(order.getTransactionIds());
         this.remainingVolume = order.getRemainingVolume();
         this.lastMatchTime = order.getLastMatchTime();

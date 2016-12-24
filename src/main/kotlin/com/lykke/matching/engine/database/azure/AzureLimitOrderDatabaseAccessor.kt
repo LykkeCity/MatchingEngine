@@ -26,6 +26,8 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
+
+        val ORDER_ID = "OrderId"
     }
 
     val limitOrdersTable: CloudTable
@@ -64,7 +66,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun addLimitOrder(order: LimitOrder) {
         try {
-            limitOrdersTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order)))
+            limitOrdersTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order.assetPairId, order)))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit order: ${order.id}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit order: ${order.id}", e)
@@ -73,7 +75,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun addLimitOrders(orders: List<LimitOrder>) {
         try {
-            batchInsertOrMerge(limitOrdersTable, orders.map(::AzureLimitOrder))
+            batchInsertOrMerge(limitOrdersTable, orders.map({ AzureLimitOrder(it.assetPairId, it) }))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit order, size: ${orders.size}", e)
@@ -82,7 +84,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun updateLimitOrder(order: LimitOrder) {
         try {
-            limitOrdersTable.execute(TableOperation.merge(AzureLimitOrder(order)))
+            limitOrdersTable.execute(TableOperation.merge(AzureLimitOrder(order.assetPairId, order)))
         } catch(e: Exception) {
             LOGGER.error("Unable to update limit order: ${order.id}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update limit order: ${order.id}", e)
@@ -91,7 +93,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun deleteLimitOrders(orders: List<LimitOrder>) {
         try {
-            batchDelete(limitOrdersTable, orders.map(::AzureLimitOrder))
+            batchDelete(limitOrdersTable, orders.map( { AzureLimitOrder(it.assetPairId, it) } ))
         } catch(e: Exception) {
             LOGGER.error("Unable to delete limit orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to delete limit orders, size: ${orders.size}", e)
@@ -101,7 +103,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
     override fun addLimitOrderDone(order: LimitOrder) {
         try {
             if (order.remainingVolume != order.volume) {
-                limitOrdersDoneTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order)))
+                limitOrdersDoneTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(ORDER_ID, order)))
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done order ${order.id}", e)
@@ -111,7 +113,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun addLimitOrdersDone(orders: List<LimitOrder>) {
         try {
-            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume }.map(::AzureLimitOrder))
+            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume }.map( { AzureLimitOrder(ORDER_ID, it) } ))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done orders, size: ${orders.size}", e)
@@ -121,10 +123,9 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
     override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
         var counter = 0
         try {
-            val azureOrder = AzureLimitOrder(order)
+            val azureOrder = AzureLimitOrder(order.clientId, order)
             while (true) {
                 try {
-                    azureOrder.partitionKey = azureOrder.clientId
                     azureOrder.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), counter)
                     limitOrdersDoneTable.execute(TableOperation.insert(azureOrder))
                     return
