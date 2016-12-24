@@ -57,7 +57,9 @@ abstract class AzureOrder extends TableServiceEntity {
 
     public void addTransactionIds(List<String> ids) {
         List<String> transactions = loadTransactionsId();
-        transactions.addAll(ids);
+        if (ids != null) {
+            transactions.addAll(ids);
+        }
         saveTransactionsId(transactions);
     }
 
