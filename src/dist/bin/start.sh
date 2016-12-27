@@ -27,11 +27,10 @@ EXECSTR="$JAVACMD -Xms1g -Xmx2g -DMatchingEngineService -server -Dlog4j.configur
     -classpath "$CLASSPATH" \
     -Dapp.name="start.sh" \
     -Dapp.pid="$$" \
-    -Dapp.repo="$REPO" \
     -Dapp.home="$BASEDIR" \
     -Dbasedir="$BASEDIR" \
      com.lykke.matching.engine.AppStarterKt \
-     "$BASEDIR"/cfg/application.properties"
+     $AZURE_CONFIG_CONNECTION_STRING $AZURE_CONFIG_BLOB $AZURE_CONFIG_FILE"
 
 if [[ " $@ " =~ " --console " ]] ; then
     exec $EXECSTR ${@%"--console"}

@@ -2,6 +2,10 @@ version: "2"
 services:
   me:
     image: orangedev1/lykke_me
+    environment:
+        - AZURE_CONFIG_CONNECTION_STRING=AZURE_CONFIG_CONNECTION_STRING
+        - AZURE_CONFIG_BLOB=AZURE_CONFIG_BLOB
+        - AZURE_CONFIG_FILE=AZURE_CONFIG_FILE
     command: lykke-me-prototype/bin/start.sh --console
     volumes:
           - LOGS_DIR:/lykke-me-prototype/log

@@ -1,27 +1,23 @@
 package com.lykke.matching.engine.outgoing.socket
 
-import com.lykke.matching.engine.getInt
 import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.utils.config.AzureConfig
 import org.apache.log4j.Logger
 import java.net.ServerSocket
-import java.util.Properties
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 
-class SocketServer(val config: Properties, val connectionsHolder: ConnectionsHolder): Thread() {
+class SocketServer(val config: AzureConfig, val connectionsHolder: ConnectionsHolder): Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(SocketServer::class.java.name)
     }
 
-    val DEFAULT_PORT = 8889
-    val DEFAULT_MAX_CONNECTIONS = 10
-
     override fun run() {
-        val maxConnections = config.getInt("server.order.book.max.connections") ?: DEFAULT_MAX_CONNECTIONS
+        val maxConnections = config.me.serverOrderBookMaxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
-        val port = config.getInt("server.order.book.port") ?: DEFAULT_PORT
+        val port = config.me.serverOrderBookPort
         val socket = ServerSocket(port)
         LOGGER.info("Waiting connection on port: $port.")
         try {

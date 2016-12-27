@@ -7,6 +7,7 @@ import com.lykke.matching.engine.logging.ME_STATUS
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
+import com.lykke.matching.engine.utils.config.AzureConfigParser
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -16,8 +17,8 @@ import java.util.concurrent.LinkedBlockingQueue
 val LOGGER = Logger.getLogger("AppStarter")
 
 fun main(args: Array<String>) {
-    if (args.isEmpty()) {
-        LOGGER.error("Config file is not provided, stopping application")
+    if (args.size < 3) {
+        LOGGER.error("Not enough args. Usage: configConnectionString configBlobContainer configFileName")
         return
     }
 
@@ -28,15 +29,12 @@ fun main(args: Array<String>) {
     teeLog("Working-dir: " + File(".").absolutePath)
     teeLog("Java-Info: " + System.getProperty("java.vm.name") + " (" + System.getProperty("java.version") + ")")
 
-    val config = loadLocalConfig(args[0])
-    val azureConfig = loadConfig(config)
-    val dbConfig = azureConfig["Db"] as Map<String, String>
+    val config = AzureConfigParser.initConfig(args[0], args[1], args[2])
 
-    MetricsLogger.init(config.getProperty("metric.logger.key.value"), config.getProperty("metric.logger.line"),
-            dbConfig["SharedStorageConnString"]!!, azureConfig["SlackNotificationsQueueName"] as String? ?: "app-err-notifications",
-            config.getProperty("metric.logger.size").toInt())
+    MetricsLogger.init(config.me.metricLoggerKeyValue, config.me.metricLoggerLine, config.db.sharedStorageConnString,
+            config.slackNotificationsQueueName ?: "app-err-notifications", config.me.metricLoggerSize)
 
-    Runtime.getRuntime().addShutdownHook(ShutdownHook(config.getProperty("metric.logger.key.value")))
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(config.me.metricLoggerKeyValue))
 
     SocketServer(config).run()
 }

@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.socket
 
-import com.lykke.matching.engine.getInt
-import com.lykke.matching.engine.loadConfig
 import com.lykke.matching.engine.logging.IP
 import com.lykke.matching.engine.logging.KeyValue
 import com.lykke.matching.engine.logging.Line
@@ -20,41 +18,38 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.ConnectionStatus.Blocked
 import com.lykke.matching.engine.socket.ConnectionStatus.Connected
 import com.lykke.matching.engine.socket.ConnectionStatus.Disconnected
+import com.lykke.matching.engine.utils.config.AzureConfig
 import org.apache.log4j.Logger
 import java.net.ServerSocket
 import java.time.LocalDateTime
 import java.util.HashSet
-import java.util.Properties
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 import kotlin.concurrent.fixedRateTimer
 
-class SocketServer(val config: Properties): Runnable {
+class SocketServer(val config: AzureConfig): Runnable {
 
     companion object {
         val LOGGER = Logger.getLogger(SocketServer::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val DEFAULT_PORT = 8888
-    val DEFAULT_MAX_CONNECTIONS = 10
-
     val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
     val connections = HashSet<ClientHandler>()
 
     override fun run() {
-        val maxConnections = config.getInt("server.max.connections") ?: DEFAULT_MAX_CONNECTIONS
+        val maxConnections = config.me.socket.maxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
-        val messageProcessor = MessageProcessor(config, loadConfig(config), messagesQueue)
+        val messageProcessor = MessageProcessor(config, messagesQueue)
         messageProcessor.start()
 
         METRICS_LOGGER.log(KeyValue(ME_STATUS, "True"))
         initMetricLogger()
 
-        val port = config.getInt("server.port") ?: DEFAULT_PORT
+        val port = config.me.socket.port
         val socket = ServerSocket(port)
         LOGGER.info("Waiting connection on port: $port.")
         try {
@@ -93,9 +88,8 @@ class SocketServer(val config: Properties): Runnable {
     }
 
     fun getWhiteList() : List<String>? {
-        val whiteListStr = (loadConfig(config)["MatchingEngine"] as Map<String, Any>)["WhiteList"] as String?
-        if (whiteListStr != null) {
-            return whiteListStr.split(";")
+        if (config.me.whiteList != null) {
+            return config.me.whiteList.split(";")
         }
         return null
     }

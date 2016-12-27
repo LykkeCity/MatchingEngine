@@ -39,17 +39,16 @@ import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
+import com.lykke.matching.engine.utils.config.AzureConfig
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
-import java.util.HashMap
-import java.util.Properties
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Properties, azureConfig: HashMap<String, Any>, queue: BlockingQueue<MessageWrapper>) : Thread() {
+class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
@@ -96,27 +95,26 @@ class MessageProcessor(config: Properties, azureConfig: HashMap<String, Any>, qu
     val historyTicksBuilder: Timer
 
     init {
-        val dbConfig = azureConfig["Db"] as Map<String, String>
         this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
         this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
         this.quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
         this.orderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(dbConfig["BalancesInfoConnString"]!!, dbConfig["DictsConnString"]!!)
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(dbConfig["ALimitOrdersConnString"]!!, dbConfig["HLimitOrdersConnString"]!!, dbConfig["HLiquidityConnString"]!!)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(dbConfig["HMarketOrdersConnString"]!!, dbConfig["HTradesConnString"]!!)
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(dbConfig["ClientPersonalInfoConnString"]!!, dbConfig["BitCoinQueueConnectionString"]!!, dbConfig["DictsConnString"]!!)
-        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(dbConfig["HLiquidityConnString"]!!)
-        this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(dbConfig["SharedStorageConnString"]!!)
-        this.azureQueueWriter = AzureQueueWriter(dbConfig["BitCoinQueueConnectionString"]!!, (azureConfig["MatchingEngine"] as Map<*, *>)["BackendQueueName"] as String? ?: "indata")
+        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString)
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.db.aLimitOrdersConnString, config.db.hLimitOrdersConnString, config.db.hLiquidityConnString)
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.db.hMarketOrdersConnString, config.db.hTradesConnString)
+        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString)
+        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.db.hLiquidityConnString)
+        this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.db.sharedStorageConnString)
+        this.azureQueueWriter = AzureQueueWriter(config.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
         this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
-                config.getProperty("lykke.trades.history.enabled")!!.toBoolean(), config.getProperty("lykke.trades.history.asset")!!.split(";").toSet())
+                config.me.lykkeTradesHistoryEnabled, config.me.lykkeTradesHistoryAssets.split(";").toSet())
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(cashOperationService)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
@@ -131,27 +129,28 @@ class MessageProcessor(config: Properties, azureConfig: HashMap<String, Any>, qu
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
         SocketServer(config, connectionsHolder).start()
-        RabbitMqPublisher(config.getProperty("lykke.rabbit.host"), config.getProperty("lykke.rabbit.port")!!.toInt(),
-                config.getProperty("lykke.rabbit.username"), config.getProperty("lykke.rabbit.password"),
-                config.getProperty("lykke.rabbit.exchange.orderbook"), rabbitOrderBooksQueue).start()
-        val bestPricesInterval = config.getProperty("best.prices.interval")!!.toLong()
-        this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = bestPricesInterval) {
+        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
+                config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue).start()
+
+        this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
         }
+
         val time = LocalDateTime.now()
-        val candleSaverInterval = config.getProperty("candle.saver.interval")!!.toLong()
-        this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = candleSaverInterval) {
+        this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = config.me.candleSaverInterval) {
             tradesInfoService.saveCandles()
         }
-        val hoursCandleSaverInterval = config.getProperty("hours.candle.saver.interval")!!.toLong()
-        this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second) + 60000 * (60 - time.minute)).toLong(), period = hoursCandleSaverInterval) {
+
+        this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second) + 60000 * (60 - time.minute)).toLong(), period = config.me.hoursCandleSaverInterval) {
             tradesInfoService.saveHourCandles()
         }
+
         this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
             historyTicksService.buildTicks()
         }
+
         val queueSizeLogger = QueueSizeLogger(messagesQueue)
-        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.getProperty("queue.size.logger.interval")!!.toLong(), period = config.getProperty("queue.size.logger.interval")!!.toLong()) {
+        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
             queueSizeLogger.log()
         }
         fixedRateTimer(name = "StatusUpdater", initialDelay = 0, period = 30000) {
