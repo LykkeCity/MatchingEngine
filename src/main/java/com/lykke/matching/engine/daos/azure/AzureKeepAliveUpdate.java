@@ -4,11 +4,15 @@ import com.microsoft.azure.storage.table.TableServiceEntity;
 import java.util.Date;
 
 public class AzureKeepAliveUpdate extends TableServiceEntity {
-    private static final String MONITORING = "Monitoring";
-    private static final String MATCHING_ENGINE = "MatchingEngine";
+    public static final String MONITORING = "Monitoring";
+    public static final String MATCHING_ENGINE = "MatchingEngine";
 
     private Date dateTime;
     private String version;
+
+    public AzureKeepAliveUpdate() {
+        super(MONITORING, MATCHING_ENGINE);
+    }
 
     public AzureKeepAliveUpdate(Date date, String version) {
         super(MONITORING, MATCHING_ENGINE);

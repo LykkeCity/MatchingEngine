@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.azure.AzureKeepAliveUpdate
+import com.lykke.matching.engine.daos.azure.AzureKeepAliveUpdate.MATCHING_ENGINE
+import com.lykke.matching.engine.daos.azure.AzureKeepAliveUpdate.MONITORING
 import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.microsoft.azure.storage.table.CloudTable
@@ -17,9 +19,25 @@ class AzureSharedDatabaseAccessor(sharedConfig: String) : SharedDatabaseAccessor
 
     val monitoringTable: CloudTable
 
-    override fun updateKeepAlive(date: Date, version: String?) {
+    override fun getLastKeepAlive(): Date? {
         try {
-            monitoringTable.execute(TableOperation.insertOrMerge(AzureKeepAliveUpdate(date, version)))
+            val query = TableOperation.retrieve(MONITORING, MATCHING_ENGINE, AzureKeepAliveUpdate::class.java)
+
+            val keepAlive = monitoringTable.execute(query).getResultAsType<AzureKeepAliveUpdate>()
+            if (keepAlive != null) {
+                return keepAlive.dateTime
+            }
+        } catch(e: Exception) {
+            LOGGER.error("Unable to load hour candles", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load hour candles", e)
+        }
+
+        return null
+    }
+
+    override fun updateKeepAlive(date: Date, note: String?) {
+        try {
+            monitoringTable.execute(TableOperation.insertOrMerge(AzureKeepAliveUpdate(date, note)))
         } catch(e: Exception) {
             LOGGER.error("Unable to update keep alive", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update keep alive", e)
