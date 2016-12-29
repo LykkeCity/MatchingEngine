@@ -1,7 +1,7 @@
 version: "2"
 services:
   me:
-    image: orangedev1/lykke_me
+    image: lykkex/matchingengine
     environment:
         - AZURE_CONFIG_CONNECTION_STRING=AZURE_CONFIG_CONNECTION_STRING
         - AZURE_CONFIG_BLOB=AZURE_CONFIG_BLOB
