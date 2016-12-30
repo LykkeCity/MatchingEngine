@@ -64,10 +64,10 @@ class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket
         }
 
         val sizeArray = ByteArray(4)
-        inputStream.read(sizeArray, 0, 4)
+        inputStream.readFully(sizeArray, 0, 4)
         val size = IntUtils.little2big(sizeArray)
         val serializedData = ByteArray(size)
-        inputStream.read(serializedData, 0, size)
+        inputStream.readFully(serializedData, 0, size)
         incomingSize += 1 + size
         queue.put(MessageWrapper(type, serializedData, this))
     }
