@@ -41,7 +41,7 @@ fun main(args: Array<String>) {
     val lastKeepAlive: Date? = sharedDbAccessor.getLastKeepAlive()
 
     if (lastKeepAlive != null && startTime.minusMinutes(1).isBefore(LocalDateTime.ofInstant(lastKeepAlive.toInstant(), ZoneId.systemDefault()))) {
-        LOGGER.error("Matching instance is already running, last keep alive is : ${LocalDateTime.ofInstant(lastKeepAlive.toInstant(), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}. " +
+        teeLog("Matching instance is already running, last keep alive is : ${LocalDateTime.ofInstant(lastKeepAlive.toInstant(), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}. " +
                 "Start is possible if last keep alive is older than one minute")
         return
     }
