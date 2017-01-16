@@ -19,23 +19,30 @@ class RabbitMqPublisher(val host: String, val port: Int, val username: String, v
     var connection: Connection? = null
     var channel: Channel? = null
 
-    fun connect() {
+    fun connect(): Boolean {
         LOGGER.info("Connecting to RabbitMQ: $host:$port, exchange: $exchangeName")
 
-        val factory = ConnectionFactory()
-        factory.host = host
-        factory.port = port
-        factory.username = username
-        factory.password = password
+        try {
+            val factory = ConnectionFactory()
+            factory.host = host
+            factory.port = port
+            factory.username = username
+            factory.password = password
 
-        this.connection = factory.newConnection()
-        this.channel = connection!!.createChannel()
+            this.connection = factory.newConnection()
+            this.channel = connection!!.createChannel()
 
-        LOGGER.info("Connected to RabbitMQ: $host:$port, exchange: $exchangeName")
+            LOGGER.info("Connected to RabbitMQ: $host:$port, exchange: $exchangeName")
+
+            return true
+        } catch (e: Exception) {
+            LOGGER.error("Unable to connect to RabbitMQ: $host:$port, exchange: $exchangeName: ${e.message}", e)
+            return false
+        }
     }
 
     override fun run() {
-        connect()
+        while (!connect()) {}
         while (true) {
             val item = queue.take()
             publish(item)
