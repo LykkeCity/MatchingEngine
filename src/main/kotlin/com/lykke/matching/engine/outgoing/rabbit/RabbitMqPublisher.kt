@@ -31,6 +31,7 @@ class RabbitMqPublisher(val host: String, val port: Int, val username: String, v
 
             this.connection = factory.newConnection()
             this.channel = connection!!.createChannel()
+            channel!!.exchangeDeclare(exchangeName, "fanout", true)
 
             LOGGER.info("Connected to RabbitMQ: $host:$port, exchange: $exchangeName")
 

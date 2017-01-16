@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
+import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
 import java.util.HashMap
@@ -12,6 +13,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     val balances = HashMap<String, MutableMap<String, Double>>()
     val wallets = HashMap<String, Wallet>()
     val operations = LinkedList<WalletOperation>()
+    val transferOperations = LinkedList<TransferOperation>()
     val externalOperations = LinkedList<ExternalCashOperation>()
     val assetPairs = HashMap<String, AssetPair>()
 
@@ -56,6 +58,9 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     override fun insertOperation(operation: WalletOperation) {
         this.operations.add(operation)
     }
+    override fun insertTransferOperation(operation: TransferOperation) {
+        this.transferOperations.add(operation)
+    }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
         return assetPairs
@@ -73,6 +78,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         balances.clear()
         wallets.clear()
         operations.clear()
+        transferOperations.clear()
         externalOperations.clear()
         assetPairs.clear()
     }

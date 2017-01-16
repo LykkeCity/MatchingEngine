@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
+import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
 import java.util.HashMap
@@ -15,6 +16,7 @@ interface WalletDatabaseAccessor {
     fun insertExternalCashOperation(operation: ExternalCashOperation)
     fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation?
     fun insertOperation(operation: WalletOperation)
+    fun insertTransferOperation(operation: TransferOperation)
 
     fun loadAssetPairs(): HashMap<String, AssetPair>
     fun loadAssetPair(assetId: String): AssetPair?

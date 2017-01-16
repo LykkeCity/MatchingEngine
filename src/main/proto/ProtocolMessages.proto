@@ -19,6 +19,16 @@ message CashOperation {
     required bool sendToBitcoin = 7;
 }
 
+message CashTransferOperation {
+    required int64 uid = 1;
+    required string fromClientId = 2;
+    required string toClientId = 3;
+    required int64 dateTime = 4;
+    required string assetId = 5;
+    required double amount = 6;
+    required string bussinesId = 7;
+}
+
 message LimitOrder {
     required int64 uid = 1;
     required int64 timestamp = 2;

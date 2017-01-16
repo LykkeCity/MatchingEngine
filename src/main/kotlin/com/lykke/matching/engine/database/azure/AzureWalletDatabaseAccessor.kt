@@ -2,10 +2,12 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
+import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.azure.AzureAssetPair
 import com.lykke.matching.engine.daos.azure.AzureExternalCashOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletOperation
+import com.lykke.matching.engine.daos.azure.AzureWalletTransferOperation
 import com.lykke.matching.engine.daos.azure.wallet.AzureWallet
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -28,6 +30,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     val accountTable: CloudTable
     val operationsTable: CloudTable
+    val transferOperationsTable: CloudTable
     val externalOperationsTable: CloudTable
     val assetsTable: CloudTable
 
@@ -117,6 +120,15 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
         }
     }
 
+    override fun insertTransferOperation (operation: TransferOperation) {
+        try {
+            operationsTable.execute(TableOperation.insert(AzureWalletTransferOperation(operation.fromClientId, operation.toClientId, operation.uid, operation.assetId, operation.dateTime, operation.amount)))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to insert operation: ${operation.uid}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)
+        }
+    }
+
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
         val result = HashMap<String, AssetPair>()
 
@@ -152,6 +164,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
     init {
         this.accountTable = getOrCreateTable(balancesConfig, "Accounts")
         this.operationsTable = getOrCreateTable(balancesConfig, "OperationsCash")
+        this.transferOperationsTable = getOrCreateTable(balancesConfig, "TransferOperationsCash")
         this.externalOperationsTable = getOrCreateTable(balancesConfig, "ExternalOperationsCash")
         this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
