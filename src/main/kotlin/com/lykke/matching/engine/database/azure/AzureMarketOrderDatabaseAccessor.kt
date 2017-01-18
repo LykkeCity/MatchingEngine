@@ -85,7 +85,7 @@ class AzureMarketOrderDatabaseAccessor(marketConfig: String, tradesConfig: Strin
 
     override fun updateMarketOrder(order: MarketOrder) {
         try {
-            marketOrdersTable.execute(TableOperation.merge(AzureMarketOrder(order)))
+            marketOrdersTable.execute(TableOperation.insertOrReplace(AzureMarketOrder(order)))
         } catch(e: Exception) {
             LOGGER.error("Unable to update market order: ${order.id}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update market order: ${order.id}", e)
