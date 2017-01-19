@@ -22,8 +22,8 @@ import com.lykke.matching.engine.utils.config.AzureConfig
 import org.apache.log4j.Logger
 import java.net.ServerSocket
 import java.time.LocalDateTime
-import java.util.HashSet
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
@@ -37,7 +37,7 @@ class SocketServer(val config: AzureConfig): Runnable {
     }
 
     val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
-    val connections = HashSet<ClientHandler>()
+    val connections = CopyOnWriteArraySet<ClientHandler>()
 
     override fun run() {
         val maxConnections = config.me.socket.maxConnections
