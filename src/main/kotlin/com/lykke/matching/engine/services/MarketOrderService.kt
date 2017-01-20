@@ -237,7 +237,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     "limitVolume ${if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume}")
 
             if ((!marketOrder.straight) && (index == matchedOrders.size - 1)) {
-                oppositeRoundedVolume = Math.signum(marketOrder.volume) * (RoundingUtils.round(Math.abs(marketOrder.volume), limitAsset.accuracy, marketOrder.isBuySide()) - Math.abs(totalLimitVolume))
+                oppositeRoundedVolume = Math.signum(marketOrder.volume) * (RoundingUtils.round(Math.abs(marketOrder.volume), cashOperationService.getAsset(assetPair.quotingAssetId).accuracy, marketOrder.isBuySide()) - Math.abs(totalLimitVolume))
                 marketRoundedVolume = RoundingUtils.round(- oppositeRoundedVolume / limitOrder.price, cashOperationService.getAsset(assetPair.baseAssetId).accuracy, marketOrder.isOrigBuySide())
                 LOGGER.debug("Rounding last matched limit order trade: $marketRoundedVolume")
             }

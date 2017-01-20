@@ -540,7 +540,7 @@ class MarketOrderServiceTest {
         assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
 
         val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(-14481.0, activeLimitOrder.remainingVolume, DELTA)
+        assertEquals(-14487.0, activeLimitOrder.remainingVolume, DELTA)
         assertEquals(Processing.name, activeLimitOrder.status)
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
@@ -550,12 +550,12 @@ class MarketOrderServiceTest {
         assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "GBP" && it.volume == 770.0})
         assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "GBP" && it.volume == 212.78})
         assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 20000.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 5519.0})
+        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 5513.0})
 
         assertEquals(982.78, testWalletDatabaseAcessor.getBalance("Client1", "GBP"), DELTA)
-        assertEquals(74481.0, testWalletDatabaseAcessor.getBalance("Client1", "LKK"), DELTA)
+        assertEquals(74487.0, testWalletDatabaseAcessor.getBalance("Client1", "LKK"), DELTA)
         assertEquals(0.0, testWalletDatabaseAcessor.getBalance("Client4", "GBP"), DELTA)
-        assertEquals(25519.0, testWalletDatabaseAcessor.getBalance("Client4", "LKK"), DELTA)
+        assertEquals(25513.0, testWalletDatabaseAcessor.getBalance("Client4", "LKK"), DELTA)
 
         var swap = transactionQueue.take() as Swap
         assertEquals("Client4", swap.clientId1)
@@ -570,7 +570,7 @@ class MarketOrderServiceTest {
         assertEquals(212.78, swap.Amount1, DELTA)
         assertEquals("GBP", swap.origAsset1)
         assertEquals("Client1", swap.clientId2)
-        assertEquals(5519.0, swap.Amount2, DELTA)
+        assertEquals(5513.0, swap.Amount2, DELTA)
         assertEquals("LKK", swap.origAsset2)
     }
 
