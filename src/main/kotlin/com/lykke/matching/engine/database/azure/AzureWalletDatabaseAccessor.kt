@@ -122,7 +122,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     override fun insertTransferOperation (operation: TransferOperation) {
         try {
-            operationsTable.execute(TableOperation.insert(AzureWalletTransferOperation(operation.fromClientId, operation.toClientId, operation.uid, operation.assetId, operation.dateTime, operation.amount)))
+            transferOperationsTable.execute(TableOperation.insert(AzureWalletTransferOperation(operation.fromClientId, operation.toClientId, operation.uid, operation.assetId, operation.dateTime, operation.amount)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.uid}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)

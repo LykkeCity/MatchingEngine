@@ -32,7 +32,7 @@ class CashTransferOperationService(private val cashOperationService: CashOperati
         val fromBalance = cashOperationService.getBalance(message.fromClientId, message.assetId)
         if (fromBalance < operation.amount) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).setRecordId(operation.uid).build())
-            LOGGER.debug("Cash transfer operation (${message.bussinesId}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)} already processed")
+            LOGGER.debug("Cash transfer operation (${message.bussinesId}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}: low balance for client ${message.toClientId}")
             return
         }
 
