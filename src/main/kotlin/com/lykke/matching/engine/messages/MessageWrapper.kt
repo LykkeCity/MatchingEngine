@@ -18,8 +18,8 @@ class MessageWrapper(val sourceIp: String, val type: Byte, val byteArray: ByteAr
             try {
                 clientHandler.writeOutput(toByteArray(MessageType.RESPONSE.type, response.serializedSize, response.toByteArray()))
             } catch (exception: IOException){
-                LOGGER.error("Unable to write response: ${exception.message}", exception)
-                METRICS_LOGGER.logError(this.javaClass.name, "Unable to write response", exception)
+                LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
+                METRICS_LOGGER.logError(this.javaClass.name, "[$sourceIp]: Unable to write response", exception, false)
             }
         }
     }

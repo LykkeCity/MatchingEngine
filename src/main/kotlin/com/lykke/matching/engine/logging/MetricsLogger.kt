@@ -41,7 +41,7 @@ class MetricsLogger {
         LINE_QUEUE.put(line)
     }
 
-    fun logError(service: String, note: String, exception: Exception? = null) {
+    fun logError(service: String, note: String, exception: Exception? = null, putToErrorQueue: Boolean = true) {
         log(Line(ME_ERRORS, arrayOf(
                 KeyValue(SERVICE, service),
                 KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
@@ -49,7 +49,9 @@ class MetricsLogger {
                 KeyValue(STACK_TRACE, exception?.message ?: "")
         )))
 
-        ERROR_QUEUE.put(Error("Errors",
-                "$note : ${exception?.message ?: ""}"))
+        if (putToErrorQueue) {
+            ERROR_QUEUE.put(Error("Errors",
+                    "$note : ${exception?.message ?: ""}"))
+        }
     }
 }
