@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.services.AssetOrderBook
 import org.apache.log4j.Logger
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
@@ -8,11 +10,13 @@ import java.io.DataOutputStream
 import java.io.InputStreamReader
 import java.net.Socket
 import java.net.SocketException
+import java.util.Date
 import java.util.HashSet
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
-class Connection(val socket: Socket, val inputQueue: BlockingQueue<JsonSerializable>) : Thread() {
+class Connection(val socket: Socket, val inputQueue: BlockingQueue<JsonSerializable>, val orderBooks: ConcurrentHashMap<String, AssetOrderBook>) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(Connection::class.java.name)
@@ -46,9 +50,16 @@ class Connection(val socket: Socket, val inputQueue: BlockingQueue<JsonSerializa
                 }
             }
 
+            val now = Date()
+            orderBooks.values.forEach {
+                val orderBook = it.copy()
+                writeOrderBook(OrderBook(orderBook.assetId, true, now, orderBook.bidOrderBook), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetId, false, now, orderBook.askOrderBook), outputStream)
+            }
+
             while (true) {
                 val item = inputQueue.take()
-                writePrice(item, outputStream)
+                writeOrderBook(item, outputStream)
             }
         } catch (e: SocketException) {
             LOGGER.error("Order book subscriber disconnected: $clientHostName")
@@ -61,7 +72,7 @@ class Connection(val socket: Socket, val inputQueue: BlockingQueue<JsonSerializa
         }
     }
 
-    private fun writePrice(item: JsonSerializable, stream : DataOutputStream) {
+    private fun writeOrderBook(item: JsonSerializable, stream : DataOutputStream) {
         stream.write(toByteArray(item.toJson().toByteArray()))
         stream.flush()
     }

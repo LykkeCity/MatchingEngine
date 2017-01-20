@@ -133,7 +133,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
-        SocketServer(config, connectionsHolder).start()
+        SocketServer(config, connectionsHolder, genericLimitOrderService).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,

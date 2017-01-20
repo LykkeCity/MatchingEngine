@@ -105,6 +105,8 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
         clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
     }
 
+    fun getAllOrderBooks() = limitOrdersQueues
+
     fun getOrderBook(key: String) = limitOrdersQueues[key] ?: AssetOrderBook(key)
 
     fun setOrderBook(key: String, book: AssetOrderBook){
