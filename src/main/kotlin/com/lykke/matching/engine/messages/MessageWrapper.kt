@@ -6,7 +6,7 @@ import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
 import org.apache.log4j.Logger
 import java.io.IOException
 
-class MessageWrapper(val type: Byte, val byteArray: ByteArray, val clientHandler: ClientHandler?) {
+class MessageWrapper(val sourceIp: String, val type: Byte, val byteArray: ByteArray, val clientHandler: ClientHandler?) {
 
     companion object {
         val LOGGER = Logger.getLogger(MessageWrapper::class.java.name)

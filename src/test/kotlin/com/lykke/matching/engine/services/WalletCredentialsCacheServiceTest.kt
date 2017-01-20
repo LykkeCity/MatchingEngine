@@ -36,7 +36,7 @@ class WalletCredentialsCacheServiceTest {
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Client1", "Client1-Multisig-New"))
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Client2", "Client2-Multisig-New"))
 
-        service.processMessage(MessageWrapper(WALLET_CREDENTIALS_RELOAD.type, ProtocolMessages.WalletCredentialsReload.newBuilder().setUid(Date().time).setClientId("Client1").build().toByteArray(), null))
+        service.processMessage(MessageWrapper("Test", WALLET_CREDENTIALS_RELOAD.type, ProtocolMessages.WalletCredentialsReload.newBuilder().setUid(Date().time).setClientId("Client1").build().toByteArray(), null))
 
         assertEquals("Client1-Multisig-New", service.walletCredentialsCache.getWalletCredentials("Client1")!!.multisig)
         assertEquals("Client2-Multisig", service.walletCredentialsCache.getWalletCredentials("Client2")!!.multisig)
@@ -49,7 +49,7 @@ class WalletCredentialsCacheServiceTest {
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Client1", "Client1-Multisig-New"))
         testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Client2", "Client2-Multisig-New"))
 
-        service.processMessage(MessageWrapper(WALLET_CREDENTIALS_RELOAD.type, ProtocolMessages.WalletCredentialsReload.newBuilder().setUid(Date().time).build().toByteArray(), null))
+        service.processMessage(MessageWrapper("Test", WALLET_CREDENTIALS_RELOAD.type, ProtocolMessages.WalletCredentialsReload.newBuilder().setUid(Date().time).build().toByteArray(), null))
 
         assertEquals("Client1-Multisig-New", service.walletCredentialsCache.getWalletCredentials("Client1")!!.multisig)
         assertEquals("Client2-Multisig-New", service.walletCredentialsCache.getWalletCredentials("Client2")!!.multisig)

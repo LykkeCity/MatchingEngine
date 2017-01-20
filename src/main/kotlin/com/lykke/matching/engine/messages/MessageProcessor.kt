@@ -210,13 +210,13 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
                     quotesUpdateHandler.subscribe(message.clientHandler!!)
                 }
                 else -> {
-                    LOGGER.error("Unknown message type: ${message.type}")
+                    LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
                     METRICS_LOGGER.logError(this.javaClass.name, "Unknown message type: ${message.type}")
                 }
             }
         } catch (exception: Exception) {
-            LOGGER.error("Got error during message processing: ${exception.message}", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "Got error during message processing", exception)
+            LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
+            METRICS_LOGGER.logError(this.javaClass.name, "[${message.sourceIp}]: Got error during message processing", exception)
         }
     }
 }

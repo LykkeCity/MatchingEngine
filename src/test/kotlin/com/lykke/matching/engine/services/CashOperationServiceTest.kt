@@ -152,7 +152,7 @@ class CashOperationServiceTest {
     }
 
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString()): MessageWrapper {
-        return MessageWrapper(MessageType.CASH_OPERATION.type, ProtocolMessages.CashOperation.newBuilder()
+        return MessageWrapper("Test", MessageType.CASH_OPERATION.type, ProtocolMessages.CashOperation.newBuilder()
                 .setUid(123)
                 .setClientId(clientId)
                 .setAssetId(assetId)
@@ -163,7 +163,7 @@ class CashOperationServiceTest {
     }
 
     private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
-        return MessageWrapper(MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
+        return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
                 .setUid(123)
                 .setClientId(clientId)
                 .setAssetId(assetId)

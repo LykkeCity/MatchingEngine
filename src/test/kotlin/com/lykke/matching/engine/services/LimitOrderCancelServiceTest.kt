@@ -56,7 +56,7 @@ class LimitOrderCancelServiceTest {
     }
 
     private fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper {
-        return MessageWrapper(MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
+        return MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
                 .setUid(Date().time).setLimitOrderId(uid.toLong()).build().toByteArray(), null)
     }
 }
