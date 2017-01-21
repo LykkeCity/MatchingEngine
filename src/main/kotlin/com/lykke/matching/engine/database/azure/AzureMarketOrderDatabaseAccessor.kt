@@ -67,7 +67,7 @@ class AzureMarketOrderDatabaseAccessor(marketConfig: String, tradesConfig: Strin
                 try {
                     azureOrder.partitionKey = azureOrder.clientId
                     azureOrder.rowKey = String.format("%s.%03d", dateString, counter)
-                    marketOrdersTable.execute(TableOperation.insert(azureOrder))
+                    marketOrdersTable.execute(TableOperation.insertOrMerge(azureOrder))
                     return
                 } catch(e: TableServiceException) {
                     if (e.httpStatusCode == 409 && counter < 999) {
@@ -85,7 +85,7 @@ class AzureMarketOrderDatabaseAccessor(marketConfig: String, tradesConfig: Strin
 
     override fun updateMarketOrder(order: MarketOrder) {
         try {
-            marketOrdersTable.execute(TableOperation.insertOrReplace(AzureMarketOrder(order)))
+            marketOrdersTable.execute(TableOperation.insertOrMerge(AzureMarketOrder(order)))
         } catch(e: Exception) {
             LOGGER.error("Unable to update market order: ${order.id}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update market order: ${order.id}", e)

@@ -9,6 +9,7 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.AzureConfigParser
+import com.lykke.matching.engine.utils.migration.MigrateOrderBooksToFile
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -36,6 +37,11 @@ fun main(args: Array<String>) {
     teeLog("Java-Info: " + System.getProperty("java.vm.name") + " (" + System.getProperty("java.version") + ")")
 
     val config = AzureConfigParser.initConfig(args[0], args[1], args[2])
+
+    if (config.me.migrate) {
+        MigrateOrderBooksToFile().migrate(config)
+        return
+    }
 
     val sharedDbAccessor = AzureSharedDatabaseAccessor(config.db.sharedStorageConnString)
     val lastKeepAlive: Date? = sharedDbAccessor.getLastKeepAlive()

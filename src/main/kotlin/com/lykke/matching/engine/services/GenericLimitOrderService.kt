@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
@@ -16,7 +17,9 @@ import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
-class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
+class GenericLimitOrderService(private val useFileOrderBook: Boolean,
+                               private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
+                               private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                private val cashOperationService: CashOperationService,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                                private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>) {
@@ -28,7 +31,7 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
         private val ORDER_ID = "OrderId"
     }
 
-    //asset -> side -> orderBook
+    //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, LimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
@@ -36,16 +39,19 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
     private var messagesCount: Long = 0
 
     init {
-        val orders = limitOrderDatabaseAccessor.loadLimitOrders()
+        var orders = if (useFileOrderBook) orderBookDatabaseAccessor.loadLimitOrders() else limitOrderDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
         }
-        LOGGER.info("Loaded ${orders.size} limit orders on startup.")
     }
 
     fun processLimitOrder(order: LimitOrder) {
         addToOrderBook(order)
-        limitOrderDatabaseAccessor.addLimitOrder(order)
+        if (useFileOrderBook) {
+            updateOrderBook(order.assetPairId, order.isBuySide())
+        } else {
+            limitOrderDatabaseAccessor.addLimitOrder(order)
+        }
         putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, Date()))
     }
 
@@ -67,15 +73,30 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
             clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
             quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
         }
-        limitOrderDatabaseAccessor.addLimitOrders(orders)
+        if (useFileOrderBook && orders.isNotEmpty()) {
+            val order = orders.first()
+            updateOrderBook(order.assetPairId, order.isBuySide())
+        } else {
+            limitOrderDatabaseAccessor.addLimitOrders(orders)
+        }
     }
 
     fun updateLimitOrder(order: LimitOrder) {
-        limitOrderDatabaseAccessor.updateLimitOrder(order)
+        if (useFileOrderBook) {
+            if (order.volume != order.remainingVolume) {
+                limitOrderDatabaseAccessor.addLimitOrderDone(order)
+                limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
+            }
+            updateOrderBook(order.assetPairId, order.isBuySide())
+        } else {
+            limitOrderDatabaseAccessor.updateLimitOrder(order)
+        }
     }
 
     fun moveOrdersToDone(orders: List<LimitOrder>) {
-        limitOrderDatabaseAccessor.deleteLimitOrders(orders)
+        if (!useFileOrderBook) {
+            limitOrderDatabaseAccessor.deleteLimitOrders(orders)
+        }
         orders.forEach { order ->
             limitOrderDatabaseAccessor.addLimitOrderDone(order)
             limitOrdersMap.remove(order.id)
@@ -103,6 +124,10 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
             }
         }
         clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
+    }
+
+    fun updateOrderBook(asset: String, isBuy: Boolean) {
+        orderBookDatabaseAccessor.updateOrderBook(asset, isBuy, getOrderBook(asset).getCopyOfOrderBook(isBuy))
     }
 
     fun getAllOrderBooks() = limitOrdersQueues
@@ -135,7 +160,11 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
         getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
         limitOrderDatabaseAccessor.addLimitOrderDone(order)
-        limitOrderDatabaseAccessor.deleteLimitOrders(listOf(order))
+        if (useFileOrderBook) {
+            updateOrderBook(order.assetPairId, order.isBuySide())
+        } else {
+            limitOrderDatabaseAccessor.deleteLimitOrders(listOf(order))
+        }
         LOGGER.debug("Order $uid cancelled")
     }
 
@@ -149,7 +178,12 @@ class GenericLimitOrderService(private val limitOrderDatabaseAccessor: LimitOrde
             }
         }
         limitOrderDatabaseAccessor.addLimitOrdersDone(ordersToCancel)
-        limitOrderDatabaseAccessor.deleteLimitOrders(ordersToCancel)
+        if (useFileOrderBook && orders.isNotEmpty()) {
+            val order = orders.first()
+            updateOrderBook(order.assetPairId, order.isBuySide())
+        } else {
+            limitOrderDatabaseAccessor.deleteLimitOrders(ordersToCancel)
+        }
     }
 
     fun removeOrder(uid: String) : LimitOrder? {

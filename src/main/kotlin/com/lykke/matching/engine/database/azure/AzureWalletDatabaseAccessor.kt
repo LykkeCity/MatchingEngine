@@ -90,7 +90,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     override fun insertExternalCashOperation(operation: ExternalCashOperation) {
         try {
-            externalOperationsTable.execute(TableOperation.insert(AzureExternalCashOperation(operation.clientId, operation.externalId, operation.cashOperationId)))
+            externalOperationsTable.execute(TableOperation.insertOrMerge(AzureExternalCashOperation(operation.clientId, operation.externalId, operation.cashOperationId)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert external operation: ${operation.clientId}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert external operation: ${operation.clientId}", e)
@@ -113,7 +113,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     override fun insertOperation(operation: WalletOperation) {
         try {
-            operationsTable.execute(TableOperation.insert(AzureWalletOperation(operation.clientId, operation.uid, operation.assetId, operation.dateTime, operation.amount, operation.transactionId)))
+            operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.clientId, operation.uid, operation.assetId, operation.dateTime, operation.amount, operation.transactionId)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.uid}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)
@@ -122,7 +122,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     override fun insertTransferOperation (operation: TransferOperation) {
         try {
-            transferOperationsTable.execute(TableOperation.insert(AzureWalletTransferOperation(operation.fromClientId, operation.toClientId, operation.uid, operation.assetId, operation.dateTime, operation.amount)))
+            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.fromClientId, operation.toClientId, operation.uid, operation.assetId, operation.dateTime, operation.amount)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.uid}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)

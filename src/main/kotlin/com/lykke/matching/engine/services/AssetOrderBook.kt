@@ -49,4 +49,10 @@ class AssetOrderBook(val assetId: String) {
 
         return book
     }
+
+    fun getCopyOfOrderBook(isBuySide: Boolean) = if (isBuySide) copyQueue(bidOrderBook) else copyQueue(askOrderBook)
+
+    fun copyQueue(queue: PriorityBlockingQueue<LimitOrder>): PriorityBlockingQueue<LimitOrder> {
+        return PriorityBlockingQueue(queue)
+    }
 }

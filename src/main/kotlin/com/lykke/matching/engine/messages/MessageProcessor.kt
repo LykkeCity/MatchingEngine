@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
@@ -14,6 +15,7 @@ import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureSharedDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -71,6 +73,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
     val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
     val sharedDatabaseAccessor: SharedDatabaseAccessor
+    val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
 
     val cashOperationService: CashOperationService
     val cashTransferOperationService: CashTransferOperationService
@@ -111,11 +114,12 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.db.hLiquidityConnString)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.db.sharedStorageConnString)
+        this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
         this.azureQueueWriter = AzureQueueWriter(config.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
         this.cashTransferOperationService = CashTransferOperationService(cashOperationService, walletDatabaseAccessor, rabbitTransferQueue)
-        this.genericLimitOrderService = GenericLimitOrderService(limitOrderDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
+        this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
         this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,

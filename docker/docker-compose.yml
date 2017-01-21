@@ -8,3 +8,4 @@ services:
         - AZURE_CONFIG_FILE=AZURE_CONFIG_FILE
     volumes:
           - LOGS_DIR:/lykke-me-prototype/log
+          - ORDERS_DIR:/lykke-me-prototype/orders

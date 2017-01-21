@@ -7,11 +7,12 @@ import org.jetbrains.annotations.NotNull;
 import static java.math.BigDecimal.*;
 
 public class RoundingUtils {
-    private static final DecimalFormat FORMAT = initFormat();
+    private static final DecimalFormat FORMAT = initFormat(8);
+    private static final DecimalFormat FORMAT2 = initFormat(2);
 
-    private static DecimalFormat initFormat() {
+    private static DecimalFormat initFormat(int accuracy) {
         DecimalFormat df = new DecimalFormat("#.#");
-        df.setMaximumFractionDigits(8);
+        df.setMaximumFractionDigits(accuracy);
         return df;
     }
 
@@ -22,6 +23,13 @@ public class RoundingUtils {
 
     public static String roundForPrint(Double value) {
         return FORMAT.format(value);
+    }
+
+    public static String roundForPrint2(Double value) {
+        if (value.isNaN()) {
+            return "0";
+        }
+        return FORMAT2.format(value);
     }
 
     public static BigDecimal parseDouble(Double value, int accuracy) {

@@ -84,7 +84,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun updateLimitOrder(order: LimitOrder) {
         try {
-            limitOrdersTable.execute(TableOperation.insertOrReplace(AzureLimitOrder(order.assetPairId, order)))
+            limitOrdersTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order.assetPairId, order)))
         } catch(e: Exception) {
             LOGGER.error("Unable to update limit order: ${order.id}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to update limit order: ${order.id}", e)
@@ -127,7 +127,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
             while (true) {
                 try {
                     azureOrder.rowKey = String.format("%s.%03d", DATE_FORMAT.format(order.lastMatchTime ?: Date()), counter)
-                    limitOrdersDoneTable.execute(TableOperation.insert(azureOrder))
+                    limitOrdersDoneTable.execute(TableOperation.insertOrMerge(azureOrder))
                     return
                 } catch(e: TableServiceException) {
                     if (e.httpStatusCode == 409 && counter < 999) {

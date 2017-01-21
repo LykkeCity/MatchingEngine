@@ -101,7 +101,7 @@ class AzureBackOfficeDatabaseAccessor(сlientPersonalInfoString: String, bitCoin
         try {
             val azureBtTransaction = AzureBtTransaction(transaction.id, transaction.created, transaction.requestData,
                     transaction.clientCashOperationPair, transaction.orders)
-            bitcoinTransactionTable.execute(TableOperation.insert(azureBtTransaction))
+            bitcoinTransactionTable.execute(TableOperation.insertOrMerge(azureBtTransaction))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert bitcoin transaction: $transaction", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert bitcoin transaction: $transaction", e)
