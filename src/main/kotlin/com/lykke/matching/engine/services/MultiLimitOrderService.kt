@@ -8,6 +8,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.JsonSerializable
 import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.Date
@@ -25,7 +26,13 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
 
     private var messagesCount: Long = 0
 
+    private var logCount = 1000
+
+    private var totalPersistTime: Double = 0.0
+    private var totalTime: Double = 0.0
+
     override fun processMessage(messageWrapper: MessageWrapper) {
+        val startTime = System.nanoTime()
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got multi limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}")
 
@@ -77,8 +84,10 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         }
 
         limitOrderService.setOrderBook(message.assetPairId, orderBook)
+        val startPersistTime = System.nanoTime()
         limitOrderService.cancelLimitOrders(ordersToCancel)
         limitOrderService.addOrders(orders)
+        val endPersistTime = System.nanoTime()
 
         val orderBookCopy = orderBook.copy()
         if (buySide) {
@@ -93,6 +102,20 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+
+        val endTime = System.nanoTime()
+
+        messagesCount++
+        totalPersistTime += (endPersistTime - startPersistTime) / (1000000000.0 * logCount)
+        totalTime += (endTime - startTime) / (1000000000.0 * logCount)
+
+        if (messagesCount % logCount == 0L) {
+            LOGGER.info("Total time: ${RoundingUtils.roundForPrint(totalTime)} ns. " +
+                    " Persist time: ${RoundingUtils.roundForPrint(totalPersistTime)} ns, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
+            totalPersistTime = 0.0
+            totalTime = 0.0
+        }
+
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.MultiLimitOrder {
