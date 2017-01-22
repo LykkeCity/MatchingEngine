@@ -106,12 +106,12 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         val endTime = System.nanoTime()
 
         messagesCount++
-        totalPersistTime += (endPersistTime - startPersistTime) / (1000000000.0 * logCount)
-        totalTime += (endTime - startTime) / (1000000000.0 * logCount)
+        totalPersistTime += (endPersistTime - startPersistTime).toDouble() / logCount
+        totalTime += (endTime - startTime).toDouble() / logCount
 
         if (messagesCount % logCount == 0L) {
-            LOGGER.info("Total time: ${RoundingUtils.roundForPrint(totalTime)} ns. " +
-                    " Persist time: ${RoundingUtils.roundForPrint(totalPersistTime)} ns, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
+            LOGGER.info("Total time: ${convertToString(totalTime)}. " +
+                    " Persist time: ${convertToString(totalPersistTime)}, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
             totalPersistTime = 0.0
             totalTime = 0.0
         }
@@ -120,5 +120,15 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
 
     private fun parse(array: ByteArray): ProtocolMessages.MultiLimitOrder {
         return ProtocolMessages.MultiLimitOrder.parseFrom(array)
+    }
+
+    private fun convertToString(value: Double): String {
+        if ((value / 100000).toInt() == 0) {
+            //microseconds
+            return "${RoundingUtils.roundForPrint(value / 1000)} micros ($value nanos)"
+        } else {
+            //milliseconds
+            return "${RoundingUtils.roundForPrint(value / 1000000)} millis ($value nanos)"
+        }
     }
 }
