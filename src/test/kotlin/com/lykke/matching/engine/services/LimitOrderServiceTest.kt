@@ -15,6 +15,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.OrderBook
 import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Before
 import org.junit.Test
@@ -33,7 +34,7 @@ class LimitOrderServiceTest {
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    val orderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
 
     @Before

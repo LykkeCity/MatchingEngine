@@ -16,7 +16,7 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
-                              val orderBookQueue: BlockingQueue<JsonSerializable>,
+                              val orderBookQueue: BlockingQueue<OrderBook>,
                               val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbsractService<ProtocolMessages.LimitOrder> {
 
     companion object {

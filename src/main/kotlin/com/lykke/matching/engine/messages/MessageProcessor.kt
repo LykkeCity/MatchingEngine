@@ -15,6 +15,8 @@ import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureSharedDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.cache.AssetPairsCache
+import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
@@ -22,6 +24,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
@@ -63,7 +66,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
     val tradesInfoQueue: BlockingQueue<TradeInfo>
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
     val quotesNotificationQueue: BlockingQueue<QuotesUpdate>
-    val orderBooksQueue: BlockingQueue<JsonSerializable>
+    val orderBooksQueue: BlockingQueue<OrderBook>
     val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable>
     val rabbitTransferQueue: BlockingQueue<JsonSerializable>
 
@@ -105,7 +108,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
         this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
         this.quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-        this.orderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
+        this.orderBooksQueue = LinkedBlockingQueue<OrderBook>()
         this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString)
@@ -137,7 +140,11 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
-        SocketServer(config, connectionsHolder, genericLimitOrderService).start()
+
+        val assetsCache = AssetsCache(AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString), 60000)
+        val assetsPairsCache = AssetPairsCache(AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString), 60000)
+
+        SocketServer(config, connectionsHolder, genericLimitOrderService, assetsCache, assetsPairsCache).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,

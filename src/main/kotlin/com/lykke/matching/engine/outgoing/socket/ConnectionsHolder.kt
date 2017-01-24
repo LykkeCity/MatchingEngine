@@ -1,13 +1,13 @@
 package com.lykke.matching.engine.outgoing.socket
 
-import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.OrderBook
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.concurrent.fixedRateTimer
 
-class ConnectionsHolder(val orderBookQueue: BlockingQueue<JsonSerializable>) : Thread() {
+class ConnectionsHolder(val orderBookQueue: BlockingQueue<OrderBook>) : Thread() {
     companion object {
         val LOGGER = Logger.getLogger(ConnectionsHolder::class.java.name)
     }

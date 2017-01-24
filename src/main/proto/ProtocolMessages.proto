@@ -96,3 +96,16 @@ message QuotesUpdate {
     required double price = 2;
     required double volume = 3;
 }
+
+message OrderBookSnapshot {
+    required string asset = 1;
+    required bool isBuy = 2;
+    required int64 timestamp = 3;
+
+    message OrderBookLevel {
+        required string price = 1;
+        required string volume = 2;
+    }
+
+    repeated OrderBookLevel levels = 4;
+}

@@ -17,6 +17,7 @@ enum class MessageType (val type: Byte){
     ,BALANCE_UPDATE_NOTIFICATION(31)
     ,QUOTES_UPDATE_SUBSCRIBE(35)
     ,QUOTES_UPDATE_NOTIFICATION(36)
+    ,ORDER_BOOK_SNAPSHOT(40)
     ;
 
 

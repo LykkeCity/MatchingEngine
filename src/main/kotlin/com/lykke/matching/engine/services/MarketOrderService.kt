@@ -54,7 +54,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val genericLimitOrderService: GenericLimitOrderService,
                          private val cashOperationService: CashOperationService,
                          private val backendQueue: BlockingQueue<Transaction>,
-                         private val orderBookQueue: BlockingQueue<JsonSerializable>,
+                         private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
