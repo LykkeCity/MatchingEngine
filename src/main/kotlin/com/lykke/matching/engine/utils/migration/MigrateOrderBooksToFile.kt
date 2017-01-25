@@ -13,7 +13,7 @@ class MigrateOrderBooksToFile {
     }
 
     fun migrate(config: AzureConfig) {
-        teeLog("Starting migration from Azure order book to local files")
+        teeLog("Starting migration from Azure order book to local files, path: ${config.me.orderBookPath}")
 
         val limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.db.aLimitOrdersConnString, config.db.hLimitOrdersConnString, config.db.hLiquidityConnString)
         val fileOrderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)

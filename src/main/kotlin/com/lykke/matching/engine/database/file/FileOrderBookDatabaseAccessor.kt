@@ -52,7 +52,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
 
     override fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: PriorityBlockingQueue<LimitOrder>) {
         try {
-            val fileName = "$ordersDir\\${asset}_$isBuy"
+            val fileName = "$ordersDir/${asset}_$isBuy"
             archiveAndDeleteFile(fileName)
             var oos: ObjectOutputStream? = null
             try {
@@ -75,8 +75,8 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
 
     private fun archiveAndDeleteFile(fileName: String) {
         try {
-            val newFileName = "$ordersDir\\_prev_$fileName"
-            val oldFileName = "$ordersDir\\$fileName"
+            val newFileName = "$ordersDir/_prev_$fileName"
+            val oldFileName = "$ordersDir/$fileName"
             val newFile = File(newFileName)
             if (newFile.exists()){
                 newFile.delete()
