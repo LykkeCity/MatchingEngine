@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.database.file
 
-import com.google.gson.Gson
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
@@ -24,7 +23,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             val dir = File(ordersDir)
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
-                    if (!file.name.startsWith("prev_")) {
+                    if (!file.name.startsWith("_prev_")) {
                         var objectinputstream: ObjectInputStream? = null
                         try {
                             val streamIn = file.inputStream()
@@ -62,7 +61,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
                     file.createNewFile()
                 }
                 oos = ObjectOutputStream(file.outputStream())
-                oos.writeObject(Gson().toJson(orderBook))
+                oos.writeObject(orderBook.toList())
             } catch (ex: Exception) {
                 ex.printStackTrace()
             } finally {
