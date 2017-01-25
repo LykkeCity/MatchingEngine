@@ -9,6 +9,11 @@ message Response {
     optional string recordId = 3;
 }
 
+message NewResponse {
+    required string id = 1;
+    optional string matchingEngineId = 2;
+}
+
 message CashOperation {
     required int64 uid = 1;
     required string clientId = 2;
@@ -19,14 +24,21 @@ message CashOperation {
     required bool sendToBitcoin = 7;
 }
 
+message CashInOutOperation {
+    required string id = 1;
+    required string clientId = 2;
+    required int64 dateTime = 3;
+    required string assetId = 4;
+    required double volume = 5;
+}
+
 message CashTransferOperation {
-    required int64 uid = 1;
+    required string id = 1;
     required string fromClientId = 2;
     required string toClientId = 3;
     required int64 dateTime = 4;
     required string assetId = 5;
-    required double amount = 6;
-    required string bussinesId = 7;
+    required double volume = 6;
 }
 
 message LimitOrder {

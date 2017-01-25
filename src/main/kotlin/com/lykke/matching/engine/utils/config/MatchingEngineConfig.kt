@@ -23,5 +23,6 @@ data class MatchingEngineConfig(
     val serviceBusConnectionString: String,
     val migrate: Boolean,
     val useFileOrderBook: Boolean,
-    val orderBookPath: String
+    val orderBookPath: String,
+    val publishToRabbitQueue: Boolean
 )

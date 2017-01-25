@@ -113,19 +113,19 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     override fun insertOperation(operation: WalletOperation) {
         try {
-            operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.clientId, operation.uid, operation.assetId, operation.dateTime, operation.amount, operation.transactionId)))
+            operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.id, operation.externalId, operation.clientId, operation.assetId, operation.dateTime, operation.amount, operation.transactionId)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to insert operation: ${operation.uid}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)
+            LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
         }
     }
 
     override fun insertTransferOperation (operation: TransferOperation) {
         try {
-            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.fromClientId, operation.toClientId, operation.uid, operation.assetId, operation.dateTime, operation.amount)))
+            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.id, operation.externalId, operation.fromClientId, operation.toClientId, operation.asset, operation.dateTime, operation.volume)))
         } catch(e: Exception) {
-            LOGGER.error("Unable to insert operation: ${operation.uid}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.uid}", e)
+            LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
         }
     }
 

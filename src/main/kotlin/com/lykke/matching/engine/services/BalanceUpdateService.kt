@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.AMOUNT
 import com.lykke.matching.engine.logging.ASSET
 import com.lykke.matching.engine.logging.CLIENT_ID
@@ -15,7 +16,7 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 
-class BalanceUpdateService(val cashOperationService: CashOperationService): AbsractService<ProtocolMessages.BalanceUpdate> {
+class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbsractService<ProtocolMessages.BalanceUpdate> {
 
     companion object {
         val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
@@ -26,8 +27,8 @@ class BalanceUpdateService(val cashOperationService: CashOperationService): Absr
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing balance update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
-        cashOperationService.updateBalance(message.clientId, message.assetId, message.amount)
+        LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+        balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
         LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         

@@ -28,7 +28,7 @@ class BalanceUpdateHandler(private val notificationQueue: BlockingQueue<BalanceU
                         it.writeOutput(ByteHelper.toByteArray(MessageType.BALANCE_UPDATE_NOTIFICATION.type, protoNotification.serializedSize, protoNotification.toByteArray()))
                     } catch (exception: Exception){
                         disconnected.add(it)
-                        LOGGER.info("Removed balance notification subscription from ${it.clientHostName}")
+                        LOGGER.info("Removed holders notification subscription from ${it.clientHostName}")
                     }
                 }
                 if (disconnected.size > 0) {
@@ -40,6 +40,6 @@ class BalanceUpdateHandler(private val notificationQueue: BlockingQueue<BalanceU
 
     fun subscribe(handler: ClientHandler) {
         connections.add(handler)
-        LOGGER.info("Added balance notification subscription from ${handler.clientHostName}")
+        LOGGER.info("Added holders notification subscription from ${handler.clientHostName}")
     }
 }

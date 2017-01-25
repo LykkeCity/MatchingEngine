@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.socket
 
-import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -25,8 +25,8 @@ import kotlin.concurrent.thread
 class Connection(val socket: Socket,
                  val inputQueue: BlockingQueue<OrderBook>,
                  val orderBooks: ConcurrentHashMap<String, AssetOrderBook>,
-                 val assetsCache: AssetsCache,
-                 val assetPairsCache: AssetPairsCache) : Thread() {
+                 val assetsCache: AssetsHolder,
+                 val assetPairsCache: AssetsPairsHolder) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(Connection::class.java.name)
@@ -82,8 +82,8 @@ class Connection(val socket: Socket,
 
     private fun writeOrderBook(orderBook: OrderBook, stream : DataOutputStream) {
         val builder = ProtocolMessages.OrderBookSnapshot.newBuilder().setAsset(orderBook.assetPair).setIsBuy(orderBook.isBuy).setTimestamp(orderBook.timestamp.time)
-        val pair = assetPairsCache.getAssetPair(orderBook.assetPair)!!
-        val baseAsset = assetsCache.getAssetPair(pair.baseAssetId)!!
+        val pair = assetPairsCache.getAssetPair(orderBook.assetPair)
+        val baseAsset = assetsCache.getAsset(pair.baseAssetId)
         orderBook.prices.forEach { price ->
             builder.addLevels(ProtocolMessages.OrderBookSnapshot.OrderBookLevel.newBuilder()
                     .setPrice(price.price.round(pair.accuracy))

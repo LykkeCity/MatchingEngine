@@ -4,9 +4,9 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.AMOUNT
 import com.lykke.matching.engine.logging.ASSET
 import com.lykke.matching.engine.logging.BUSSINES_ID
@@ -20,7 +20,6 @@ import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Transaction
@@ -28,16 +27,13 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
-import java.util.HashMap
-import java.util.HashSet
-import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                            private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                            private val backendQueue: BlockingQueue<Transaction>,
-                           private val notificationQueue: BlockingQueue<BalanceUpdateNotification>): AbsractService<ProtocolMessages.CashOperation> {
+                           private val balancesHolder: BalancesHolder): AbsractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
@@ -63,23 +59,23 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             return
         }
 
-        val operation = WalletOperation(message.clientId, UUID.randomUUID().toString(), message.assetId,
+        val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
                 Date(message.dateTime), message.amount, if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
-        processWalletOperations(listOf(operation))
+        balancesHolder.processWalletOperations(listOf(operation))
 
-        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.uid))
+        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.id))
 
         if (message.sendToBitcoin) {
             val cashOperation = if (operation.amount > 0.0)
-                CashIn(operation.transactionId!!, clientId = operation.clientId, Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.uid)
+                CashIn(operation.transactionId!!, clientId = operation.clientId, Amount = operation.amount, Currency = operation.assetId, cashOperationId = operation.id)
             else
-                CashOut(operation.transactionId!!, clientId = operation.clientId, Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.uid)
+                CashOut(operation.transactionId!!, clientId = operation.clientId, Amount = -operation.amount, Currency = operation.assetId, cashOperationId = operation.id)
 
             backendQueue.put(cashOperation)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
-                .setRecordId(operation.uid).build())
+                .setRecordId(operation.id).build())
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}, sendToBitcoin: ${message.sendToBitcoin} processed")
 
         METRICS_LOGGER.log(Line(ME_CASH_OPERATION, arrayOf(
@@ -124,57 +120,5 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         }
 
         return assetPair
-    }
-
-    fun getBalance(clientId: String, assetId: String): Double {
-        val client = balances[clientId]
-        if (client != null) {
-            val balance = client[assetId]
-            if (balance != null) {
-                return balance
-            }
-        }
-
-        LOGGER.debug("Unable to find balance for client $clientId, asset: $assetId")
-
-        return 0.0
-    }
-
-    fun processWalletOperations(operations: List<WalletOperation>) {
-        val walletsToAdd = LinkedList<Wallet>()
-        val clients = HashSet<String>()
-        operations.forEach { operation ->
-            val client = balances.getOrPut(operation.clientId) { HashMap<String, Double>() }
-            val balance = client[operation.assetId] ?: 0.0
-            val asset = getAsset(operation.assetId)
-
-            val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
-
-            client.put(operation.assetId, newBalance)
-
-            val wallet = wallets.getOrPut(operation.clientId) { Wallet(operation.clientId) }
-            wallet.setBalance(operation.assetId, newBalance)
-
-            if (!walletsToAdd.contains(wallet)) {
-                walletsToAdd.add(wallet)
-            }
-            clients.add(operation.clientId)
-        }
-
-        walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
-
-        clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
-    }
-
-    fun updateBalance(clientId: String, assetId: String, balance: Double) {
-        val client = balances.getOrPut(clientId) { HashMap<String, Double>() }
-        client.put(assetId, balance)
-
-        val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setBalance(assetId, balance)
-
-        walletDatabaseAccessor.insertOrUpdateWallet(wallet)
-
-        notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 }

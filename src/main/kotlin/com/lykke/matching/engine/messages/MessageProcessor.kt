@@ -18,6 +18,9 @@ import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -33,6 +36,7 @@ import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
 import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -67,8 +71,11 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
     val quotesNotificationQueue: BlockingQueue<QuotesUpdate>
     val orderBooksQueue: BlockingQueue<OrderBook>
+
     val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable>
     val rabbitTransferQueue: BlockingQueue<JsonSerializable>
+    val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>
+    val rabbitSwapQueue: BlockingQueue<JsonSerializable>
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -79,9 +86,10 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
     val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
 
     val cashOperationService: CashOperationService
+    val cashInOutOperationService: CashInOutOperationService
     val cashTransferOperationService: CashTransferOperationService
     val genericLimitOrderService: GenericLimitOrderService
-    val sinlgeLimitOrderService: SingleLimitOrderService
+    val singleLimitOrderService: SingleLimitOrderService
     val multiLimitOrderService: MultiLimitOrderService
     val marketOrderService: MarketOrderService
     val limitOrderCancelService: LimitOrderCancelService
@@ -111,24 +119,30 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.orderBooksQueue = LinkedBlockingQueue<OrderBook>()
         this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
+        this.rabbitCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
+        this.rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.db.aLimitOrdersConnString, config.db.hLimitOrdersConnString, config.db.hLiquidityConnString)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.db.hMarketOrdersConnString, config.db.hTradesConnString)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.db.hLiquidityConnString)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.db.sharedStorageConnString)
-        this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
+        this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor("c:\\test\\me")
         this.azureQueueWriter = AzureQueueWriter(config.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceNotificationQueue)
-        this.cashTransferOperationService = CashTransferOperationService(cashOperationService, walletDatabaseAccessor, rabbitTransferQueue)
-        this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, cashOperationService, tradesInfoQueue, quotesNotificationQueue)
-        this.sinlgeLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
+        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString), 60000))
+        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString), 60000))
+        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceHolder)
+        this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
+        this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
+        this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, cashOperationService, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
                 config.me.lykkeTradesHistoryEnabled, config.me.lykkeTradesHistoryAssets.split(";").toSet())
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
-        this.balanceUpdateService = BalanceUpdateService(cashOperationService)
+        this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
@@ -141,14 +155,15 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        val assetsCache = AssetsCache(AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString), 60000)
-        val assetsPairsCache = AssetPairsCache(AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString), 60000)
-
-        SocketServer(config, connectionsHolder, genericLimitOrderService, assetsCache, assetsPairsCache).start()
+        SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeTransfer, rabbitTransferQueue).start()
+        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
+                config.me.rabbit.password, config.me.rabbit.exchangeCashOperation, rabbitCashInOutQueue).start()
+        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
+                config.me.rabbit.password, config.me.rabbit.exchangeSwap, rabbitSwapQueue).start()
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -193,11 +208,14 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
                 MessageType.CASH_OPERATION -> {
                     cashOperationService.processMessage(message)
                 }
+                MessageType.CASH_IN_OUT_OPERATION -> {
+                    cashInOutOperationService.processMessage(message)
+                }
                 MessageType.CASH_TRANSFER_OPERATION -> {
                     cashTransferOperationService.processMessage(message)
                 }
                 MessageType.LIMIT_ORDER -> {
-                    sinlgeLimitOrderService.processMessage(message)
+                    singleLimitOrderService.processMessage(message)
                 }
                 MessageType.MARKET_ORDER -> {
                     marketOrderService.processMessage(message)

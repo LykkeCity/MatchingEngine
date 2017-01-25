@@ -5,6 +5,8 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
@@ -20,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap
 class GenericLimitOrderService(private val useFileOrderBook: Boolean,
                                private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
                                private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
-                               private val cashOperationService: CashOperationService,
+                               private val assetsPairsHolder: AssetsPairsHolder,
+                               private val balancesHolder: BalancesHolder,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                                private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>) {
 
@@ -39,7 +42,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
     private var messagesCount: Long = 0
 
     init {
-        var orders = if (useFileOrderBook) orderBookDatabaseAccessor.loadLimitOrders() else limitOrderDatabaseAccessor.loadLimitOrders()
+        val orders = if (useFileOrderBook) orderBookDatabaseAccessor.loadLimitOrders() else limitOrderDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
         }
@@ -139,14 +142,14 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
     }
 
     fun isEnoughFunds(order: LimitOrder, volume: Double): Boolean {
-        val assetPair = cashOperationService.getAssetPair(order.assetPairId) ?: return false
+        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
         if (order.isBuySide()) {
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId))} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
-            return cashOperationService.getBalance(order.clientId, assetPair.quotingAssetId) >= volume * order.price
+            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(balancesHolder.getBalance(order.clientId, assetPair.quotingAssetId))} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
+            return balancesHolder.getBalance(order.clientId, assetPair.quotingAssetId) >= volume * order.price
         } else {
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(cashOperationService.getBalance(order.clientId, assetPair.baseAssetId))} >= ${RoundingUtils.roundForPrint(volume)}")
-            return cashOperationService.getBalance(order.clientId, assetPair.baseAssetId) >= volume
+            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(balancesHolder.getBalance(order.clientId, assetPair.baseAssetId))} >= ${RoundingUtils.roundForPrint(volume)}")
+            return balancesHolder.getBalance(order.clientId, assetPair.baseAssetId) >= volume
         }
     }
 

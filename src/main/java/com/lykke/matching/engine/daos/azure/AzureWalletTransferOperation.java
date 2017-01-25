@@ -4,9 +4,10 @@ import com.microsoft.azure.storage.table.TableServiceEntity;
 import java.util.Date;
 
 public class AzureWalletTransferOperation extends TableServiceEntity {
-    //partition key: uid
+    //partition key: id
     //row key: assetId
 
+    private String externalId;
     private String assetId;
     private String fromClientId;
     private String toClientId;
@@ -16,8 +17,9 @@ public class AzureWalletTransferOperation extends TableServiceEntity {
     public AzureWalletTransferOperation() {
     }
 
-    public AzureWalletTransferOperation(String fromClientId, String toClientId, String uid, String assetId, Date dateTime, Double amount) {
-        super(uid, assetId);
+    public AzureWalletTransferOperation(String id, String externalId, String fromClientId, String toClientId, String assetId, Date dateTime, Double amount) {
+        super(id, assetId);
+        this.externalId = externalId;
         this.dateTime = dateTime;
         this.assetId = assetId;
         this.amount = amount;
@@ -29,7 +31,7 @@ public class AzureWalletTransferOperation extends TableServiceEntity {
         return partitionKey;
     }
 
-    public String getUid() {
+    public String getId() {
         return rowKey;
     }
 
@@ -73,10 +75,20 @@ public class AzureWalletTransferOperation extends TableServiceEntity {
         this.toClientId = toClientId;
     }
 
+    public String getExternalId() {
+        return externalId;
+    }
+
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
+    }
+
     @Override
     public String toString() {
         return "AzureWalletTransferOperation{" +
-                "assetId='" + assetId + '\'' +
+                "id='" + rowKey + '\'' +
+                "externalId='" + externalId + '\'' +
+                ", assetId='" + assetId + '\'' +
                 ", fromClientId='" + fromClientId + '\'' +
                 ", toClientId='" + toClientId + '\'' +
                 ", dateTime=" + dateTime +

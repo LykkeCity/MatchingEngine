@@ -15,7 +15,7 @@ class AssetsCache(
 
     private var assetsMap: Map<String, Asset>
 
-    fun getAssetPair(asset: String): Asset? {
+    fun getAsset(asset: String): Asset? {
         return assetsMap[asset] ?: databaseAccessor.loadAsset(asset)
     }
 
