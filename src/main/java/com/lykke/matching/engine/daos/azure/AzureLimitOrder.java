@@ -14,16 +14,14 @@ public class AzureLimitOrder extends AzureOrder {
     }
 
     public AzureLimitOrder(String partitionKey, String uid, String assetPairId, String clientId, Double volume, Double price,
-                           String status, Date createdAt, Date registered, String transactionId, Double remainingVolume, Date lastMatchTime) {
+                           String status, Date createdAt, Date registered, Double remainingVolume, Date lastMatchTime) {
         super(partitionKey, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
-        this.transactionId = transactionId;
         this.remainingVolume = remainingVolume;
         this.lastMatchTime = lastMatchTime;
     }
 
     public AzureLimitOrder(String partitionKey, LimitOrder order) {
         super(partitionKey, order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
-        this.addTransactionIds(order.getTransactionIds());
         this.remainingVolume = order.getRemainingVolume();
         this.lastMatchTime = order.getLastMatchTime();
     }
@@ -49,9 +47,7 @@ public class AzureLimitOrder extends AzureOrder {
     }
 
     public LimitOrder toLimitOrder() {
-        LimitOrder result = new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime);
-        result.addTransactionIds(loadTransactionsId());
-        return result;
+        return new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime);
     }
 
     @Override
@@ -65,7 +61,6 @@ public class AzureLimitOrder extends AzureOrder {
                 ", status='" + status + '\'' +
                 ", createdAt=" + createdAt +
                 ", registered=" + registered +
-                ", transactionId='" + transactionId + '\'' +
                 ", lastMatchTime=" + lastMatchTime +
                 '}';
     }

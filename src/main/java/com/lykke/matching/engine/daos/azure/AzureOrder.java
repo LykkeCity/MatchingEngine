@@ -1,12 +1,8 @@
 package com.lykke.matching.engine.daos.azure;
 
-import com.google.gson.Gson;
 import com.lykke.matching.engine.order.OrderSide;
 import com.microsoft.azure.storage.table.TableServiceEntity;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 abstract class AzureOrder extends TableServiceEntity {
     static final String ORDER_ID = "OrderId";
@@ -23,7 +19,6 @@ abstract class AzureOrder extends TableServiceEntity {
     Date createdAt;
     //date of registering by matching engine
     Date registered;
-    String transactionId;
 
     AzureOrder() {
     }
@@ -53,27 +48,6 @@ abstract class AzureOrder extends TableServiceEntity {
 
     public OrderSide getSide() {
         return isBuySide() ? OrderSide.Buy : OrderSide.Sell;
-    }
-
-    public void addTransactionIds(List<String> ids) {
-        List<String> transactions = loadTransactionsId();
-        if (ids != null) {
-            transactions.addAll(ids);
-        }
-        saveTransactionsId(transactions);
-    }
-
-    List<String> loadTransactionsId() {
-        List<String> result = new ArrayList<>();
-        if (transactionId != null) {
-            result.addAll(Arrays.asList((String[]) (new Gson().fromJson(transactionId, String[].class))));
-        }
-
-        return result;
-    }
-
-    private void saveTransactionsId(List<String> orders) {
-        this.transactionId = new Gson().toJson(orders);
     }
 
     public String getAssetPairId() {
@@ -141,7 +115,6 @@ abstract class AzureOrder extends TableServiceEntity {
                 ", status='" + status + '\'' +
                 ", createdAt=" + createdAt +
                 ", registered=" + registered +
-                ", transactionId='" + transactionId + '\'' +
                 '}';
     }
 }

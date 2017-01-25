@@ -21,6 +21,7 @@ import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.HashMap
+import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
@@ -79,6 +80,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
+        operation.TransactionId = UUID.randomUUID().toString()
         operation.MultisigAddress = walletCredentials.multisig
         operation.Currency = asset.blockChainId
 
@@ -86,7 +88,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
         val now = Date()
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
-                BtTransaction(operation.TransactionId, now, serialisedData, ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
+                BtTransaction(operation.TransactionId!!, now, serialisedData, ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
         outQueueWriter.write(serialisedData)
         LOGGER.info("Wrote CashIn operation to queue [${operation.MultisigAddress}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
         METRICS_LOGGER.log(getMetricLine("CashIn", serialisedData))
@@ -108,6 +110,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
+        operation.TransactionId = UUID.randomUUID().toString()
         operation.MultisigAddress = walletCredentials.multisig
         operation.Currency = asset.blockChainId
 
@@ -115,7 +118,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
         val now = Date()
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
-                BtTransaction(operation.TransactionId, now, serialisedData, ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
+                BtTransaction(operation.TransactionId!!, now, serialisedData, ClientCashOperationPair(operation.clientId, operation.cashOperationId)))
         outQueueWriter.write(serialisedData)
         LOGGER.info("Wrote CashOut operation to queue [${operation.MultisigAddress}, ${RoundingUtils.roundForPrint(operation.Amount)} ${operation.Currency}]")
         METRICS_LOGGER.log(getMetricLine("CashOut", serialisedData))
@@ -150,6 +153,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
             return
         }
 
+        operation.TransactionId = UUID.randomUUID().toString()
         operation.MultisigCustomer1 = walletCredentials1.multisig
         operation.Asset1 = asset1.blockChainId
         operation.MultisigCustomer2 = walletCredentials2.multisig
@@ -159,7 +163,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
         val now = Date()
         backOfficeDatabaseAccessor.saveBitcoinTransaction(
-                BtTransaction(operation.TransactionId, now, serialisedData, null, operation.orders))
+                BtTransaction(operation.TransactionId!!, now, serialisedData, null, operation.orders))
         outQueueWriter.write(serialisedData)
         LOGGER.info("Wrote Swap operation to queue [${operation.MultisigCustomer1}, ${RoundingUtils.roundForPrint(operation.Amount1)} ${operation.Asset1} to ${operation.MultisigCustomer2}, ${RoundingUtils.roundForPrint(operation.Amount2)} ${operation.Asset2}]")
         METRICS_LOGGER.log(getMetricLine("Swap", serialisedData))

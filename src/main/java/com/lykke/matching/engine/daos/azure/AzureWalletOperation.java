@@ -11,21 +11,16 @@ public class AzureWalletOperation extends TableServiceEntity {
     private String assetId;
     private Date dateTime = new Date();
     private Double amount;
-    private String transactionId;
 
     public AzureWalletOperation() {
     }
 
     public AzureWalletOperation(String id, String externalId, String clientId, String assetId, Date dateTime, Double amount) {
-        this(id, externalId, clientId, assetId, dateTime, amount, null);
-    }
-
-    public AzureWalletOperation(String id, String externalId, String clientId, String assetId, Date dateTime, Double amount, String transactionId) {
         super(clientId, id);
         this.dateTime = dateTime;
         this.assetId = assetId;
         this.amount = amount;
-        this.transactionId = transactionId;
+        this.externalId = externalId;
     }
 
     public String getClientId() {
@@ -60,14 +55,6 @@ public class AzureWalletOperation extends TableServiceEntity {
         this.amount = amount;
     }
 
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
     public String getExternalId() {
         return externalId;
     }
@@ -85,7 +72,6 @@ public class AzureWalletOperation extends TableServiceEntity {
                 "dateTime=" + dateTime +
                 ", assetId='" + assetId + '\'' +
                 ", amount=" + amount +
-                ", transactionId='" + transactionId + '\'' +
                 ')';
     }
 }

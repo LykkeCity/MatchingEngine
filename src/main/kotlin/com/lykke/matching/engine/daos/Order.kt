@@ -2,7 +2,6 @@ package com.lykke.matching.engine.daos
 
 import java.io.Serializable
 import java.util.Date
-import java.util.LinkedList
 
 open class Order: Serializable {
     var id: String = ""
@@ -26,23 +25,11 @@ open class Order: Serializable {
         this.registered = registered
     }
 
-
-    var transactionIds: MutableList<String>? = null
-
     fun getAbsVolume(): Double {
         return Math.abs(volume)
     }
 
-
     open fun isBuySide(): Boolean {
         return volume > 0
-    }
-
-    fun addTransactionIds(ids: List<String>) {
-        if (transactionIds == null) {
-            transactionIds =  LinkedList()
-        }
-
-        transactionIds!!.addAll(ids)
     }
 }

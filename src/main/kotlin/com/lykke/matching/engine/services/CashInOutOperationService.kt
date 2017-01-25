@@ -50,7 +50,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
-                Date(message.timestamp), message.volume, null)
+                Date(message.timestamp), message.volume)
         balancesHolder.processWalletOperations(listOf(operation))
 
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.id, operation.id))

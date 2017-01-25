@@ -46,7 +46,7 @@ class BackendQueueProcessorTest {
         val outQueueWriter = TestQueueWriter()
         val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter, walletCredentialsCache)
 
-        val cashIn = CashIn(TransactionId = "11", clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
+        val cashIn = CashIn(clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
         processor.processMessage(cashIn)
 
         val cashInData = Gson().fromJson(outQueueWriter.read().replace("CashIn:", ""), CashIn::class.java)
@@ -55,7 +55,7 @@ class BackendQueueProcessorTest {
         assertEquals(500.0,cashInData.Amount)
         assertEquals("TestUSD",cashInData.Currency)
 
-        val transaction = backOfficeDatabaseAccessor.transactions.find { it.id == cashInData.TransactionId }!!
+        val transaction = backOfficeDatabaseAccessor.transactions.first()
         assertEquals("Client1", transaction.clientCashOperationPair!!.clientId)
         assertEquals("123", transaction.clientCashOperationPair!!.cashOperationId)
     }
@@ -66,7 +66,7 @@ class BackendQueueProcessorTest {
         val outQueueWriter = TestQueueWriter()
         val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter, walletCredentialsCache)
 
-        val cashOut = CashOut(TransactionId = "11", clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
+        val cashOut = CashOut(clientId = "Client1", Amount = 500.0, Currency = "USD", cashOperationId = "123")
         processor.processMessage(cashOut)
 
         val cashOutData = Gson().fromJson(outQueueWriter.read().replace("CashOut:", ""), CashOut::class.java)
@@ -75,7 +75,7 @@ class BackendQueueProcessorTest {
         assertEquals(500.0,cashOutData.Amount)
         assertEquals("TestUSD",cashOutData.Currency)
 
-        val transaction = backOfficeDatabaseAccessor.transactions.find { it.id == cashOutData.TransactionId }!!
+        val transaction = backOfficeDatabaseAccessor.transactions.first()
         assertEquals("Client1", transaction.clientCashOperationPair!!.clientId)
         assertEquals("123", transaction.clientCashOperationPair!!.cashOperationId)
     }
@@ -86,7 +86,7 @@ class BackendQueueProcessorTest {
         val outQueueWriter = TestQueueWriter()
         val processor = BackendQueueProcessor(backOfficeDatabaseAccessor, inQueue, outQueueWriter, walletCredentialsCache)
 
-        val swap = Swap(TransactionId = "11", clientId1 = "Client1", Amount1 = 500.0, origAsset1 = "USD",
+        val swap = Swap(clientId1 = "Client1", Amount1 = 500.0, origAsset1 = "USD",
                         clientId2 = "Client2", Amount2 = 500.0, origAsset2 = "EUR",
                         orders = Orders(ClientOrderPair("Client1", "Order1"), ClientOrderPair("Client2", "Order2"),
                                 arrayOf(ClientTradePair("Client1", "uid1"), ClientTradePair("Client1", "uid2"),
@@ -103,7 +103,7 @@ class BackendQueueProcessorTest {
         assertEquals("TestEUR",swap.Asset2)
 
 
-        val transaction = backOfficeDatabaseAccessor.transactions.find { it.id == swapData.TransactionId }!!
+        val transaction = backOfficeDatabaseAccessor.transactions.first()
         assertEquals("Client1", transaction.orders!!.marketOrder.clientId)
         assertEquals("Order1", transaction.orders!!.marketOrder.orderId)
         assertEquals("Client2", transaction.orders!!.limitOrder.clientId)

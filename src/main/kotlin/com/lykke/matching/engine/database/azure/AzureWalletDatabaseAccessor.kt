@@ -116,7 +116,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
     override fun insertOperation(operation: WalletOperation) {
         try {
-            operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.id, operation.externalId, operation.clientId, operation.assetId, operation.dateTime, operation.amount, operation.transactionId)))
+            operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.id, operation.externalId, operation.clientId, operation.assetId, operation.dateTime, operation.amount)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)

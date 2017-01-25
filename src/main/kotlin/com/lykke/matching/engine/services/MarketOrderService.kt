@@ -228,7 +228,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val lkkTrades = LinkedList<LkkTrade>()
         val cashMovements = LinkedList<WalletOperation>()
         val bitcoinTransactions = LinkedList<Transaction>()
-        val transactionIds = LinkedList<String>()
         val matchingData = LinkedList<MatchingData>()
         val orderTradesLinks = LinkedList<OrderTradesLink>()
 
@@ -299,7 +298,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, marketOrder.clientId,
-                    assetPair.baseAssetId, now, marketRoundedVolume, null))
+                    assetPair.baseAssetId, now, marketRoundedVolume))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
@@ -312,7 +311,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, marketOrder.clientId,
-                    assetPair.quotingAssetId, now, oppositeRoundedVolume, null))
+                    assetPair.quotingAssetId, now, oppositeRoundedVolume))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
@@ -325,7 +324,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId,
-                    assetPair.baseAssetId, now, -marketRoundedVolume, null))
+                    assetPair.baseAssetId, now, -marketRoundedVolume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             uid = Trade.generateId(now)
@@ -338,7 +337,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId,
-                    assetPair.quotingAssetId, now, -oppositeRoundedVolume, null))
+                    assetPair.quotingAssetId, now, -oppositeRoundedVolume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             if (marketRemainingVolume >= limitRemainingVolume) {
@@ -358,18 +357,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
 
             remainingVolume = RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), marketOrder.straight, limitOrder.price), assetsHolder.getAsset(assetPair.baseAssetId).accuracy, marketOrder.isOrigBuySide())
-            val transactionId = UUID.randomUUID().toString()
             limitOrder.lastMatchTime = now
-            limitOrder.addTransactionIds(listOf(transactionId))
-            transactionIds.add(transactionId)
 
-            bitcoinTransactions.add(Swap(TransactionId = transactionId,
-                                         clientId1 = marketOrder.clientId, Amount1 = Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume), origAsset1 = marketAsset.assetId,
+            bitcoinTransactions.add(Swap(clientId1 = marketOrder.clientId, Amount1 = Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume), origAsset1 = marketAsset.assetId,
                                          clientId2 = limitOrder.clientId, Amount2 = Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume), origAsset2 = limitAsset.assetId,
                                          orders = Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id), ClientOrderPair(limitOrder.clientId, limitOrder.id),
                                                  clientTradePairs.toTypedArray())))
 
-            rabbitTrade.swaps.add(com.lykke.matching.engine.outgoing.messages.Swap(transactionId,
+            rabbitTrade.swaps.add(com.lykke.matching.engine.outgoing.messages.Swap(
                     marketOrder.clientId, Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume).round(marketAsset.accuracy), marketAsset.assetId,
                     limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
                     Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id), ClientOrderPair(limitOrder.clientId, limitOrder.id), clientTradePairs.toTypedArray())))
@@ -384,7 +379,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         marketOrder.matchedAt = now
         marketOrder.price = RoundingUtils.round(if (marketOrder.straight) totalLimitPrice / marketOrder.getAbsVolume() else marketOrder.getAbsVolume() / totalMarketVolume
                 , assetsPairsHolder.getAssetPair(marketOrder.assetPairId).accuracy, marketOrder.isOrigBuySide())
-        marketOrder.addTransactionIds(transactionIds)
         marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
         marketOrderDatabaseAccessor.addMarketOrderWithGeneratedRowId(marketOrder)
 
