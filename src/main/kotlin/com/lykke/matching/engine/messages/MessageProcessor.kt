@@ -182,7 +182,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
             historyTicksService.buildTicks()
         }
 
-        val queueSizeLogger = QueueSizeLogger(messagesQueue)
+        val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue)
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
             queueSizeLogger.log()
         }
