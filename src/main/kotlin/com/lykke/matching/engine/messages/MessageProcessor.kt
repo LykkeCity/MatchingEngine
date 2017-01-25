@@ -38,6 +38,7 @@ import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashOperationService
+import com.lykke.matching.engine.services.CashSwapOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.HistoryTicksService
@@ -74,6 +75,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
 
     val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable>
     val rabbitTransferQueue: BlockingQueue<JsonSerializable>
+    val rabbitCashSwapQueue: BlockingQueue<JsonSerializable>
     val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>
     val rabbitSwapQueue: BlockingQueue<JsonSerializable>
 
@@ -88,6 +90,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
     val cashOperationService: CashOperationService
     val cashInOutOperationService: CashInOutOperationService
     val cashTransferOperationService: CashTransferOperationService
+    val cashSwapOperationService: CashSwapOperationService
     val genericLimitOrderService: GenericLimitOrderService
     val singleLimitOrderService: SingleLimitOrderService
     val multiLimitOrderService: MultiLimitOrderService
@@ -119,6 +122,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.orderBooksQueue = LinkedBlockingQueue<OrderBook>()
         this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
+        this.rabbitCashSwapQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString)
@@ -136,6 +140,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
+        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
         this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
         this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
@@ -160,6 +165,8 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
                 config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeTransfer, rabbitTransferQueue).start()
+        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
+                config.me.rabbit.password, config.me.rabbit.exchangeSwapOperation, rabbitSwapQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeCashOperation, rabbitCashInOutQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
@@ -213,6 +220,9 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
                 }
                 MessageType.CASH_TRANSFER_OPERATION -> {
                     cashTransferOperationService.processMessage(message)
+                }
+                MessageType.CASH_SWAP_OPERATION -> {
+                    cashSwapOperationService.processMessage(message)
                 }
                 MessageType.LIMIT_ORDER -> {
                     singleLimitOrderService.processMessage(message)

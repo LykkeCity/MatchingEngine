@@ -17,7 +17,7 @@ message NewResponse {
 message CashOperation {
     required int64 uid = 1;
     required string clientId = 2;
-    required int64 dateTime = 3;
+    required int64 timestamp = 3;
     required string assetId = 4;
     required double amount = 5;
     required string bussinesId = 6;
@@ -27,7 +27,7 @@ message CashOperation {
 message CashInOutOperation {
     required string id = 1;
     required string clientId = 2;
-    required int64 dateTime = 3;
+    required int64 timestamp = 3;
     required string assetId = 4;
     required double volume = 5;
 }
@@ -36,9 +36,20 @@ message CashTransferOperation {
     required string id = 1;
     required string fromClientId = 2;
     required string toClientId = 3;
-    required int64 dateTime = 4;
+    required int64 timestamp = 4;
     required string assetId = 5;
     required double volume = 6;
+}
+
+message CashSwapOperation {
+    required string id = 1;
+    required string clientId1 = 2;
+    required string assetId1 = 3;
+    required double volume1 = 4;
+    required string clientId2 = 5;
+    required string assetId2 = 6;
+    required double volume2 = 7;
+    required int64 timestamp = 8;
 }
 
 message LimitOrder {

@@ -30,7 +30,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}")
 
-        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.dateTime), message.volume)
+        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume)
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         if (fromBalance < operation.volume) {

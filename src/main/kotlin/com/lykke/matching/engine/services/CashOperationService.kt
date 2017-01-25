@@ -60,7 +60,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
-                Date(message.dateTime), message.amount, if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
+                Date(message.timestamp), message.amount, if (message.sendToBitcoin) UUID.randomUUID().toString() else null)
         balancesHolder.processWalletOperations(listOf(operation))
 
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.id))

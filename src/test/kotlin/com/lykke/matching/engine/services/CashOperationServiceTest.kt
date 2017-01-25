@@ -161,7 +161,7 @@ class CashOperationServiceTest {
                 .setClientId(clientId)
                 .setAssetId(assetId)
                 .setAmount(amount)
-                .setDateTime(123)
+                .setTimestamp(123)
                 .setSendToBitcoin(true)
                 .setBussinesId(bussinesId).build().toByteArray(), null)
     }

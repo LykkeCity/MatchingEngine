@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
+import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -60,6 +61,10 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
     override fun insertTransferOperation(operation: TransferOperation) {
         this.transferOperations.add(operation)
+    }
+
+    override fun insertSwapOperation(operation: SwapOperation) {
+        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {

@@ -7,6 +7,7 @@ data class RabbitConfig(
     val password: String,
     val exchangeOrderbook: String,
     val exchangeTransfer: String,
+    val exchangeSwapOperation: String,
     val exchangeCashOperation: String,
     val exchangeSwap: String
 )

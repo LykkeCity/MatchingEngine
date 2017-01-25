@@ -2,11 +2,13 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
+import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.azure.AzureAssetPair
 import com.lykke.matching.engine.daos.azure.AzureExternalCashOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletOperation
+import com.lykke.matching.engine.daos.azure.AzureWalletSwapOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletTransferOperation
 import com.lykke.matching.engine.daos.azure.wallet.AzureWallet
 import com.lykke.matching.engine.daos.wallet.AssetBalance
@@ -31,6 +33,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
     val accountTable: CloudTable
     val operationsTable: CloudTable
     val transferOperationsTable: CloudTable
+    val swapOperationsTable: CloudTable
     val externalOperationsTable: CloudTable
     val assetsTable: CloudTable
 
@@ -129,6 +132,15 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
         }
     }
 
+    override fun insertSwapOperation (operation: SwapOperation) {
+        try {
+            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletSwapOperation(operation.id, operation.externalId, operation.clientId1, operation.asset1, operation.volume1, operation.clientId2, operation.asset2, operation.volume2, operation.dateTime)))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)
+        }
+    }
+
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
         val result = HashMap<String, AssetPair>()
 
@@ -164,7 +176,8 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
     init {
         this.accountTable = getOrCreateTable(balancesConfig, "Accounts")
         this.operationsTable = getOrCreateTable(balancesConfig, "OperationsCash")
-        this.transferOperationsTable = getOrCreateTable(balancesConfig, "TransferOperationsCash")
+        this.transferOperationsTable = getOrCreateTable(balancesConfig, "SwapOperationsCash")
+        this.swapOperationsTable = getOrCreateTable(balancesConfig, "TransferOperationsCash")
         this.externalOperationsTable = getOrCreateTable(balancesConfig, "ExternalOperationsCash")
         this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
