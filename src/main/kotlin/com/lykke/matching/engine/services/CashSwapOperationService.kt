@@ -51,7 +51,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
 
         processSwapOperation(operation)
         walletDatabaseAccessor.insertSwapOperation(operation)
-        notificationQueue.put(CashSwapOperation(operation.id, operation.externalId, operation.dateTime,
+        notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
 
