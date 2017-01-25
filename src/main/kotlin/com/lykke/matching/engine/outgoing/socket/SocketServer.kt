@@ -2,7 +2,7 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.AzureConfig
 import org.apache.log4j.Logger

@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing
+package com.lykke.matching.engine.outgoing.messages
 
 import java.util.Date
 

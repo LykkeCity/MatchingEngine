@@ -5,7 +5,7 @@ import java.util.Date;
 
 public class AzureMarketOrder extends AzureOrder {
     //partition key: client_id
-    //row key: uid
+    //row key: externalId
 
     //date of execution
     private Date matchedAt;

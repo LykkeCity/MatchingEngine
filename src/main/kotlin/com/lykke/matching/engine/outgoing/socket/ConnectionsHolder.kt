@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.outgoing.socket
 
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.concurrent.BlockingQueue

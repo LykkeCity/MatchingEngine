@@ -19,8 +19,8 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.JsonSerializable
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import org.junit.Before
 import org.junit.Test
 import java.util.Date

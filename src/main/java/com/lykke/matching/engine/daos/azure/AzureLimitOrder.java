@@ -5,7 +5,7 @@ import java.util.Date;
 
 public class AzureLimitOrder extends AzureOrder {
     //partition key: client_id
-    //row key: uid
+    //row key: externalId
     private Double remainingVolume;
     //date of execution
     private Date lastMatchTime;

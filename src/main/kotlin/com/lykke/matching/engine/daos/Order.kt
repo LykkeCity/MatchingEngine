@@ -6,7 +6,7 @@ import java.util.LinkedList
 
 open class Order: Serializable {
     var id: String = ""
-    var uid: String = ""
+    var externalId: String = ""
     var assetPairId: String = ""
     var clientId: String = ""
     var volume: Double = 0.0
@@ -15,9 +15,9 @@ open class Order: Serializable {
     var registered: Date = Date()
 
     constructor()
-    constructor(id: String, uid: String, assetPairId: String, clientId: String, volume: Double, status: String, createdAt: Date, registered: Date) {
+    constructor(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, status: String, createdAt: Date, registered: Date) {
         this.id = id
-        this.uid = uid
+        this.externalId = externalId
         this.assetPairId = assetPairId
         this.clientId = clientId
         this.volume = volume

@@ -26,8 +26,8 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
-import com.lykke.matching.engine.outgoing.JsonSerializable
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
@@ -140,12 +140,12 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, backOfficeDatabaseAccessor, bitcoinQueue, balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
-        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
+        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
         this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
         this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
-                config.me.lykkeTradesHistoryEnabled, config.me.lykkeTradesHistoryAssets.split(";").toSet())
+                config.me.lykkeTradesHistoryEnabled, config.me.lykkeTradesHistoryAssets.split(";").toSet(), rabbitSwapQueue, config.me.publishToRabbitQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
@@ -166,7 +166,7 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeTransfer, rabbitTransferQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeSwapOperation, rabbitSwapQueue).start()
+                config.me.rabbit.password, config.me.rabbit.exchangeSwapOperation, rabbitCashSwapQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeCashOperation, rabbitCashInOutQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,

@@ -5,7 +5,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray

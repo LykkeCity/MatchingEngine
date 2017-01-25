@@ -6,8 +6,8 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.CashTransferOperation
-import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger

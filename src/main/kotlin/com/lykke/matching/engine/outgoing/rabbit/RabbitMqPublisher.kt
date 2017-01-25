@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit
 
 import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.outgoing.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory

@@ -167,7 +167,7 @@ class BackendQueueProcessor(private val backOfficeDatabaseAccessor: BackOfficeDa
 
     private fun loadAsset(assetId: String): Asset? {
         var asset = assets[assetId]
-        if (asset != null && asset.blockChainId != null) {
+        if (asset != null) {
             return assets[assetId]
         }
 

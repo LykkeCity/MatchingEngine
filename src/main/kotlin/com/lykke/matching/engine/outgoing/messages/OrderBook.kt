@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing
+package com.lykke.matching.engine.outgoing.messages
 
 import com.lykke.matching.engine.daos.LimitOrder
 import java.util.ArrayList

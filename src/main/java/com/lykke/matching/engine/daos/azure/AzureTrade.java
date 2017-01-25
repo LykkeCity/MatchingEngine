@@ -4,7 +4,7 @@ import com.microsoft.azure.storage.table.TableServiceEntity;
 import java.util.Date;
 
 public class AzureTrade extends TableServiceEntity {
-    //row key: generated uid
+    //row key: generated externalId
 
     private String assetId;
     private Date dateTime = new Date();
@@ -123,7 +123,7 @@ public class AzureTrade extends TableServiceEntity {
         return "Trade(" +
                 "clientId='" + getClientId() + '\'' +
                 "multisig='" + multisig + '\'' +
-                ", uid='" + rowKey + '\'' +
+                ", externalId='" + rowKey + '\'' +
                 ", assetId='" + assetId + '\'' +
                 ", dateTime=" + dateTime +
                 ", limitOrderId='" + limitOrderId + '\'' +

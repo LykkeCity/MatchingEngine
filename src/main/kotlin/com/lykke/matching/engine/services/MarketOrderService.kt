@@ -36,10 +36,11 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
-import com.lykke.matching.engine.outgoing.JsonSerializable
-import com.lykke.matching.engine.outgoing.OrderBook
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
+import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
@@ -63,7 +64,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
-                         private val lkkTradesAssets: Set<String>): AbsractService<ProtocolMessages.MarketOrder> {
+                         private val lkkTradesAssets: Set<String>,
+                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
+                         private val sendSwapToRabbit: Boolean): AbsractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -77,17 +80,17 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
         val uid = UUID.randomUUID().toString()
-        val order = MarketOrder(uid, uid, message.assetPairId, message.clientId, message.volume, null,
+        val order = MarketOrder(uid, message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
         Processing.name, Date(message.timestamp), Date(), null, message.straight)
 
         try {
-            assetsPairsHolder.getAssetPair(message.assetPairId)
+            assetsPairsHolder.getAssetPair(order.assetPairId)
         } catch (e: Exception) {
             order.status = UnknownAsset.name
             marketOrderDatabaseAccessor.addMarketOrder(order)
-            LOGGER.debug("Unknown asset: ${message.assetPairId}")
+            LOGGER.debug("Unknown asset: ${order.assetPairId}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.id).build())
-            METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
+            METRICS_LOGGER.log(getMetricLine(order.externalId, order))
             METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
             return
         }
@@ -103,7 +106,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         match(order, orderBook)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setRecordId(order.id).build())
-        METRICS_LOGGER.log(getMetricLine(message.uid.toString(), order))
+        METRICS_LOGGER.log(getMetricLine(order.externalId, order))
         METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
     }
 
@@ -230,6 +233,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val orderTradesLinks = LinkedList<OrderTradesLink>()
 
         var marketBalance = balancesHolder.getBalance(marketOrder.clientId, if (marketOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+
+        val rabbitTrade = com.lykke.matching.engine.outgoing.messages.Trade(marketOrder.externalId, now)
 
         matchedOrders.forEachIndexed { index, limitOrder ->
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
@@ -364,6 +369,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                                          orders = Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id), ClientOrderPair(limitOrder.clientId, limitOrder.id),
                                                  clientTradePairs.toTypedArray())))
 
+            rabbitTrade.swaps.add(com.lykke.matching.engine.outgoing.messages.Swap(transactionId,
+                    marketOrder.clientId, Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume).round(marketAsset.accuracy), marketAsset.assetId,
+                    limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
+                    Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id), ClientOrderPair(limitOrder.clientId, limitOrder.id), clientTradePairs.toTypedArray())))
+
             totalMarketVolume += volume
             totalLimitPrice += volume * limitOrder.price
             totalLimitVolume += Math.abs(if (marketOrder.straight) marketRoundedVolume else oppositeRoundedVolume)
@@ -399,7 +409,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             genericLimitOrderService.addToOrderBook(uncompletedLimitOrder as LimitOrder)
         }
 
-        bitcoinTransactions.forEach { backendQueue.put(it) }
+        if (sendSwapToRabbit) {
+            rabbitSwapQueue.put(rabbitTrade)
+        } else {
+            bitcoinTransactions.forEach { backendQueue.put(it) }
+        }
 
         val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).copy().getOrderBook(!marketOrder.isBuySide()))
         orderBookQueue.put(newOrderBook)
