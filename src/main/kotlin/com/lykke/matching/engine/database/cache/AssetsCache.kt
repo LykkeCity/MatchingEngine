@@ -25,6 +25,7 @@ class AssetsCache(
 
     init {
         this.assetsMap = databaseAccessor.loadAssets()
+        LOGGER.info("Loaded ${assetsMap.size} assets")
         fixedRateTimer(name = "Assets Cache Updater", initialDelay = updateInterval, period = updateInterval) {
             update()
         }

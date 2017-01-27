@@ -78,8 +78,6 @@ class AzureBackOfficeDatabaseAccessor(сlientPersonalInfoString: String, bitCoin
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load assets", e)
         }
 
-        LOGGER.info("Loaded ${result.size} assets ")
-
         return result
     }
 
