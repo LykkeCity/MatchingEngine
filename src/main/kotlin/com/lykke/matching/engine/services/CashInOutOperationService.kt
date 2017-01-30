@@ -14,6 +14,8 @@ import com.lykke.matching.engine.logging.ME_CASH_OPERATION
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
+import com.lykke.matching.engine.messages.MessageStatus.ALREADY_PROCESSED
+import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
@@ -44,7 +46,8 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         val externalCashOperation = walletDatabaseAccessor.loadExternalCashOperation(message.clientId, message.id)
         if (externalCashOperation != null) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(externalCashOperation.cashOperationId).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(externalCashOperation.cashOperationId)
+                    .setStatus(ALREADY_PROCESSED.type).setStatusReason("ID:${externalCashOperation.cashOperationId}").build())
             LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} already processed")
             return
         }
@@ -57,7 +60,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         rabbitCashInOutQueue.put(CashOperation(message.id, operation.clientId, operation.dateTime, operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy), operation.assetId))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
 
         METRICS_LOGGER.log(Line(ME_CASH_OPERATION, arrayOf(

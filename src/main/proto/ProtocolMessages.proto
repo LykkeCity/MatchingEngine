@@ -12,6 +12,8 @@ message Response {
 message NewResponse {
     required string id = 1;
     optional string matchingEngineId = 2;
+    required int32 status = 3;
+    optional string statusReason = 4;
 }
 
 message CashOperation {

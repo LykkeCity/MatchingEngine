@@ -4,6 +4,8 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
+import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
@@ -28,14 +30,15 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}")
+        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}")
 
         val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume)
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         if (fromBalance < operation.volume) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).build())
-            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.toClientId}")
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
+            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
             return
         }
 
@@ -43,8 +46,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletDatabaseAccessor.insertTransferOperation(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.asset))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).build())
-        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
+        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)} processed")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashTransferOperation {

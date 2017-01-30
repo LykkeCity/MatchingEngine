@@ -4,6 +4,8 @@ import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
+import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
@@ -37,14 +39,16 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
 
         val balance1 = balancesHolder.getBalance(message.clientId1, message.assetId1)
         if (balance1 < operation.volume1) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId1},asset:${message.assetId1}, volume:${message.volume1}").build())
             LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId1}, ${operation.volume1} ${operation.asset1}")
             return
         }
 
         val balance2 = balancesHolder.getBalance(message.clientId2, message.assetId2)
         if (balance2 < operation.volume1) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId2},asset:${message.assetId2}, volume:${message.volume2}").build())
             LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId2}, ${operation.volume2} ${operation.asset2}")
             return
         }
@@ -55,7 +59,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
                 "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)} processed")
     }
