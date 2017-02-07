@@ -45,7 +45,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -59,7 +59,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testSmallCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 0.01))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -73,7 +73,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOut() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -87,7 +87,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testResendCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -110,7 +110,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewAsset() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset4")
 
@@ -120,7 +120,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewWallet() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client3", "Asset2", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client3", "Asset2")
 
@@ -142,7 +142,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testRounding() {
-        val service = CashOperationService(testDatabaseAccessor, testBackOfficeDatabaseAcessor, transactionQueue, balancesHolder)
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         val updateService = BalanceUpdateService(balancesHolder)
 
         updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 29.99))
