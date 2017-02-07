@@ -15,7 +15,6 @@ import java.io.BufferedOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.Socket
-import java.net.SocketException
 import java.util.Date
 import java.util.HashSet
 import java.util.concurrent.BlockingQueue
@@ -69,7 +68,7 @@ class Connection(val socket: Socket,
                 val item = inputQueue.take()
                 writeOrderBook(item, outputStream)
             }
-        } catch (e: SocketException) {
+        } catch (e: Exception) {
             LOGGER.error("Order book subscriber disconnected: $clientHostName")
         } finally {
             LOGGER.info("Order book subscriber connection from $clientHostName closed.")
