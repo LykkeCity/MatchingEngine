@@ -8,6 +8,7 @@ import java.io.File
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.util.ArrayList
+import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
 class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDatabaseAccessor {
@@ -24,20 +25,15 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
                     if (!file.name.startsWith("_prev_")) {
-                        var objectinputstream: ObjectInputStream? = null
                         try {
-                            val streamIn = file.inputStream()
-                            objectinputstream = ObjectInputStream(streamIn)
-                            val readCase = objectinputstream.readObject() as List<*>
-                            readCase.forEach {
-                                if (it is LimitOrder) {
-                                    result.add(it)
-                                }
-                            }
+                            result.addAll(loadFile(file))
                         } catch (e: Exception) {
-                            e.printStackTrace()
-                        } finally {
-                            objectinputstream?.close()
+                            LOGGER.error("Unable to read order book file ${file.name}. Trying to load previous one", e)
+                            try {
+                                result.addAll(loadFile(File("$ordersDir/_prev_${file.name}")))
+                            } catch (e: Exception) {
+                                LOGGER.error("Unable to read previous order book file ${file.name}.", e)
+                            }
                         }
                     }
                 }
@@ -47,6 +43,27 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to load limit orders", e)
         }
         LOGGER.info("Loaded ${result.size} active limit orders")
+        return result
+    }
+
+    private fun loadFile(file: File): List<LimitOrder> {
+        val result = LinkedList<LimitOrder>()
+        if (!file.exists()) {
+            throw Exception("File doesn't exist: ${file.name}")
+        }
+        var objectinputstream: ObjectInputStream? = null
+        try {
+            val streamIn = file.inputStream()
+            objectinputstream = ObjectInputStream(streamIn)
+            val readCase = objectinputstream.readObject() as List<*>
+            readCase.forEach {
+                if (it is LimitOrder) {
+                    result.add(it)
+                }
+            }
+        } finally {
+            objectinputstream?.close()
+        }
         return result
     }
 
