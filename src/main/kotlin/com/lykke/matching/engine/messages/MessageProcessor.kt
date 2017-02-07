@@ -26,6 +26,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
+import com.lykke.matching.engine.outgoing.http.RequestHandler
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
@@ -51,7 +52,9 @@ import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.AzureConfig
+import com.sun.net.httpserver.HttpServer
 import org.apache.log4j.Logger
+import java.net.InetSocketAddress
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Timer
@@ -196,6 +199,11 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         fixedRateTimer(name = "StatusUpdater", initialDelay = 0, period = 30000) {
             sharedDatabaseAccessor.updateKeepAlive(Date(), AppVersion.VERSION)
         }
+
+        val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
+        server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
+        server.executor = null
+        server.start()
     }
 
     override fun run() {

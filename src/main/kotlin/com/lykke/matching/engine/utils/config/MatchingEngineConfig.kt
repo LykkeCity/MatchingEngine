@@ -10,6 +10,7 @@ data class MatchingEngineConfig(
     val metricLoggerLine: String,
     val serverOrderBookPort: Int,
     val serverOrderBookMaxConnections: Int,
+    val httpOrderBookPort: Int,
     @SerializedName("RabbitMq")
     val rabbit: RabbitConfig,
     val bestPricesInterval: Long,
