@@ -1,10 +1,7 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.AMOUNT
@@ -31,7 +28,6 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                            private val backendQueue: BlockingQueue<Transaction>,
                            private val balancesHolder: BalancesHolder): AbsractService<ProtocolMessages.CashOperation> {
 
@@ -39,11 +35,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private val balances = walletDatabaseAccessor.loadBalances()
-    private val wallets = walletDatabaseAccessor.loadWallets()
-    private val assets = backOfficeDatabaseAccessor.loadAssets()
-    private val assetPairs = walletDatabaseAccessor.loadAssetPairs()
 
     private var messagesCount: Long = 0
 
@@ -92,33 +83,5 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
         return ProtocolMessages.CashOperation.parseFrom(array)
-    }
-
-    fun getAsset(assetId: String): Asset {
-        var asset = assets[assetId]
-        if (asset == null) {
-            asset = backOfficeDatabaseAccessor.loadAsset(assetId)
-            if (asset != null) {
-                assets[assetId] = asset
-            }
-        }
-
-        if (asset == null) {
-            throw Exception("Unable to find asset pair $assetId")
-        }
-
-        return asset
-    }
-
-    fun getAssetPair(assetPairId: String): AssetPair? {
-        var assetPair = assetPairs[assetPairId]
-        if (assetPair == null) {
-            assetPair = walletDatabaseAccessor.loadAssetPair(assetPairId)
-            if (assetPair != null) {
-                assetPairs[assetPairId] = assetPair
-            }
-        }
-
-        return assetPair
     }
 }
