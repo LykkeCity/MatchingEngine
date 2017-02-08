@@ -1,11 +1,14 @@
 package com.lykke.matching.engine.outgoing.messages
 
+import com.google.gson.GsonBuilder
 import com.lykke.matching.engine.daos.LimitOrder
 import java.util.ArrayList
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
 
+
 class OrderBook: JsonSerializable {
+
     val assetPair: String
     val isBuy: Boolean
     val timestamp: Date
@@ -31,6 +34,10 @@ class OrderBook: JsonSerializable {
 
     fun addVolumePrice(volume: Double, price: Double) {
         prices.add(VolumePrice(volume, price))
+    }
+
+    override fun toJson(): String {
+        return GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").create().toJson(this)
     }
 }
 

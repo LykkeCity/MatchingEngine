@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.outgoing.http
 
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.sun.net.httpserver.HttpExchange
@@ -24,7 +24,7 @@ class RequestHandler (val genericLimitOrderService: GenericLimitOrderService) : 
                 books.add(OrderBook(orderBook.assetId, false, now, orderBook.askOrderBook))
             }
 
-            val response = Gson().toJson(books)
+            val response = GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").create().toJson(books)
             exchange.sendResponseHeaders(200, response.length.toLong())
             val os = exchange.responseBody
             os.write(response.toByteArray())
