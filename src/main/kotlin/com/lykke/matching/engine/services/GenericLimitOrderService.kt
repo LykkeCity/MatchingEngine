@@ -18,6 +18,7 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.PriorityBlockingQueue
 
 class GenericLimitOrderService(private val useFileOrderBook: Boolean,
                                private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor,
@@ -135,10 +136,18 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
 
     fun getAllOrderBooks() = limitOrdersQueues
 
-    fun getOrderBook(key: String) = limitOrdersQueues[key] ?: AssetOrderBook(key)
+    fun getOrderBook(assetPair: String) = limitOrdersQueues[assetPair] ?: AssetOrderBook(assetPair)
 
-    fun setOrderBook(key: String, book: AssetOrderBook){
-        limitOrdersQueues[key] = book
+    fun setOrderBook(assetPair: String, book: AssetOrderBook){
+        limitOrdersQueues[assetPair] = book
+    }
+
+    fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<LimitOrder>){
+        var orderBook = limitOrdersQueues[assetPair]
+        if (orderBook == null) {
+            orderBook = AssetOrderBook(assetPair)
+        }
+        orderBook.setOrderBook(isBuy, book)
     }
 
     fun isEnoughFunds(order: LimitOrder, volume: Double): Boolean {

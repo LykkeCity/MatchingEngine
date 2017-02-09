@@ -18,13 +18,12 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
-import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -100,12 +99,3 @@ class LimitOrderServiceTest {
                 .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel).build().toByteArray(), null)
     }
 }
-
-fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
-                    assetId: String = "EURUSD",
-                    clientId: String = "Client1",
-                    price: Double = 100.0,
-                    registered: Date = Date(),
-                    status: String = OrderStatus.InOrderBook.name,
-                    volume:Double = 1000.0): LimitOrder =
-        LimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)

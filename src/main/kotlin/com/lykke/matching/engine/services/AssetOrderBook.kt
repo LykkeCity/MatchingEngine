@@ -24,10 +24,12 @@ class AssetOrderBook(val assetId: String) {
         result
     })
 
-    val askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
-    val bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
+    private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
+    private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
 
     fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
+
+    fun setOrderBook(isBuySide: Boolean, queue: PriorityBlockingQueue<LimitOrder>) = if (isBuySide) bidOrderBook = queue else askOrderBook = queue
 
     fun addOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).add(order)
 

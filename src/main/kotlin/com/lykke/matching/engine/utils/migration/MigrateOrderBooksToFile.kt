@@ -27,10 +27,10 @@ class MigrateOrderBooksToFile {
         }
 
         limitOrdersQueues.values.forEach { book ->
-            teeLog("Migrating ${book.assetId}, bids: ${book.bidOrderBook.size} orders")
-            fileOrderBookDatabaseAccessor.updateOrderBook(book.assetId, true, book.bidOrderBook)
-            teeLog("Migrating ${book.assetId}, asks: ${book.askOrderBook.size} orders")
-            fileOrderBookDatabaseAccessor.updateOrderBook(book.assetId, false, book.askOrderBook)
+            teeLog("Migrating ${book.assetId}, bids: ${book.getOrderBook(true).size} orders")
+            fileOrderBookDatabaseAccessor.updateOrderBook(book.assetId, true, book.getOrderBook(true))
+            teeLog("Migrating ${book.assetId}, asks: ${book.getOrderBook(false).size} orders")
+            fileOrderBookDatabaseAccessor.updateOrderBook(book.assetId, false, book.getOrderBook(false))
         }
 
         teeLog("Migration from Azure order book to local files completed. Total order books: ${limitOrdersQueues.size * 2}. Total orders: ${orders.size}")

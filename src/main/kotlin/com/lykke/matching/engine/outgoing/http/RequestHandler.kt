@@ -20,8 +20,8 @@ class RequestHandler (val genericLimitOrderService: GenericLimitOrderService) : 
             val now = Date()
             genericLimitOrderService.getAllOrderBooks().values.forEach {
                 val orderBook = it.copy()
-                books.add(OrderBook(orderBook.assetId, true, now, orderBook.bidOrderBook))
-                books.add(OrderBook(orderBook.assetId, false, now, orderBook.askOrderBook))
+                books.add(OrderBook(orderBook.assetId, true, now, orderBook.getOrderBook(true)))
+                books.add(OrderBook(orderBook.assetId, false, now, orderBook.getOrderBook(false)))
             }
 
             val response = GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").create().toJson(books)
