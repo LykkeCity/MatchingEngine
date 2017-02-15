@@ -212,7 +212,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         limitOrdersQueues.values.forEach { book ->
             val askPrice = book.getAskPrice()
             val bidPrice = book.getBidPrice()
-            if ((askPrice != null && askPrice > 0) || (bidPrice != null && bidPrice > 0)) {
+            if (askPrice > 0 || bidPrice > 0) {
                 result.add(BestPrice(book.assetId, askPrice, bidPrice))
             }
         }

@@ -35,8 +35,8 @@ class AssetOrderBook(val assetId: String) {
 
     fun removeOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).remove(order)
 
-    fun getAskPrice() = askOrderBook.peek()?.price
-    fun getBidPrice() = bidOrderBook.peek()?.price
+    fun getAskPrice() = askOrderBook.peek()?.price ?: 0.0
+    fun getBidPrice() = bidOrderBook.peek()?.price ?: 0.0
 
     fun copy() : AssetOrderBook {
         val book = AssetOrderBook(assetId)
