@@ -54,8 +54,18 @@ message CashSwapOperation {
     required int64 timestamp = 8;
 }
 
-message LimitOrder {
+message OldLimitOrder {
     required int64 uid = 1;
+    required int64 timestamp = 2;
+    required string clientId = 3;
+    required string assetPairId = 4;
+    required double volume = 5;
+    required double price = 6;
+    optional bool cancelAllPreviousLimitOrders = 7;
+}
+
+message LimitOrder {
+    required string uid = 1;
     required int64 timestamp = 2;
     required string clientId = 3;
     required string assetPairId = 4;
@@ -74,6 +84,11 @@ message MarketOrder {
 }
 
 message LimitOrderCancel {
+    required string uid = 1;
+    required string limitOrderId = 2;
+}
+
+message OldLimitOrderCancel {
     required int64 uid = 1;
     required int64 limitOrderId = 2;
 }
@@ -85,7 +100,7 @@ message BalanceUpdate {
     required double amount = 4;
 }
 
-message MultiLimitOrder {
+message OldMultiLimitOrder {
     required int64 uid = 1;
     required int64 timestamp = 2;
     required string clientId = 3;
@@ -98,6 +113,22 @@ message MultiLimitOrder {
 
     repeated Order orders = 5;
 
+    optional bool cancelAllPreviousLimitOrders = 6;
+}
+
+message MultiLimitOrder {
+    required string uid = 1;
+    required int64 timestamp = 2;
+    required string clientId = 3;
+    required string assetPairId = 4;
+
+    message Order {
+        required string uid = 1;
+        required double volume = 2;
+        required double price = 3;
+    }
+
+    repeated Order orders = 5;
     optional bool cancelAllPreviousLimitOrders = 6;
 }
 

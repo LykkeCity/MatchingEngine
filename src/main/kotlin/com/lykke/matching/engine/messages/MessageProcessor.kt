@@ -232,19 +232,22 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
                 MessageType.CASH_SWAP_OPERATION -> {
                     cashSwapOperationService.processMessage(message)
                 }
-                MessageType.LIMIT_ORDER -> {
+                MessageType.LIMIT_ORDER,
+                MessageType.OLD_LIMIT_ORDER -> {
                     singleLimitOrderService.processMessage(message)
                 }
                 MessageType.MARKET_ORDER -> {
                     marketOrderService.processMessage(message)
                 }
-                MessageType.LIMIT_ORDER_CANCEL -> {
+                MessageType.LIMIT_ORDER_CANCEL,
+                MessageType.OLD_LIMIT_ORDER_CANCEL -> {
                     limitOrderCancelService.processMessage(message)
                 }
                 MessageType.BALANCE_UPDATE -> {
                     balanceUpdateService.processMessage(message)
                 }
-                MessageType.MULTI_LIMIT_ORDER -> {
+                MessageType.MULTI_LIMIT_ORDER,
+                MessageType.OLD_MULTI_LIMIT_ORDER -> {
                     multiLimitOrderService.processMessage(message)
                 }
                 MessageType.WALLET_CREDENTIALS_RELOAD -> {

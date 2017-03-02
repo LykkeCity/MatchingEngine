@@ -8,12 +8,14 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.MetricsLogger.Companion.DATE_TIME_FORMATTER
 import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
+import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 
-class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService): AbsractService<ProtocolMessages.LimitOrder> {
+class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService): AbstractService<ProtocolMessages.OldLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -23,21 +25,40 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
     private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Got limit order cancel request id: ${message.uid}")
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
+            val message = parseOldLimitOrderCancel(messageWrapper.byteArray)
+            LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
-        genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString())
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+            genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
 
-        METRICS_LOGGER.log(Line(ME_LIMIT_ORDER_CANCEL, arrayOf(
-                KeyValue(UID, message.uid.toString()),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(DATE_TIME_FORMATTER)),
-                KeyValue(LIMIT_ORDER_ID, message.limitOrderId.toString())
-        )))
-        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER_CANCEL, (++messagesCount).toString()))
+            METRICS_LOGGER.log(Line(ME_LIMIT_ORDER_CANCEL, arrayOf(
+                    KeyValue(UID, message.uid.toString()),
+                    KeyValue(TIMESTAMP, LocalDateTime.now().format(DATE_TIME_FORMATTER)),
+                    KeyValue(LIMIT_ORDER_ID, message.limitOrderId.toString())
+            )))
+            METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER_CANCEL, (++messagesCount).toString()))
+        } else {
+            val message = parseLimitOrderCancel(messageWrapper.byteArray)
+            LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+
+            genericLimitOrderService.cancelLimitOrder(message.limitOrderId)
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
+
+            METRICS_LOGGER.log(Line(ME_LIMIT_ORDER_CANCEL, arrayOf(
+                    KeyValue(UID, message.uid.toString()),
+                    KeyValue(TIMESTAMP, LocalDateTime.now().format(DATE_TIME_FORMATTER)),
+                    KeyValue(LIMIT_ORDER_ID, message.limitOrderId)
+            )))
+            METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER_CANCEL, (++messagesCount).toString()))
+        }
     }
 
-    private fun parse(array: ByteArray): ProtocolMessages.LimitOrderCancel {
+    private fun parseOldLimitOrderCancel(array: ByteArray): ProtocolMessages.OldLimitOrderCancel {
+        return ProtocolMessages.OldLimitOrderCancel.parseFrom(array)
+    }
+
+    private fun parseLimitOrderCancel(array: ByteArray): ProtocolMessages.LimitOrderCancel {
         return ProtocolMessages.LimitOrderCancel.parseFrom(array)
     }
 }

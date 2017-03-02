@@ -67,7 +67,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val lkkTradesHistoryEnabled: Boolean,
                          private val lkkTradesAssets: Set<String>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val sendSwapToRabbit: Boolean): AbsractService<ProtocolMessages.MarketOrder> {
+                         private val sendSwapToRabbit: Boolean): AbstractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)

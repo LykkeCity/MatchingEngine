@@ -17,7 +17,7 @@ import java.util.concurrent.BlockingQueue
 
 class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
                              val orderBookQueue: BlockingQueue<OrderBook>,
-                             val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbsractService<ProtocolMessages.MultiLimitOrder> {
+                             val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -118,8 +118,8 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
 
     }
 
-    private fun parse(array: ByteArray): ProtocolMessages.MultiLimitOrder {
-        return ProtocolMessages.MultiLimitOrder.parseFrom(array)
+    private fun parse(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
+        return ProtocolMessages.OldMultiLimitOrder.parseFrom(array)
     }
 
     private fun convertToString(value: Double): String {

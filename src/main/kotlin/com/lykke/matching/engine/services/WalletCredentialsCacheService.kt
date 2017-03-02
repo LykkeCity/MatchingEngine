@@ -5,7 +5,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.apache.log4j.Logger
 
-class WalletCredentialsCacheService(val walletCredentialsCache: WalletCredentialsCache): AbsractService<ProtocolMessages.WalletCredentialsReload> {
+class WalletCredentialsCacheService(val walletCredentialsCache: WalletCredentialsCache): AbstractService<ProtocolMessages.WalletCredentialsReload> {
 
     companion object {
         val LOGGER = Logger.getLogger(WalletCredentialsCacheService::class.java)

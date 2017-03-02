@@ -16,7 +16,7 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 
-class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbsractService<ProtocolMessages.BalanceUpdate> {
+class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.BalanceUpdate> {
 
     companion object {
         val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
