@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.config
 import com.google.gson.annotations.SerializedName
 
 data class MatchingEngineConfig(
+    val db: DbConfig,
     @SerializedName("IpEndpoint")
     val socket: IpEndpoint,
     val metricLoggerSize: Int,
@@ -21,7 +22,6 @@ data class MatchingEngineConfig(
     val lykkeTradesHistoryAssets: String,
     val whiteList: String?,
     val backendQueueName: String?,
-    val serviceBusConnectionString: String,
     val migrate: Boolean,
     val useFileOrderBook: Boolean,
     val orderBookPath: String,

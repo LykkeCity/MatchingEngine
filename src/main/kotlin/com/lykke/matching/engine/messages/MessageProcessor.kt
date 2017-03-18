@@ -51,7 +51,7 @@ import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
-import com.lykke.matching.engine.utils.config.AzureConfig
+import com.lykke.matching.engine.utils.config.Config
 import com.sun.net.httpserver.HttpServer
 import org.apache.log4j.Logger
 import java.net.InetSocketAddress
@@ -62,7 +62,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>) : Thread() {
+class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
@@ -128,17 +128,17 @@ class MessageProcessor(config: AzureConfig, queue: BlockingQueue<MessageWrapper>
         this.rabbitCashSwapQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
         this.rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString)
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.db.aLimitOrdersConnString, config.db.hLimitOrdersConnString, config.db.hLiquidityConnString)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.db.hMarketOrdersConnString, config.db.hTradesConnString)
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString)
-        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.db.hLiquidityConnString)
-        this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.db.sharedStorageConnString)
+        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.aLimitOrdersConnString, config.me.db.hLimitOrdersConnString, config.me.db.hLiquidityConnString)
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hMarketOrdersConnString, config.me.db.hTradesConnString)
+        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString)
+        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
+        this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.me.db.sharedStorageConnString)
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-        this.azureQueueWriter = AzureQueueWriter(config.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
+        this.azureQueueWriter = AzureQueueWriter(config.me.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
         this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
-        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.db.clientPersonalInfoConnString, config.db.bitCoinQueueConnectionString, config.db.dictsConnString), 60000))
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString), 60000))
+        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString), 60000))
+        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue)
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue, balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)

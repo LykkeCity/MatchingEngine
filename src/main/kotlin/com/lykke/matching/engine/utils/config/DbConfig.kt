@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.utils.config
 
 data class DbConfig(
-    val clientPersonalInfoConnString: String,
+    val multisigConnString: String,
     val balancesInfoConnString: String,
     val aLimitOrdersConnString: String,
     val hLimitOrdersConnString: String,

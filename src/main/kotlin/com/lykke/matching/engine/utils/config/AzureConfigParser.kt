@@ -9,7 +9,7 @@ import javax.naming.ConfigurationException
 
 class AzureConfigParser {
     companion object {
-        fun initConfig(storageConnectionString: String, blobContainer: String, fileName: String): AzureConfig {
+        fun initConfig(storageConnectionString: String, blobContainer: String, fileName: String): Config {
             val storageAccount = CloudStorageAccount.parse(storageConnectionString)
             val blobClient = storageAccount.createCloudBlobClient()
             val container = blobClient.getContainerReference(blobContainer)
@@ -19,7 +19,7 @@ class AzureConfigParser {
                     val stream = ByteArrayOutputStream()
                     blobItem.download(stream)
                     val gson = GsonBuilder().setFieldNamingPolicy(UPPER_CAMEL_CASE).create()
-                    return gson.fromJson(stream.toString(), AzureConfig::class.java)
+                    return gson.fromJson(stream.toString(), Config::class.java)
                 }
             }
 

@@ -8,7 +8,7 @@ import com.lykke.matching.engine.logging.ME_STATUS
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
-import com.lykke.matching.engine.utils.config.AzureConfigParser
+import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.MigrateOrderBooksToFile
 import org.apache.log4j.Logger
 import java.io.File
@@ -22,8 +22,8 @@ import java.util.concurrent.LinkedBlockingQueue
 val LOGGER = Logger.getLogger("AppStarter")
 
 fun main(args: Array<String>) {
-    if (args.size < 3) {
-        LOGGER.error("Not enough args. Usage: configConnectionString configBlobContainer configFileName")
+    if (args.isEmpty()) {
+        LOGGER.error("Not enough args. Usage: htppConfigString")
         return
     }
 
@@ -36,14 +36,14 @@ fun main(args: Array<String>) {
     teeLog("Working-dir: " + File(".").absolutePath)
     teeLog("Java-Info: " + System.getProperty("java.vm.name") + " (" + System.getProperty("java.version") + ")")
 
-    val config = AzureConfigParser.initConfig(args[0], args[1], args[2])
+    val config = HttpConfigParser.initConfig(args[0])
 
     if (config.me.migrate) {
         MigrateOrderBooksToFile().migrate(config)
         return
     }
 
-    val sharedDbAccessor = AzureSharedDatabaseAccessor(config.db.sharedStorageConnString)
+    val sharedDbAccessor = AzureSharedDatabaseAccessor(config.me.db.sharedStorageConnString)
     val lastKeepAlive: Date? = sharedDbAccessor.getLastKeepAlive()
 
     if (lastKeepAlive != null && startTime.minusMinutes(1).isBefore(LocalDateTime.ofInstant(lastKeepAlive.toInstant(), ZoneId.systemDefault()))) {
@@ -52,8 +52,8 @@ fun main(args: Array<String>) {
         return
     }
 
-    MetricsLogger.init(config.me.metricLoggerKeyValue, config.me.metricLoggerLine, config.db.sharedStorageConnString,
-            config.slackNotificationsQueueName ?: "app-err-notifications", config.me.metricLoggerSize)
+    MetricsLogger.init(config.me.metricLoggerKeyValue, config.me.metricLoggerLine, config.slackNotifications.azureQueue.connectionString,
+            config.slackNotifications.azureQueue.queueName, config.me.metricLoggerSize)
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config.me.metricLoggerKeyValue))
 

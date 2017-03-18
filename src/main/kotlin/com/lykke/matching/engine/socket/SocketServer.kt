@@ -18,7 +18,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.ConnectionStatus.Blocked
 import com.lykke.matching.engine.socket.ConnectionStatus.Connected
 import com.lykke.matching.engine.socket.ConnectionStatus.Disconnected
-import com.lykke.matching.engine.utils.config.AzureConfig
+import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import java.net.ServerSocket
 import java.time.LocalDateTime
@@ -29,7 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 import kotlin.concurrent.fixedRateTimer
 
-class SocketServer(val config: AzureConfig): Runnable {
+class SocketServer(val config: Config): Runnable {
 
     companion object {
         val LOGGER = Logger.getLogger(SocketServer::class.java.name)
