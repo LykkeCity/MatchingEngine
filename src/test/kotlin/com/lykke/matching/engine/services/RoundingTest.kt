@@ -490,4 +490,17 @@ class RoundingTest {
         Assert.assertEquals(0.05, swap.Amount2, 0.0)
         Assert.assertEquals("EUR", swap.origAsset2)
     }
+
+    @Test
+    fun testLimitOrderRounding() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 1121.509, volume = 1000.0, clientId = "Client3"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1.0))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.00043722)))
+
+        val limitOrder = testLimitDatabaseAccessor.getLastOrder()
+        Assert.assertEquals(1000.0 - 0.00043722, limitOrder.remainingVolume, DELTA)
+    }
 }

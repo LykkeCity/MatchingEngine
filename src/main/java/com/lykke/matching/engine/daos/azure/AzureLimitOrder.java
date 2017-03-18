@@ -15,13 +15,13 @@ public class AzureLimitOrder extends AzureOrder {
 
     public AzureLimitOrder(String partitionKey, String uid, String assetPairId, String clientId, Double volume, Double price,
                            String status, Date createdAt, Date registered, Double remainingVolume, Date lastMatchTime) {
-        super(partitionKey, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
+        super(partitionKey, uid, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
         this.remainingVolume = remainingVolume;
         this.lastMatchTime = lastMatchTime;
     }
 
     public AzureLimitOrder(String partitionKey, LimitOrder order) {
-        super(partitionKey, order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
+        super(partitionKey, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
         this.remainingVolume = order.getRemainingVolume();
         this.lastMatchTime = order.getLastMatchTime();
     }
@@ -53,7 +53,8 @@ public class AzureLimitOrder extends AzureOrder {
     @Override
     public String toString() {
         return "LimitOrder{"  +
-                "assetPairId='" + assetPairId + '\'' +
+                "id='" + id + '\'' +
+                ", assetPairId='" + assetPairId + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", volume=" + volume +
                 ", price=" + price +

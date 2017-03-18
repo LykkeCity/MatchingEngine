@@ -23,14 +23,14 @@ public class AzureMarketOrder extends AzureOrder {
 
     public AzureMarketOrder(String uid, String assetPairId, String clientId, Double volume, Double price, String status,
                             Date createdAt, Date registered, Date matchedAt, boolean straight, Double dustSize) {
-        super(ORDER_ID, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
+        super(ORDER_ID, uid, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
         this.matchedAt = matchedAt;
         this.straight = straight;
         this.dustSize = dustSize;
     }
 
     public AzureMarketOrder(MarketOrder order) {
-        super(ORDER_ID, order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
+        super(ORDER_ID, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
         this.matchedAt = order.getMatchedAt();
         this.straight = order.getStraight();
         this.dustSize = order.getDustSize();
@@ -47,7 +47,8 @@ public class AzureMarketOrder extends AzureOrder {
     @Override
     public String toString() {
         return "MarketOrder{"  +
-                "assetPairId='" + assetPairId + '\'' +
+                "id='" + id + '\'' +
+                ", assetPairId='" + assetPairId + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", volume=" + volume +
                 ", dustSize=" + dustSize +

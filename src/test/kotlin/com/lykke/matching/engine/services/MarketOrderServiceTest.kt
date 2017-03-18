@@ -457,7 +457,7 @@ class MarketOrderServiceTest {
         assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
 
         val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(0.712908, activeLimitOrder.remainingVolume, DELTA)
+        assertEquals(0.71290846, activeLimitOrder.remainingVolume, DELTA)
         assertEquals(Processing.name, activeLimitOrder.status)
 
         val limitOrder = testLimitDatabaseAccessor.ordersDone.first()

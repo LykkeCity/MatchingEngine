@@ -82,6 +82,7 @@ class MarketOrderService_Dust_Test {
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTC1LKK", "BTC1", "LKK", 6, 8))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8, 2))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("SLRBTC1", "SLR", "BTC1", 8, 2))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5, 2))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5, 2))
 
@@ -358,6 +359,48 @@ class MarketOrderService_Dust_Test {
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0000272, straight = true)))
 
         Assert.assertEquals(OrderStatus.Dust.name, testDatabaseAccessor.getLastOrder().status)
+    }
+
+    @Test
+    fun test_20170309_01() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 0.0000782, volume = -4000.0, assetId = "SLRBTC1", clientId = "Client3"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "SLR", 238619.65864945))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.01))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.8722, straight = true)))
+
+        Assert.assertEquals(OrderStatus.Matched.name, testDatabaseAccessor.getLastOrder().status)
+        Assert.assertEquals(127.87220039, testDatabaseAccessor.getLastOrder().volume, DELTA)
+
+        val swap = transactionQueue.take() as Swap
+        Assert.assertEquals("Client4", swap.clientId1)
+        Assert.assertEquals(0.01, swap.Amount1, DELTA)
+        Assert.assertEquals("BTC1", swap.origAsset1)
+        Assert.assertEquals("Client3", swap.clientId2)
+        Assert.assertEquals(127.88, swap.Amount2, DELTA)
+        Assert.assertEquals("SLR", swap.origAsset2)
+    }
+
+    @Test
+    fun test_20170309_02() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 0.0000782, volume = -4000.0, assetId = "SLRBTC1", clientId = "Client3"))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "SLR", 238619.65864945))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.01))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = -0.01, straight = false)))
+
+        Assert.assertEquals(OrderStatus.Matched.name, testDatabaseAccessor.getLastOrder().status)
+        Assert.assertEquals(-0.01, testDatabaseAccessor.getLastOrder().volume, DELTA)
+
+        val swap = transactionQueue.take() as Swap
+        Assert.assertEquals("Client4", swap.clientId1)
+        Assert.assertEquals(0.01, swap.Amount1, DELTA)
+        Assert.assertEquals("BTC1", swap.origAsset1)
+        Assert.assertEquals("Client3", swap.clientId2)
+        Assert.assertEquals(127.87, swap.Amount2, DELTA)
+        Assert.assertEquals("SLR", swap.origAsset2)
     }
 
     @Test

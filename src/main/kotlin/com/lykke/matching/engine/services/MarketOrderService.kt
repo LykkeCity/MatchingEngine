@@ -175,15 +175,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (marketAsset.dustLimit!= null && marketAsset.dustLimit > 0.0) {
             val balance = balancesHolder.getBalance(marketOrder.clientId, marketAsset.assetId)
             if (marketOrder.straight && isMarketBuy) {
-                val lastLimitOrder = matchedOrders.last
                 if (balance - Math.abs(totalLimitPrice) < marketAsset.dustLimit) {
-                    marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(totalLimitPrice)) * lastLimitOrder.price, marketAsset.accuracy).toDouble()
-                    marketOrder.volume = if (marketOrder.isOrigBuySide()) balance else - balance
+                    marketOrder.dustSize = RoundingUtils.parseDouble((balance - Math.abs(totalLimitPrice)), marketAsset.accuracy).toDouble()
+                    marketOrder.volume = RoundingUtils.parseDouble(Math.signum(marketOrder.volume) * (Math.abs(marketOrder.volume) + marketOrder.dustSize!!), marketAsset.accuracy).toDouble()
                 }
             } else if (marketOrder.straight && !isMarketBuy) {
                 if (balance - Math.abs(marketOrder.volume) < marketAsset.dustLimit) {
                     marketOrder.dustSize = RoundingUtils.parseDouble(balance - Math.abs(marketOrder.volume), marketAsset.accuracy).toDouble()
-                    marketOrder.volume = RoundingUtils.parseDouble(Math.signum(marketOrder.volume) * (Math.abs(marketOrder.volume) + marketOrder.dustSize!!), marketAsset.accuracy).toDouble()
+                    marketOrder.volume = if (marketOrder.isOrigBuySide()) balance else - balance
                 }
             } else if (!marketOrder.straight) {
                 val marketVolume = if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume
@@ -360,7 +359,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 if (lkkTradesHistoryEnabled && (lkkTradesAssets.contains(assetPair.baseAssetId) || lkkTradesAssets.contains(assetPair.quotingAssetId))) {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume, now))
                 }
-                limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, assetsPairsHolder.getAssetPair(limitOrder.assetPairId).accuracy).toDouble()
+                val limitVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).baseAssetId)
+                limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble()
                 limitOrder.status = Processing.name
                 uncompletedLimitOrder = limitOrder
             }

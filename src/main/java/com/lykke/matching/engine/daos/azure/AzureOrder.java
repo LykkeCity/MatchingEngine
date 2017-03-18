@@ -10,6 +10,7 @@ abstract class AzureOrder extends TableServiceEntity {
     //row key: uid
 
     String assetPairId;
+    String id;
     String clientId;
     // volume > 0 - Buy side, otherwise - Sell side
     Double volume;
@@ -23,8 +24,9 @@ abstract class AzureOrder extends TableServiceEntity {
     AzureOrder() {
     }
 
-    AzureOrder(String partitionKey, String rowKey, String assetPairId, String clientId, Double volume, Double price, String status, Date createdAt, Date registered) {
+    AzureOrder(String partitionKey, String rowKey, String orderId, String assetPairId, String clientId, Double volume, Double price, String status, Date createdAt, Date registered) {
         super(partitionKey, rowKey);
+        this.id = orderId;
         this.assetPairId = assetPairId;
         this.clientId = clientId;
         this.volume = volume;
@@ -32,10 +34,6 @@ abstract class AzureOrder extends TableServiceEntity {
         this.status = status;
         this.createdAt = createdAt;
         this.registered = registered;
-    }
-
-    public String getId() {
-        return rowKey;
     }
 
     public Double getAbsVolume() {
@@ -106,10 +104,19 @@ abstract class AzureOrder extends TableServiceEntity {
         this.registered = registered;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     @Override
     public String toString() {
         return "Order{" +
-                "assetPairId='" + assetPairId + '\'' +
+                "id='" + id + '\'' +
+                ", assetPairId='" + assetPairId + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", volume=" + volume +
                 ", status='" + status + '\'' +

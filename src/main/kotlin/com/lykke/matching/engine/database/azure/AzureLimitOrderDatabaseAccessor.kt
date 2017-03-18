@@ -11,6 +11,7 @@ import com.lykke.matching.engine.daos.azure.AzureHourCandle.MICRO
 import com.lykke.matching.engine.daos.azure.AzureLimitOrder
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.order.OrderStatus
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
@@ -102,7 +103,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun addLimitOrderDone(order: LimitOrder) {
         try {
-            if (order.remainingVolume != order.volume) {
+            if (OrderStatus.InOrderBook.name != order.status) {
                 limitOrdersDoneTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(ORDER_ID, order)))
             }
         } catch(e: Exception) {
@@ -113,7 +114,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
 
     override fun addLimitOrdersDone(orders: List<LimitOrder>) {
         try {
-            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume }.map( { AzureLimitOrder(ORDER_ID, it) } ))
+            batchInsertOrMerge(limitOrdersDoneTable, orders.filter { OrderStatus.InOrderBook.name != it.status }.map( { AzureLimitOrder(ORDER_ID, it) } ))
         } catch(e: Exception) {
             LOGGER.error("Unable to add limit done orders, size: ${orders.size}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to add limit done orders, size: ${orders.size}", e)
