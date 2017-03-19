@@ -53,7 +53,7 @@ fun main(args: Array<String>) {
     }
 
     MetricsLogger.init(config.me.metricLoggerKeyValue, config.me.metricLoggerLine, config.slackNotifications.azureQueue.connectionString,
-            config.slackNotifications.azureQueue.queueName, config.me.metricLoggerSize)
+            config.slackNotifications.azureQueue.queueName, config.me.metricLoggerSize, config.slackNotifications.throttlingLimitSeconds)
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config.me.metricLoggerKeyValue))
 
