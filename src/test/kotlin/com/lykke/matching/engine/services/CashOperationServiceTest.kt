@@ -86,6 +86,24 @@ class CashOperationServiceTest {
     }
 
     @Test
+    fun testCashOutNegative() {
+        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
+        var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+        assertNotNull(balance)
+        assertEquals(50.0, balance, DELTA)
+
+        val cashOutTransaction = transactionQueue.take() as CashOut
+        assertEquals("Client1", cashOutTransaction.clientId)
+        assertEquals(50.0, cashOutTransaction.Amount, DELTA)
+        assertEquals("Asset1", cashOutTransaction.Currency)
+
+        service.processMessage(buildBalanceWrapper("Client1", "Asset1", -60.0))
+        balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
+        assertEquals(50.0, balance, DELTA)
+    }
+
+    @Test
     fun testResendCashIn() {
         val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))

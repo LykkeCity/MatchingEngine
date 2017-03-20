@@ -14,6 +14,7 @@ import com.lykke.matching.engine.logging.ME_CASH_OPERATION
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
+import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.ALREADY_PROCESSED
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -54,10 +55,19 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
                 Date(message.timestamp), message.volume)
+
+        if (message.volume < 0) {
+            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
+            if (balance < Math.abs(message.volume)) {
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                        .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId},asset:${message.assetId}, volume:${message.volume}").build())
+                CashOperationService.LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance")
+                return
+            }
+        }
+
         balancesHolder.processWalletOperations(listOf(operation))
-
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.id, operation.id))
-
         rabbitCashInOutQueue.put(CashOperation(message.id, operation.clientId, operation.dateTime, operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy), operation.assetId))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())

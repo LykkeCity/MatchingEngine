@@ -50,10 +50,18 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             return
         }
 
+        if (message.amount < 0) {
+            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
+            if (balance < Math.abs(message.amount)) {
+                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+                LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance")
+                return
+            }
+        }
+
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
                 Date(message.timestamp), message.amount)
         balancesHolder.processWalletOperations(listOf(operation))
-
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.id))
 
         if (message.sendToBitcoin) {
