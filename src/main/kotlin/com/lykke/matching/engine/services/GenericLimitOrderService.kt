@@ -9,7 +9,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
@@ -88,7 +87,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
 
     fun updateLimitOrder(order: LimitOrder) {
         if (useFileOrderBook) {
-            if (OrderStatus.InOrderBook.name != order.status) {
+            if (order.remainingVolume != order.volume) {
                 limitOrderDatabaseAccessor.addLimitOrderDone(order)
                 limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
             }
