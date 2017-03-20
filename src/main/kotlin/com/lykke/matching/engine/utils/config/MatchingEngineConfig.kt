@@ -25,5 +25,6 @@ data class MatchingEngineConfig(
     val migrate: Boolean,
     val useFileOrderBook: Boolean,
     val orderBookPath: String,
-    val publishToRabbitQueue: Boolean
+    val publishToRabbitQueue: Boolean,
+    val queueSizeLimit: Int
 )
