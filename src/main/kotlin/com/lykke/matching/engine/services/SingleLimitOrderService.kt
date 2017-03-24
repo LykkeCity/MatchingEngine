@@ -46,7 +46,7 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
         } else {
             val message = parseLimitOrder(messageWrapper.byteArray)
             val uid = UUID.randomUUID().toString()
-            order = LimitOrder(uid, uid, message.assetPairId, message.clientId, message.volume,
+            order = LimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
                     message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null)
 
             LOGGER.debug("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}")
