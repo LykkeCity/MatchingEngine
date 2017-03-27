@@ -43,9 +43,8 @@ class MultiLimitOrderCancelService(val limitOrderService: GenericLimitOrderServi
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
 
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
         }
-
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
 
