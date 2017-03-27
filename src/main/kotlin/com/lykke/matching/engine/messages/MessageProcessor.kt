@@ -45,6 +45,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.HistoryTicksService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
@@ -99,6 +100,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val multiLimitOrderService: MultiLimitOrderService
     val marketOrderService: MarketOrderService
     val limitOrderCancelService: LimitOrderCancelService
+    val multiLimitOrderCancelService: MultiLimitOrderCancelService
     val balanceUpdateService: BalanceUpdateService
     val tradesInfoService: TradesInfoService
     val historyTicksService: HistoryTicksService
@@ -150,6 +152,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
                 config.me.lykkeTradesHistoryEnabled, config.me.lykkeTradesHistoryAssets.split(";").toSet(), rabbitSwapQueue, config.me.publishToRabbitQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
@@ -242,6 +245,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.LIMIT_ORDER_CANCEL,
                 MessageType.OLD_LIMIT_ORDER_CANCEL -> {
                     limitOrderCancelService.processMessage(message)
+                }
+                MessageType.MULTI_LIMIT_ORDER_CANCEL -> {
+                    multiLimitOrderCancelService.processMessage(message)
                 }
                 MessageType.BALANCE_UPDATE -> {
                     balanceUpdateService.processMessage(message)

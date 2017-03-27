@@ -23,6 +23,7 @@ enum class MessageType (val type: Byte){
     ,LIMIT_ORDER(50)
     ,MULTI_LIMIT_ORDER(51)
     ,LIMIT_ORDER_CANCEL(55)
+    ,MULTI_LIMIT_ORDER_CANCEL(57)
     ,NEW_RESPONSE(99)
     ;
 

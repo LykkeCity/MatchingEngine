@@ -88,6 +88,14 @@ message LimitOrderCancel {
     required string limitOrderId = 2;
 }
 
+message MultiLimitOrderCancel {
+    required string uid = 1;
+    required int64 timestamp = 2;
+    required string clientId = 3;
+    required string assetPairId = 4;
+    required bool isBuy = 5;
+}
+
 message OldLimitOrderCancel {
     required int64 uid = 1;
     required int64 limitOrderId = 2;
