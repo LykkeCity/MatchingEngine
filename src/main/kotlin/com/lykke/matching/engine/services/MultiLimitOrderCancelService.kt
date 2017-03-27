@@ -27,22 +27,24 @@ class MultiLimitOrderCancelService(val limitOrderService: GenericLimitOrderServi
 
         val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
 
-        val orderBook = limitOrderService.getOrderBook(message.assetPairId).copy()
+        if (ordersToCancel.isNotEmpty()) {
+            val orderBook = limitOrderService.getOrderBook(message.assetPairId).copy()
 
-        ordersToCancel.forEach { order ->
-            orderBook.removeOrder(order)
+            ordersToCancel.forEach { order ->
+                orderBook.removeOrder(order)
+            }
+
+            limitOrderService.setOrderBook(message.assetPairId, orderBook)
+            limitOrderService.cancelLimitOrders(ordersToCancel)
+
+            val orderBookCopy = orderBook.copy()
+
+            val newOrderBook = OrderBook(message.assetPairId, message.isBuy, now, orderBookCopy.getOrderBook(message.isBuy))
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
+
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
         }
-
-        limitOrderService.setOrderBook(message.assetPairId, orderBook)
-        limitOrderService.cancelLimitOrders(ordersToCancel)
-
-        val orderBookCopy = orderBook.copy()
-
-        val newOrderBook = OrderBook(message.assetPairId, message.isBuy, now, orderBookCopy.getOrderBook(message.isBuy))
-        orderBookQueue.put(newOrderBook)
-        rabbitOrderBookQueue.put(newOrderBook)
-
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
 
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
