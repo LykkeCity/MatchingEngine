@@ -227,7 +227,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         var marketBalance = balancesHolder.getBalance(marketOrder.clientId, if (marketOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 
-        val rabbitTrade = com.lykke.matching.engine.outgoing.messages.Trade(marketOrder.externalId, now)
+        val rabbitTrade = com.lykke.matching.engine.outgoing.messages.Trade(marketOrder.id, now)
 
         matchedOrders.forEachIndexed { index, limitOrder ->
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
