@@ -56,13 +56,19 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
             }
         }
 
-        limitOrderService.processLimitOrder(order)
+        val book = limitOrderService.getOrderBook(order.assetPairId)
 
-        val orderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
-        orderBookQueue.put(orderBook)
-        rabbitOrderBookQueue.put(orderBook)
+        if (!book.leadToNegativeSpread(order)) {
+            limitOrderService.processLimitOrder(order)
 
-        LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
+            val orderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
+            orderBookQueue.put(orderBook)
+            rabbitOrderBookQueue.put(orderBook)
+
+            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
+        } else {
+            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} lead to negative spread, ignoring it")
+        }
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())

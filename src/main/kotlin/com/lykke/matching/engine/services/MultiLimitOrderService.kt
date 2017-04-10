@@ -77,10 +77,14 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         var sellSide = false
 
         orders.forEach { order ->
-            orderBook.addOrder(order)
-            limitOrderService.addOrder(order)
-            limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, now))
-            if (order.isBuySide()) buySide = true else sellSide = true
+            if (!orderBook.leadToNegativeSpread(order)) {
+                orderBook.addOrder(order)
+                limitOrderService.addOrder(order)
+                limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, now))
+                if (order.isBuySide()) buySide = true else sellSide = true
+            } else {
+                LOGGER.info("Order ${order.assetPairId}, ${order.volume}, ${order.price} lead to negative spread, ignoring it")
+            }
         }
 
         limitOrderService.setOrderBook(message.assetPairId, orderBook)

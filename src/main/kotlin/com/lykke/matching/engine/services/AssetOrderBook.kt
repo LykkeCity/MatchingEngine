@@ -38,6 +38,20 @@ class AssetOrderBook(val assetId: String) {
     fun getAskPrice() = askOrderBook.peek()?.price ?: 0.0
     fun getBidPrice() = bidOrderBook.peek()?.price ?: 0.0
 
+    fun leadToNegativeSpread(order: LimitOrder): Boolean {
+        val book = getOrderBook(!order.isBuySide())
+        if (book.isEmpty()) {
+            return false
+        }
+
+        val bestPrice = book.peek().price
+        if (order.isBuySide()) {
+            return order.price > bestPrice
+        } else {
+            return order.price < bestPrice
+        }
+    }
+
     fun copy() : AssetOrderBook {
         val book = AssetOrderBook(assetId)
 
