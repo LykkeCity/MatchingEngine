@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.daos.azure;
 
 import com.lykke.matching.engine.daos.MarketOrder;
+
 import java.util.Date;
 
 public class AzureMarketOrder extends AzureOrder {
@@ -11,6 +12,7 @@ public class AzureMarketOrder extends AzureOrder {
     private Date matchedAt;
     private boolean straight;
 
+    private Double reservedLimitVolume;
     private Double dustSize;
 
     public AzureMarketOrder() {
@@ -34,6 +36,7 @@ public class AzureMarketOrder extends AzureOrder {
         this.matchedAt = order.getMatchedAt();
         this.straight = order.getStraight();
         this.dustSize = order.getDustSize();
+        this.reservedLimitVolume = order.getReservedLimitVolume();
     }
 
     public boolean isBuySide() {

@@ -81,6 +81,7 @@ message MarketOrder {
     required string assetPairId = 4;
     required double volume = 5;
     required bool straight = 6;
+    optional double reservedLimitVolume = 7;
 }
 
 message LimitOrderCancel {

@@ -82,7 +82,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         val uid = UUID.randomUUID().toString()
         val order = MarketOrder(uid, message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
-        Processing.name, Date(message.timestamp), Date(), null, message.straight)
+        Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
 
         try {
             assetsPairsHolder.getAssetPair(order.assetPairId)
@@ -161,16 +161,24 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        if (!isEnoughFunds(marketOrder, if(marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume )) {
+        val isMarketBuy = marketOrder.isBuySide()
+        val marketAsset = assetsHolder.getAsset(if (isMarketBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
+        val limitAsset = assetsHolder.getAsset(if (isMarketBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
+
+        if (marketOrder.reservedLimitVolume != null && marketOrder.reservedLimitVolume!! > 0.0 && marketOrder.reservedLimitVolume!! > getBalance(marketOrder)) {
             marketOrder.status = NotEnoughFunds.name
             marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             LOGGER.info("Not enough funds for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
             return
         }
 
-        val isMarketBuy = marketOrder.isBuySide()
-        val marketAsset = assetsHolder.getAsset(if (isMarketBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
-        val limitAsset = assetsHolder.getAsset(if (isMarketBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
+        var balance = if (marketOrder.reservedLimitVolume != null && marketOrder.reservedLimitVolume!! > 0.0) marketOrder.reservedLimitVolume!! else getBalance(marketOrder)
+        if (balance < RoundingUtils.round(if( marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume, marketAsset.accuracy, true)) {
+            marketOrder.status = NotEnoughFunds.name
+            marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            LOGGER.info("Not enough funds for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
+            return
+        }
 
         if (marketAsset.dustLimit!= null && marketAsset.dustLimit > 0.0) {
             val balance = balancesHolder.getBalance(marketOrder.clientId, marketAsset.assetId)
@@ -435,6 +443,12 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         LOGGER.debug("${order.clientId} $asset : ${RoundingUtils.roundForPrint(balancesHolder.getBalance(order.clientId, asset))} >= ${RoundingUtils.roundForPrint(roundedPrice)}")
         return balancesHolder.getBalance(order.clientId, asset) >= roundedPrice
+    }
+
+    fun getBalance(order: MarketOrder): Double {
+        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+        val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+        return balancesHolder.getBalance(order.clientId, asset)
     }
 
     fun getMetricLine(uid: String, order: MarketOrder): Line {
