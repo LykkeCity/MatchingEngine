@@ -239,7 +239,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.OLD_LIMIT_ORDER -> {
                     singleLimitOrderService.processMessage(message)
                 }
-                MessageType.MARKET_ORDER -> {
+                MessageType.OLD_MARKET_ORDER -> {
                     marketOrderService.processMessage(message)
                 }
                 MessageType.LIMIT_ORDER_CANCEL,

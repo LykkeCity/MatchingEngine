@@ -74,8 +74,18 @@ message LimitOrder {
     optional bool cancelAllPreviousLimitOrders = 7;
 }
 
-message MarketOrder {
+message OldMarketOrder {
     required int64 uid = 1;
+    required int64 timestamp = 2;
+    required string clientId = 3;
+    required string assetPairId = 4;
+    required double volume = 5;
+    required bool straight = 6;
+    optional double reservedLimitVolume = 7;
+}
+
+message MarketOrder {
+    required string uid = 1;
     required int64 timestamp = 2;
     required string clientId = 3;
     required string assetPairId = 4;

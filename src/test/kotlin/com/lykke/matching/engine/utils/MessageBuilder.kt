@@ -21,7 +21,7 @@ class MessageBuilder {
                 LimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, ProtocolMessages.MarketOrder.newBuilder()
+            return MessageWrapper("Test", MessageType.OLD_MARKET_ORDER.type, ProtocolMessages.OldMarketOrder.newBuilder()
                     .setUid(Date().time)
                     .setTimestamp(order.createdAt.time)
                     .setClientId(order.clientId)
