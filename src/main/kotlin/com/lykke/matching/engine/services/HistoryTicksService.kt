@@ -2,8 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
-import java.time.DayOfWeek
-import java.time.LocalDate
 import java.util.Date
 import java.util.HashMap
 
@@ -68,15 +66,12 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
     }
 
     fun buildTicks() {
-        val dayOfWeek = LocalDate.now().dayOfWeek
-        if (dayOfWeek != DayOfWeek.SUNDAY) {
-            val now = Date()
-            val ticks = genericLimitOrderService.buildMarketProfile()
-            for (tick in ticks) {
-                addTicks(now.time, tick.asset, tick.ask, tick.bid)
-            }
-            saveTicks(now.time)
+        val now = Date()
+        val ticks = genericLimitOrderService.buildMarketProfile()
+        for (tick in ticks) {
+            addTicks(now.time, tick.asset, tick.ask, tick.bid)
         }
+        saveTicks(now.time)
     }
 
     fun addTicks(now: Long, asset: String, ask: Double, bid: Double) {
@@ -109,8 +104,8 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
     }
 
     fun saveTicks(now: Long) {
-        oneHourTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
         if (oneDayLastUpdateTime + oneDayUpdateInterval < now ) {
+            oneHourTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
             oneDayTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
             oneDayLastUpdateTime = now
         }
