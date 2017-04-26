@@ -150,7 +150,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
-                config.me.lykkeTradesHistoryEnabled, config.me.lykkeTradesHistoryAssets.split(";").toSet(), rabbitSwapQueue, config.me.publishToRabbitQueue)
+                config.me.lykkeTradesHistoryEnabled, rabbitSwapQueue, config.me.publishToRabbitQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)

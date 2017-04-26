@@ -67,7 +67,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
-                         private val lkkTradesAssets: Set<String>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
                          private val sendSwapToRabbit: Boolean): AbstractService<ProtocolMessages.MarketOrder> {
 
@@ -391,14 +390,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             if (marketRemainingVolume >= limitRemainingVolume) {
-                if (lkkTradesHistoryEnabled && (lkkTradesAssets.contains(assetPair.baseAssetId) || lkkTradesAssets.contains(assetPair.quotingAssetId))) {
+                if (lkkTradesHistoryEnabled) {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))
                 }
                 limitOrder.remainingVolume = 0.0
                 limitOrder.status = Matched.name
                 completedLimitOrders.add(limitOrder)
             } else {
-                if (lkkTradesHistoryEnabled && (lkkTradesAssets.contains(assetPair.baseAssetId) || lkkTradesAssets.contains(assetPair.quotingAssetId))) {
+                if (lkkTradesHistoryEnabled) {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume, now))
                 }
                 val limitVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).baseAssetId)

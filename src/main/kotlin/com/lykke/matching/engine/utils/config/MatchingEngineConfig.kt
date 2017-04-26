@@ -19,7 +19,6 @@ data class MatchingEngineConfig(
     val hoursCandleSaverInterval: Long,
     val queueSizeLoggerInterval: Long,
     val lykkeTradesHistoryEnabled: Boolean,
-    val lykkeTradesHistoryAssets: String,
     val whiteList: String?,
     val backendQueueName: String?,
     val migrate: Boolean,
