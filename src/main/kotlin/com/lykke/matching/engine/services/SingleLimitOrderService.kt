@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.logging.KeyValue
 import com.lykke.matching.engine.logging.ME_LIMIT_ORDER
 import com.lykke.matching.engine.logging.MetricsLogger
@@ -17,9 +18,11 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
-                              val orderBookQueue: BlockingQueue<OrderBook>,
-                              val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.OldLimitOrder> {
+class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderService,
+                              private val orderBookQueue: BlockingQueue<OrderBook>,
+                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                              private val assetsPairsHolder: AssetsPairsHolder,
+                              private val negativeSpreadAssets: Set<String>): AbstractService<ProtocolMessages.OldLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -58,7 +61,10 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
 
         val book = limitOrderService.getOrderBook(order.assetPairId)
 
-        if (!book.leadToNegativeSpread(order)) {
+        val pair = assetsPairsHolder.getAssetPair(order.assetPairId)
+        if ((negativeSpreadAssets.contains(pair.baseAssetId) || negativeSpreadAssets.contains(pair.quotingAssetId)) && book.leadToNegativeSpread(order)) {
+            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} lead to negative spread, ignoring it")
+        } else {
             limitOrderService.processLimitOrder(order)
 
             val orderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
@@ -66,8 +72,6 @@ class SingleLimitOrderService(val limitOrderService: GenericLimitOrderService,
             rabbitOrderBookQueue.put(orderBook)
 
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
-        } else {
-            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} lead to negative spread, ignoring it")
         }
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {

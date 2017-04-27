@@ -58,7 +58,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {        
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -67,7 +67,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
@@ -80,7 +80,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testNegativeSpread() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, setOf("EUR"))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)

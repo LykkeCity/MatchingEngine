@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -15,9 +16,11 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
-                             val orderBookQueue: BlockingQueue<OrderBook>,
-                             val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
+class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
+                             private val orderBookQueue: BlockingQueue<OrderBook>,
+                             private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                             private val assetsPairsHolder: AssetsPairsHolder,
+                             private val negativeSpreadAssets: Set<String>): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -76,14 +79,15 @@ class MultiLimitOrderService(val limitOrderService: GenericLimitOrderService,
         var buySide = false
         var sellSide = false
 
+        val pair = assetsPairsHolder.getAssetPair(message.assetPairId)
         orders.forEach { order ->
-            if (!orderBook.leadToNegativeSpread(order)) {
+            if ((negativeSpreadAssets.contains(pair.baseAssetId) || negativeSpreadAssets.contains(pair.quotingAssetId)) && orderBook.leadToNegativeSpread(order)) {
+                LOGGER.info("Order ${order.assetPairId}, ${order.volume}, ${order.price} lead to negative spread, ignoring it")
+            } else {
                 orderBook.addOrder(order)
                 limitOrderService.addOrder(order)
                 limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, now))
                 if (order.isBuySide()) buySide = true else sellSide = true
-            } else {
-                LOGGER.info("Order ${order.assetPairId}, ${order.volume}, ${order.price} lead to negative spread, ignoring it")
             }
         }
 
