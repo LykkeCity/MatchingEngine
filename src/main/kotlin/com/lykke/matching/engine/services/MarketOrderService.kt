@@ -40,7 +40,9 @@ import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.queue.transaction.Swap
 import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.round
@@ -68,7 +70,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val sendSwapToRabbit: Boolean): AbstractService<ProtocolMessages.MarketOrder> {
+                         private val sendSwapToRabbit: Boolean,
+                         private val sendTrades: Boolean = false): AbstractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -99,7 +102,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             assetsPairsHolder.getAssetPair(order.assetPairId)
         } catch (e: Exception) {
             order.status = UnknownAsset.name
-            marketOrderDatabaseAccessor.addMarketOrder(order)
+            if (!sendTrades) {
+                marketOrderDatabaseAccessor.addMarketOrder(order)
+            } else {
+                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            }
             LOGGER.info("Unknown asset: ${order.assetPairId}")
             writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
             METRICS_LOGGER.log(getMetricLine(order.externalId, order))
@@ -110,7 +117,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide())
         if (orderBook.size == 0) {
             order.status = NoLiquidity.name
-            marketOrderDatabaseAccessor.addMarketOrder(order)
+            if (!sendTrades) {
+                marketOrderDatabaseAccessor.addMarketOrder(order)
+            } else {
+                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            }
             LOGGER.info("No liquidity, no orders in order book, for market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}")
             writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
             return
@@ -184,7 +195,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         if (remainingVolume.greaterThan(0.0)) {
             marketOrder.status = NoLiquidity.name
-            marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            if (!sendTrades) {
+                marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            } else {
+                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+            }
             LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)} | Unfilled: ${RoundingUtils.roundForPrint(remainingVolume)}")
             writeResponse(messageWrapper, marketOrder, MessageStatus.NO_LIQUIDITY)
             return false
@@ -196,7 +211,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         if (marketOrder.reservedLimitVolume != null && marketOrder.reservedLimitVolume!! > 0.0 && marketOrder.reservedLimitVolume!! > getBalance(marketOrder)) {
             marketOrder.status = NotEnoughFunds.name
-            marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            if (!sendTrades) {
+                marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            } else {
+                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+            }
             LOGGER.info("Not enough funds for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
             writeResponse(messageWrapper, marketOrder, MessageStatus.NOT_ENOUGH_FUNDS, "Reserved volume is higher than available balance")
             return false
@@ -205,7 +224,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val balance = if (marketOrder.reservedLimitVolume != null && marketOrder.reservedLimitVolume!! > 0.0) marketOrder.reservedLimitVolume!! else getBalance(marketOrder)
         if (balance < RoundingUtils.round(if( marketOrder.isBuySide()) totalLimitPrice else totalMarketVolume, marketAsset.accuracy, true)) {
             marketOrder.status = NotEnoughFunds.name
-            marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            if (!sendTrades) {
+                marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            } else {
+                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+            }
             LOGGER.info("Not enough funds for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
             writeResponse(messageWrapper, marketOrder, MessageStatus.NOT_ENOUGH_FUNDS)
             return false
@@ -267,6 +290,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         var marketBalance = balancesHolder.getBalance(marketOrder.clientId, if (marketOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 
         val rabbitTrade = com.lykke.matching.engine.outgoing.messages.Trade(marketOrder.externalId, marketOrder.id, now)
+        val tradesInfo = LinkedList<TradeInfo>()
 
         matchedOrders.forEachIndexed { index, limitOrder ->
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
@@ -324,14 +348,22 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             //check dust
             if (marketAsset.dustLimit != null && Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume) < marketAsset.dustLimit) {
                 marketOrder.status = Dust.name
-                marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+                if (!sendTrades) {
+                    marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+                } else {
+                    rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+                }
                 LOGGER.info("Market volume ${RoundingUtils.roundForPrint(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(marketAsset.dustLimit)}. id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
                 writeResponse(messageWrapper, marketOrder, MessageStatus.DUST, "Market volume ${RoundingUtils.roundForPrint(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(marketAsset.dustLimit)}")
                 return false
             }
             if (limitAsset.dustLimit != null && Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit) {
                 marketOrder.status = Dust.name
-                marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+                if (!sendTrades) {
+                    marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+                } else {
+                    rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+                }
                 LOGGER.info("Limit volume ${RoundingUtils.roundForPrint(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(limitAsset.dustLimit)}. id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
                 writeResponse(messageWrapper, marketOrder, MessageStatus.DUST, "Limit volume ${RoundingUtils.roundForPrint(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(limitAsset.dustLimit)}")
                 return false
@@ -419,6 +451,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
                     Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id, marketOrder.externalId), ClientOrderPair(limitOrder.clientId, limitOrder.id, limitOrder.externalId), clientTradePairs.toTypedArray())))
 
+            tradesInfo.add(TradeInfo(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume, limitOrder.price, limitOrder.id, limitOrder.externalId, now))
             totalMarketVolume += volume
             totalLimitPrice += volume * limitOrder.price
             totalLimitVolume += Math.abs(if (marketOrder.straight) marketRoundedVolume else oppositeRoundedVolume)
@@ -429,15 +462,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         marketOrder.matchedAt = now
         marketOrder.price = RoundingUtils.round(if (marketOrder.straight) totalLimitPrice / marketOrder.getAbsVolume() else marketOrder.getAbsVolume() / totalMarketVolume
                 , assetsPairsHolder.getAssetPair(marketOrder.assetPairId).accuracy, marketOrder.isOrigBuySide())
-        marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
-        marketOrderDatabaseAccessor.addMarketOrderWithGeneratedRowId(marketOrder)
 
-        marketOrderDatabaseAccessor.addTrades(marketTrades)
-        marketOrderDatabaseAccessor.addTrades(limitTrades)
-        marketOrderDatabaseAccessor.addMatchingData(matchingData)
-        marketOrderDatabaseAccessor.addOrderTradesLinks(orderTradesLinks)
         marketOrderDatabaseAccessor.addLkkTrades(lkkTrades)
-
         balancesHolder.processWalletOperations(cashMovements)
 
         genericLimitOrderService.moveOrdersToDone(completedLimitOrders)
@@ -455,10 +481,22 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         genericLimitOrderService.setOrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), orderBook)
 
-        if (sendSwapToRabbit) {
-            rabbitSwapQueue.put(rabbitTrade)
+        if (!sendTrades) {
+            marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
+            marketOrderDatabaseAccessor.addMarketOrderWithGeneratedRowId(marketOrder)
+
+            marketOrderDatabaseAccessor.addTrades(marketTrades)
+            marketOrderDatabaseAccessor.addTrades(limitTrades)
+            marketOrderDatabaseAccessor.addMatchingData(matchingData)
+            marketOrderDatabaseAccessor.addOrderTradesLinks(orderTradesLinks)
+
+            if (sendSwapToRabbit) {
+                rabbitSwapQueue.put(rabbitTrade)
+            } else {
+                bitcoinTransactions.forEach { backendQueue.put(it) }
+            }
         } else {
-            bitcoinTransactions.forEach { backendQueue.put(it) }
+            rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder, tradesInfo))
         }
 
         val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).getCopyOfOrderBook(!marketOrder.isBuySide()))

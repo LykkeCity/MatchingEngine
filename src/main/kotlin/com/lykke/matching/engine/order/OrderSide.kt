@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.order
 
-enum class OrderSide () {
+enum class OrderSide {
     Buy,
     Sell;
 
