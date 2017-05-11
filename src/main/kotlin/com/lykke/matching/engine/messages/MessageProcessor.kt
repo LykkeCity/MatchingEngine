@@ -240,6 +240,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                     singleLimitOrderService.processMessage(message)
                 }
                 MessageType.MARKET_ORDER,
+                MessageType.NEW_MARKET_ORDER,
                 MessageType.OLD_MARKET_ORDER -> {
                     marketOrderService.processMessage(message)
                 }
