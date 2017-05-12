@@ -459,7 +459,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
                     Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id, marketOrder.externalId), ClientOrderPair(limitOrder.clientId, limitOrder.id, limitOrder.externalId), clientTradePairs.toTypedArray())))
 
-            tradesInfo.add(TradeInfo(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume, limitOrder.price, limitOrder.id, limitOrder.externalId, now))
+            tradesInfo.add(TradeInfo(marketOrder.clientId, Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume).round(marketAsset.accuracy), marketAsset.assetId,
+                    limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
+                    limitOrder.price, limitOrder.id, limitOrder.externalId, now))
             totalMarketVolume += volume
             totalLimitPrice += volume * limitOrder.price
             totalLimitVolume += Math.abs(if (marketOrder.straight) marketRoundedVolume else oppositeRoundedVolume)
