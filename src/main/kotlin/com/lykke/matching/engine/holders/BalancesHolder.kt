@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.RoundingUtils
 import java.util.HashMap
 import java.util.HashSet
@@ -39,7 +40,8 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         updateBalance(clientId, assetId, newBalance)
     }
 
-    fun processWalletOperations(operations: List<WalletOperation>) {
+    fun processWalletOperations(operations: List<WalletOperation>): List<ClientBalanceUpdate> {
+        val updates = HashMap<String, ClientBalanceUpdate>()
         val walletsToAdd = LinkedList<Wallet>()
         val clients = HashSet<String>()
         operations.forEach { operation ->
@@ -58,11 +60,15 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                 walletsToAdd.add(wallet)
             }
             clients.add(operation.clientId)
+
+            updates.getOrPut("${operation.clientId}_${operation.assetId}") {ClientBalanceUpdate(operation.clientId, operation.assetId, balance, newBalance)}.newBalance = newBalance
         }
 
         walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
 
         clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
+
+        return updates.values.toList()
     }
 
     fun updateBalance(clientId: String, assetId: String, balance: Double) {

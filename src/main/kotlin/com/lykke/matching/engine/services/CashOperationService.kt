@@ -15,8 +15,11 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.SEND_TO_BITCOIN
 import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.queue.transaction.CashIn
 import com.lykke.matching.engine.queue.transaction.CashOut
 import com.lykke.matching.engine.queue.transaction.Transaction
@@ -29,7 +32,8 @@ import java.util.concurrent.BlockingQueue
 
 class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                            private val backendQueue: BlockingQueue<Transaction>,
-                           private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.CashOperation> {
+                           private val balancesHolder: BalancesHolder,
+                           private val balanceUpdateQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
@@ -61,7 +65,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
                 Date(message.timestamp), message.amount)
-        balancesHolder.processWalletOperations(listOf(operation))
+        balanceUpdateQueue.put(BalanceUpdate(message.uid.toString(), MessageType.CASH_OPERATION.name, Date(message.timestamp), balancesHolder.processWalletOperations(listOf(operation))))
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.id))
 
         if (message.sendToBitcoin) {

@@ -71,17 +71,18 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     }
 
     val messagesQueue: BlockingQueue<MessageWrapper> = queue
-    val bitcoinQueue: BlockingQueue<Transaction>
-    val tradesInfoQueue: BlockingQueue<TradeInfo>
-    val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification>
-    val quotesNotificationQueue: BlockingQueue<QuotesUpdate>
-    val orderBooksQueue: BlockingQueue<OrderBook>
+    val bitcoinQueue: BlockingQueue<Transaction> = LinkedBlockingQueue<Transaction>()
+    val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
+    val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
+    val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
+    val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
+    val balanceUpdatesQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
 
-    val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable>
-    val rabbitTransferQueue: BlockingQueue<JsonSerializable>
-    val rabbitCashSwapQueue: BlockingQueue<JsonSerializable>
-    val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>
-    val rabbitSwapQueue: BlockingQueue<JsonSerializable>
+    val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -120,16 +121,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val historyTicksBuilder: Timer
 
     init {
-        this.bitcoinQueue = LinkedBlockingQueue<Transaction>()
-        this.tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-        this.balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-        this.quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-        this.orderBooksQueue = LinkedBlockingQueue<OrderBook>()
-        this.rabbitOrderBooksQueue = LinkedBlockingQueue<JsonSerializable>()
-        this.rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
-        this.rabbitCashSwapQueue = LinkedBlockingQueue<JsonSerializable>()
-        this.rabbitCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-        this.rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.aLimitOrdersConnString, config.me.db.hLimitOrdersConnString, config.me.db.hLiquidityConnString)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hMarketOrdersConnString, config.me.db.hTradesConnString)
@@ -142,18 +133,18 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString), 60000))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue)
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue, balanceHolder)
-        this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
-        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue, balanceHolder, balanceUpdatesQueue)
+        this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue, balanceUpdatesQueue)
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue, balanceUpdatesQueue)
+        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue, balanceUpdatesQueue)
         this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
         this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
         this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
-                config.me.lykkeTradesHistoryEnabled, rabbitSwapQueue, config.me.publishToRabbitQueue, config.me.sendTrades)
+                config.me.lykkeTradesHistoryEnabled, rabbitSwapQueue, balanceUpdatesQueue, config.me.publishToRabbitQueue, config.me.sendTrades)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
-        this.balanceUpdateService = BalanceUpdateService(balanceHolder)
+        this.balanceUpdateService = BalanceUpdateService(balanceHolder, balanceUpdatesQueue)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
@@ -177,6 +168,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 config.me.rabbit.password, config.me.rabbit.exchangeCashOperation, rabbitCashInOutQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeSwap, rabbitSwapQueue).start()
+        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
+                config.me.rabbit.password, config.me.rabbit.exchangeBalanceUpdate, balanceUpdatesQueue).start()
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())

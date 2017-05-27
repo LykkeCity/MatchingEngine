@@ -6,9 +6,12 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
@@ -20,7 +23,8 @@ import java.util.concurrent.BlockingQueue
 class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                            private val assetsHolder: AssetsHolder,
                            private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
+                           private val notificationQueue: BlockingQueue<JsonSerializable>,
+                           private val balanceUpdateQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
@@ -37,16 +41,18 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 , message.clientId1, message.assetId1, message.volume1
                 , message.clientId2, message.assetId2, message.volume2)
 
-        val balance1 = balancesHolder.getBalance(message.clientId1, message.assetId1)
-        if (balance1 < operation.volume1) {
+        val balance1_1 = balancesHolder.getBalance(message.clientId1, message.assetId1)
+        val balance1_2 = balancesHolder.getBalance(message.clientId1, message.assetId2)
+        if (balance1_1 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId1},asset:${message.assetId1}, volume:${message.volume1}").build())
             LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId1}, ${operation.volume1} ${operation.asset1}")
             return
         }
 
-        val balance2 = balancesHolder.getBalance(message.clientId2, message.assetId2)
-        if (balance2 < operation.volume1) {
+        val balance2_1 = balancesHolder.getBalance(message.clientId2, message.assetId1)
+        val balance2_2 = balancesHolder.getBalance(message.clientId2, message.assetId2)
+        if (balance2_2 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId2},asset:${message.assetId2}, volume:${message.volume2}").build())
             LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId2}, ${operation.volume2} ${operation.asset2}")
@@ -58,6 +64,12 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
+
+        balanceUpdateQueue.put(BalanceUpdate(message.id, MessageType.CASH_SWAP_OPERATION.name, Date(message.timestamp),
+                listOf(ClientBalanceUpdate(message.clientId1, message.assetId1, balance1_1, balancesHolder.getBalance(message.clientId1, message.assetId1)),
+                        ClientBalanceUpdate(message.clientId1, message.assetId2, balance1_2, balancesHolder.getBalance(message.clientId1, message.assetId2)),
+                        ClientBalanceUpdate(message.clientId2, message.assetId1, balance2_1, balancesHolder.getBalance(message.clientId2, message.assetId1)),
+                        ClientBalanceUpdate(message.clientId2, message.assetId2, balance2_2, balancesHolder.getBalance(message.clientId2, message.assetId2)))))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +

@@ -17,8 +17,10 @@ import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.ALREADY_PROCESSED
 import com.lykke.matching.engine.messages.MessageStatus.OK
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
@@ -32,7 +34,8 @@ import java.util.concurrent.BlockingQueue
 class CashInOutOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                            private val assetsHolder: AssetsHolder,
                            private val balancesHolder: BalancesHolder,
-                           private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
+                           private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
+                           private val balanceUpdateQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
@@ -66,7 +69,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
             }
         }
 
-        balancesHolder.processWalletOperations(listOf(operation))
+        balanceUpdateQueue.put(BalanceUpdate(message.id, MessageType.CASH_IN_OUT_OPERATION.name, Date(message.timestamp), balancesHolder.processWalletOperations(listOf(operation))))
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.id, operation.id))
         rabbitCashInOutQueue.put(CashOperation(message.id, operation.clientId, operation.dateTime, operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy), operation.assetId))
 
