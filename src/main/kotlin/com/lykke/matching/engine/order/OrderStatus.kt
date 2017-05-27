@@ -9,6 +9,8 @@ enum class OrderStatus {
     ,Matched
     //Not enough funds on account
     ,NotEnoughFunds
+    //Reserved volume greater than balance
+    ,ReservedVolumeGreaterThanBalance
     //No liquidity
     ,NoLiquidity
     //Unknown asset

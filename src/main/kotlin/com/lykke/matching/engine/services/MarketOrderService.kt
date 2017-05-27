@@ -33,6 +33,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Dust
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
@@ -218,14 +219,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val limitAsset = assetsHolder.getAsset(if (isMarketBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
 
         if (marketOrder.reservedLimitVolume != null && marketOrder.reservedLimitVolume!! > 0.0 && marketOrder.reservedLimitVolume!! > getBalance(marketOrder)) {
-            marketOrder.status = NotEnoughFunds.name
+            marketOrder.status = OrderStatus.ReservedVolumeGreaterThanBalance.name
             if (!sendTrades) {
                 marketOrderDatabaseAccessor.addMarketOrder(marketOrder)
             } else {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
             }
             LOGGER.info("Not enough funds for market order id: ${marketOrder.id}}, client: ${marketOrder.clientId}, asset: ${marketOrder.assetPairId}, volume: ${RoundingUtils.roundForPrint(marketOrder.volume)}")
-            writeResponse(messageWrapper, marketOrder, MessageStatus.NOT_ENOUGH_FUNDS, "Reserved volume is higher than available balance")
+            writeResponse(messageWrapper, marketOrder, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")
             return false
         }
 
