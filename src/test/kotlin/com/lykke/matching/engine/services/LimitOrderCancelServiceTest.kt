@@ -17,6 +17,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -32,10 +33,11 @@ class LimitOrderCancelServiceTest {
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+    val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue)
+    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue)
 
     @Before
     fun setUp() {

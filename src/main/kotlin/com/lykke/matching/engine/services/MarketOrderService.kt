@@ -40,7 +40,6 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -72,7 +71,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val walletCredentialsCache: WalletCredentialsCache,
                          private val lkkTradesHistoryEnabled: Boolean,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
                          private val sendSwapToRabbit: Boolean,
                          private val sendTrades: Boolean = false): AbstractService<ProtocolMessages.MarketOrder> {
 
@@ -478,7 +476,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         marketOrderDatabaseAccessor.addLkkTrades(lkkTrades)
 
-        balanceUpdateQueue.put(BalanceUpdate(marketOrder.id, MessageType.MARKET_ORDER.name, marketOrder.createdAt, balancesHolder.processWalletOperations(cashMovements)))
+        balancesHolder.processWalletOperations(marketOrder.externalId, MessageType.MARKET_ORDER.name, cashMovements)
 
         genericLimitOrderService.moveOrdersToDone(completedLimitOrders)
         cancelledLimitOrders.forEach { limitOrder ->

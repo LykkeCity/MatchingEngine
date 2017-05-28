@@ -4,8 +4,12 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.utils.RoundingUtils
+import org.apache.log4j.Logger
+import java.util.Date
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
@@ -13,8 +17,13 @@ import java.util.concurrent.BlockingQueue
 
 class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                      private val assetsHolder: AssetsHolder,
-                     private val notificationQueue: BlockingQueue<BalanceUpdateNotification>
+                     private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
+                     private val balanceUpdateQueue: BlockingQueue<JsonSerializable>
                      ) {
+
+    companion object {
+        val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
+    }
 
     private val balances = walletDatabaseAccessor.loadBalances()
     private val wallets = walletDatabaseAccessor.loadWallets()
@@ -31,16 +40,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         return 0.0
     }
 
-    fun addBalance(clientId: String, assetId: String, amount: Double) {
-        val balance = getBalance(clientId, assetId)
-        val asset = assetsHolder.getAsset(assetId)
-
-        val newBalance = RoundingUtils.parseDouble(balance + amount, asset.accuracy).toDouble()
-
-        updateBalance(clientId, assetId, newBalance)
-    }
-
-    fun processWalletOperations(operations: List<WalletOperation>): List<ClientBalanceUpdate> {
+    fun processWalletOperations(id: String, type: String, operations: List<WalletOperation>) {
         val updates = HashMap<String, ClientBalanceUpdate>()
         val walletsToAdd = LinkedList<Wallet>()
         val clients = HashSet<String>()
@@ -68,18 +68,26 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
 
-        return updates.values.toList()
+        sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: Double) {
+    fun updateBalance(id: String, type: String, clientId: String, assetId: String, balance: Double) {
         val client = balances.getOrPut(clientId) { HashMap<String, Double>() }
         client.put(assetId, balance)
 
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
+        val oldBalance = wallet.balances[assetId]?.balance ?: 0.0
         wallet.setBalance(assetId, balance)
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
         notificationQueue.put(BalanceUpdateNotification(clientId))
+
+        sendBalanceUpdate(BalanceUpdate(id, type, Date(), listOf(ClientBalanceUpdate(clientId, assetId, oldBalance, balance))))
+    }
+
+    private fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
+        LOGGER.info(balanceUpdate.toString())
+        balanceUpdateQueue.put(balanceUpdate)
     }
 }

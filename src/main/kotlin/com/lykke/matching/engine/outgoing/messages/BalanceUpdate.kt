@@ -11,6 +11,10 @@ class BalanceUpdate( val id: String,
     override fun toJson(): String {
         return GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").create().toJson(this)
     }
+
+    override fun toString(): String {
+        return toJson()
+    }
 }
 
 class ClientBalanceUpdate(

@@ -39,10 +39,11 @@ class LimitOrderServiceTest {
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>())
+    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue)
 
     @Before
     fun setUp() {
