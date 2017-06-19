@@ -10,6 +10,7 @@ import com.lykke.matching.engine.logging.ME_BALANCE_UPDATE
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.logging.UID
+import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -17,7 +18,7 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 
-class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.BalanceUpdate> {
+class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.OldBalanceUpdate> {
 
     companion object {
         val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
@@ -27,25 +28,48 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+        if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
+            val message = parseOld(messageWrapper.byteArray)
+            LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
 
-        balancesHolder.updateBalance(message.uid.toString(), MessageType.BALANCE_UPDATE.name, message.clientId, message.assetId, message.amount)
+            balancesHolder.updateBalance(message.uid.toString(), MessageType.OLD_BALANCE_UPDATE.name, message.clientId, message.assetId, message.amount)
 
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
-        LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
-        
-        METRICS_LOGGER.log(Line(ME_BALANCE_UPDATE, arrayOf(
-                KeyValue(UID, message.uid.toString()),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
-                KeyValue(CLIENT_ID, message.clientId),
-                KeyValue(ASSET, message.assetId),
-                KeyValue(AMOUNT, message.amount.toString())
-        )))
-        METRICS_LOGGER.log(KeyValue(ME_BALANCE_UPDATE, (++messagesCount).toString()))
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+            LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+
+            METRICS_LOGGER.log(Line(ME_BALANCE_UPDATE, arrayOf(
+                    KeyValue(UID, message.uid.toString()),
+                    KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
+                    KeyValue(CLIENT_ID, message.clientId),
+                    KeyValue(ASSET, message.assetId),
+                    KeyValue(AMOUNT, message.amount.toString())
+            )))
+            METRICS_LOGGER.log(KeyValue(ME_BALANCE_UPDATE, (++messagesCount).toString()))
+        } else {
+            val message = parse(messageWrapper.byteArray)
+            LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+
+            balancesHolder.updateBalance(message.uid, MessageType.OLD_BALANCE_UPDATE.name, message.clientId, message.assetId, message.amount)
+
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
+            LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+
+            METRICS_LOGGER.log(Line(ME_BALANCE_UPDATE, arrayOf(
+                    KeyValue(UID, message.uid.toString()),
+                    KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
+                    KeyValue(CLIENT_ID, message.clientId),
+                    KeyValue(ASSET, message.assetId),
+                    KeyValue(AMOUNT, message.amount.toString())
+            )))
+            METRICS_LOGGER.log(KeyValue(ME_BALANCE_UPDATE, (++messagesCount).toString()))
+        }
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.BalanceUpdate {
         return ProtocolMessages.BalanceUpdate.parseFrom(array)
+    }
+
+    private fun parseOld(array: ByteArray): ProtocolMessages.OldBalanceUpdate {
+        return ProtocolMessages.OldBalanceUpdate.parseFrom(array)
     }
 }

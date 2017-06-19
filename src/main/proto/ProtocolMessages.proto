@@ -120,6 +120,13 @@ message OldLimitOrderCancel {
 }
 
 message BalanceUpdate {
+    required string uid = 1;
+    required string clientId = 2;
+    required string assetId = 3;
+    required double amount = 4;
+}
+
+message OldBalanceUpdate {
     required int64 uid = 1;
     required string clientId = 2;
     required string assetId = 3;

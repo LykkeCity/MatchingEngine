@@ -244,6 +244,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.MULTI_LIMIT_ORDER_CANCEL -> {
                     multiLimitOrderCancelService.processMessage(message)
                 }
+                MessageType.OLD_BALANCE_UPDATE,
                 MessageType.BALANCE_UPDATE -> {
                     balanceUpdateService.processMessage(message)
                 }
