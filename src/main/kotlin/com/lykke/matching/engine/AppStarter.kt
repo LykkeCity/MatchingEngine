@@ -1,6 +1,5 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.database.azure.AzureSharedDatabaseAccessor
 import com.lykke.matching.engine.logging.HttpLogger
 import com.lykke.matching.engine.logging.KeyValue
 import com.lykke.matching.engine.logging.LoggableObject
@@ -13,11 +12,8 @@ import com.lykke.matching.engine.utils.migration.MigrateOrderBooksToFile
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Date
 import java.util.concurrent.LinkedBlockingQueue
-
 
 val LOGGER = Logger.getLogger("AppStarter")
 
@@ -40,15 +36,6 @@ fun main(args: Array<String>) {
 
     if (config.me.migrate) {
         MigrateOrderBooksToFile().migrate(config)
-        return
-    }
-
-    val sharedDbAccessor = AzureSharedDatabaseAccessor(config.me.db.sharedStorageConnString)
-    val lastKeepAlive: Date? = sharedDbAccessor.getLastKeepAlive()
-
-    if (lastKeepAlive != null && startTime.minusMinutes(1).isBefore(LocalDateTime.ofInstant(lastKeepAlive.toInstant(), ZoneId.systemDefault()))) {
-        teeLog("Matching instance is already running, last keep alive is : ${LocalDateTime.ofInstant(lastKeepAlive.toInstant(), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}. " +
-                "Start is possible if last keep alive is older than one minute")
         return
     }
 

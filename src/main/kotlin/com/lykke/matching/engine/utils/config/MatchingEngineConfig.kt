@@ -27,5 +27,6 @@ data class MatchingEngineConfig(
     val orderBookPath: String,
     val publishToRabbitQueue: Boolean,
     val sendTrades: Boolean,
-    val queueSizeLimit: Int
+    val queueSizeLimit: Int,
+    val name: String
 )

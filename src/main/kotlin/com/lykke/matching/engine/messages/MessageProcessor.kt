@@ -53,6 +53,7 @@ import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
 import com.sun.net.httpserver.HttpServer
 import org.apache.log4j.Logger
 import java.net.InetSocketAddress
@@ -192,8 +193,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
             queueSizeLogger.log()
         }
-        fixedRateTimer(name = "StatusUpdater", initialDelay = 0, period = 30000) {
-            sharedDatabaseAccessor.updateKeepAlive(Date(), AppVersion.VERSION)
+
+        val keepAliveUpdater = HttpKeepAliveAccessor(config.keepAlive.path)
+        fixedRateTimer(name = "KeepAliveUpdater", initialDelay = 0, period = config.keepAlive.interval) {
+            keepAliveUpdater.updateKeepAlive(Date(), config.me.name, AppVersion.VERSION ?: "")
         }
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
