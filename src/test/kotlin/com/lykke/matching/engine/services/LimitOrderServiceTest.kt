@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
 
 class LimitOrderServiceTest {
 
-    val testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
+    var testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -48,7 +48,7 @@ class LimitOrderServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.clear()
+        testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
         testWalletDatabaseAcessor.clear()
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
@@ -70,11 +70,11 @@ class LimitOrderServiceTest {
     @Test
     fun testCancelPrevAndAddLimitOrder() {
         val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0), uid = 1))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0), uid = 2))
         assertEquals(2, testDatabaseAccessor.orders.size)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0), true))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0), true, uid = 3))
         assertEquals(1, testDatabaseAccessor.orders.size)
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 300.0 }
         assertNotNull(order)
@@ -104,9 +104,9 @@ class LimitOrderServiceTest {
         assertFalse { service.isEnoughFunds(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 501.0), 501.0) }
     }
 
-    private fun buildLimitOrderWrapper(order: LimitOrder, cancel: Boolean = false): MessageWrapper {
+    private fun buildLimitOrderWrapper(order: LimitOrder, cancel: Boolean = false, uid: Long = Date().time): MessageWrapper {
         return MessageWrapper("Test", MessageType.OLD_LIMIT_ORDER.type, ProtocolMessages.OldLimitOrder.newBuilder()
-                .setUid(Date().time)
+                .setUid(uid)
                 .setTimestamp(order.createdAt.time)
                 .setClientId(order.clientId)
                 .setAssetPairId(order.assetPairId)
