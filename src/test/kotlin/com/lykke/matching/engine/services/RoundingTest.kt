@@ -36,23 +36,24 @@ import java.util.concurrent.LinkedBlockingQueue
 class RoundingTest {
     var testDatabaseAccessor = TestMarketOrderDatabaseAccessor()
     var testLimitDatabaseAccessor = TestLimitOrderDatabaseAccessor()
-    var testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
+    var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val transactionQueue = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAcessor)
+    val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAccessor)
 
-    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue)
+    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
+    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue)
 
     var limitOrderService = GenericLimitOrderService(false, testLimitDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-    var service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, rabbitSwapQueue, false)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, transactionQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, rabbitSwapQueue, false)
 
     val DELTA = 1e-9
 
@@ -60,24 +61,24 @@ class RoundingTest {
     fun setUp() {
         testDatabaseAccessor.clear()
         testLimitDatabaseAccessor.clear()
-        testWalletDatabaseAcessor.clear()
+        testWalletDatabaseAccessor.clear()
         transactionQueue.clear()
         tradesInfoQueue.clear()
 
-        testBackOfficeDatabaseAcessor.addAsset(Asset("EUR", 2, "EUR"))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("JPY", 2, "JPY"))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("BTC", 8, "BTC"))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("CHF", 2, "CHF"))
-        testBackOfficeDatabaseAcessor.addAsset(Asset("LKK", 0, "LKK"))
-        testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Client3", "Client3-Multisig"))
-        testBackOfficeDatabaseAcessor.addWalletCredentials(WalletCredentials("Client4", "Client4-Multisig"))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3, 8))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3, 8))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2, 8))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2, "JPY"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2, "CHF"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0, "LKK"))
+        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client3", "Client3-Multisig"))
+        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client4", "Client4-Multisig"))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3, 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3, 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2, 8))
 
         this.walletCredentialsCache.reloadCache()
     }
@@ -88,14 +89,14 @@ class RoundingTest {
 
     fun initServices() {
         limitOrderService = GenericLimitOrderService(false, testLimitDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-        service = MarketOrderService(testBackOfficeDatabaseAcessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, transactionQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, rabbitSwapQueue, false)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, transactionQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, rabbitSwapQueue, false)
     }
 
     @Test
     fun testStraightBuy() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = -1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0)))
@@ -114,10 +115,10 @@ class RoundingTest {
         Assert.assertEquals(-1.12, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
 
-        Assert.assertEquals(999.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        Assert.assertEquals(1.12, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
-        Assert.assertEquals(1498.88, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(999.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
+        Assert.assertEquals(1.12, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
+        Assert.assertEquals(1498.88, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -131,8 +132,8 @@ class RoundingTest {
     @Test
     fun testStraightSell() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0)))
@@ -151,10 +152,10 @@ class RoundingTest {
         Assert.assertEquals(1.11, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
 
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        Assert.assertEquals(998.89, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
-        Assert.assertEquals(1.11, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
+        Assert.assertEquals(998.89, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(1499.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
+        Assert.assertEquals(1.11, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -168,8 +169,8 @@ class RoundingTest {
     @Test
     fun testNotStraightBuy() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0, straight = false)))
@@ -188,10 +189,10 @@ class RoundingTest {
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(-0.9, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
 
-        Assert.assertEquals(999.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.9, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
-        Assert.assertEquals(1499.1, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+        Assert.assertEquals(999.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(0.9, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(1499.1, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -205,8 +206,8 @@ class RoundingTest {
     @Test
     fun testNotStraightSell() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = -1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, straight = false)))
@@ -225,10 +226,10 @@ class RoundingTest {
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(0.89, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
 
-        Assert.assertEquals(999.11, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.89, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
-        Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(999.11, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(0.89, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
+        Assert.assertEquals(1499.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -242,8 +243,8 @@ class RoundingTest {
     @Test
     fun testNotStraightSellRoundingError() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 909.727, volume = -1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "CHF", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "CHF", 1.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = 	-0.3772, straight = false)))
@@ -262,10 +263,10 @@ class RoundingTest {
         Assert.assertEquals(-0.38, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "CHF" }?.volume)
         Assert.assertEquals(0.0004177, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(0.9995823, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(0.38, testWalletDatabaseAcessor.getBalance("Client3", "CHF"), DELTA)
-        Assert.assertEquals(0.0004177, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(0.62, testWalletDatabaseAcessor.getBalance("Client4", "CHF"), DELTA)
+        Assert.assertEquals(0.9995823, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(0.38, testWalletDatabaseAccessor.getBalance("Client3", "CHF"), DELTA)
+        Assert.assertEquals(0.0004177, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(0.62, testWalletDatabaseAccessor.getBalance("Client4", "CHF"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -279,8 +280,8 @@ class RoundingTest {
     @Test
     fun testStraightBuyBTC() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = -1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0)))
@@ -299,10 +300,10 @@ class RoundingTest {
         Assert.assertEquals(-678.23, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(999.0, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(678.23, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(821.77, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(999.0, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(678.23, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(821.77, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -316,8 +317,8 @@ class RoundingTest {
     @Test
     fun testStraightSellBTC() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0)))
@@ -336,10 +337,10 @@ class RoundingTest {
         Assert.assertEquals(678.22, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(321.78, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(678.22, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(321.78, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(1499.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(678.22, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -353,8 +354,8 @@ class RoundingTest {
     @Test
     fun testNotStraightBuyBTC() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0, straight = false)))
@@ -373,10 +374,10 @@ class RoundingTest {
         Assert.assertEquals(1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(-0.00147443, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(999.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.00147443, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
-        Assert.assertEquals(1499.99852557, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(999.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(0.00147443, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(1499.99852557, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -390,8 +391,8 @@ class RoundingTest {
     @Test
     fun testNotStraightSellBTC() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = -1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1500.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0, straight = false)))
@@ -410,10 +411,10 @@ class RoundingTest {
         Assert.assertEquals(-1.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
         Assert.assertEquals(0.00147442, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(999.99852558, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(1.0, testWalletDatabaseAcessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.00147442, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(1499.0, testWalletDatabaseAcessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(999.99852558, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(0.00147442, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(1499.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -429,8 +430,8 @@ class RoundingTest {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14925.09, volume = -1.34, clientId = "Client3"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14950.18, volume = -1.34, clientId = "Client3"))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14975.27, volume = -1.34, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "LKK", 50800.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "LKK", 50800.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = -50800.0, straight = false)))
@@ -439,15 +440,15 @@ class RoundingTest {
         Assert.assertEquals(OrderStatus.Matched.name, marketOrder.status)
         Assert.assertEquals(14945.59, marketOrder.price!!, DELTA)
 
-        Assert.assertEquals(50800.0, testWalletDatabaseAcessor.getBalance("Client3", "LKK"), DELTA)
-        Assert.assertEquals(0.0, testWalletDatabaseAcessor.getBalance("Client4", "LKK"), DELTA)
+        Assert.assertEquals(50800.0, testWalletDatabaseAccessor.getBalance("Client3", "LKK"), DELTA)
+        Assert.assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "LKK"), DELTA)
     }
 
     @Test
     fun testNotStraightBuyEURJPY() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 116.356, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "JPY", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.00999999999999999))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "JPY", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.00999999999999999))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 1.16, straight = false)))
@@ -458,8 +459,8 @@ class RoundingTest {
     @Test
     fun testStraightSellBTCEUR() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 597.169, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.0001)))
@@ -478,10 +479,10 @@ class RoundingTest {
         Assert.assertEquals(0.05, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
         Assert.assertEquals(-0.0001, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "BTC" }?.volume)
 
-        Assert.assertEquals(0.0001, testWalletDatabaseAcessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(0.95, testWalletDatabaseAcessor.getBalance("Client3", "EUR"), DELTA)
-        Assert.assertEquals(0.9999, testWalletDatabaseAcessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(0.05, testWalletDatabaseAcessor.getBalance("Client4", "EUR"), DELTA)
+        Assert.assertEquals(0.0001, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(0.95, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
+        Assert.assertEquals(0.9999, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(0.05, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
 
         val swap = transactionQueue.take() as Swap
         Assert.assertEquals("Client4", swap.clientId1)
@@ -495,8 +496,8 @@ class RoundingTest {
     @Test
     fun testLimitOrderRounding() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 1121.509, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 1.0))
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.00043722)))

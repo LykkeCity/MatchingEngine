@@ -84,6 +84,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
 
     val walletDatabaseAccessor: WalletDatabaseAccessor
     val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -139,11 +140,11 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
         this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
-        this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
-        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
+        this.singleLimitOrderService = SingleLimitOrderService(this.genericLimitOrderService, rabbitLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
+        this.multiLimitOrderService = MultiLimitOrderService(this.genericLimitOrderService, rabbitLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, rabbitLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
                 config.me.lykkeTradesHistoryEnabled, rabbitSwapQueue, config.me.publishToRabbitQueue, config.me.sendTrades)
-        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService)
+        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitLimitOrdersQueue)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
@@ -171,6 +172,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 config.me.rabbit.password, config.me.rabbit.exchangeSwap, rabbitSwapQueue).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeBalanceUpdate, balanceUpdatesQueue).start()
+        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
+                config.me.rabbit.password, config.me.rabbit.exchangeLimitOrders, balanceUpdatesQueue).start()
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())

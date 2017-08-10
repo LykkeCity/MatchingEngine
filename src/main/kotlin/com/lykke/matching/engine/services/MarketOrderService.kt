@@ -41,6 +41,9 @@ import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
@@ -66,6 +69,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
                          private val backendQueue: BlockingQueue<Transaction>,
+                         private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val walletCredentialsCache: WalletCredentialsCache,
@@ -299,7 +303,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         var marketBalance = balancesHolder.getBalance(marketOrder.clientId, if (marketOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 
         val rabbitTrade = com.lykke.matching.engine.outgoing.messages.Trade(marketOrder.externalId, marketOrder.id, now)
-        val tradesInfo = LinkedList<TradeInfo>()
+        val marketOrderTrades = LinkedList<TradeInfo>()
+
+        val limitOrdersReport = LimitOrdersReport()
 
         matchedOrders.forEachIndexed { index, limitOrder ->
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
@@ -460,9 +466,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
                     Orders(ClientOrderPair(marketOrder.clientId, marketOrder.id, marketOrder.externalId), ClientOrderPair(limitOrder.clientId, limitOrder.id, limitOrder.externalId), clientTradePairs.toTypedArray())))
 
-            tradesInfo.add(TradeInfo(marketOrder.clientId, Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume).round(marketAsset.accuracy), marketAsset.assetId,
+            marketOrderTrades.add(TradeInfo(marketOrder.clientId, Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume).round(marketAsset.accuracy), marketAsset.assetId,
                     limitOrder.clientId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
                     limitOrder.price, limitOrder.id, limitOrder.externalId, now))
+            limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(limitOrder.clientId, limitAsset.assetId, Math.abs(if (isMarketBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
+                    marketOrder.id, marketOrder.externalId, marketAsset.assetId, marketOrder.clientId, Math.abs(if (isMarketBuy) oppositeRoundedVolume else marketRoundedVolume).round(marketAsset.accuracy)))))
             totalMarketVolume += volume
             totalLimitPrice += volume * limitOrder.price
             totalLimitVolume += Math.abs(if (marketOrder.straight) marketRoundedVolume else oppositeRoundedVolume)
@@ -508,7 +516,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 bitcoinTransactions.forEach { backendQueue.put(it) }
             }
         } else {
-            rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder, tradesInfo))
+            rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder, marketOrderTrades))
+            limitOrderReportQueue.put(limitOrdersReport)
         }
 
         val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).getCopyOfOrderBook(!marketOrder.isBuySide()))

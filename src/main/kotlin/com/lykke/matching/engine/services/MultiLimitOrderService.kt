@@ -8,6 +8,8 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
@@ -17,6 +19,7 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
+                             private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                              private val assetsPairsHolder: AssetsPairsHolder,
@@ -41,6 +44,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val orders = ArrayList<LimitOrder>(message.ordersList.size)
         val now = Date()
+        val limitOrdersReport = LimitOrdersReport()
 
         var cancelBuySide = false
         var cancelSellSide = false
@@ -74,6 +78,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         ordersToCancel.forEach { order ->
             orderBook.removeOrder(order)
+            limitOrdersReport.orders.add(LimitOrderWithTrades(order))
         }
 
         var buySide = false
@@ -86,7 +91,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             } else {
                 orderBook.addOrder(order)
                 limitOrderService.addOrder(order)
-                limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), order.price, now))
+                limitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
         }
@@ -100,11 +105,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val orderBookCopy = orderBook.copy()
         if (buySide) {
             val newOrderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, true, orderBookCopy.getBidPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSide) {
             val newOrderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, false, orderBookCopy.getAskPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
@@ -124,6 +131,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             totalTime = 0.0
         }
 
+        if (limitOrdersReport.orders.isNotEmpty()) {
+            limitOrderReportQueue.put(limitOrdersReport)
+        }
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {

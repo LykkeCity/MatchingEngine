@@ -9,5 +9,6 @@ enum class MessageStatus(val type: Int){
     NOT_ENOUGH_FUNDS(412),
     DUST(413),
     RESERVED_VOLUME_HIGHER_THAN_BALANCE(414),
+    NOT_FOUND(415),
     RUNTIME(500)
 }

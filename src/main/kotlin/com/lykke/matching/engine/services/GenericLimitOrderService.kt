@@ -50,7 +50,6 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
     }
 
     fun processLimitOrder(order: LimitOrder) {
-        addToOrderBook(order)
         if (useFileOrderBook) {
             updateOrderBook(order.assetPairId, order.isBuySide())
         } else {
@@ -66,14 +65,14 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
     }
 
     fun addOrder(order: LimitOrder) {
-        limitOrdersMap.put(order.id, order)
+        limitOrdersMap.put(order.externalId, order)
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
         quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
     fun addOrders(orders: List<LimitOrder>) {
         orders.forEach { order ->
-            limitOrdersMap.put(order.id, order)
+            limitOrdersMap.put(order.externalId, order)
             clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<LimitOrder>() }.add(order)
             quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
         }
@@ -103,7 +102,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         }
         orders.forEach { order ->
             limitOrderDatabaseAccessor.addLimitOrderDone(order)
-            limitOrdersMap.remove(order.id)
+            limitOrdersMap.remove(order.externalId)
             limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
         }
     }
@@ -123,7 +122,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         val ordersToRemove = LinkedList<LimitOrder>()
         clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
             if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide() == isBuy) {
-                cancelLimitOrder(limitOrder.id)
+                cancelLimitOrder(limitOrder.externalId)
                 ordersToRemove.add(limitOrder)
             }
         }
@@ -162,11 +161,11 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         }
     }
 
-    fun cancelLimitOrder(uid: String) {
+    fun cancelLimitOrder(uid: String): LimitOrder? {
         val order = limitOrdersMap.remove(uid)
         if (order == null) {
             LOGGER.debug("Unable to cancel order $uid: missing order or already processed")
-            return
+            return null
         }
 
         getOrderBook(order.assetPairId).removeOrder(order)
@@ -178,12 +177,13 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
             limitOrderDatabaseAccessor.deleteLimitOrders(listOf(order))
         }
         LOGGER.debug("Order $uid cancelled")
+        return order
     }
 
     fun cancelLimitOrders(orders: List<LimitOrder>) {
         val ordersToCancel = ArrayList<LimitOrder>(orders.size)
         orders.forEach { order ->
-            val ord = limitOrdersMap.remove(order.id)
+            val ord = limitOrdersMap.remove(order.externalId)
             if (ord != null) {
                 ord.status = Cancelled.name
                 ordersToCancel.add(ord)

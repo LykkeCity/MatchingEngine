@@ -34,6 +34,7 @@ class LimitOrderCancelServiceTest {
     val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
+    val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
@@ -60,7 +61,7 @@ class LimitOrderCancelServiceTest {
     @Test
     fun testCancel() {
         val service = LimitOrderCancelService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""),
-                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue))
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue)
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.id == "3" }

@@ -50,7 +50,7 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
 
     fun getLastOrder() = orders.last()
 
-    fun clear() = {
+    fun clear() {
         orders.clear()
         ordersDone.clear()
         candles.clear()

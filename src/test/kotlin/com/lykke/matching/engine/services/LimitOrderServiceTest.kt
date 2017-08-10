@@ -40,6 +40,7 @@ class LimitOrderServiceTest {
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
+    val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
@@ -59,7 +60,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {        
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
@@ -68,7 +69,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
@@ -81,7 +82,7 @@ class LimitOrderServiceTest {
 
     @Test
     fun testNegativeSpread() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, setOf("EUR"))
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, setOf("EUR"))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
