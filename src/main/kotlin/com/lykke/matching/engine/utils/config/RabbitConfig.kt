@@ -11,5 +11,6 @@ data class RabbitConfig(
     val exchangeCashOperation: String,
     val exchangeSwap: String,
     val exchangeLimitOrders: String,
+    val trustedExchangeLimitOrders: String,
     val exchangeBalanceUpdate: String
 )

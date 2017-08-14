@@ -69,7 +69,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
                          private val backendQueue: BlockingQueue<Transaction>,
-                         private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                         private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val walletCredentialsCache: WalletCredentialsCache,
@@ -517,7 +517,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         } else {
             rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder, marketOrderTrades))
-            limitOrderReportQueue.put(limitOrdersReport)
+            trustedLimitOrderReportQueue.put(limitOrdersReport)
         }
 
         val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), now, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).getCopyOfOrderBook(!marketOrder.isBuySide()))

@@ -20,6 +20,7 @@ import java.util.concurrent.BlockingQueue
 
 class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
                              private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                             private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                              private val assetsPairsHolder: AssetsPairsHolder,
@@ -45,6 +46,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val orders = ArrayList<LimitOrder>(message.ordersList.size)
         val now = Date()
         val limitOrdersReport = LimitOrdersReport()
+        val trustedLimitOrdersReport = LimitOrdersReport()
 
         var cancelBuySide = false
         var cancelSellSide = false
@@ -78,7 +80,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         ordersToCancel.forEach { order ->
             orderBook.removeOrder(order)
-            limitOrdersReport.orders.add(LimitOrderWithTrades(order))
+            if (order.remainingVolume != order.volume) {
+                trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
+            } else {
+                limitOrdersReport.orders.add(LimitOrderWithTrades(order))
+            }
         }
 
         var buySide = false
@@ -133,6 +139,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         if (limitOrdersReport.orders.isNotEmpty()) {
             limitOrderReportQueue.put(limitOrdersReport)
+        }
+
+        if (trustedLimitOrdersReport.orders.isNotEmpty()) {
+            trustedLimitOrderReportQueue.put(trustedLimitOrdersReport)
         }
     }
 
