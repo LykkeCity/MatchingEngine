@@ -25,7 +25,7 @@ public class AzureWallet extends TableServiceEntity {
 
     public AzureWallet(String clientId, List<AssetBalance> balances) {
         super(CLIENT_BALANCE, clientId);
-        balances.forEach( balance -> addBalance(balance.getAsset(), balance.getBalance()) );
+        balances.forEach( balance -> addBalance(balance.getAsset(), balance.getBalance(), balance.getReserved()) );
     }
 
     public String getClientId() {
@@ -40,7 +40,7 @@ public class AzureWallet extends TableServiceEntity {
         this.balances = balances;
     }
 
-    public void addBalance(String asset, Double amount) {
+    public void addBalance(String asset, Double amount, Double reserved) {
         List<AzureAssetBalance> assetBalances = getBalancesList();
         Optional<AzureAssetBalance> assetBalanceFilter = assetBalances.stream().filter(it -> asset.equals(it.Asset) ).findFirst();
         AzureAssetBalance assetBalance;
@@ -52,6 +52,7 @@ public class AzureWallet extends TableServiceEntity {
         }
 
         assetBalance.Balance += amount;
+        assetBalance.Reserved += reserved;
         if (assetBalance.Balance == 0.0) {
             assetBalances.remove(assetBalance);
         }
@@ -59,7 +60,7 @@ public class AzureWallet extends TableServiceEntity {
         this.balances = new Gson().toJson(assetBalances);
     }
 
-    public void setBalance(String asset, Double amount) {
+    public void setBalance(String asset, Double amount, Double reserved) {
         List<AzureAssetBalance> assetBalances = getBalancesList();
         Optional<AzureAssetBalance> assetBalanceFilter = assetBalances.stream().filter(it -> asset.equals(it.Asset) ).findFirst();
         AzureAssetBalance assetBalance;
@@ -71,6 +72,7 @@ public class AzureWallet extends TableServiceEntity {
         }
 
         assetBalance.Balance = amount;
+        assetBalance.Reserved = reserved;
 
         this.balances = new Gson().toJson(assetBalances);
     }

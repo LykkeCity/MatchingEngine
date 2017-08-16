@@ -61,7 +61,7 @@ class LimitOrderCancelServiceTest {
     @Test
     fun testCancel() {
         val service = LimitOrderCancelService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""),
-                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue)
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder)
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.id == "3" }

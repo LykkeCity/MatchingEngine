@@ -20,10 +20,10 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashTransferOperationService(private val balancesHolder: BalancesHolder,
-                           private val assetsHolder: AssetsHolder,
-                           private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
+class CashTransferOperationService( private val balancesHolder: BalancesHolder,
+                                    private val assetsHolder: AssetsHolder,
+                                    private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                    private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
@@ -38,7 +38,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume)
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
-        if (fromBalance < operation.volume) {
+        val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
+        if (fromBalance - reservedBalance < operation.volume) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")

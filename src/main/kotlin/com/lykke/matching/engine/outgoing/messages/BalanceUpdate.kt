@@ -21,5 +21,7 @@ class ClientBalanceUpdate(
     val id: String,
     val asset: String,
     val oldBalance: Double,
-    var newBalance: Double
+    var newBalance: Double,
+    val oldReserved: Double,
+    var newReserved: Double
 )

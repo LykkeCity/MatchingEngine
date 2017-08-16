@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
@@ -34,7 +35,7 @@ class LimitOrderServiceTest {
 
     var testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
+    var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -42,7 +43,7 @@ class LimitOrderServiceTest {
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
+    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
     val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue)
 
@@ -51,45 +52,62 @@ class LimitOrderServiceTest {
         testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
         testWalletDatabaseAcessor.clear()
 
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
+
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
     }
 
     @Test
     fun testAddLimitOrder() {        
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9)))
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9, volume = 1.0)))
 
         val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
         assertNotNull(order)
+
+        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
+        assertEquals(999.9, testWalletDatabaseAcessor.getReservedBalance("Client1", "USD"))
     }
 
     @Test
     fun testCancelPrevAndAddLimitOrder() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, emptySet())
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0), uid = 1))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0), uid = 2))
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0), uid = 1))
+        assertEquals(100.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "USD"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0, volume = 1.0), uid = 2))
+        assertEquals(300.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "USD"))
         assertEquals(2, testDatabaseAccessor.orders.size)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0), true, uid = 3))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0, volume = 2.0), true, uid = 3))
+        assertEquals(600.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "USD"))
         assertEquals(1, testDatabaseAccessor.orders.size)
-        val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 300.0 }
+        var order = testDatabaseAccessor.loadLimitOrders().find { it.price == 300.0 }
+        assertNotNull(order)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 500.0, volume = 1.5), true, uid = 3))
+        assertEquals(750.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "USD"))
+        assertEquals(1, testDatabaseAccessor.orders.size)
+        order = testDatabaseAccessor.loadLimitOrders().find { it.price == 500.0 }
         assertNotNull(order)
     }
 
     @Test
     fun testNegativeSpread() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsPairsHolder, setOf("EUR"))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0)))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0)))
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, setOf("EUR"), balancesHolder)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0, volume = 1.0)))
         assertEquals(2, testDatabaseAccessor.orders.size)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0, volume = -1000.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0, volume = -1.0)))
         assertEquals(3, testDatabaseAccessor.orders.size)
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 150.0, volume = -1000.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 150.0, volume = -1.0)))
         assertEquals(3, testDatabaseAccessor.orders.size)
     }
 

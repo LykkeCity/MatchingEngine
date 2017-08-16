@@ -53,15 +53,16 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
         if (message.amount < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            if (balance < Math.abs(message.amount)) {
+            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
+            if (balance - reservedBalance < Math.abs(message.amount)) {
                 messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
-                LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance")
+                LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
-                Date(message.timestamp), message.amount)
+                Date(message.timestamp), message.amount, 0.0)
         balancesHolder.processWalletOperations(message.uid.toString(), MessageType.CASH_OPERATION.name, listOf(operation))
         walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.bussinesId, operation.id))
 

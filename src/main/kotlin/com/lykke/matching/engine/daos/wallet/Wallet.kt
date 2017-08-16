@@ -18,6 +18,20 @@ class Wallet {
     }
 
     fun setBalance(asset: String, balance: Double) {
-        balances[asset] = AssetBalance(asset, balance)
+        val oldBalance = balances[asset]
+        if (oldBalance == null) {
+            balances[asset] = AssetBalance(asset, balance)
+        } else {
+            oldBalance.balance = balance
+        }
+    }
+
+    fun setReservedBalance(asset: String, reservedBalance: Double) {
+        val oldBalance = balances[asset]
+        if (oldBalance == null) {
+            balances[asset] = AssetBalance(asset, reservedBalance, reservedBalance)
+        } else {
+            oldBalance.reserved = reservedBalance
+        }
     }
 }

@@ -41,18 +41,18 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
     private val PARTITION_KEY = "PartitionKey"
     private val CLIENT_BALANCE = "ClientBalance"
 
-    override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
-        val result = HashMap<String, MutableMap<String, Double>>()
+    override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
+        val result = HashMap<String, MutableMap<String, AssetBalance>>()
         var balancesCount = 0
         try {
             val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
             val partitionQuery = TableQuery.from(AzureWallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
-                val map = result.getOrPut(wallet.rowKey) { HashMap<String, Double>() }
+                val map = result.getOrPut(wallet.rowKey) { HashMap<String, AssetBalance>() }
                 wallet.balancesList.forEach { balance ->
                     if (balance.balance != null) {
-                        map.put(balance.asset, balance.balance)
+                        map.put(balance.asset, AssetBalance(balance.asset, balance.balance, balance.reserved))
                         balancesCount++
                     }
                 }

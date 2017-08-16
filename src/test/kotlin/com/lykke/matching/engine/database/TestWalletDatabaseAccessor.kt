@@ -5,20 +5,21 @@ import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import java.util.HashMap
 import java.util.LinkedList
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
-    val balances = HashMap<String, MutableMap<String, Double>>()
+    val balances = HashMap<String, MutableMap<String, AssetBalance>>()
     val wallets = HashMap<String, Wallet>()
     val operations = LinkedList<WalletOperation>()
     val transferOperations = LinkedList<TransferOperation>()
     val externalOperations = LinkedList<ExternalCashOperation>()
     val assetPairs = HashMap<String, AssetPair>()
 
-    override fun loadBalances(): HashMap<String, MutableMap<String, Double>> {
+    override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
         return balances
     }
 
@@ -28,10 +29,10 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
         wallets.forEach { wallet ->
-            val client = balances.getOrPut(wallet.clientId,  { HashMap<String, Double>() })
+            val client = balances.getOrPut(wallet.clientId,  { HashMap<String, AssetBalance>() })
             val updatedWallet = this.wallets.getOrPut(wallet.clientId) { Wallet(wallet.clientId) }
             wallet.balances.values.forEach {
-                client.put(it.asset, it.balance)
+                client.put(it.asset, AssetBalance(it.asset, it.balance, it.reserved))
                 updatedWallet.setBalance(it.asset, it.balance)
             }
         }
@@ -42,7 +43,19 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
-                return wallet
+                return wallet.balance
+            }
+        }
+        return 0.0
+    }
+
+
+    fun getReservedBalance(clientId: String, assetId: String): Double {
+        val client = balances[clientId]
+        if (client != null) {
+            val wallet = client[assetId]
+            if (wallet != null) {
+                return wallet.reserved
             }
         }
         return 0.0
@@ -89,8 +102,9 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
 }
-fun buildWallet(clientId: String, assetId: String, balance: Double): Wallet {
+fun buildWallet(clientId: String, assetId: String, balance: Double, reservedBalance: Double = 0.0): Wallet {
     val wallet = Wallet(clientId)
     wallet.setBalance(assetId, balance)
+    wallet.setReservedBalance(assetId, reservedBalance)
     return wallet
 }

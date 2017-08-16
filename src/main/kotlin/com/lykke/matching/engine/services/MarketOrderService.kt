@@ -394,7 +394,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, marketOrder.clientId,
-                    assetPair.baseAssetId, now, marketRoundedVolume))
+                    assetPair.baseAssetId, now, marketRoundedVolume, 0.0))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
@@ -407,7 +407,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, marketOrder.clientId,
-                    assetPair.quotingAssetId, now, oppositeRoundedVolume))
+                    assetPair.quotingAssetId, now, oppositeRoundedVolume, 0.0))
             clientTradePairs.add(ClientTradePair(marketOrder.clientId, uid))
 
             uid = Trade.generateId(now)
@@ -420,7 +420,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId,
-                    assetPair.baseAssetId, now, -marketRoundedVolume))
+                    assetPair.baseAssetId, now, -marketRoundedVolume, -marketRoundedVolume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             uid = Trade.generateId(now)
@@ -433,7 +433,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             orderTradesLinks.add(OrderTradesLink(marketOrder.id, uid))
             orderTradesLinks.add(OrderTradesLink(limitOrder.id, uid))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId,
-                    assetPair.quotingAssetId, now, -oppositeRoundedVolume))
+                    assetPair.quotingAssetId, now, -oppositeRoundedVolume, -oppositeRoundedVolume))
             clientTradePairs.add(ClientTradePair(limitOrder.clientId, uid))
 
             if (marketRemainingVolume >= limitRemainingVolume) {

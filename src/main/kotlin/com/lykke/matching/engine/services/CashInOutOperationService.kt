@@ -55,14 +55,15 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
-                Date(message.timestamp), message.volume)
+                Date(message.timestamp), message.volume, 0.0)
 
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            if (balance < Math.abs(message.volume)) {
+            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
+            if (balance - reservedBalance < Math.abs(message.volume)) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                        .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId},asset:${message.assetId}, volume:${message.volume}").build())
-                CashOperationService.LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance")
+                        .setStatus(MessageStatus.LOW_BALANCE.type).build())
+                CashOperationService.LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
         }
