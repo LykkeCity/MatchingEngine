@@ -18,15 +18,12 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.order.OrderStatus.InOrderBook
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
-import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.queue.transaction.Swap
-import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
@@ -35,14 +32,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.LinkedBlockingQueue
-import kotlin.test.assertNotNull
 
 class MarketOrderServiceTest {
     var testDatabaseAccessor = TestMarketOrderDatabaseAccessor()
     var testLimitDatabaseAccessor = TestLimitOrderDatabaseAccessor()
     var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-    val transactionQueue = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -57,7 +52,7 @@ class MarketOrderServiceTest {
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue)
 
     var limitOrderService = GenericLimitOrderService(false, testLimitDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, transactionQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, rabbitSwapQueue, false)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
 
     val DELTA = 1e-9
 
@@ -66,7 +61,6 @@ class MarketOrderServiceTest {
         testDatabaseAccessor.clear()
         testLimitDatabaseAccessor.clear()
         testWalletDatabaseAccessor.clear()
-        transactionQueue.clear()
         tradesInfoQueue.clear()
 
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client1", "Client1-Multisig"))
@@ -101,7 +95,7 @@ class MarketOrderServiceTest {
 
     fun initServices() {
         limitOrderService = GenericLimitOrderService(false, testLimitDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, transactionQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, true, rabbitSwapQueue, false)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
     }
 
     @Test
@@ -110,7 +104,10 @@ class MarketOrderServiceTest {
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder()))
-        assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
+
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(NoLiquidity.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -136,7 +133,10 @@ class MarketOrderServiceTest {
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1500.0)))
-        assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
+
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(NoLiquidity.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -147,8 +147,9 @@ class MarketOrderServiceTest {
         initServices()
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -2000.0)))
-        assertEquals(NoLiquidity.name, testDatabaseAccessor.getLastOrder().status)
-        assertEquals(InOrderBook.name, testLimitDatabaseAccessor.getLastOrder().status)
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(NoLiquidity.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -159,7 +160,9 @@ class MarketOrderServiceTest {
         initServices()
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
-        assertEquals(NotEnoughFunds.name, testDatabaseAccessor.getLastOrder().status)
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -173,42 +176,18 @@ class MarketOrderServiceTest {
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(1.5, marketOrder.price!!, DELTA)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(8, testDatabaseAccessor.orderTradesLinks.size)
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(1.5, marketOrderReport.order.price!!, DELTA)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        assertEquals(0, testLimitDatabaseAccessor.orders.size)
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-        assertNotNull(testLimitDatabaseAccessor.ordersDone.first())
-
-        assertEquals(4, testDatabaseAccessor.trades.size)
-
-        assertEquals(1000.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" }?.volume)
-        assertEquals(-1500.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" }?.volume)
-        assertEquals(-1000.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
-        assertEquals(1500.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
-
-        assertEquals(1000.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" && it.multisig == "Client3-Multisig" }?.volume)
-        assertEquals(-1500.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" && it.multisig == "Client3-Multisig" }?.volume)
-        assertEquals(-1000.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.multisig == "Client4-Multisig" }?.volume)
-        assertEquals(1500.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.multisig == "Client4-Multisig" }?.volume)
-
-        assertEquals("Client4-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" && it.volume == 1000.0}?.addressFrom)
-        assertEquals("Client3-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" && it.volume == 1000.0}?.addressTo)
-        assertEquals("Client3-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" && it.volume == -1500.0}?.addressFrom)
-        assertEquals("Client4-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" && it.volume == -1500.0}?.addressTo)
-        assertEquals("Client4-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.volume == -1000.0}?.addressFrom)
-        assertEquals("Client3-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.volume == -1000.0}?.addressTo)
-        assertEquals("Client3-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.volume == 1500.0}?.addressFrom)
-        assertEquals("Client4-Multisig", testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.volume == 1500.0}?.addressTo)
+        assertEquals("1000.00", marketOrderReport.trades.first().marketVolume)
+        assertEquals("EUR", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("1500.00", marketOrderReport.trades.first().limitVolume)
+        assertEquals("USD", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
@@ -216,14 +195,6 @@ class MarketOrderServiceTest {
         assertEquals(1500.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
 
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client3", "USD"), DELTA)
-
-        val swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(1000.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client3", swap.clientId2)
-        assertEquals(1500.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
     }
 
     @Test
@@ -238,32 +209,23 @@ class MarketOrderServiceTest {
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(122.512, marketOrder.price!!, DELTA)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(8, testDatabaseAccessor.orderTradesLinks.size)
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(122.512, marketOrderReport.order.price!!, DELTA)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        assertEquals(2, testLimitDatabaseAccessor.orders.size)
-        assertEquals(0, testLimitDatabaseAccessor.ordersDone.size)
-
-        assertEquals(0.09, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" }?.volume)
-        assertEquals(-10.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "JPY" }?.volume)
-        assertEquals(-0.09, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
-        assertEquals(10.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "JPY" }?.volume)
+        assertEquals("0.09", marketOrderReport.trades.first().marketVolume)
+        assertEquals("EUR", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("10.00", marketOrderReport.trades.first().limitVolume)
+        assertEquals("JPY", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
         assertEquals(5000000.09, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(4999990.0, testWalletDatabaseAccessor.getBalance("Client3", "JPY"), DELTA)
         assertEquals(0.01, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(110.0, testWalletDatabaseAccessor.getBalance("Client4", "JPY"), DELTA)
-
-        val swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(0.09, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client3", swap.clientId2)
-        assertEquals(10.0, swap.Amount2, DELTA)
-        assertEquals("JPY", swap.origAsset2)
     }
 
     @Test
@@ -274,47 +236,29 @@ class MarketOrderServiceTest {
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        var marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(NotEnoughFunds.name, marketOrder.status)
+        assertEquals(1, rabbitSwapQueue.size)
+        var marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
+        assertEquals(0, marketOrderReport.trades.size)
+
+        assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
 
         testDatabaseAccessor.orders.clear()
 
         balancesHolder.updateBalance("Client4", "EUR", 1000.0)
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(1.5, marketOrder.price!!, DELTA)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(8, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(0, testLimitDatabaseAccessor.orders.size)
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-        assertNotNull(testLimitDatabaseAccessor.ordersDone.first())
-
-        assertEquals(1000.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" }?.volume)
-        assertEquals(-1500.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" }?.volume)
-        assertEquals(-1000.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
-        assertEquals(1500.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
+        assertEquals(1, rabbitSwapQueue.size)
+        marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(1.5, marketOrderReport.order.price!!, DELTA)
+        assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(Matched.name, marketOrderReport.order.status)
 
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(1500.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
-
-        val swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(1000.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client3", swap.clientId2)
-        assertEquals(1500.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
     }
 
     @Test
@@ -328,31 +272,11 @@ class MarketOrderServiceTest {
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(1.41, marketOrder.price!!, DELTA)
-        assertEquals(2, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(16, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.orders.size)
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-
-        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(100.0, activeLimitOrder.remainingVolume, DELTA)
-        assertEquals(Processing.name, activeLimitOrder.status)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == limitOrder.id }.size)
-
-        assertEquals(100.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" }?.volume)
-        assertEquals(-150.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" }?.volume)
-        assertEquals(900.0, testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "EUR" }?.volume)
-        assertEquals(-1260.0, testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "USD" }?.volume)
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.volume == -100.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.volume == 150.0 })
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.volume == -900.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.volume == 1260.0 })
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(1.41, marketOrderReport.order.price!!, DELTA)
+        assertEquals(2, marketOrderReport.trades.size)
 
         assertEquals(100.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
@@ -361,22 +285,6 @@ class MarketOrderServiceTest {
         assertEquals(140.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(1410.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
-
-        var swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(100.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client3", swap.clientId2)
-        assertEquals(150.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(900.0, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(1260.0, swap.Amount2, DELTA)
-        assertEquals("USD", swap.origAsset2)
     }
 
     @Test
@@ -390,57 +298,16 @@ class MarketOrderServiceTest {
         
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKEUR", volume = 50000.0)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(0.0442, marketOrder.price!!, DELTA)
-        assertEquals(3, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(24, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.orders.size)
-        assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
-
-        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(-10000.0, activeLimitOrder.remainingVolume, DELTA)
-        assertEquals(Processing.name, activeLimitOrder.status)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == limitOrder.id }.size)
-
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "EUR" && it.volume == 882.4})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "EUR" && it.volume == 884.2})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "EUR" && it.volume == 443.1})
-        assertEquals(2, testDatabaseAccessor.trades.filter { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 20000.0}.size)
-        assertEquals(1, testDatabaseAccessor.trades.filter { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 10000.0}.size)
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(0.0442, marketOrderReport.order.price!!, DELTA)
+        assertEquals(3, marketOrderReport.trades.size)
 
         assertEquals(2209.7, testWalletDatabaseAccessor.getBalance("Client1", "EUR"), DELTA)
         assertEquals(6519074.0, testWalletDatabaseAccessor.getBalance("Client1", "LKK"), DELTA)
         assertEquals(5290.32, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(50000.0, testWalletDatabaseAccessor.getBalance("Client4", "LKK"), DELTA)
-
-        var swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(882.4, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(20000.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(884.2, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(20000.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(443.1, swap.Amount1, DELTA)
-        assertEquals("EUR", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(10000.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
     }
 
     @Test
@@ -454,57 +321,16 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = 50000.0, straight = false)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(13591.395424, marketOrder.price!!, DELTA)
-        assertEquals(3, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(24, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.orders.size)
-        assertEquals(2, testLimitDatabaseAccessor.ordersDone.size)
-
-        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(0.71290846, activeLimitOrder.remainingVolume, DELTA)
-        assertEquals(Processing.name, activeLimitOrder.status)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == limitOrder.id }.size)
-
-        assertEquals(2, testDatabaseAccessor.trades.filter { it.clientId == "Client1" && it.assetId == "BTC" && it.volume == 1.463935}.size)
-        assertEquals(1, testDatabaseAccessor.trades.filter { it.clientId == "Client1" && it.assetId == "BTC" && it.volume == 0.75102654}.size)
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 19926.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 19889.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 10185.0})
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(13591.395424, marketOrderReport.order.price!!, DELTA)
+        assertEquals(3, marketOrderReport.trades.size)
 
         assertEquals(3.67889654, testWalletDatabaseAccessor.getBalance("Client1", "BTC"), DELTA)
         assertEquals(50000.0, testWalletDatabaseAccessor.getBalance("Client1", "LKK"), DELTA)
         assertEquals(8.99676032, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
         assertEquals(50000.0, testWalletDatabaseAccessor.getBalance("Client4", "LKK"), DELTA)
-
-        var swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(1.463935, swap.Amount1, DELTA)
-        assertEquals("BTC", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(19926.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(1.463935, swap.Amount1, DELTA)
-        assertEquals("BTC", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(19889.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(0.75102654, swap.Amount1, DELTA)
-        assertEquals("BTC", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(10185.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
     }
 
     @Test
@@ -517,48 +343,16 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKGBP", volume = -982.78, straight = false)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(0.03854, marketOrder.price!!, DELTA)
-        assertEquals(2, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(16, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.orders.size)
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-
-        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(-14487.0, activeLimitOrder.remainingVolume, DELTA)
-        assertEquals(Processing.name, activeLimitOrder.status)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == limitOrder.id }.size)
-
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "GBP" && it.volume == 770.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "GBP" && it.volume == 212.78})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 20000.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "LKK" && it.volume == 5513.0})
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(0.03854, marketOrderReport.order.price!!, DELTA)
+        assertEquals(2, marketOrderReport.trades.size)
 
         assertEquals(982.78, testWalletDatabaseAccessor.getBalance("Client1", "GBP"), DELTA)
         assertEquals(74487.0, testWalletDatabaseAccessor.getBalance("Client1", "LKK"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "GBP"), DELTA)
         assertEquals(25513.0, testWalletDatabaseAccessor.getBalance("Client4", "LKK"), DELTA)
-
-        var swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(770.0, swap.Amount1, DELTA)
-        assertEquals("GBP", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(20000.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(212.78, swap.Amount1, DELTA)
-        assertEquals("GBP", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(5513.0, swap.Amount2, DELTA)
-        assertEquals("LKK", swap.origAsset2)
     }
 
     @Test
@@ -606,39 +400,16 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -750.0, straight = false)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(1.5, marketOrder.price!!, DELTA)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(8, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(0, testLimitDatabaseAccessor.orders.size)
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-        assertNotNull(testLimitDatabaseAccessor.ordersDone.first())
-
-        assertEquals(-500.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" }?.volume)
-        assertEquals(750.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" }?.volume)
-        assertEquals(500.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" }?.volume)
-        assertEquals(-750.0, testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" }?.volume)
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(1.5, marketOrderReport.order.price!!, DELTA)
+        assertEquals(1, marketOrderReport.trades.size)
 
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(750.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
         assertEquals(500.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
-
-        val swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(750.0, swap.Amount1, DELTA)
-        assertEquals("USD", swap.origAsset1)
-        assertEquals("Client3", swap.clientId2)
-        assertEquals(500.0, swap.Amount2, DELTA)
-        assertEquals("EUR", swap.origAsset2)
     }
 
     @Test
@@ -652,32 +423,11 @@ class MarketOrderServiceTest {
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false)))
 
-        val marketOrder = testDatabaseAccessor.orders.first()
-        assertEquals(Matched.name, marketOrder.status)
-        assertEquals(1.49, marketOrder.price!!, DELTA)
-        assertEquals(2, testDatabaseAccessor.matchingData.filter { it.masterOrderId == marketOrder.id }.size)
-        assertEquals(16, testDatabaseAccessor.orderTradesLinks.size)
-
-        assertEquals(1, testLimitDatabaseAccessor.orders.size)
-        assertEquals(1, testLimitDatabaseAccessor.ordersDone.size)
-
-        val activeLimitOrder = testLimitDatabaseAccessor.orders.first()
-        assertEquals(-100.0, activeLimitOrder.remainingVolume, DELTA)
-        assertEquals(Processing.name, activeLimitOrder.status)
-
-
-        val limitOrder = testLimitDatabaseAccessor.ordersDone.first()
-        assertEquals(Matched.name, limitOrder.status)
-        assertEquals(1, testDatabaseAccessor.matchingData.filter { it.masterOrderId == limitOrder.id }.size)
-
-        assertEquals(-100.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "EUR" }!!.volume, DELTA)
-        assertEquals(140.0, testDatabaseAccessor.trades.find { it.clientId == "Client3" && it.assetId == "USD" }!!.volume, DELTA)
-        assertEquals(-900.0, testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "EUR" }!!.volume, DELTA)
-        assertEquals(1350.0, testDatabaseAccessor.trades.find { it.clientId == "Client1" && it.assetId == "USD" }!!.volume, DELTA)
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.volume == 100.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.volume == -140.0 })
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "EUR" && it.volume < 900.0})
-        assertNotNull(testDatabaseAccessor.trades.find { it.clientId == "Client4" && it.assetId == "USD" && it.volume == -1350.0 })
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(1.49, marketOrderReport.order.price!!, DELTA)
+        assertEquals(2, marketOrderReport.trades.size)
 
         assertEquals(2900.0, testWalletDatabaseAccessor.getBalance("Client3", "EUR"), DELTA)
         assertEquals(140.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
@@ -685,21 +435,5 @@ class MarketOrderServiceTest {
         assertEquals(1350.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"), DELTA)
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(510.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
-
-        var swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(140.0, swap.Amount1, DELTA)
-        assertEquals("USD", swap.origAsset1)
-        assertEquals("Client3", swap.clientId2)
-        assertEquals(100.0, swap.Amount2, DELTA)
-        assertEquals("EUR", swap.origAsset2)
-
-        swap = transactionQueue.take() as Swap
-        assertEquals("Client4", swap.clientId1)
-        assertEquals(1350.0, swap.Amount1, DELTA)
-        assertEquals("USD", swap.origAsset1)
-        assertEquals("Client1", swap.clientId2)
-        assertEquals(900.0, swap.Amount2, DELTA)
-        assertEquals("EUR", swap.origAsset2)
     }
 }

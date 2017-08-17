@@ -141,10 +141,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
         this.genericLimitOrderService = GenericLimitOrderService(config.me.useFileOrderBook, limitOrderDatabaseAccessor, orderBookDatabaseAccessor, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
-        this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder)
+        this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitLimitOrdersQueue, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet())
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, bitcoinQueue, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache,
-                config.me.lykkeTradesHistoryEnabled, rabbitSwapQueue, config.me.publishToRabbitQueue, config.me.sendTrades)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache, rabbitSwapQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, assetsHolder, assetsPairsHolder, balanceHolder)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitLimitOrdersQueue, rabbitTrustedLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)

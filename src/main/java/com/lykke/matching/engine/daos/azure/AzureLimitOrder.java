@@ -47,7 +47,7 @@ public class AzureLimitOrder extends AzureOrder {
     }
 
     public LimitOrder toLimitOrder() {
-        return new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime);
+        return new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime, null);
     }
 
     @Override

@@ -53,6 +53,19 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         return 0.0
     }
 
+    fun getAvailableBalance(clientId: String, assetId: String): Double {
+        val client = balances[clientId]
+        if (client != null) {
+            val balance = client[assetId]
+            if (balance != null) {
+                return if (balance.reserved > 0.0) balance.reserved else balance.balance
+            }
+        }
+
+        return 0.0
+    }
+
+
     fun processWalletOperations(id: String, type: String, operations: List<WalletOperation>) {
         val updates = HashMap<String, ClientBalanceUpdate>()
         val walletsToAdd = LinkedList<Wallet>()

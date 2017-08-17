@@ -153,11 +153,13 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
         if (order.isBuySide()) {
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(balancesHolder.getBalance(order.clientId, assetPair.quotingAssetId))} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
-            return balancesHolder.getBalance(order.clientId, assetPair.quotingAssetId) >= volume * order.price
+            val availableBalance = balancesHolder.getAvailableBalance(order.clientId, assetPair.quotingAssetId)
+            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
+            return availableBalance >= volume * order.price
         } else {
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(balancesHolder.getBalance(order.clientId, assetPair.baseAssetId))} >= ${RoundingUtils.roundForPrint(volume)}")
-            return balancesHolder.getBalance(order.clientId, assetPair.baseAssetId) >= volume
+            val availableBalance = balancesHolder.getAvailableBalance(order.clientId, assetPair.baseAssetId)
+            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)}")
+            return availableBalance >= volume
         }
     }
 
