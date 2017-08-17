@@ -52,7 +52,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
                 val map = result.getOrPut(wallet.rowKey) { HashMap<String, AssetBalance>() }
                 wallet.balancesList.forEach { balance ->
                     if (balance.balance != null) {
-                        map.put(balance.asset, AssetBalance(balance.asset, balance.balance, balance.reserved))
+                        map.put(balance.asset, AssetBalance(balance.asset, balance.balance, balance.reserved ?: 0.0))
                         balancesCount++
                     }
                 }
