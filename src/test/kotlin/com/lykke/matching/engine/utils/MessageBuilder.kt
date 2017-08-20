@@ -39,5 +39,16 @@ class MessageBuilder {
                              straight: Boolean = true,
                              volume: Double = 1000.0): MarketOrder =
                 MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight)
+
+        fun buildLimitOrderWrapper(order: LimitOrder,
+                                   cancel: Boolean = false,
+                                   uid: Long = Date().time) =
+                MessageWrapper("Test", MessageType.OLD_LIMIT_ORDER.type, ProtocolMessages.OldLimitOrder.newBuilder()
+                        .setUid(uid)
+                        .setTimestamp(order.createdAt.time)
+                        .setClientId(order.clientId)
+                        .setAssetPairId(order.assetPairId)
+                        .setVolume(order.volume)
+                        .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel).build().toByteArray(), null)
     }
 }

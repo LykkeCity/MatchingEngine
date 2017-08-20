@@ -28,5 +28,6 @@ data class MatchingEngineConfig(
     val publishToRabbitQueue: Boolean,
     val sendTrades: Boolean,
     val queueSizeLimit: Int,
-    val name: String
+    val name: String,
+    val trustedClients: Set<String>
 )

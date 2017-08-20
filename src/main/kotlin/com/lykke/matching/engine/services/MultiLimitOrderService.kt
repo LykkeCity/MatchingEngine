@@ -1,20 +1,29 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.matching.MatchingEngine
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.Date
+import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
@@ -23,8 +32,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                             private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
-                             private val negativeSpreadAssets: Set<String>): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
+                             private val negativeSpreadAssets: Set<String>,
+                             private val balancesHolder: BalancesHolder,
+                             private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -37,6 +49,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
+
+    private val matchingEngine = MatchingEngine(SingleLimitOrderService.LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -90,13 +104,60 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         var buySide = false
         var sellSide = false
 
-        val pair = assetsPairsHolder.getAssetPair(message.assetPairId)
+        val trades = LinkedList<LkkTrade>()
+        val walletOperations = LinkedList<WalletOperation>()
+        val ordersToAdd = LinkedList<LimitOrder>()
         orders.forEach { order ->
-            if ((negativeSpreadAssets.contains(pair.baseAssetId) || negativeSpreadAssets.contains(pair.quotingAssetId)) && orderBook.leadToNegativeSpread(order)) {
-                LOGGER.info("Order ${order.assetPairId}, ${order.volume}, ${order.price} lead to negative spread, ignoring it")
+            if (orderBook.leadToNegativeSpread(order)) {
+                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
+                val limitOrder = matchingResult.order as LimitOrder
+                when (OrderStatus.valueOf(matchingResult.order.status)) {
+                    OrderStatus.NoLiquidity -> {
+                        limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                    }
+                    OrderStatus.NotEnoughFunds -> {
+                        limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                    }
+                    OrderStatus.Dust -> {
+                        limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                    }
+                    OrderStatus.Matched,
+                    OrderStatus.Processing-> {
+                        limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
+                        matchingResult.cancelledLimitOrders.forEach { it ->
+                            it.status = OrderStatus.NotEnoughFunds.name
+                        }
+                        limitOrderService.moveOrdersToDone(ArrayList<LimitOrder>(matchingResult.cancelledLimitOrders))
+
+                        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+
+                        if (matchingResult.uncompletedLimitOrder != null) {
+                            matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
+                        }
+
+                        limitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
+
+                        trades.addAll(matchingResult.lkkTrades)
+
+                        trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
+                            LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume)
+                        }.toMutableList()))
+
+                        if (matchingResult.limitOrdersReport != null) {
+                            trustedLimitOrdersReport.orders.addAll(matchingResult.limitOrdersReport.orders)
+                        }
+
+                        walletOperations.addAll(matchingResult.cashMovements)
+                        if (matchingResult.order.status == OrderStatus.Processing.name) {
+                            ordersToAdd.add(order)
+                        }
+                    }
+                    else -> {
+                    }
+                }
             } else {
+                ordersToAdd.add(order)
                 orderBook.addOrder(order)
-                limitOrderService.addOrder(order)
                 limitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
@@ -104,8 +165,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         limitOrderService.setOrderBook(message.assetPairId, orderBook)
         val startPersistTime = System.nanoTime()
+        balancesHolder.processWalletOperations(message.uid.toString(), MessageType.MULTI_LIMIT_ORDER.name, walletOperations)
+        marketOrderDatabaseAccessor.addLkkTrades(trades)
         limitOrderService.cancelLimitOrders(ordersToCancel)
-        limitOrderService.addOrders(orders)
+        limitOrderService.addOrders(ordersToAdd)
         val endPersistTime = System.nanoTime()
 
         val orderBookCopy = orderBook.copy()

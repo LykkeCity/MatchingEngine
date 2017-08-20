@@ -44,13 +44,13 @@ class MatchingEngine(private val LOGGER: Logger,
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
         while (orderBook.size > 0 && ((order.takePrice() == null && remainingVolume.greaterThan(0.0))
-                || (order.takePrice() != null && if (order.isBuySide()) order.takePrice()!! >= orderBook.peek().price else order.takePrice()!! <= orderBook.peek().price ))
+                || (order.takePrice() != null && if (order.isBuySide()) order.takePrice()!! >= orderBook.peek().price else order.takePrice()!! <= orderBook.peek().price && remainingVolume.greaterThan(0.0)))
                 ) {
             val limitOrder = orderBook.poll()
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
             val marketRemainingVolume = getCrossVolume(remainingVolume, order.isStraight(), limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
-            val limitBalance = limitBalances[limitOrder.clientId] ?: balancesHolder.getAvailableBalance(limitOrder.clientId, if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+            val limitBalance = limitBalances[limitOrder.clientId] ?: balancesHolder.getAvailableReservedBalance(limitOrder.clientId, if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
             val limitVolume = Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume)
             if (order.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
@@ -188,8 +188,8 @@ class MatchingEngine(private val LOGGER: Logger,
 
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, 0.0))
             cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, 0.0))
-            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, -marketRoundedVolume))
-            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, -oppositeRoundedVolume))
+            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, if (-marketRoundedVolume < 0) -marketRoundedVolume else 0.0))
+            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, if (-oppositeRoundedVolume < 0) -oppositeRoundedVolume else 0.0))
 
             if (marketRemainingVolume >= limitRemainingVolume) {
                 lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))

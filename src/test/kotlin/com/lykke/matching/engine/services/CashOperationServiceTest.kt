@@ -30,7 +30,7 @@ class CashOperationServiceTest {
     val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue)
+    val balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
     val DELTA = 1e-15
 
     @Before

@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -118,7 +119,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
-        val pair = assetsPairsHolder.getAssetPair(order.assetPairId)
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
             val limitOrder = matchingResult.order as LimitOrder
@@ -158,8 +158,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
                     marketOrderDatabaseAccessor.addLkkTrades(matchingResult.lkkTrades)
 
-                    balancesHolder.processWalletOperations(order.externalId, MessageType.LIMIT_ORDER.name, matchingResult.cashMovements)
-
                     limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
                       LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume)
                     }.toMutableList()))
@@ -168,6 +166,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         limitOrdersReport.orders.addAll(matchingResult.limitOrdersReport.orders)
                     }
 
+                    val walletOperations = matchingResult.cashMovements.toMutableList()
+
                     if (order.status == OrderStatus.Processing.name) {
                         limitOrderService.processLimitOrder(order)
                         orderBook.addOrder(order)
@@ -175,11 +175,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
                         val limitRemainingVolume = if (order.isBuySide()) order.remainingVolume * order.price else order.remainingVolume
                         val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitRemainingVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-                        balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-                        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
-
+                        walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, now, 0.0, newReservedBalance))
                         limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), now))
                     }
+
+                    balancesHolder.processWalletOperations(order.externalId, MessageType.LIMIT_ORDER.name, walletOperations)
 
                     val newOrderBook = OrderBook(limitOrder.assetPairId, !limitOrder.isBuySide(), order.lastMatchTime!!, limitOrderService.getOrderBook(limitOrder.assetPairId).getCopyOfOrderBook(!limitOrder.isBuySide()))
                     orderBookQueue.put(newOrderBook)

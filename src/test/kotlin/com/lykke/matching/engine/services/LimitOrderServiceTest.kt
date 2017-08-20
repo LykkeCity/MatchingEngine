@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
@@ -15,9 +14,6 @@ import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
@@ -25,9 +21,9 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
-import java.util.Date
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -49,7 +45,7 @@ class LimitOrderServiceTest {
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue)
+    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
 
     @Before
     fun setUp() {
@@ -58,9 +54,11 @@ class LimitOrderServiceTest {
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC", 0.0000273))
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8, 8))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
@@ -146,6 +144,28 @@ class LimitOrderServiceTest {
     }
 
     @Test
+    fun testAddAndMatchLimitDustOrder() {
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1000.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3583.081, volume = 0.00746488, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3581.391, volume = 0.00253512, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3579.183, volume = 0.00253512, clientId = "Client3"))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", price = 3575.782, volume = -0.01)))
+
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(3, result.orders.size)
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
+
+        assertEquals(1035.81, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
+        assertEquals(999.99, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+    }
+
+    @Test
     fun testAddAndPartiallyMatchLimitOrder() {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 2000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 2000.0))
@@ -165,15 +185,5 @@ class LimitOrderServiceTest {
 
         assertEquals(774.88, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
         assertEquals(122.52, testWalletDatabaseAcessor.getReservedBalance("Client1", "USD"))
-    }
-
-    private fun buildLimitOrderWrapper(order: LimitOrder, cancel: Boolean = false, uid: Long = Date().time): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_LIMIT_ORDER.type, ProtocolMessages.OldLimitOrder.newBuilder()
-                .setUid(uid)
-                .setTimestamp(order.createdAt.time)
-                .setClientId(order.clientId)
-                .setAssetPairId(order.assetPairId)
-                .setVolume(order.volume)
-                .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel).build().toByteArray(), null)
     }
 }

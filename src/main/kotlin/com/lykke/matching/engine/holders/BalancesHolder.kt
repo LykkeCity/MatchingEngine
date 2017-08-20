@@ -19,7 +19,8 @@ import java.util.concurrent.BlockingQueue
 class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                      private val assetsHolder: AssetsHolder,
                      private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
-                     private val balanceUpdateQueue: BlockingQueue<JsonSerializable>
+                     private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
+                     private val trustedClients: Set<String>
                      ) {
 
     companion object {
@@ -58,13 +59,24 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         if (client != null) {
             val balance = client[assetId]
             if (balance != null) {
-                return if (balance.reserved > 0.0) balance.reserved else balance.balance
+                return if (balance.reserved > 0.0) balance.balance - balance.reserved else balance.balance
             }
         }
 
         return 0.0
     }
 
+    fun getAvailableReservedBalance(clientId: String, assetId: String): Double {
+        val client = balances[clientId]
+        if (client != null) {
+            val balance = client[assetId]
+            if (balance != null) {
+                return if (balance.reserved > 0.0) balance.reserved else balance.balance
+            }
+        }
+
+        return 0.0
+    }
 
     fun processWalletOperations(id: String, type: String, operations: List<WalletOperation>) {
         val updates = HashMap<String, ClientBalanceUpdate>()
@@ -77,7 +89,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
             val asset = assetsHolder.getAsset(operation.assetId)
 
             val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
-            val newReservedBalance = if (reservedBalance > 0) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
+            val newReservedBalance = if (!trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
 
             client.put(operation.assetId, AssetBalance(operation.assetId, newBalance, newReservedBalance))
 

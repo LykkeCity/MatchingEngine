@@ -86,10 +86,10 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
 
     fun updateLimitOrder(order: LimitOrder) {
         if (useFileOrderBook) {
-            if (order.remainingVolume != order.volume) {
-                limitOrderDatabaseAccessor.addLimitOrderDone(order)
-                limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
-            }
+//            if (order.remainingVolume != order.volume) {
+//                limitOrderDatabaseAccessor.addLimitOrderDone(order)
+//                limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
+//            }
             updateOrderBook(order.assetPairId, order.isBuySide())
         } else {
             limitOrderDatabaseAccessor.updateLimitOrder(order)
@@ -101,9 +101,10 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
             limitOrderDatabaseAccessor.deleteLimitOrders(orders)
         }
         orders.forEach { order ->
-            limitOrderDatabaseAccessor.addLimitOrderDone(order)
+//            limitOrderDatabaseAccessor.addLimitOrderDone(order)
             limitOrdersMap.remove(order.externalId)
-            limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
+            clientLimitOrdersMap[order.clientId]?.remove(order)
+//            limitOrderDatabaseAccessor.addLimitOrderDoneWithGeneratedRowId(order)
         }
     }
 
@@ -153,11 +154,11 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
         if (order.isBuySide()) {
-            val availableBalance = balancesHolder.getAvailableBalance(order.clientId, assetPair.quotingAssetId)
+            val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.quotingAssetId)
             LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
             return availableBalance >= volume * order.price
         } else {
-            val availableBalance = balancesHolder.getAvailableBalance(order.clientId, assetPair.baseAssetId)
+            val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.baseAssetId)
             LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)}")
             return availableBalance >= volume
         }
@@ -172,7 +173,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
 
         getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
-        limitOrderDatabaseAccessor.addLimitOrderDone(order)
+//        limitOrderDatabaseAccessor.addLimitOrderDone(order)
         if (useFileOrderBook) {
             updateOrderBook(order.assetPairId, order.isBuySide())
         } else {
@@ -191,7 +192,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
                 ordersToCancel.add(ord)
             }
         }
-        limitOrderDatabaseAccessor.addLimitOrdersDone(ordersToCancel)
+//        limitOrderDatabaseAccessor.addLimitOrdersDone(ordersToCancel)
         if (useFileOrderBook && orders.isNotEmpty()) {
             val order = orders.first()
             updateOrderBook(order.assetPairId, order.isBuySide())
