@@ -173,9 +173,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
                 config.me.rabbit.password, config.me.rabbit.exchangeBalanceUpdate, balanceUpdatesQueue, true).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeLimitOrders, rabbitLimitOrdersQueue, true).start()
+                config.me.rabbit.password, config.me.rabbit.exchangeLimitOrders, rabbitLimitOrdersQueue, false).start()
         RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.trustedExchangeLimitOrders, rabbitTrustedLimitOrdersQueue, false).start()
+                config.me.rabbit.password, config.me.rabbit.trustedExchangeLimitOrders, rabbitTrustedLimitOrdersQueue, true).start()
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
