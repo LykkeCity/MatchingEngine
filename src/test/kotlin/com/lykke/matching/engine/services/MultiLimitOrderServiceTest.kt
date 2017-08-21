@@ -151,7 +151,7 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testAddAndMatchLimitOrder() {
-        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.3), VolumePrice(100.0, 1.2))))
 
         assertEquals(1, limitOrdersQueue.size)
         limitOrdersQueue.poll()
@@ -163,7 +163,7 @@ class MultiLimitOrderServiceTest {
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
-        assertEquals(50.0, result.orders[0].order.remainingVolume)
+        assertEquals(-50.0, result.orders[0].order.remainingVolume)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(1.3, result.orders[1].order.price)
 
@@ -175,16 +175,20 @@ class MultiLimitOrderServiceTest {
         assertEquals(900.0, testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
         assertEquals(50.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3)), cancel = true))
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(10.0, 1.3), VolumePrice(100.0, 1.26), VolumePrice(100.0, 1.2)), cancel = true))
 
         assertEquals(1, trustedLimitOrdersQueue.size)
         result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
 
-        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
-        assertEquals(50.0, result.orders[0].order.remainingVolume)
+        assertEquals(3, result.orders.size)
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(0.0, result.orders[0].order.remainingVolume)
         assertEquals(1.3, result.orders[0].order.price)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(1.25, result.orders[1].order.price)
+        assertEquals(OrderStatus.Processing.name, result.orders[2].order.status)
+        assertEquals(60.0, result.orders[2].order.remainingVolume)
+        assertEquals(1.26, result.orders[2].order.price)
 
         assertEquals(807.5, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(1150.0, testWalletDatabaseAccessor.getBalance("Client1", "EUR"))

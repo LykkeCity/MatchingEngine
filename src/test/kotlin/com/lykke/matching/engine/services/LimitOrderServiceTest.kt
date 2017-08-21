@@ -158,11 +158,13 @@ class LimitOrderServiceTest {
         val result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(3, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(0.0, result.orders[0].order.remainingVolume)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
 
         assertEquals(1035.81, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
         assertEquals(999.99, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "BTC"))
     }
 
     @Test

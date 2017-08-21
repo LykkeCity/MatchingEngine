@@ -220,10 +220,10 @@ class MatchingEngine(private val LOGGER: Logger,
 
         if (isProcessing) {
             order.status = OrderStatus.Processing.name
-            order.updateRemainingVolume(remainingVolume)
         } else {
             order.status = OrderStatus.Matched.name
         }
+        order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == 0.0) remainingVolume else -remainingVolume)
         order.updateMatchTime(now)
         order.updatePrice(RoundingUtils.round(if (order.isStraight()) totalLimitPrice / order.getAbsVolume() else order.getAbsVolume() / totalVolume
                 , assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))

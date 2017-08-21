@@ -173,7 +173,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         orderBook.addOrder(order)
                         limitOrderService.addOrder(order)
 
-                        val limitRemainingVolume = if (order.isBuySide()) order.remainingVolume * order.price else order.remainingVolume
+                        val limitRemainingVolume = if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
                         val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitRemainingVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                         walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, now, 0.0, newReservedBalance))
                         limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), now))

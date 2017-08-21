@@ -35,7 +35,7 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
         this.price = price
     }
 
-    override fun updateRemainingVolume(price: Double) {
+    override fun updateRemainingVolume(volume: Double) {
         //nothing to do
     }
 }

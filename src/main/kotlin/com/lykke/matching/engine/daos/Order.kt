@@ -41,5 +41,5 @@ abstract class Order: Serializable {
     abstract fun updateMatchTime(time: Date)
     abstract fun takePrice(): Double?
     abstract fun updatePrice(price: Double)
-    abstract fun updateRemainingVolume(price: Double)
+    abstract fun updateRemainingVolume(volume: Double)
 }

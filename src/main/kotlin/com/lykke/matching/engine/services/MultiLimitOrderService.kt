@@ -138,13 +138,23 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         limitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
 
                         trades.addAll(matchingResult.lkkTrades)
+                        var limitOrderWithTrades = trustedLimitOrdersReport.orders.find { it.order.externalId == limitOrder.externalId}
+                        if (limitOrderWithTrades == null) {
+                            limitOrderWithTrades = LimitOrderWithTrades(limitOrder)
+                            trustedLimitOrdersReport.orders.add(limitOrderWithTrades)
+                        }
 
-                        trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
+                        limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
                             LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume)
-                        }.toMutableList()))
+                        })
 
-                        if (matchingResult.limitOrdersReport != null) {
-                            trustedLimitOrdersReport.orders.addAll(matchingResult.limitOrdersReport.orders)
+                        matchingResult.limitOrdersReport?.orders?.forEach { order ->
+                            var trustedOrder = trustedLimitOrdersReport.orders.find { it.order.externalId == order.order.externalId}
+                            if (trustedOrder == null) {
+                                trustedOrder = LimitOrderWithTrades(order.order)
+                                trustedLimitOrdersReport.orders.add(trustedOrder)
+                            }
+                            trustedOrder.trades.addAll(order.trades)
                         }
 
                         walletOperations.addAll(matchingResult.cashMovements)
