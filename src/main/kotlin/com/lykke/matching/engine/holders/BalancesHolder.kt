@@ -79,6 +79,9 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     }
 
     fun processWalletOperations(id: String, type: String, operations: List<WalletOperation>) {
+        if (operations.isEmpty()) {
+            return
+        }
         val updates = HashMap<String, ClientBalanceUpdate>()
         val walletsToAdd = LinkedList<Wallet>()
         val clients = HashSet<String>()

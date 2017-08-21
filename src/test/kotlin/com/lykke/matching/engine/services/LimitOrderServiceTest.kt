@@ -45,7 +45,7 @@ class LimitOrderServiceTest {
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
+    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, setOf("Client3"))
 
     @Before
     fun setUp() {
@@ -144,12 +144,13 @@ class LimitOrderServiceTest {
     }
 
     @Test
-    fun testAddAndMatchLimitDustOrder() {
+    fun testAddAndMatchLimitSellDustOrder() {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1000.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3583.081, volume = 0.00746488, clientId = "Client3"))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3581.391, volume = 0.00253512, clientId = "Client3"))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3579.183, volume = 0.00253512, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3578.183, volume = 0.00253512, clientId = "Client3"))
 
         val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", price = 3575.782, volume = -0.01)))
@@ -165,6 +166,54 @@ class LimitOrderServiceTest {
         assertEquals(1035.81, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
         assertEquals(999.99, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(0.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "BTC"))
+    }
+
+    @Test
+    fun testAddAndMatchBuyLimitDustOrder() {
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 4000.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3827.395, volume = -0.00703833, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3830.926, volume = -0.01356452, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3832.433, volume = -0.02174805, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3836.76, volume = -0.02740016, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3838.624, volume = -0.03649953, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3842.751, volume = -0.03705699, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3845.948, volume = -0.04872587, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3847.942, volume = -0.05056858, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3851.385, volume = -0.05842735, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3855.364, volume = -0.07678406, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3858.021, volume = -0.07206853, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3861.283, volume = -0.05011803, clientId = "Client3"))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 3863.035, volume = -0.1, clientId = "Client3"))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCEUR", price = 3890.0, volume = 0.5)))
+
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(13, result.orders.size)
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(0.0, result.orders[0].order.remainingVolume)
+        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[3].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[4].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[5].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[6].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[7].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[8].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[9].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[10].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[11].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[12].order.status)
+
+        assertEquals(2075.46, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
+        assertEquals(0.5, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "BTC"))
+
+        assertEquals(1924.54, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
+        assertEquals(999.5, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAcessor.getReservedBalance("Client3", "BTC"))
     }
 
     @Test

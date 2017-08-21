@@ -44,7 +44,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
         while (orderBook.size > 0 && ((order.takePrice() == null && remainingVolume.greaterThan(0.0))
-                || (order.takePrice() != null && if (order.isBuySide()) order.takePrice()!! >= orderBook.peek().price else order.takePrice()!! <= orderBook.peek().price && remainingVolume.greaterThan(0.0)))
+                || (order.takePrice() != null && (if (order.isBuySide()) order.takePrice()!! >= orderBook.peek().price else order.takePrice()!! <= orderBook.peek().price) && remainingVolume.greaterThan(0.0)))
                 ) {
             val limitOrder = orderBook.poll()
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
@@ -177,7 +177,7 @@ class MatchingEngine(private val LOGGER: Logger,
             //check dust
             if (asset.dustLimit != null && Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
                 order.status = OrderStatus.Dust.name
-                LOGGER.info("Market volume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(asset.dustLimit)}. id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(volume)}")
+                LOGGER.info("Market volume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(asset.dustLimit)}. id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(volume)}")
                 return MatchingResult(order)
             }
             if (limitAsset.dustLimit != null && Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit) {
