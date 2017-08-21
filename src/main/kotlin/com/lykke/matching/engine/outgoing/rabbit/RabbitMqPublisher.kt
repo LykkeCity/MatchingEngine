@@ -8,10 +8,18 @@ import com.rabbitmq.client.ConnectionFactory
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
-class RabbitMqPublisher(val host: String, val port: Int, val username: String, val password: String, val exchangeName: String, val queue: BlockingQueue<JsonSerializable>) : Thread() {
+class RabbitMqPublisher(
+        private val host: String,
+        private val port: Int,
+        private val username: String,
+        private val password: String,
+        private val exchangeName: String,
+        private val queue: BlockingQueue<JsonSerializable>,
+        private val logMessage: Boolean) : Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(RabbitMqPublisher::class.java.name)
+        val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")
         val METRICS_LOGGER = MetricsLogger.getLogger()
         val EXCHANGE_TYPE = "fanout"
     }
@@ -53,7 +61,11 @@ class RabbitMqPublisher(val host: String, val port: Int, val username: String, v
     fun publish(item: JsonSerializable) {
         while (true) {
             try {
-                channel!!.basicPublish(exchangeName, "", null, item.toJson().toByteArray())
+                val stringValue = item.toJson()
+                channel!!.basicPublish(exchangeName, "", null, stringValue.toByteArray())
+                if (logMessage) {
+                    MESSAGES_LOGGER.info("$exchangeName : $stringValue")
+                }
                 return
             } catch (exception: Exception) {
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
