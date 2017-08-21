@@ -19,4 +19,6 @@ enum class OrderStatus {
     ,Dust
     //Cancelled
     ,Cancelled
+    //Lead to negative spread
+    ,LeadToNegativeSpread
 }

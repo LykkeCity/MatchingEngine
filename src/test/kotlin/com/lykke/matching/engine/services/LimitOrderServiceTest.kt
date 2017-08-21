@@ -110,7 +110,7 @@ class LimitOrderServiceTest {
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0, volume = -1.0)))
         assertEquals(3, testDatabaseAccessor.orders.size)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 150.0, volume = -1.0)))
-        assertEquals(4, testDatabaseAccessor.orders.size)
+        assertEquals(3, testDatabaseAccessor.orders.size)
     }
 
     @Test

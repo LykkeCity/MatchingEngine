@@ -52,6 +52,23 @@ class AssetOrderBook(val assetId: String) {
         }
     }
 
+    fun leadToNegativeSpreadForClient(order: LimitOrder): Boolean {
+        val book = getCopyOfOrderBook(!order.isBuySide())
+        if (book.isEmpty()) {
+            return false
+        }
+        while (book.isNotEmpty()) {
+            val bookOrder = book.poll()
+            if (if (order.isBuySide()) order.price > bookOrder.price else order.price < bookOrder.price) {
+                if (bookOrder.clientId == order.clientId) return true
+            } else {
+                return false
+            }
+        }
+
+        return false
+    }
+
     fun copy() : AssetOrderBook {
         val book = AssetOrderBook(assetId)
 
