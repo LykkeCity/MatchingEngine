@@ -162,7 +162,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             ordersToAdd.add(order)
                         }
 
-                        if (order.isBuySide()) sellSide = true else buySide = true
+                        sellSide = true
+                        buySide = true
                     }
                     else -> {
                     }
@@ -184,13 +185,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val endPersistTime = System.nanoTime()
 
         val orderBookCopy = orderBook.copy()
-        if (buySide) {
+        if (buySide || cancelBuySide) {
             val newOrderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
             limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, true, orderBookCopy.getBidPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
-        if (sellSide) {
+        if (sellSide || cancelSellSide) {
             val newOrderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
             limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, false, orderBookCopy.getAskPrice(), now))
             orderBookQueue.put(newOrderBook)

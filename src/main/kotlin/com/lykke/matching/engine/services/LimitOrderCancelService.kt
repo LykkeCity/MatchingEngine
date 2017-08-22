@@ -71,9 +71,16 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - limitVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
                 balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
+
+                val report = LimitOrdersReport()
+                report.orders.add(LimitOrderWithTrades(order))
+                limitOrderReportQueue.put(report)
+            } else {
+//                LOGGER.info()
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.LIMIT_ORDER_NOT_FOUND.type).build())
             }
 
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
 
             METRICS_LOGGER.log(Line(ME_LIMIT_ORDER_CANCEL, arrayOf(
                     KeyValue(UID, message.uid.toString()),
@@ -81,12 +88,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                     KeyValue(LIMIT_ORDER_ID, message.limitOrderId)
             )))
             METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER_CANCEL, (++messagesCount).toString()))
-        }
-
-        if (order != null) {
-            val report = LimitOrdersReport()
-            report.orders.add(LimitOrderWithTrades(order))
-            limitOrderReportQueue.put(report)
         }
     }
 

@@ -3,12 +3,11 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -27,7 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertNull
 
 class LimitOrderCancelServiceTest {
-    val testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
+    val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -42,14 +41,14 @@ class LimitOrderCancelServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", price = 100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", price = 200.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "4", price = 400.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", price = 100.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", price = 200.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "4", price = 400.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
@@ -60,13 +59,13 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""),
+        val service = LimitOrderCancelService(GenericLimitOrderService(testFileDatabaseAccessor,
                 assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder)
         service.processMessage(buildLimitOrderCancelWrapper("3"))
 
-        val order = testDatabaseAccessor.loadLimitOrders().find { it.id == "3" }
+        val order = testFileDatabaseAccessor.loadLimitOrders().find { it.id == "3" }
         assertNull(order)
-        assertEquals(7, testDatabaseAccessor.loadLimitOrders().size)
+        assertEquals(7, testFileDatabaseAccessor.loadLimitOrders().size)
     }
 
     private fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper {

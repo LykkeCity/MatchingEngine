@@ -6,13 +6,12 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestLimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -34,7 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 
 class MultiLimitOrderServiceTest {
-    var testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
+    var testDatabaseAccessor = TestFileOrderDatabaseAccessor()
     var testMarketDatabaseAccessor = TestMarketOrderDatabaseAccessor()
     val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
@@ -57,7 +56,7 @@ class MultiLimitOrderServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor = TestLimitOrderDatabaseAccessor()
+        testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAccessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
@@ -199,7 +198,7 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
     }
 
-    private fun initLimitService() = GenericLimitOrderService(false, testDatabaseAccessor, FileOrderBookDatabaseAccessor(""), assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+    private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
     private fun initSingleLimitOrderService() = SingleLimitOrderService(genericLimitService, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
     private fun initService() = MultiLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
 
