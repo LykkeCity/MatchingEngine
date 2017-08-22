@@ -11,7 +11,7 @@ class OrderBook: JsonSerializable {
     val isBuy: Boolean
     val timestamp: Date
 
-    val prices: MutableList<VolumePrice> = ArrayList()
+    val prices: MutableList<Order> = ArrayList()
 
     constructor(assetPair: String, isBuy: Boolean, timestamp: Date) {
         this.assetPair = assetPair
@@ -26,13 +26,13 @@ class OrderBook: JsonSerializable {
 
         while (!orders.isEmpty()) {
             val order = orders.poll()
-            addVolumePrice(order.remainingVolume, order.price)
+            addVolumePrice(order.externalId, order.clientId, order.remainingVolume, order.price)
         }
     }
 
-    fun addVolumePrice(volume: Double, price: Double) {
-        prices.add(VolumePrice(volume, price))
+    fun addVolumePrice(id: String, clientId: String, volume: Double, price: Double) {
+        prices.add(Order(id, clientId, volume, price))
     }
 }
 
-class VolumePrice(val volume: Double, val price: Double)
+class Order(val id: String, val clientId: String, val volume: Double, val price: Double)
