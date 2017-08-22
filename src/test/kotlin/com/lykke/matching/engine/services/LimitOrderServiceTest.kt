@@ -78,6 +78,18 @@ class LimitOrderServiceTest {
     }
 
     @Test
+    fun testAddSellLimitOrder() {
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9, volume = -1.0)))
+
+        val order = testDatabaseAccessor.loadLimitOrders().find { it.price == 999.9 }
+        assertNotNull(order)
+
+        assertEquals(1000.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
+        assertEquals(1.0, testWalletDatabaseAcessor.getReservedBalance("Client1", "EUR"))
+    }
+
+    @Test
     fun testCancelPrevAndAddLimitOrder() {
         val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0), uid = 1))
