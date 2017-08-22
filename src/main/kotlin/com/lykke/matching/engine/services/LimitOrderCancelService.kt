@@ -44,7 +44,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val order: LimitOrder?
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             val message = parseOldLimitOrderCancel(messageWrapper.byteArray)
-            LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+            LOGGER.debug("Got old limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
             order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString())
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
@@ -64,7 +64,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             if (order != null) {
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-                val limitVolume = if (order.isBuySide()) order.volume * order.price else order.volume
+                val limitVolume = if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
 
                 val balance = balancesHolder.getBalance(order.clientId, limitAsset)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
