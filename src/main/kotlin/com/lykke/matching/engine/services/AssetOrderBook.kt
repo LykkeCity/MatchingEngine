@@ -46,9 +46,9 @@ class AssetOrderBook(val assetId: String) {
 
         val bestPrice = book.peek().price
         if (order.isBuySide()) {
-            return order.price > bestPrice
+            return order.price >= bestPrice
         } else {
-            return order.price < bestPrice
+            return order.price <= bestPrice
         }
     }
 
@@ -59,8 +59,25 @@ class AssetOrderBook(val assetId: String) {
         }
         while (book.isNotEmpty()) {
             val bookOrder = book.poll()
-            if (if (order.isBuySide()) order.price > bookOrder.price else order.price < bookOrder.price) {
+            if (if (order.isBuySide()) order.price >= bookOrder.price else order.price <= bookOrder.price) {
                 if (bookOrder.clientId == order.clientId) return true
+            } else {
+                return false
+            }
+        }
+
+        return false
+    }
+
+    fun leadToNegativeSpreadByOtherClient(order: LimitOrder): Boolean {
+        val book = getCopyOfOrderBook(!order.isBuySide())
+        if (book.isEmpty()) {
+            return false
+        }
+        while (book.isNotEmpty()) {
+            val bookOrder = book.poll()
+            if (if (order.isBuySide()) order.price >= bookOrder.price else order.price <= bookOrder.price) {
+                if (bookOrder.clientId != order.clientId) return true
             } else {
                 return false
             }

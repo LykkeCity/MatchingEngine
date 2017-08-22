@@ -79,14 +79,14 @@ class MatchingEngine(private val LOGGER: Logger,
 
         if (order.calculateReservedVolume() > getBalance(order)) {
             order.status = OrderStatus.ReservedVolumeGreaterThanBalance.name
-            LOGGER.info("Not enough funds for order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}")
+            LOGGER.info("Reserved volume greater than balance for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}")
             return MatchingResult(order)
         }
 
-        val balance = if (order.calculateReservedVolume() > 0.0) order.calculateReservedVolume() else getBalance(order)
+        val balance = if (order.calculateReservedVolume() > 0.0)  RoundingUtils.round(order.calculateReservedVolume(), asset.accuracy, true) else getBalance(order)
         if (balance < RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)) {
             order.status = OrderStatus.NotEnoughFunds.name
-            LOGGER.info("Not enough funds for order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}")
+            LOGGER.info("Not enough funds for order id: ${order.id}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)} : $balance < ${RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)}")
             return MatchingResult(order)
         }
 

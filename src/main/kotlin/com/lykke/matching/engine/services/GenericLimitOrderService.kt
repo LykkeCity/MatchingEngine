@@ -183,7 +183,7 @@ class GenericLimitOrderService(private val useFileOrderBook: Boolean,
         return order
     }
 
-    fun cancelLimitOrders(orders: List<LimitOrder>) {
+    fun     cancelLimitOrders(orders: List<LimitOrder>) {
         val ordersToCancel = ArrayList<LimitOrder>(orders.size)
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)

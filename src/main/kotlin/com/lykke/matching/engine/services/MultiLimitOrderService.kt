@@ -50,7 +50,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(SingleLimitOrderService.LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -108,7 +108,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val walletOperations = LinkedList<WalletOperation>()
         val ordersToAdd = LinkedList<LimitOrder>()
         orders.forEach { order ->
-            if (orderBook.leadToNegativeSpread(order)) {
+            if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
                 val limitOrder = matchingResult.order as LimitOrder
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
@@ -161,6 +161,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         if (matchingResult.order.status == OrderStatus.Processing.name) {
                             ordersToAdd.add(order)
                         }
+
+                        if (order.isBuySide()) sellSide = true else buySide = true
                     }
                     else -> {
                     }
