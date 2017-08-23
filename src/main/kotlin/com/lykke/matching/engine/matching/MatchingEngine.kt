@@ -15,7 +15,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.Date
@@ -145,17 +144,29 @@ class MatchingEngine(private val LOGGER: Logger,
                 if ((!order.isStraight()) && (index == matchedOrders.size - 1)) {
                     oppositeRoundedVolume = Math.signum(order.volume) * (RoundingUtils.round(Math.abs(order.volume), assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy) - Math.abs(totalLimitVolume))
                     marketRoundedVolume = RoundingUtils.round(-oppositeRoundedVolume / limitOrder.price, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
-                    MarketOrderService.LOGGER.debug("Rounding last matched limit order trade: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                    LOGGER.debug("Rounding last matched limit order trade: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
                 }
 
                 //in case of non-straight orders, avoid negative holders due to rounding of asset pair
-                if (asset.dustLimit != null && asset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
-                    if (isBuy) {
-                        oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
-                        LOGGER.debug("Adjusting market volume due to dust: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
-                    } else {
-                        marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
-                        LOGGER.debug("Adjusting market volume due to dust: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                if (asset.dustLimit != null && asset.dustLimit > 0) {
+                    if (Math.abs(limitOrder.remainingVolume) - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                        if (isBuy) {
+                            oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * limitOrder.remainingVolume
+                            LOGGER.debug("Adjusting market volume due to dust [remaining volume]: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                        } else {
+                            marketRoundedVolume = Math.signum(marketRoundedVolume) * limitOrder.remainingVolume
+                            LOGGER.debug("Adjusting market volume due to dust [remaining volume]: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                        }
+                    }
+
+                    if (marketBalance > 0.0 && marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                        if (isBuy) {
+                            oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
+                            LOGGER.debug("Adjusting market volume due to dust [balance]: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                        } else {
+                            marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                            LOGGER.debug("Adjusting market volume due to dust [balance]: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                        }
                     }
                 }
 
