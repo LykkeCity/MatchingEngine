@@ -130,92 +130,104 @@ class MatchingEngine(private val LOGGER: Logger,
         val limitOrdersReport = LimitOrdersReport()
 
         matchedOrders.forEachIndexed { index, limitOrder ->
-            val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
-            val marketRemainingVolume = getCrossVolume(remainingVolume, order.isStraight(), limitOrder.price)
-            val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
+            if (remainingVolume > 0.0) {
+                val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
+                val marketRemainingVolume = getCrossVolume(remainingVolume, order.isStraight(), limitOrder.price)
+                val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
 
-            var marketRoundedVolume = RoundingUtils.round(if (isBuy) volume else -volume, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
-            var oppositeRoundedVolume = RoundingUtils.round(if (isBuy) -limitOrder.price * volume else limitOrder.price * volume, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy)
+                var marketRoundedVolume = RoundingUtils.round(if (isBuy) volume else -volume, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
+                var oppositeRoundedVolume = RoundingUtils.round(if (isBuy) -limitOrder.price * volume else limitOrder.price * volume, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy)
 
-            LOGGER.info("Matching with limit order ${limitOrder.id}, price ${limitOrder.price}, " +
-                    "marketVolume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
-                    "limitVolume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
+                LOGGER.info("Matching with limit order ${limitOrder.id}, price ${limitOrder.price}, " +
+                        "marketVolume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
+                        "limitVolume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
 
-            if ((!order.isStraight()) && (index == matchedOrders.size - 1)) {
-                oppositeRoundedVolume = Math.signum(order.volume) * (RoundingUtils.round(Math.abs(order.volume), assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy) - Math.abs(totalLimitVolume))
-                marketRoundedVolume = RoundingUtils.round(- oppositeRoundedVolume / limitOrder.price, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
-                MarketOrderService.LOGGER.debug("Rounding last matched limit order trade: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
-            }
+                if ((!order.isStraight()) && (index == matchedOrders.size - 1)) {
+                    oppositeRoundedVolume = Math.signum(order.volume) * (RoundingUtils.round(Math.abs(order.volume), assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy) - Math.abs(totalLimitVolume))
+                    marketRoundedVolume = RoundingUtils.round(-oppositeRoundedVolume / limitOrder.price, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
+                    MarketOrderService.LOGGER.debug("Rounding last matched limit order trade: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                }
 
-            //in case of non-straight orders, avoid negative holders due to rounding of asset pair
-            if (asset.dustLimit != null && asset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                //in case of non-straight orders, avoid negative holders due to rounding of asset pair
+                if (asset.dustLimit != null && asset.dustLimit > 0 && marketBalance > 0.0 && marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                    if (isBuy) {
+                        oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
+                        LOGGER.debug("Adjusting market volume due to dust: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                    } else {
+                        marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                        LOGGER.debug("Adjusting market volume due to dust: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                    }
+                }
+
                 if (isBuy) {
-                    oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
-                    LOGGER.debug("Adjusting volume due to dust: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                    if (marketBalance < Math.abs(oppositeRoundedVolume)) {
+                        oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
+                        LOGGER.debug("Adjusting market volume due to low balance and rounding: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                    }
                 } else {
-                    marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
-                    LOGGER.debug("Adjusting volume due to dust: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                    if (marketBalance < Math.abs(marketRoundedVolume)) {
+                        marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
+                        LOGGER.debug("Adjusting market volume due to low balance and rounding: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                    }
                 }
-            }
 
-            if (isBuy) {
-                if (marketBalance < Math.abs(oppositeRoundedVolume)) {
-                    oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * marketBalance
-                    LOGGER.debug("Adjusting volume due to low balance and rounding: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                if (limitAsset.dustLimit != null && limitAsset.dustLimit > 0 && Math.abs(limitOrder.remainingVolume) - Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit ) {
+                    if (isBuy) {
+                        marketRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(limitOrder.remainingVolume)
+                        LOGGER.debug("Adjusting limit volume due to dust: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                    } else {
+                        oppositeRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(limitOrder.remainingVolume)
+                        LOGGER.debug("Adjusting limit volume due to dust: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                    }
                 }
-            } else {
-                if (marketBalance < Math.abs(marketRoundedVolume)) {
-                    marketRoundedVolume = Math.signum(marketRoundedVolume) * marketBalance
-                    LOGGER.debug("Adjusting volume due to low balance and rounding: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+
+                LOGGER.debug("Corrected volumes: " +
+                        "marketVolume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
+                        "limitVolume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
+
+                //check dust
+                if (asset.dustLimit != null && Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                    order.status = OrderStatus.Dust.name
+                    LOGGER.info("Market volume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(asset.dustLimit)}. id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(volume)}")
+                    return MatchingResult(order)
                 }
-            }
+                if (limitAsset.dustLimit != null && Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit) {
+                    order.status = OrderStatus.Dust.name
+                    LOGGER.info("Limit volume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(limitAsset.dustLimit)}. id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}")
+                    return MatchingResult(order)
+                }
 
-            LOGGER.debug("Corrected volumes: " +
-                    "marketVolume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
-                    "limitVolume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
+                cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, 0.0))
+                cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, 0.0))
+                cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, if (-marketRoundedVolume < 0) -marketRoundedVolume else 0.0))
+                cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, if (-oppositeRoundedVolume < 0) -oppositeRoundedVolume else 0.0))
 
-            //check dust
-            if (asset.dustLimit != null && Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
-                order.status = OrderStatus.Dust.name
-                LOGGER.info("Market volume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(asset.dustLimit)}. id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(volume)}")
-                return MatchingResult(order)
-            }
-            if (limitAsset.dustLimit != null && Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit) {
-                order.status = OrderStatus.Dust.name
-                LOGGER.info("Limit volume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)} is less than dust ${RoundingUtils.roundForPrint(limitAsset.dustLimit)}. id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}")
-                return MatchingResult(order)
-            }
-
-            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, 0.0))
-            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, 0.0))
-            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, if (-marketRoundedVolume < 0) -marketRoundedVolume else 0.0))
-            cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, if (-oppositeRoundedVolume < 0) -oppositeRoundedVolume else 0.0))
-
-            if (marketRemainingVolume >= limitRemainingVolume) {
-                lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))
-                limitOrder.remainingVolume = 0.0
-                limitOrder.status = OrderStatus.Matched.name
-                completedLimitOrders.add(limitOrder)
-            } else {
-                lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume, now))
                 val limitVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).baseAssetId)
-                limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble()
-                limitOrder.status = OrderStatus.Processing.name
-                uncompletedLimitOrder = limitOrder
+                if (RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble() == 0.0) {
+                    lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))
+                    limitOrder.remainingVolume = 0.0
+                    limitOrder.status = OrderStatus.Matched.name
+                    completedLimitOrders.add(limitOrder)
+                } else {
+                    lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, -marketRoundedVolume, now))
+                    limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble()
+                    limitOrder.status = OrderStatus.Processing.name
+                    uncompletedLimitOrder = limitOrder
+                }
+
+                remainingVolume = RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), order.isStraight(), limitOrder.price), assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
+                limitOrder.lastMatchTime = now
+
+                marketOrderTrades.add(TradeInfo(order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), asset.assetId,
+                        limitOrder.clientId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
+                        limitOrder.price, limitOrder.id, limitOrder.externalId, now))
+                limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
+                        order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy)))))
+                totalVolume += volume
+                totalLimitPrice += volume * limitOrder.price
+                totalLimitVolume += Math.abs(if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume)
+                marketBalance = RoundingUtils.parseDouble(marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume), asset.accuracy).toDouble()
             }
-
-            remainingVolume = RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), order.isStraight(), limitOrder.price), assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
-            limitOrder.lastMatchTime = now
-
-            marketOrderTrades.add(TradeInfo(order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), asset.assetId,
-                    limitOrder.clientId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
-                    limitOrder.price, limitOrder.id, limitOrder.externalId, now))
-            limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
-                    order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy)))))
-            totalVolume += volume
-            totalLimitPrice += volume * limitOrder.price
-            totalLimitVolume += Math.abs(if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume)
-            marketBalance = RoundingUtils.parseDouble(marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume), asset.accuracy).toDouble()
         }
 
         if (isProcessing) {
