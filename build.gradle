@@ -2,7 +2,7 @@ group 'com.lykke.me'
 version '0.1'
 
 buildscript {
-    ext.kotlin_version = '1.1.4'
+    ext.kotlin_version = '1.1.1'
     repositories {
         mavenCentral()
     }
