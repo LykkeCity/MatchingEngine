@@ -14,14 +14,14 @@ public class AzureLimitOrder extends AzureOrder {
     }
 
     public AzureLimitOrder(String partitionKey, String uid, String assetPairId, String clientId, Double volume, Double price,
-                           String status, Date createdAt, Date registered, Double remainingVolume, Date lastMatchTime) {
-        super(partitionKey, uid, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
+                           String status, Date createdAt, Date registered, Double remainingVolume, Date lastMatchTime, Double reservedLimitVolume) {
+        super(partitionKey, uid, uid, assetPairId, clientId, volume, price, status, createdAt, registered, reservedLimitVolume);
         this.remainingVolume = remainingVolume;
         this.lastMatchTime = lastMatchTime;
     }
 
     public AzureLimitOrder(String partitionKey, LimitOrder order) {
-        super(partitionKey, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
+        super(partitionKey, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered(), order.getReservedLimitVolume());
         this.remainingVolume = order.getRemainingVolume();
         this.lastMatchTime = order.getLastMatchTime();
     }
@@ -47,7 +47,7 @@ public class AzureLimitOrder extends AzureOrder {
     }
 
     public LimitOrder toLimitOrder() {
-        return new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime);
+        return new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime, reservedLimitVolume);
     }
 
     @Override

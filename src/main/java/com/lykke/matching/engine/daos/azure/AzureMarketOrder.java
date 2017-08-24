@@ -11,23 +11,20 @@ public class AzureMarketOrder extends AzureOrder {
     private Date matchedAt;
     private boolean straight;
 
-    private Double reservedLimitVolume;
-
     public AzureMarketOrder() {
     }
 
     public AzureMarketOrder(String uid, String assetPairId, String clientId, Double volume, Double price, String status,
-                            Date createdAt, Date registered, Date matchedAt, boolean straight) {
-        super(ORDER_ID, uid, uid, assetPairId, clientId, volume, price, status, createdAt, registered);
+                            Date createdAt, Date registered, Date matchedAt, boolean straight, Double reservedLimitVolume) {
+        super(ORDER_ID, uid, uid, assetPairId, clientId, volume, price, status, createdAt, registered, reservedLimitVolume);
         this.matchedAt = matchedAt;
         this.straight = straight;
     }
 
     public AzureMarketOrder(MarketOrder order) {
-        super(ORDER_ID, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered());
+        super(ORDER_ID, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered(), order.getReservedLimitVolume());
         this.matchedAt = order.getMatchedAt();
         this.straight = order.getStraight();
-        this.reservedLimitVolume = order.getReservedLimitVolume();
     }
 
     public boolean isBuySide() {

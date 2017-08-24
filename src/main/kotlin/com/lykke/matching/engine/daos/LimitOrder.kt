@@ -4,8 +4,9 @@ import java.io.Serializable
 import java.util.Date
 
 class LimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, var price: Double,
-                 status: String, createdAt: Date, registered: Date, var remainingVolume: Double, var lastMatchTime: Date?)
-    : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered), Serializable {
+                 status: String, createdAt: Date, registered: Date, var remainingVolume: Double, var lastMatchTime: Date?,
+                 reservedLimitVolume: Double? = null)
+    : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume), Serializable {
 
     fun getAbsRemainingVolume(): Double {
         return Math.abs(remainingVolume)
@@ -35,7 +36,7 @@ class LimitOrder(id: String, externalId: String, assetPairId: String, clientId: 
         //price is fixed
     }
 
-    override fun updateRemainingVolume(remainingVolume: Double) {
-        this.remainingVolume = remainingVolume
+    override fun updateRemainingVolume(volume: Double) {
+        this.remainingVolume = volume
     }
 }

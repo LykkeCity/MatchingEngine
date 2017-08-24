@@ -21,10 +21,12 @@ abstract class AzureOrder extends TableServiceEntity {
     //date of registering by matching engine
     Date registered;
 
+    Double reservedLimitVolume;
+
     AzureOrder() {
     }
 
-    AzureOrder(String partitionKey, String rowKey, String orderId, String assetPairId, String clientId, Double volume, Double price, String status, Date createdAt, Date registered) {
+    AzureOrder(String partitionKey, String rowKey, String orderId, String assetPairId, String clientId, Double volume, Double price, String status, Date createdAt, Date registered, Double reservedLimitVolume) {
         super(partitionKey, rowKey);
         this.id = orderId;
         this.assetPairId = assetPairId;
@@ -34,6 +36,7 @@ abstract class AzureOrder extends TableServiceEntity {
         this.status = status;
         this.createdAt = createdAt;
         this.registered = registered;
+        this.reservedLimitVolume = reservedLimitVolume;
     }
 
     public Double getAbsVolume() {
@@ -110,6 +113,14 @@ abstract class AzureOrder extends TableServiceEntity {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Double getReservedLimitVolume() {
+        return reservedLimitVolume;
+    }
+
+    public void setReservedLimitVolume(Double reservedLimitVolume) {
+        this.reservedLimitVolume = reservedLimitVolume;
     }
 
     @Override

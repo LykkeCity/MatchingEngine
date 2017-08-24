@@ -169,8 +169,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         limitOrderService.setOrderBook(order.assetPairId, order.isBuySide(), orderBook.getOrderBook(order.isBuySide()))
                         limitOrderService.updateOrderBook(order.assetPairId, order.isBuySide())
 
-                        val limitRemainingVolume = if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
-                        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitRemainingVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+                        order.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price , assetsHolder.getAsset(limitAsset).accuracy, true) else order.getAbsRemainingVolume()
+                        val newReservedBalance =  RoundingUtils.parseDouble(reservedBalance - cancelVolume + order.reservedLimitVolume!!, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                         walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, now, 0.0, newReservedBalance))
                         limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), now))
                     }
@@ -190,6 +190,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             }
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} matched")
         } else {
+            order.reservedLimitVolume = limitVolume
+
             orderBook.addOrder(order)
             limitOrderService.addOrder(order)
             limitOrderService.setOrderBook(order.assetPairId, order.isBuySide(), orderBook.getOrderBook(order.isBuySide()))
