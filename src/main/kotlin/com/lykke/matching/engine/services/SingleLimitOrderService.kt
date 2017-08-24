@@ -134,10 +134,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     writeResponse(messageWrapper, limitOrder, MessageStatus.NOT_ENOUGH_FUNDS)
                 }
-                OrderStatus.Dust -> {
-                    limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
-                    writeResponse(messageWrapper, limitOrder, MessageStatus.DUST)
-                }
                 OrderStatus.Matched,
                 OrderStatus.Processing-> {
                     limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)

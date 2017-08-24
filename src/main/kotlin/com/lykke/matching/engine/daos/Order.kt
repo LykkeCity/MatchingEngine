@@ -12,10 +12,9 @@ abstract class Order: Serializable {
     var status: String = ""
     var createdAt: Date = Date()
     var registered: Date = Date()
-    var dustSize: Double? = 0.0
 
     constructor()
-    constructor(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, status: String, createdAt: Date, registered: Date, dustSize: Double?) {
+    constructor(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, status: String, createdAt: Date, registered: Date) {
         this.id = id
         this.externalId = externalId
         this.assetPairId = assetPairId
@@ -24,7 +23,6 @@ abstract class Order: Serializable {
         this.status = status
         this.createdAt = createdAt
         this.registered = registered
-        this.dustSize = dustSize
     }
 
     fun getAbsVolume(): Double {

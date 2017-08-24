@@ -49,7 +49,7 @@ class LimitOrderServiceDustTest {
         testWalletDatabaseAcessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC", 0.0000273))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
 
@@ -73,11 +73,11 @@ class LimitOrderServiceDustTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(999.95, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(1000 - 0.04997355, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(1159.92, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
-        assertEquals(1000.05, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
+        assertEquals(1000 + 0.04997355, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
         assertEquals(840.08, testWalletDatabaseAcessor.getBalance("Client2", "USD"))
     }
 
@@ -94,12 +94,12 @@ class LimitOrderServiceDustTest {
         assertEquals(1, limitOrdersQueue.size)
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
-        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
-        assertEquals(999.94997365, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(999.95, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(1160.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
-        assertEquals(1000.05002635, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
+        assertEquals(1000.05, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
         assertEquals(840.0, testWalletDatabaseAcessor.getBalance("Client2", "USD"))
     }
 
@@ -117,11 +117,11 @@ class LimitOrderServiceDustTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(1000.05, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(1000 + 0.04997355, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(840.09, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
-        assertEquals(999.95, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
+        assertEquals(1000 - 0.04997355, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
         assertEquals(1159.91, testWalletDatabaseAcessor.getBalance("Client2", "USD"))
     }
 
@@ -138,12 +138,12 @@ class LimitOrderServiceDustTest {
         assertEquals(1, limitOrdersQueue.size)
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
-        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
-        assertEquals(1000.05002635, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(1000.05, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(840.0, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
-        assertEquals(999.94997365, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
+        assertEquals(999.95, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
         assertEquals(1160.0, testWalletDatabaseAcessor.getBalance("Client2", "USD"))
     }
 

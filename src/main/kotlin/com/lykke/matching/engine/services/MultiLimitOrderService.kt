@@ -118,9 +118,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     OrderStatus.NotEnoughFunds -> {
                         limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
-                    OrderStatus.Dust -> {
-                        limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
-                    }
                     OrderStatus.Matched,
                     OrderStatus.Processing-> {
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)

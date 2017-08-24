@@ -26,7 +26,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderStatus.Dust
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -118,10 +117,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             NotEnoughFunds -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
                 writeResponse(messageWrapper, marketOrder, MessageStatus.NOT_ENOUGH_FUNDS)
-            }
-            Dust -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, MessageStatus.DUST)
             }
             Matched -> {
                 genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)

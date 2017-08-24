@@ -53,7 +53,7 @@ class LimitOrderServiceTest {
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC", 0.0000273))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
 
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
@@ -171,11 +171,11 @@ class LimitOrderServiceTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(999.99, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(1000 - 0.009973, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(1031.92, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
-        assertEquals(0.01, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
+        assertEquals(0.009973, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
         assertEquals(968.08, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
     }
 
@@ -195,12 +195,13 @@ class LimitOrderServiceTest {
         assertEquals(1, limitOrdersQueue.size)
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
-        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
+        assertEquals(0.00002635, result.orders[0].order.remainingVolume)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
-        assertEquals(999.98997365, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(999.99, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(1032.0, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
-        assertEquals(0.01002635, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
+        assertEquals(0.01, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
         assertEquals(968.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
     }
 
@@ -221,11 +222,11 @@ class LimitOrderServiceTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
-        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(999.99, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
+        assertEquals(1000 - 0.009973, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
         assertEquals(31.91, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
-        assertEquals(0.01, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(0.009973, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
         assertEquals(968.09, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
     }
 

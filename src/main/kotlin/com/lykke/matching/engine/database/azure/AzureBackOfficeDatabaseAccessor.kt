@@ -71,7 +71,7 @@ class AzureBackOfficeDatabaseAccessor(сlientPersonalInfoString: String, bitCoin
                     .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ASSET))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.assetId] = Asset(asset.assetId, asset.accuracy, asset.blockChainId, asset.dustLimit)
+                result[asset.assetId] = Asset(asset.assetId, asset.accuracy, asset.blockChainId)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load assets", e)
@@ -86,7 +86,7 @@ class AzureBackOfficeDatabaseAccessor(сlientPersonalInfoString: String, bitCoin
             val retrieveAssetAsset = TableOperation.retrieve(ASSET, assetId, AzureAsset::class.java)
             val asset = assetsTable.execute(retrieveAssetAsset).getResultAsType<AzureAsset>()
             if (asset != null) {
-               return Asset(asset.assetId, asset.accuracy, asset.blockChainId, asset.dustLimit)
+               return Asset(asset.assetId, asset.accuracy, asset.blockChainId)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load assetId: $assetId", e)

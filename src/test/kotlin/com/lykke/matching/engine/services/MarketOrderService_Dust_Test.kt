@@ -68,15 +68,15 @@ class MarketOrderService_Dust_Test {
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client2", "Client2-Multisig"))
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client3", "Client3-Multisig"))
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client4", "Client4-Multisig"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2, "LKK", 0.0))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2, "SLR", 0.0))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR", 0.0))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2, "GBP", 0.001))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2, "CHF", 0.0))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2, "LKK"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2, "SLR"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2, "GBP"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2, "CHF"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2, "JPY"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC", 0.00001))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8, "BTC1", 0.0000273))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8, "BTC1"))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
@@ -116,16 +116,16 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1000.0, marketOrderReport.order.price!!, DELTA)
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.02000900", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.02000000", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         Assert.assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
         Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.020009, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(0.02, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
         Assert.assertEquals(1480.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(0.000009, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
         Assert.assertEquals(20.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
     }
 
@@ -144,16 +144,16 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(610.96, marketOrderReport.order.price!!, DELTA)
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.14441495", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.14441208", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         Assert.assertEquals("88.23", marketOrderReport.trades.first().limitVolume)
         Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.14441495, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
+        Assert.assertEquals(0.14441208, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
         Assert.assertEquals(1500 - 88.23, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
+        Assert.assertEquals(0.00000287, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
         Assert.assertEquals(88.23, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
     }
 
@@ -170,19 +170,19 @@ class MarketOrderService_Dust_Test {
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         Assert.assertEquals(598.916, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals("20.008", marketOrderReport.order.volume.toString())
+        Assert.assertEquals("20.0", marketOrderReport.order.volume.toString())
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.03340700", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.03339367", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         Assert.assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
         Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.033407, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
+        Assert.assertEquals(0.03339367, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
         Assert.assertEquals(1500 - 20.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
+        Assert.assertEquals(0.00001333, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
         Assert.assertEquals(20.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
     }
 
@@ -199,19 +199,19 @@ class MarketOrderService_Dust_Test {
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         Assert.assertEquals(593.644, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals("0.549", marketOrderReport.order.volume.toString())
+        Assert.assertEquals("0.54", marketOrderReport.order.volume.toString())
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.00092519", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.00090964", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         Assert.assertEquals("0.54", marketOrderReport.trades.first().limitVolume)
         Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.00092519, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
+        Assert.assertEquals(0.00090964, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
         Assert.assertEquals(1500 - 0.54, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
+        Assert.assertEquals(0.00001555, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
         Assert.assertEquals(0.54, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
     }
 
@@ -230,17 +230,17 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1000.0, marketOrderReport.order.price!!, DELTA)
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.02001000", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.02000000", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("20.01", marketOrderReport.trades.first().limitVolume)
+        Assert.assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
         Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.02001, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(479.99, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(20.01, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
-        Assert.assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        Assert.assertEquals(0.02, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
+        Assert.assertEquals(480.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
+        Assert.assertEquals(20.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        Assert.assertEquals(0.00001, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
     }
 
     @Test
@@ -254,7 +254,7 @@ class MarketOrderService_Dust_Test {
 
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Dust.name, marketOrderReport.order.status)
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -269,10 +269,10 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(127.87220039, marketOrderReport.order.volume, DELTA)
+        Assert.assertEquals(127.8722, marketOrderReport.order.volume, DELTA)
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.01000000", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.00999961", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         Assert.assertEquals("127.88", marketOrderReport.trades.first().limitVolume)
@@ -314,7 +314,7 @@ class MarketOrderService_Dust_Test {
 
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Dust.name, marketOrderReport.order.status)
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -328,7 +328,7 @@ class MarketOrderService_Dust_Test {
 
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Dust.name, marketOrderReport.order.status)
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -342,7 +342,7 @@ class MarketOrderService_Dust_Test {
 
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Dust.name, marketOrderReport.order.status)
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -360,11 +360,11 @@ class MarketOrderService_Dust_Test {
         assertEquals(1, limitOrdersQueue.size)
         val result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
-        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
-        assertEquals(0.05, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(0.04997355, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
         assertEquals(4950.02, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
-        assertEquals(9.95, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(10 - 0.04997355, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
         assertEquals(49.98, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
     }
 
@@ -383,11 +383,11 @@ class MarketOrderService_Dust_Test {
         assertEquals(1, limitOrdersQueue.size)
         val result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
-        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
-        assertEquals(0.05, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(0.04997355, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
         assertEquals(4950.03, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
-        assertEquals(9.95, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(10 - 0.04997355, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
         assertEquals(49.97, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 

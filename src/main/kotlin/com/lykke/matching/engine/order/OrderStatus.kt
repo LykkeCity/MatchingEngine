@@ -15,8 +15,6 @@ enum class OrderStatus {
     ,NoLiquidity
     //Unknown asset
     ,UnknownAsset
-    //One of trades or whole order has volume/price*volume less then configured dust
-    ,Dust
     //Cancelled
     ,Cancelled
     //Lead to negative spread
