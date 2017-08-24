@@ -77,7 +77,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val limitVolume = if (order.isBuySide()) order.getAbsVolume() * order.price else order.getAbsVolume()
+        val limitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsVolume() * order.price, assetsHolder.getAsset(limitAsset).accuracy, true) else order.getAbsVolume()
 
         val balance = balancesHolder.getBalance(order.clientId, limitAsset)
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
