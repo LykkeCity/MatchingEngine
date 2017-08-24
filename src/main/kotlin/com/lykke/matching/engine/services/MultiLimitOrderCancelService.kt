@@ -19,7 +19,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                                    private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MultiLimitOrderCancel> {
 
     companion object {
-        val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
+        val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

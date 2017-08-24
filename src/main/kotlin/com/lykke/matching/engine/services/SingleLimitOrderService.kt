@@ -23,6 +23,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
@@ -42,14 +43,19 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
     companion object {
         val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
+        val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     private var messagesCount: Long = 0
+    private var logCount = 1000
+    private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
+        val startTime = System.nanoTime()
+
         val order: LimitOrder
 
         val now = Date()
@@ -223,6 +229,16 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
 
         METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
+
+        val endTime = System.nanoTime()
+
+        messagesCount++
+        totalTime += (endTime - startTime).toDouble() / logCount
+
+        if (messagesCount % logCount == 0L) {
+            STATS_LOGGER.info("Total: ${PrintUtils.convertToString(totalTime)}. ")
+            totalTime = 0.0
+        }
     }
 
     private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: LimitOrder, balance: Double, limitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date) {

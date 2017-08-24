@@ -104,12 +104,9 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
     }
 
     fun saveTicks(now: Long) {
-        if (oneDayLastUpdateTime + oneDayUpdateInterval < now ) {
+        if (threeDaysLastUpdateTime + threeDaysUpdateInterval < now ) {
             oneHourTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
             oneDayTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
-            oneDayLastUpdateTime = now
-        }
-        if (threeDaysLastUpdateTime + threeDaysUpdateInterval < now ) {
             threeDaysTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
             threeDaysLastUpdateTime = now
         }

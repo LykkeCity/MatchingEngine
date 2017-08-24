@@ -19,6 +19,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
@@ -46,9 +47,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     private var messagesCount: Long = 0
     private var ordersCount: Long = 0
-
     private var logCount = 1000
-
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
 
@@ -207,8 +206,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         totalTime += (endTime - startTime).toDouble() / logCount
 
         if (messagesCount % logCount == 0L) {
-            STATS_LOGGER.info("Orders: $ordersCount/$messagesCount messages. Total: ${convertToString(totalTime)}. " +
-                    " Persist: ${convertToString(totalPersistTime)}, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
+            STATS_LOGGER.info("Orders: $ordersCount/$logCount messages. Total: ${PrintUtils.convertToString(totalTime)}. " +
+                    " Persist: ${PrintUtils.convertToString(totalPersistTime)}, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
             ordersCount = 0
             totalPersistTime = 0.0
             totalTime = 0.0
@@ -225,15 +224,5 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     private fun parse(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
         return ProtocolMessages.OldMultiLimitOrder.parseFrom(array)
-    }
-
-    private fun convertToString(value: Double): String {
-        if ((value / 100000).toInt() == 0) {
-            //microseconds
-            return "${RoundingUtils.roundForPrint(value / 1000)} micros"
-        } else {
-            //milliseconds
-            return "${RoundingUtils.roundForPrint(value / 1000000)} millis"
-        }
     }
 }

@@ -35,6 +35,7 @@ import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
@@ -57,28 +58,29 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
+        val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     private var messagesCount: Long = 0
+    private var logCount = 1000
+    private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val order: MarketOrder
-        if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
+        val startTime = System.nanoTime()
+        val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = parseOld(messageWrapper.byteArray)
             LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
-            val uid = UUID.randomUUID().toString()
-            order = MarketOrder(uid, message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
+            MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
         } else {
             val message = parse(messageWrapper.byteArray)
             LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
-            val uid = UUID.randomUUID().toString()
-            order = MarketOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume, null,
+            MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
         }
 
@@ -152,6 +154,16 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         METRICS_LOGGER.log(getMetricLine(order.externalId, order))
         METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
+
+        val endTime = System.nanoTime()
+
+        messagesCount++
+        totalTime += (endTime - startTime).toDouble() / logCount
+
+        if (messagesCount % logCount == 0L) {
+            STATS_LOGGER.info("Total: ${PrintUtils.convertToString(totalTime)}. ")
+            totalTime = 0.0
+        }
     }
 
     private fun parseOld(array: ByteArray): ProtocolMessages.OldMarketOrder {
