@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.matching
 
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.Order
+import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.NewOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -30,11 +30,11 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val assetsPairsHolder: AssetsPairsHolder,
                      private val balancesHolder: BalancesHolder) {
 
-    fun match(order: Order, orderBook: PriorityBlockingQueue<LimitOrder>): MatchingResult {
+    fun match(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>): MatchingResult {
         var remainingVolume = order.getAbsVolume()
-        val matchedOrders = LinkedList<LimitOrder>()
-        val skipLimitOrders = HashSet<LimitOrder>()
-        val cancelledLimitOrders = HashSet<LimitOrder>()
+        val matchedOrders = LinkedList<NewLimitOrder>()
+        val skipLimitOrders = HashSet<NewLimitOrder>()
+        val cancelledLimitOrders = HashSet<NewLimitOrder>()
 
         var totalLimitPrice = 0.0
         var totalVolume = 0.0
@@ -93,8 +93,8 @@ class MatchingEngine(private val LOGGER: Logger,
         totalVolume = 0.0
         val now = Date()
 
-        val completedLimitOrders = LinkedList<LimitOrder>()
-        var uncompletedLimitOrder: LimitOrder? = null
+        val completedLimitOrders = LinkedList<NewLimitOrder>()
+        var uncompletedLimitOrder: NewLimitOrder? = null
         val lkkTrades = LinkedList<LkkTrade>()
         val cashMovements = LinkedList<WalletOperation>()
 
@@ -202,7 +202,7 @@ class MatchingEngine(private val LOGGER: Logger,
         return if (straight) volume else volume * price
     }
 
-    private fun getBalance(order: Order): Double {
+    private fun getBalance(order: NewOrder): Double {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         return balancesHolder.getAvailableBalance(order.clientId, asset)

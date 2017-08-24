@@ -3,7 +3,7 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.Candle
 import com.lykke.matching.engine.daos.HourCandle
-import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.azure.AzureBestPrice
 import com.lykke.matching.engine.daos.azure.AzureCandle
 import com.lykke.matching.engine.daos.azure.AzureHourCandle
@@ -50,8 +50,8 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         this.hourCandlesTable = getOrCreateTable(liquidityConfig, "FeedHoursHistory")
     }
 
-    override fun loadLimitOrders(): List<LimitOrder> {
-        val result = ArrayList<LimitOrder>()
+    override fun loadLimitOrders(): List<NewLimitOrder> {
+        val result = ArrayList<NewLimitOrder>()
         try {
             val partitionQuery = TableQuery.from(AzureLimitOrder::class.java)
 
@@ -64,7 +64,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         return result
     }
 
-    override fun addLimitOrder(order: LimitOrder) {
+    override fun addLimitOrder(order: NewLimitOrder) {
         try {
             limitOrdersTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order.assetPairId, order)))
         } catch(e: Exception) {
@@ -73,7 +73,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         }
     }
 
-    override fun addLimitOrders(orders: List<LimitOrder>) {
+    override fun addLimitOrders(orders: List<NewLimitOrder>) {
         try {
             batchInsertOrMerge(limitOrdersTable, orders.map({ AzureLimitOrder(it.assetPairId, it) }))
         } catch(e: Exception) {
@@ -82,7 +82,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         }
     }
 
-    override fun updateLimitOrder(order: LimitOrder) {
+    override fun updateLimitOrder(order: NewLimitOrder) {
         try {
             limitOrdersTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(order.assetPairId, order)))
         } catch(e: Exception) {
@@ -91,7 +91,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         }
     }
 
-    override fun deleteLimitOrders(orders: List<LimitOrder>) {
+    override fun deleteLimitOrders(orders: List<NewLimitOrder>) {
         try {
             batchDelete(limitOrdersTable, orders.map( { AzureLimitOrder(it.assetPairId, it) } ))
         } catch(e: Exception) {
@@ -100,7 +100,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         }
     }
 
-    override fun addLimitOrderDone(order: LimitOrder) {
+    override fun addLimitOrderDone(order: NewLimitOrder) {
         try {
             if (order.remainingVolume != order.volume) {
                 limitOrdersDoneTable.execute(TableOperation.insertOrMerge(AzureLimitOrder(ORDER_ID, order)))
@@ -111,7 +111,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         }
     }
 
-    override fun addLimitOrdersDone(orders: List<LimitOrder>) {
+    override fun addLimitOrdersDone(orders: List<NewLimitOrder>) {
         try {
             batchInsertOrMerge(limitOrdersDoneTable, orders.filter { it.remainingVolume != it.volume }.map( { AzureLimitOrder(ORDER_ID, it) } ))
         } catch(e: Exception) {
@@ -120,7 +120,7 @@ class AzureLimitOrderDatabaseAccessor(activeOrdersConfig: String, historyOrdersC
         }
     }
 
-    override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
+    override fun addLimitOrderDoneWithGeneratedRowId(order: NewLimitOrder) {
         var counter = 0
         try {
             val azureOrder = AzureLimitOrder(order.clientId, order)

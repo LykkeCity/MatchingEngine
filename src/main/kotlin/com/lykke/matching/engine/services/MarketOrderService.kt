@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.cache.WalletCredentialsCache
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -125,12 +125,12 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 matchingResult.cancelledLimitOrders.forEach { limitOrder ->
                     limitOrder.status = OrderStatus.NotEnoughFunds.name
                 }
-                genericLimitOrderService.moveOrdersToDone(ArrayList<LimitOrder>(matchingResult.cancelledLimitOrders))
+                genericLimitOrderService.moveOrdersToDone(ArrayList<NewLimitOrder>(matchingResult.cancelledLimitOrders))
 
                 matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
                 if (matchingResult.uncompletedLimitOrder != null) {
-                    genericLimitOrderService.updateLimitOrder(matchingResult.uncompletedLimitOrder as LimitOrder)
+                    genericLimitOrderService.updateLimitOrder(matchingResult.uncompletedLimitOrder as NewLimitOrder)
                     matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
                 }
 

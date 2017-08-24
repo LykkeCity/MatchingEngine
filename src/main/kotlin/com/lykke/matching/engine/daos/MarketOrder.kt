@@ -5,7 +5,7 @@ import java.util.Date
 class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String, volume: Double,
                   var price: Double?, status: String, createdAt: Date, registered: Date,
                   var matchedAt: Date?, var straight: Boolean, reservedLimitVolume: Double? = null)
-    : Order(id, uid, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume) {
+    : NewOrder(id, uid, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume) {
 
     override fun isOrigBuySide(): Boolean {
         return super.isBuySide()

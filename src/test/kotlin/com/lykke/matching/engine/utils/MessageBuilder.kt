@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.utils
 
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MarketOrder
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -17,8 +17,8 @@ class MessageBuilder {
                             price: Double = 100.0,
                             registered: Date = Date(),
                             status: String = OrderStatus.InOrderBook.name,
-                            volume:Double = 1000.0): LimitOrder =
-                LimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)
+                            volume:Double = 1000.0): NewLimitOrder =
+                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             return MessageWrapper("Test", MessageType.OLD_MARKET_ORDER.type, ProtocolMessages.OldMarketOrder.newBuilder()
@@ -40,7 +40,7 @@ class MessageBuilder {
                              volume: Double = 1000.0): MarketOrder =
                 MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight)
 
-        fun buildLimitOrderWrapper(order: LimitOrder,
+        fun buildLimitOrderWrapper(order: NewLimitOrder,
                                    cancel: Boolean = false,
                                    uid: Long = Date().time) =
                 MessageWrapper("Test", MessageType.OLD_LIMIT_ORDER.type, ProtocolMessages.OldLimitOrder.newBuilder()

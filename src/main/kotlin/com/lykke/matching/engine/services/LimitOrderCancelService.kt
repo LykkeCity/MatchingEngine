@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -41,7 +41,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
     private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val order: LimitOrder?
+        val order: NewLimitOrder?
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             val message = parseOldLimitOrderCancel(messageWrapper.byteArray)
             LOGGER.debug("Got old limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")

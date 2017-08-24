@@ -3,7 +3,7 @@ package com.lykke.matching.engine.database
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.Candle
 import com.lykke.matching.engine.daos.HourCandle
-import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.NewLimitOrder
 import java.text.SimpleDateFormat
 import java.util.ArrayList
 
@@ -11,41 +11,41 @@ class TestLimitOrderDatabaseAccessor : LimitOrderDatabaseAccessor {
 
     val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
-    val orders = ArrayList<LimitOrder>()
-    val ordersDone = ArrayList<LimitOrder>()
+    val orders = ArrayList<NewLimitOrder>()
+    val ordersDone = ArrayList<NewLimitOrder>()
     var bestPrices: List<BestPrice> = ArrayList()
     var candles = ArrayList<Candle>()
     var hoursCandles = ArrayList<HourCandle>()
 
-    override fun loadLimitOrders(): List<LimitOrder> {
+    override fun loadLimitOrders(): List<NewLimitOrder> {
         return orders
     }
 
-    override fun addLimitOrder(order: LimitOrder) {
+    override fun addLimitOrder(order: NewLimitOrder) {
         orders.add(order)
     }
 
-    override fun addLimitOrders(orders: List<LimitOrder>) {
+    override fun addLimitOrders(orders: List<NewLimitOrder>) {
         this.orders.addAll(orders)
     }
 
-    override fun updateLimitOrder(order: LimitOrder) {
+    override fun updateLimitOrder(order: NewLimitOrder) {
         //nothing to do, already in memory
     }
 
-    override fun deleteLimitOrders(orders: List<LimitOrder>) {
+    override fun deleteLimitOrders(orders: List<NewLimitOrder>) {
         this.orders.removeAll(orders)
     }
 
-    override fun addLimitOrderDone(order: LimitOrder) {
+    override fun addLimitOrderDone(order: NewLimitOrder) {
         ordersDone.add(order)
     }
 
-    override fun addLimitOrdersDone(orders: List<LimitOrder>) {
+    override fun addLimitOrdersDone(orders: List<NewLimitOrder>) {
         ordersDone.addAll(orders)
     }
 
-    override fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder) {
+    override fun addLimitOrderDoneWithGeneratedRowId(order: NewLimitOrder) {
     }
 
     fun getLastOrder() = orders.last()

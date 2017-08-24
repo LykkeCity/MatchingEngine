@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos.azure;
 
-import com.lykke.matching.engine.daos.LimitOrder;
+import com.lykke.matching.engine.daos.NewLimitOrder;
 import java.util.Date;
 
 public class AzureLimitOrder extends AzureOrder {
@@ -20,7 +20,7 @@ public class AzureLimitOrder extends AzureOrder {
         this.lastMatchTime = lastMatchTime;
     }
 
-    public AzureLimitOrder(String partitionKey, LimitOrder order) {
+    public AzureLimitOrder(String partitionKey, NewLimitOrder order) {
         super(partitionKey, order.getId(), order.getId(), order.getAssetPairId(), order.getClientId(), order.getVolume(), order.getPrice(), order.getStatus(), order.getCreatedAt(), order.getRegistered(), order.getReservedLimitVolume());
         this.remainingVolume = order.getRemainingVolume();
         this.lastMatchTime = order.getLastMatchTime();
@@ -46,13 +46,13 @@ public class AzureLimitOrder extends AzureOrder {
         this.lastMatchTime = lastMatchTime;
     }
 
-    public LimitOrder toLimitOrder() {
-        return new LimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime, reservedLimitVolume);
+    public NewLimitOrder toLimitOrder() {
+        return new NewLimitOrder(getId(), getId(), assetPairId, clientId, volume, price, status, createdAt, registered, remainingVolume, lastMatchTime, reservedLimitVolume);
     }
 
     @Override
     public String toString() {
-        return "LimitOrder{"  +
+        return "com.lykke.matching.engine.daos.LimitOrder{"  +
                 "id='" + id + '\'' +
                 ", assetPairId='" + assetPairId + '\'' +
                 ", clientId='" + clientId + '\'' +

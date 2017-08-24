@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
@@ -58,7 +58,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Got multi limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}")
 
-        val orders = ArrayList<LimitOrder>(message.ordersList.size)
+        val orders = ArrayList<NewLimitOrder>(message.ordersList.size)
         val now = Date()
         val limitOrdersReport = LimitOrdersReport()
         val trustedLimitOrdersReport = LimitOrdersReport()
@@ -68,7 +68,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         message.ordersList.forEach { currentOrder ->
             val uid = UUID.randomUUID().toString()
-            orders.add(LimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
+            orders.add(NewLimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
                     currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null))
 
             if (message.cancelAllPreviousLimitOrders) {
@@ -80,7 +80,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
-        val ordersToCancel = ArrayList<LimitOrder>()
+        val ordersToCancel = ArrayList<NewLimitOrder>()
 
         if (message.cancelAllPreviousLimitOrders) {
             if (cancelBuySide) {
@@ -107,11 +107,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val trades = LinkedList<LkkTrade>()
         val walletOperations = LinkedList<WalletOperation>()
-        val ordersToAdd = LinkedList<LimitOrder>()
+        val ordersToAdd = LinkedList<NewLimitOrder>()
         orders.forEach { order ->
             if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
-                val limitOrder = matchingResult.order as LimitOrder
+                val limitOrder = matchingResult.order as NewLimitOrder
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
@@ -125,7 +125,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         matchingResult.cancelledLimitOrders.forEach { it ->
                             it.status = OrderStatus.NotEnoughFunds.name
                         }
-                        limitOrderService.moveOrdersToDone(ArrayList<LimitOrder>(matchingResult.cancelledLimitOrders))
+                        limitOrderService.moveOrdersToDone(ArrayList<NewLimitOrder>(matchingResult.cancelledLimitOrders))
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 

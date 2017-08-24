@@ -3,18 +3,18 @@ package com.lykke.matching.engine.database
 import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.Candle
 import com.lykke.matching.engine.daos.HourCandle
-import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.NewLimitOrder
 
 interface LimitOrderDatabaseAccessor {
-    fun loadLimitOrders(): List<LimitOrder>
-    fun addLimitOrder(order: LimitOrder)
-    fun addLimitOrders(orders: List<LimitOrder>)
-    fun updateLimitOrder(order: LimitOrder)
-    fun deleteLimitOrders(orders: List<LimitOrder>)
+    fun loadLimitOrders(): List<NewLimitOrder>
+    fun addLimitOrder(order: NewLimitOrder)
+    fun addLimitOrders(orders: List<NewLimitOrder>)
+    fun updateLimitOrder(order: NewLimitOrder)
+    fun deleteLimitOrders(orders: List<NewLimitOrder>)
 
-    fun addLimitOrderDone(order: LimitOrder)
-    fun addLimitOrdersDone(orders: List<LimitOrder>)
-    fun addLimitOrderDoneWithGeneratedRowId(order: LimitOrder)
+    fun addLimitOrderDone(order: NewLimitOrder)
+    fun addLimitOrdersDone(orders: List<NewLimitOrder>)
+    fun addLimitOrderDoneWithGeneratedRowId(order: NewLimitOrder)
 
     fun updateBestPrices(prices: List<BestPrice>)
     fun writeCandle(candle: Candle)
