@@ -328,9 +328,9 @@ class MarketOrderServiceTest {
         assertEquals(13591.395424, marketOrderReport.order.price!!, DELTA)
         assertEquals(3, marketOrderReport.trades.size)
 
-        assertEquals(3.67889654, testWalletDatabaseAccessor.getBalance("Client1", "BTC"), DELTA)
+        assertEquals(3.67879812, testWalletDatabaseAccessor.getBalance("Client1", "BTC"), DELTA)
         assertEquals(50000.0, testWalletDatabaseAccessor.getBalance("Client1", "LKK"), DELTA)
-        assertEquals(8.99676032, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        assertEquals(8.99685874, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
         assertEquals(50000.0, testWalletDatabaseAccessor.getBalance("Client4", "LKK"), DELTA)
     }
 

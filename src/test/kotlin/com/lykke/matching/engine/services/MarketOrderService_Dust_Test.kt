@@ -19,6 +19,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.queue.transaction.Transaction
@@ -30,6 +31,7 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertEquals
 
 class MarketOrderService_Dust_Test {
     var testDatabaseAccessor = TestMarketOrderDatabaseAccessor()
@@ -341,5 +343,97 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Dust.name, marketOrderReport.order.status)
+    }
+
+    @Test
+    fun testDust1() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = -0.05, assetId = "BTC1USD", clientId = "Client3"))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 5000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC1", 10.0))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.04997355, straight = true)))
+
+        Assert.assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+
+        assertEquals(0.05, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(4950.02, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(9.95, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(49.98, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+    }
+
+    @Test
+    fun testDust2() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = 0.05, assetId = "BTC1USD", clientId = "Client3"))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 5000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 10.0))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.04997355, straight = true)))
+
+        Assert.assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+
+        assertEquals(0.05, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(4950.03, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(9.95, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(49.97, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+    }
+
+    @Test
+    fun testDust3() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = -0.05, assetId = "BTC1USD", clientId = "Client3"))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 5000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC1", 10.0))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0499727, straight = true)))
+
+        Assert.assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
+
+        assertEquals(0.0499727, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(4950.02, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(9.9500273, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(49.98, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+    }
+
+    @Test
+    fun testDust4() {
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = 0.05, assetId = "BTC1USD", clientId = "Client3"))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 5000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 10.0))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0499727, straight = true)))
+
+        Assert.assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
+
+        assertEquals(0.0499727, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(4950.03, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(9.9500273, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(49.97, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 }

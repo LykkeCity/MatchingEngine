@@ -64,8 +64,6 @@ class MatchingEngine(private val LOGGER: Logger,
             }
         }
 
-        val isProcessing = order.takePrice() != null && remainingVolume > 0
-
         if (order.takePrice() == null && remainingVolume.greaterThan(0.0)) {
             order.status = OrderStatus.NoLiquidity.name
             LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)} | Unfilled: ${RoundingUtils.roundForPrint(remainingVolume)}")
@@ -149,13 +147,22 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 //in case of non-straight orders, avoid negative holders due to rounding of asset pair
                 if (asset.dustLimit != null && asset.dustLimit > 0) {
-                    if (Math.abs(limitOrder.remainingVolume) - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                    val remainingDif = Math.abs(limitOrder.remainingVolume) - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)
+                    if (remainingDif > 0 && remainingDif < asset.dustLimit) {
                         if (isBuy) {
                             oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * limitOrder.remainingVolume
                             LOGGER.debug("Adjusting market volume due to dust [remaining volume]: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
                         } else {
                             marketRoundedVolume = Math.signum(marketRoundedVolume) * limitOrder.remainingVolume
                             LOGGER.debug("Adjusting market volume due to dust [remaining volume]: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                        }
+                    } else if (marketRemainingVolume - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) < asset.dustLimit) {
+                        if (isBuy) {
+                            oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * Math.abs(oppositeRoundedVolume)
+                            LOGGER.debug("Adjusting market volume due to dust [marketVolume]: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                        } else {
+                            marketRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(marketRemainingVolume)
+                            LOGGER.debug("Adjusting market volume due to dust [marketVolume]: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
                         }
                     }
 
@@ -182,13 +189,24 @@ class MatchingEngine(private val LOGGER: Logger,
                     }
                 }
 
-                if (limitAsset.dustLimit != null && limitAsset.dustLimit > 0 && Math.abs(limitOrder.remainingVolume) - Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit ) {
-                    if (isBuy) {
-                        marketRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(limitOrder.remainingVolume)
-                        LOGGER.debug("Adjusting limit volume due to dust: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
-                    } else {
-                        oppositeRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(limitOrder.remainingVolume)
-                        LOGGER.debug("Adjusting limit volume due to dust: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                if (limitAsset.dustLimit != null && limitAsset.dustLimit > 0) {
+                    val remainingDif = Math.abs(Math.abs(limitOrder.remainingVolume) - Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume))
+                    if (remainingDif > 0 && remainingDif < limitAsset.dustLimit) {
+                        if (isBuy) {
+                            marketRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(limitOrder.remainingVolume)
+                            LOGGER.debug("Adjusting limit volume due to dust [remainingVolume]: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                        } else {
+                            oppositeRoundedVolume = Math.signum(marketRoundedVolume) * Math.abs(limitOrder.remainingVolume)
+                            LOGGER.debug("Adjusting limit volume due to dust [remainingVolume]: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                        }
+                    } else if (marketRemainingVolume - Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) < limitAsset.dustLimit) {
+                        if (isBuy) {
+                            marketRoundedVolume = Math.signum(marketRemainingVolume) * Math.abs(marketRemainingVolume)
+                            LOGGER.debug("Adjusting limit volume due to dust [marketVolume]: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
+                        } else {
+                            oppositeRoundedVolume = Math.signum(oppositeRoundedVolume) * Math.abs(oppositeRoundedVolume)
+                            LOGGER.debug("Adjusting limit volume due to dust [marketVolume]: ${RoundingUtils.roundForPrint(oppositeRoundedVolume)}")
+                        }
                     }
                 }
 
@@ -214,7 +232,8 @@ class MatchingEngine(private val LOGGER: Logger,
                 cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, if (-oppositeRoundedVolume < 0) -oppositeRoundedVolume else 0.0))
 
                 val limitVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).baseAssetId)
-                if (RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble() == 0.0) {
+                val calculatedLimitRemainingVolume = Math.abs(RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble())
+                if (calculatedLimitRemainingVolume == 0.0 || (limitVolumeAsset.dustLimit != null && limitVolumeAsset.dustLimit > 0.0 && calculatedLimitRemainingVolume < limitVolumeAsset.dustLimit) ) {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.price, limitOrder.remainingVolume, now))
                     limitOrder.remainingVolume = 0.0
                     limitOrder.status = OrderStatus.Matched.name
@@ -241,12 +260,13 @@ class MatchingEngine(private val LOGGER: Logger,
             }
         }
 
-        if (isProcessing) {
+        if (order.takePrice() != null && remainingVolume > 0.0) {
             order.status = OrderStatus.Processing.name
+            order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == 0.0) remainingVolume else -remainingVolume)
         } else {
             order.status = OrderStatus.Matched.name
+            order.updateRemainingVolume(0.0)
         }
-        order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == 0.0) remainingVolume else -remainingVolume)
         order.updateMatchTime(now)
         order.updatePrice(RoundingUtils.round(if (order.isStraight()) totalLimitPrice / order.getAbsVolume() else order.getAbsVolume() / totalVolume
                 , assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))

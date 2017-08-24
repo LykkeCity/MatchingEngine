@@ -77,7 +77,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 report.orders.add(LimitOrderWithTrades(order))
                 limitOrderReportQueue.put(report)
             } else {
-//                LOGGER.info()
+                LOGGER.info("Unable to find order id: ${message.limitOrderId}")
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.LIMIT_ORDER_NOT_FOUND.type).build())
             }
 

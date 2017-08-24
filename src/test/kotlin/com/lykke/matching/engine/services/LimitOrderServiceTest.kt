@@ -180,6 +180,31 @@ class LimitOrderServiceTest {
     }
 
     @Test
+    fun testAddAndMatchLimitOrderWithDust1() {
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1000.0))
+        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1000.0))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", clientId = "Client1", price = 3200.0, volume = -0.01)))
+        assertEquals(1, limitOrdersQueue.size)
+        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", clientId = "Client3", price = 3200.0, volume = 0.01002635)))
+        assertEquals(1, limitOrdersQueue.size)
+        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, result.orders.size)
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+
+        assertEquals(999.98997365, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
+        assertEquals(1032.0, testWalletDatabaseAcessor.getBalance("Client1", "EUR"))
+        assertEquals(0.01002635, testWalletDatabaseAcessor.getBalance("Client3", "BTC"))
+        assertEquals(968.0, testWalletDatabaseAcessor.getBalance("Client3", "EUR"))
+    }
+
+    @Test
     fun testAddAndMatchBuyLimitOrderWithDust() {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))

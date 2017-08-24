@@ -63,7 +63,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
             if (balance - reservedBalance < Math.abs(message.volume)) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
-                CashOperationService.LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
+                LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
         }
