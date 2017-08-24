@@ -40,10 +40,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
+        val STATS_LOGGER = Logger.getLogger("${MultiLimitOrderService::class.java.name}.stats")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     private var messagesCount: Long = 0
+    private var ordersCount: Long = 0
 
     private var logCount = 1000
 
@@ -200,12 +202,14 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val endTime = System.nanoTime()
 
         messagesCount++
+        ordersCount += orders.size
         totalPersistTime += (endPersistTime - startPersistTime).toDouble() / logCount
         totalTime += (endTime - startTime).toDouble() / logCount
 
         if (messagesCount % logCount == 0L) {
-            LOGGER.info("Total time: ${convertToString(totalTime)}. " +
-                    " Persist time: ${convertToString(totalPersistTime)}, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
+            STATS_LOGGER.info("Orders: $ordersCount/$messagesCount messages. Total: ${convertToString(totalTime)}. " +
+                    " Persist: ${convertToString(totalPersistTime)}, ${RoundingUtils.roundForPrint2(100*totalPersistTime/totalTime)} %")
+            ordersCount = 0
             totalPersistTime = 0.0
             totalTime = 0.0
         }
@@ -226,10 +230,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private fun convertToString(value: Double): String {
         if ((value / 100000).toInt() == 0) {
             //microseconds
-            return "${RoundingUtils.roundForPrint(value / 1000)} micros ($value nanos)"
+            return "${RoundingUtils.roundForPrint(value / 1000)} micros"
         } else {
             //milliseconds
-            return "${RoundingUtils.roundForPrint(value / 1000000)} millis ($value nanos)"
+            return "${RoundingUtils.roundForPrint(value / 1000000)} millis"
         }
     }
 }

@@ -3,9 +3,12 @@ services:
   me:
     image: lykkex/matchingengine
     environment:
-        - AZURE_CONFIG_CONNECTION_STRING=AZURE_CONFIG_CONNECTION_STRING
-        - AZURE_CONFIG_BLOB=AZURE_CONFIG_BLOB
-        - AZURE_CONFIG_FILE=AZURE_CONFIG_FILE
+        - HTTP_CONFIG=ME_HTTP_CONFIG
+        - JAVA_OPTS=-ME_JAVA_OPTS
+    ports:
+      - "8887:8887"
+      - "8888:8888"
+      - "8889:8889"
     volumes:
           - LOGS_DIR:/lykke-me-prototype/log
           - ORDERS_DIR:/lykke-me-prototype/orders
