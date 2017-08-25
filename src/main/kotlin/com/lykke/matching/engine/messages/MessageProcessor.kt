@@ -186,7 +186,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
             tradesInfoService.saveCandles()
         }
 
-        this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second) + 60000 * (60 - time.minute)).toLong(), period = config.me.hoursCandleSaverInterval) {
+        this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
             tradesInfoService.saveHourCandles()
         }
 
