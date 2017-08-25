@@ -185,13 +185,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val orderBookCopy = orderBook.copy()
         if (buySide || cancelBuySide) {
             val newOrderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
-            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, true, orderBookCopy.getBidPrice(), now))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, true, orderBook.getBidPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSide || cancelSellSide) {
             val newOrderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
-            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, false, orderBookCopy.getAskPrice(), now))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, false, orderBook.getAskPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
