@@ -67,7 +67,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null)
 
-            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}")
+            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
         } else {
@@ -76,7 +76,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order = NewLimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
                     message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null)
 
-            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}")
+            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
@@ -176,7 +176,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         limitOrderService.updateOrderBook(order.assetPairId, order.isBuySide())
 
                         order.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price , assetsHolder.getAsset(limitAsset).accuracy, true) else order.getAbsRemainingVolume()
-                        val newReservedBalance =  RoundingUtils.parseDouble(reservedBalance - cancelVolume + order.reservedLimitVolume!!, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+                        val newReservedBalance =  RoundingUtils.parseDouble(order.reservedLimitVolume!! - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                         walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, now, 0.0, newReservedBalance))
                         limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), now))
                     }

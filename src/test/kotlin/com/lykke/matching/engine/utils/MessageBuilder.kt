@@ -21,8 +21,8 @@ class MessageBuilder {
                 NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-            return MessageWrapper("Test", MessageType.OLD_MARKET_ORDER.type, ProtocolMessages.OldMarketOrder.newBuilder()
-                    .setUid(Date().time)
+            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, ProtocolMessages.MarketOrder.newBuilder()
+                    .setUid(UUID.randomUUID().toString())
                     .setTimestamp(order.createdAt.time)
                     .setClientId(order.clientId)
                     .setAssetPairId(order.assetPairId)
@@ -42,13 +42,16 @@ class MessageBuilder {
 
         fun buildLimitOrderWrapper(order: NewLimitOrder,
                                    cancel: Boolean = false,
-                                   uid: Long = Date().time) =
-                MessageWrapper("Test", MessageType.OLD_LIMIT_ORDER.type, ProtocolMessages.OldLimitOrder.newBuilder()
+                                   uid: String = UUID.randomUUID().toString()) =
+                MessageWrapper("Test", MessageType.LIMIT_ORDER.type, ProtocolMessages.LimitOrder.newBuilder()
                         .setUid(uid)
                         .setTimestamp(order.createdAt.time)
                         .setClientId(order.clientId)
                         .setAssetPairId(order.assetPairId)
                         .setVolume(order.volume)
                         .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel).build().toByteArray(), null)
+
+         fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
+                    .setUid(UUID.randomUUID().toString()).setLimitOrderId(uid).build().toByteArray(), null)
     }
 }
