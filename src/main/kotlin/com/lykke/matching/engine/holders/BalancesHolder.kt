@@ -28,7 +28,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     }
 
     private val balances = walletDatabaseAccessor.loadBalances()
-    private val wallets = walletDatabaseAccessor.loadWallets()
+    val wallets = walletDatabaseAccessor.loadWallets()
 
     fun getBalance(clientId: String, assetId: String): Double {
         val client = balances[clientId]

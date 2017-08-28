@@ -8,7 +8,7 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.HttpConfigParser
-import com.lykke.matching.engine.utils.migration.MigrateOrderBookFiles
+import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -35,7 +35,7 @@ fun main(args: Array<String>) {
     val config = HttpConfigParser.initConfig(args[0])
 
     if (config.me.migrate) {
-        MigrateOrderBookFiles().migrate(config)
+        ReservedVolumesRecalculator().recalculate(config)
         return
     }
 
