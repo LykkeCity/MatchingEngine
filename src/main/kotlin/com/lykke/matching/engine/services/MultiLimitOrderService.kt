@@ -158,6 +158,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         walletOperations.addAll(matchingResult.cashMovements)
                         if (matchingResult.order.status == OrderStatus.Processing.name) {
                             ordersToAdd.add(order)
+                            orderBook.addOrder(order)
                         }
 
                         sellSide = true
@@ -174,24 +175,30 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
-        limitOrderService.setOrderBook(message.assetPairId, orderBook)
         val startPersistTime = System.nanoTime()
         balancesHolder.processWalletOperations(message.uid.toString(), MessageType.MULTI_LIMIT_ORDER.name, walletOperations)
         marketOrderDatabaseAccessor.addLkkTrades(trades)
-        limitOrderService.cancelLimitOrders(ordersToCancel)
         limitOrderService.addOrders(ordersToAdd)
+        limitOrderService.cancelLimitOrders(ordersToCancel)
+        limitOrderService.setOrderBook(message.assetPairId, orderBook)
+        if (buySide || cancelBuySide) {
+            limitOrderService.updateOrderBook(message.assetPairId, true)
+        }
+        if (sellSide || cancelSellSide) {
+            limitOrderService.updateOrderBook(message.assetPairId, false)
+        }
         val endPersistTime = System.nanoTime()
 
         val orderBookCopy = orderBook.copy()
         if (buySide || cancelBuySide) {
             val newOrderBook = OrderBook(message.assetPairId, true, now, orderBookCopy.getOrderBook(true))
-            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, true, orderBook.getBidPrice(), now))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, true, orderBookCopy.getBidPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSide || cancelSellSide) {
             val newOrderBook = OrderBook(message.assetPairId, false, now, orderBookCopy.getOrderBook(false))
-            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, false, orderBook.getAskPrice(), now))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId, false, orderBookCopy.getAskPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }

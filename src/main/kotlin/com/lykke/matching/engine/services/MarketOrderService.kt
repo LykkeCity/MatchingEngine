@@ -96,7 +96,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide())
+        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
         if (orderBook.size == 0) {
             order.status = NoLiquidity.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))

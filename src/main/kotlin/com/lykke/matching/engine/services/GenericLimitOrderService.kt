@@ -59,10 +59,6 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         orders.forEach { order ->
             addOrder(order)
         }
-        if (orders.isNotEmpty()) {
-            val order = orders.first()
-            updateOrderBook(order.assetPairId, order.isBuySide())
-        }
     }
 
     fun updateLimitOrder(order: NewLimitOrder) {
@@ -117,14 +113,14 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     fun isEnoughFunds(order: NewLimitOrder, volume: Double): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
-        if (order.isBuySide()) {
+        return if (order.isBuySide()) {
             val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.quotingAssetId)
             LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
-            return availableBalance >= volume * order.price
+            availableBalance >= volume * order.price
         } else {
             val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.baseAssetId)
             LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)}")
-            return availableBalance >= volume
+            availableBalance >= volume
         }
     }
 
@@ -138,17 +134,11 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     }
 
     fun cancelLimitOrders(orders: List<NewLimitOrder>) {
-        val ordersToCancel = ArrayList<NewLimitOrder>(orders.size)
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
             if (ord != null) {
                 ord.status = Cancelled.name
-                ordersToCancel.add(ord)
             }
-        }
-        if (orders.isNotEmpty()) {
-            val order = orders.first()
-            updateOrderBook(order.assetPairId, order.isBuySide())
         }
     }
 

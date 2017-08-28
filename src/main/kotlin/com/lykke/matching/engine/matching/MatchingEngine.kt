@@ -31,6 +31,7 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val balancesHolder: BalancesHolder) {
 
     fun match(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>): MatchingResult {
+        val workingOrderBook = PriorityBlockingQueue(orderBook)
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<NewLimitOrder>()
         val skipLimitOrders = HashSet<NewLimitOrder>()
@@ -42,10 +43,10 @@ class MatchingEngine(private val LOGGER: Logger,
 
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
 
-        while (orderBook.size > 0 && ((order.takePrice() == null && remainingVolume.greaterThan(0.0))
-                || (order.takePrice() != null && (if (order.isBuySide()) order.takePrice()!! >= orderBook.peek().price else order.takePrice()!! <= orderBook.peek().price) && remainingVolume.greaterThan(0.0)))
+        while (workingOrderBook.size > 0 && ((order.takePrice() == null && remainingVolume.greaterThan(0.0))
+                || (order.takePrice() != null && (if (order.isBuySide()) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price) && remainingVolume.greaterThan(0.0)))
                 ) {
-            val limitOrder = orderBook.poll()
+            val limitOrder = workingOrderBook.poll()
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
             val marketRemainingVolume = getCrossVolume(remainingVolume, order.isStraight(), limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
@@ -66,7 +67,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
         if (order.takePrice() == null && remainingVolume.greaterThan(0.0)) {
             order.status = OrderStatus.NoLiquidity.name
-            LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)} | Unfilled: ${RoundingUtils.roundForPrint(remainingVolume)}")
+            LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)} | Unfilled: ${RoundingUtils.roundForPrint(remainingVolume)}, price: ${order.takePrice()}")
             return MatchingResult(order)
         }
 
@@ -76,14 +77,14 @@ class MatchingEngine(private val LOGGER: Logger,
 
         if (order.calculateReservedVolume() > getBalance(order)) {
             order.status = OrderStatus.ReservedVolumeGreaterThanBalance.name
-            LOGGER.info("Reserved volume greater than balance for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}")
+            LOGGER.info("Reserved volume (${order.calculateReservedVolume()}) greater than balance for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}")
             return MatchingResult(order)
         }
 
         val balance = if (order.calculateReservedVolume() > 0.0)  RoundingUtils.round(order.calculateReservedVolume(), asset.accuracy, true) else getBalance(order)
         if (balance < RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)) {
             order.status = OrderStatus.NotEnoughFunds.name
-            LOGGER.info("Not enough funds for order id: ${order.id}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)} : $balance < ${RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)}")
+            LOGGER.info("Not enough funds for order id: ${order.id}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()} : $balance < ${RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)}")
             return MatchingResult(order)
         }
 
@@ -191,7 +192,7 @@ class MatchingEngine(private val LOGGER: Logger,
         order.updatePrice(RoundingUtils.round(if (order.isStraight()) totalLimitPrice / order.getAbsVolume() else order.getAbsVolume() / totalVolume
                 , assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
 
-        return MatchingResult(order, cancelledLimitOrders, skipLimitOrders, completedLimitOrders, uncompletedLimitOrder, lkkTrades, cashMovements, marketOrderTrades, limitOrdersReport, orderBook)
+        return MatchingResult(order, cancelledLimitOrders, skipLimitOrders, completedLimitOrders, uncompletedLimitOrder, lkkTrades, cashMovements, marketOrderTrades, limitOrdersReport, workingOrderBook)
     }
 
     private fun getCrossVolume(volume: Double, straight: Boolean, price: Double): Double {

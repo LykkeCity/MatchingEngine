@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -48,10 +49,12 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
             limitOrderService.setOrderBook(message.assetPairId, orderBook)
             limitOrderService.cancelLimitOrders(ordersToCancel)
+            limitOrderService.updateOrderBook(message.assetPairId, message.isBuy)
 
             val orderBookCopy = orderBook.copy()
 
             val newOrderBook = OrderBook(message.assetPairId, message.isBuy, now, orderBookCopy.getOrderBook(message.isBuy))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId,  message.isBuy, if (message.isBuy) orderBookCopy.getBidPrice() else orderBookCopy.getAskPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
 

@@ -216,8 +216,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
         }
 
-        limitOrderService.setOrderBook(order.assetPairId, orderBook)
-
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())
         } else {
