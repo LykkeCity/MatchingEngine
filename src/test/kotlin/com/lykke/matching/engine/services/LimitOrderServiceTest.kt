@@ -496,12 +496,14 @@ class LimitOrderServiceTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+        assertEquals(0.17755882, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHBTC", uid = "3", price = 0.07954, volume = -0.031344)))
         assertEquals(1, limitOrdersQueue.size)
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+        assertEquals(0.1750629, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2",assetId = "ETHBTC",  uid = "4", price = 0.07958, volume = -0.041938)))
         assertEquals(1, limitOrdersQueue.size)
@@ -517,6 +519,8 @@ class LimitOrderServiceTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+        assertEquals(2.156515, result.orders[1].order.remainingVolume)
+        assertEquals(0.17172331, result.orders[1].order.reservedLimitVolume)
 
         assertEquals(0.99448777, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(0.17172331, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
