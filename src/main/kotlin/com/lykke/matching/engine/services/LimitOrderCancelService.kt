@@ -64,7 +64,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             if (order != null) {
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-                val limitVolume = if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
+                val limitVolume = order.reservedLimitVolume ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
 
                 val balance = balancesHolder.getBalance(order.clientId, limitAsset)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)

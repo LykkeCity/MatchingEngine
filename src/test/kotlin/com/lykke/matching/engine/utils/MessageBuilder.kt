@@ -41,10 +41,9 @@ class MessageBuilder {
                 MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight)
 
         fun buildLimitOrderWrapper(order: NewLimitOrder,
-                                   cancel: Boolean = false,
-                                   uid: String = UUID.randomUUID().toString()) =
+                                   cancel: Boolean = false) =
                 MessageWrapper("Test", MessageType.LIMIT_ORDER.type, ProtocolMessages.LimitOrder.newBuilder()
-                        .setUid(uid)
+                        .setUid(order.externalId)
                         .setTimestamp(order.createdAt.time)
                         .setClientId(order.clientId)
                         .setAssetPairId(order.assetPairId)

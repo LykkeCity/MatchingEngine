@@ -58,12 +58,14 @@ class LimitOrderServiceTest {
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6, "ETH"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
 
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8, 8))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("ETHBTC", "ETH", "BTC", 5, 5))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
@@ -98,19 +100,19 @@ class LimitOrderServiceTest {
     @Test
     fun testCancelPrevAndAddLimitOrder() {
         val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0), uid = "1"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0, uid = "1")))
         assertEquals(100.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0, volume = 1.0), uid = "2"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0, volume = 1.0, uid = "2")))
         assertEquals(300.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(2, testDatabaseAccessor.getOrders("EURUSD", true).size)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0, volume = 2.0), true, uid = "3"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 300.0, volume = 2.0, uid = "3"), true))
         assertEquals(600.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(1, testDatabaseAccessor.getOrders("EURUSD", true).size)
         var order = testDatabaseAccessor.loadLimitOrders().find { it.price == 300.0 }
         assertNotNull(order)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 500.0, volume = 1.5), true, uid = "3"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 500.0, volume = 1.5, uid = "3"), true))
         assertEquals(750.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(1, testDatabaseAccessor.getOrders("EURUSD", true).size)
         order = testDatabaseAccessor.loadLimitOrders().find { it.price == 500.0 }
@@ -120,9 +122,9 @@ class LimitOrderServiceTest {
     @Test
     fun testRestartAndCancel() {
         val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0), uid = "1"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 100.0, volume = 1.0, uid = "1")))
         assertEquals(100.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0, volume = 1.0), uid = "2"))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 200.0, volume = 1.0, uid = "2")))
         assertEquals(300.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(2, testDatabaseAccessor.getOrders("EURUSD", true).size)
 
@@ -472,5 +474,59 @@ class LimitOrderServiceTest {
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(2000.00045239, testWalletDatabaseAccessor.getBalance("Client4", "BTC"))
         assertEquals(RoundingUtils.round(263.33 + 139.6, 2, true), testWalletDatabaseAccessor.getReservedBalance("Client4", "USD"))
+    }
+
+    @Test
+    fun testAddAndMatchAndCancel() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.00148747))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "ETH", 1000.0))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "ETHBTC", uid = "1", price = 0.07963, volume = 2.244418)))
+
+        assertEquals(1, limitOrdersQueue.size)
+        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
+
+        assertEquals(1.00148747, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(0.17872301, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHBTC", uid = "2", price = 0.07948, volume = -0.01462)))
+        assertEquals(1, limitOrdersQueue.size)
+        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHBTC", uid = "3", price = 0.07954, volume = -0.031344)))
+        assertEquals(1, limitOrdersQueue.size)
+        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2",assetId = "ETHBTC",  uid = "4", price = 0.07958, volume = -0.041938)))
+        assertEquals(1, limitOrdersQueue.size)
+        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        assertEquals(0.99448784, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(0.17172338, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHBTC", uid = "5", price = 0.07948, volume = -0.000001)))
+        assertEquals(1, limitOrdersQueue.size)
+        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        assertEquals(0.99448777, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(0.17172331, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+
+        val cancelService = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder)
+        cancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
+
+        assertEquals(0.99448777, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }
 }
