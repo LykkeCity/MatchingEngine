@@ -133,7 +133,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
                         }
 
-                        limitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
+                        orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
                         trades.addAll(matchingResult.lkkTrades)
                         var limitOrderWithTrades = trustedLimitOrdersReport.orders.find { it.order.externalId == limitOrder.externalId}
