@@ -131,7 +131,7 @@ class LimitOrderServiceTest {
         val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
 
         assertNotNull(genericService.getAllPreviousOrders("Client1", "EURUSD", true).find { it.externalId == "2" })
-        val cancelService = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder)
+        val cancelService = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
         cancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("2"))
     }
 
@@ -521,11 +521,14 @@ class LimitOrderServiceTest {
         assertEquals(0.99448777, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(0.17172331, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
 
+        rabbitOrderBookQueue.clear()
+
         val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
 
-        val cancelService = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder)
+        val cancelService = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
         cancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
 
+        assertEquals(1, rabbitOrderBookQueue.size)
         assertEquals(0.99448777, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

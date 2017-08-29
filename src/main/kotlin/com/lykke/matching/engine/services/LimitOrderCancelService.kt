@@ -21,6 +21,7 @@ import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
@@ -31,7 +32,9 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
-                              private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.OldLimitOrder> {
+                              private val balancesHolder: BalancesHolder,
+                              private val orderBookQueue: BlockingQueue<OrderBook>,
+                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.OldLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -62,6 +65,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId)
 
             if (order != null) {
+                val now = Date()
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
                 val limitVolume = order.reservedLimitVolume ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
@@ -70,12 +74,16 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - limitVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+                balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
 
                 val report = LimitOrdersReport()
                 report.orders.add(LimitOrderWithTrades(order))
                 limitOrderReportQueue.put(report)
+
+                val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, genericLimitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
+                orderBookQueue.put(rabbitOrderBook)
+                rabbitOrderBookQueue.put(rabbitOrderBook)
             } else {
                 LOGGER.info("Unable to find order id: ${message.limitOrderId}")
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.LIMIT_ORDER_NOT_FOUND.type).build())

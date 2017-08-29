@@ -15,6 +15,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Assert.assertEquals
@@ -32,6 +33,8 @@ class LimitOrderCancelServiceTest {
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
+    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
+    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
@@ -39,10 +42,7 @@ class LimitOrderCancelServiceTest {
 
     @Before
     fun setUp() {
-        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", price = 100.0))
-        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", price = 200.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
-        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "4", price = 400.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
@@ -60,11 +60,13 @@ class LimitOrderCancelServiceTest {
     @Test
     fun testCancel() {
         val service = LimitOrderCancelService(GenericLimitOrderService(testFileDatabaseAccessor,
-                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder)
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
+
+        assertEquals(1, orderBookQueue.size)
 
         val order = testFileDatabaseAccessor.loadLimitOrders().find { it.id == "3" }
         assertNull(order)
-        assertEquals(7, testFileDatabaseAccessor.loadLimitOrders().size)
+        assertEquals(4, testFileDatabaseAccessor.loadLimitOrders().size)
     }
 }
