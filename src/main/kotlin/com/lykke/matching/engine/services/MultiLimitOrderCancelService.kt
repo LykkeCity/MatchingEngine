@@ -54,7 +54,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             val orderBookCopy = orderBook.copy()
 
             val newOrderBook = OrderBook(message.assetPairId, message.isBuy, now, orderBookCopy.getOrderBook(message.isBuy))
-            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId,  message.isBuy, if (message.isBuy) orderBookCopy.getBidPrice() else orderBookCopy.getAskPrice(), now))
+            limitOrderService.putTradeInfo(TradeInfo(message.assetPairId,  message.isBuy, if (message.isBuy) orderBook.getBidPrice() else orderBook.getAskPrice(), now))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
 
