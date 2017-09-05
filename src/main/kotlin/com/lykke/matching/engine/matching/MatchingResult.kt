@@ -20,5 +20,6 @@ data class MatchingResult(
         val cashMovements: List<WalletOperation> = LinkedList(),
         val marketOrderTrades: List<TradeInfo> = LinkedList(),
         val limitOrdersReport: LimitOrdersReport? = null,
-        val orderBook: PriorityBlockingQueue<NewLimitOrder> = PriorityBlockingQueue()
+        val orderBook: PriorityBlockingQueue<NewLimitOrder> = PriorityBlockingQueue(),
+        val marketBalance: Double? = null
 )

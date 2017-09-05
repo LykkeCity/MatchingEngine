@@ -108,9 +108,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val trades = LinkedList<LkkTrade>()
         val walletOperations = LinkedList<WalletOperation>()
         val ordersToAdd = LinkedList<NewLimitOrder>()
+        val assetPair = assetsPairsHolder.getAssetPair(message.assetPairId)
+        val balances = mutableMapOf(
+                Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.baseAssetId)),
+                Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.quotingAssetId)))
         orders.forEach { order ->
             if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
+                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 val limitOrder = matchingResult.order as NewLimitOrder
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
@@ -160,6 +164,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             ordersToAdd.add(order)
                             orderBook.addOrder(order)
                         }
+                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
 
                         sellSide = true
                         buySide = true

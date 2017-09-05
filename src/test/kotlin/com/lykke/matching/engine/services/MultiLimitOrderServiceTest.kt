@@ -431,6 +431,33 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.001, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
     }
 
+    @Test
+    fun testBalance() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 100.0))
+
+        val singleLimitOrderService = initSingleLimitOrderService()
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
+
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
+        assertEquals(0.26170853, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(0.26170853, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
+
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.00643271, 4390.84), VolumePrice(0.01359005, 4387.87), VolumePrice(0.02033985, 4384.811)), cancel = true))
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+        assertEquals(-0.24068577, result.orders[1].order.remainingVolume)
+        assertEquals(0.24068577, result.orders[1].order.reservedLimitVolume!!)
+        assertEquals(0.24168577, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
+        assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
+
+        assertEquals(0.0, genericLimitService.getOrderBook("BTCCHF").getBidPrice())
+        assertEquals(12.2, testWalletDatabaseAccessor.getBalance("Client3", "CHF"))
+    }
+
     private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
     private fun initSingleLimitOrderService() = SingleLimitOrderService(genericLimitService, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
     private fun initService() = MultiLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
