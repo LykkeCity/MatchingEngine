@@ -11,14 +11,13 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.queue.transaction.CashIn
-import com.lykke.matching.engine.queue.transaction.CashOut
-import com.lykke.matching.engine.queue.transaction.Transaction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import java.util.Date
 import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -26,7 +25,7 @@ class CashOperationServiceTest {
 
     val testDatabaseAccessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
-    val transactionQueue = LinkedBlockingQueue<Transaction>()
+    val transactionQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
@@ -40,6 +39,7 @@ class CashOperationServiceTest {
         testBackOfficeDatabaseAcessor.addAsset(Asset("Asset2", 2, "Asset2"))
         testBackOfficeDatabaseAcessor.addAsset(Asset("Asset3", 2, "Asset3"))
         testBackOfficeDatabaseAcessor.addAsset(Asset("Asset4", 2, "Asset4"))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("Asset5", 8, "Asset5"))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
         transactionQueue.clear()
@@ -47,58 +47,58 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(150.0, balance, DELTA)
 
-        val cashInTransaction = transactionQueue.take() as CashIn
+        val cashInTransaction = transactionQueue.take() as CashOperation
         assertEquals("Client1", cashInTransaction.clientId)
-        assertEquals(50.0, cashInTransaction.Amount, DELTA)
-        assertEquals("Asset1", cashInTransaction.Currency)
+        assertEquals("50.00", cashInTransaction.volume)
+        assertEquals("Asset1", cashInTransaction.asset)
     }
 
     @Test
     fun testSmallCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 0.01))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(100.01, balance, DELTA)
 
-        val cashInTransaction = transactionQueue.take() as CashIn
+        val cashInTransaction = transactionQueue.take() as CashOperation
         assertEquals("Client1", cashInTransaction.clientId)
-        assertEquals(0.01, cashInTransaction.Amount, DELTA)
-        assertEquals("Asset1", cashInTransaction.Currency)
+        assertEquals("0.01", cashInTransaction.volume)
+        assertEquals("Asset1", cashInTransaction.asset)
     }
 
     @Test
     fun testCashOut() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(50.0, balance, DELTA)
 
-        val cashOutTransaction = transactionQueue.take() as CashOut
+        val cashOutTransaction = transactionQueue.take() as CashOperation
         assertEquals("Client1", cashOutTransaction.clientId)
-        assertEquals(50.0, cashOutTransaction.Amount, DELTA)
-        assertEquals("Asset1", cashOutTransaction.Currency)
+        assertEquals("-50.00", cashOutTransaction.volume)
+        assertEquals("Asset1", cashOutTransaction.asset)
     }
 
     @Test
     fun testCashOutNegative() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(50.0, balance, DELTA)
 
-        val cashOutTransaction = transactionQueue.take() as CashOut
+        val cashOutTransaction = transactionQueue.take() as CashOperation
         assertEquals("Client1", cashOutTransaction.clientId)
-        assertEquals(50.0, cashOutTransaction.Amount, DELTA)
-        assertEquals("Asset1", cashOutTransaction.Currency)
+        assertEquals("-50.00", cashOutTransaction.volume)
+        assertEquals("Asset1", cashOutTransaction.asset)
 
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -60.0))
         balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
@@ -107,7 +107,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testResendCashIn() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -121,16 +121,16 @@ class CashOperationServiceTest {
         assertNotNull(balance)
         assertEquals(150.0, balance, DELTA)
 
-        val cashInTransaction = transactionQueue.peek() as CashIn
+        val cashInTransaction = transactionQueue.peek() as CashOperation
         assertNotNull(cashInTransaction)
         assertEquals("Client1", cashInTransaction.clientId)
-        assertEquals(50.0, cashInTransaction.Amount, DELTA)
-        assertEquals("Asset1", cashInTransaction.Currency)
+        assertEquals("50.00", cashInTransaction.volume)
+        assertEquals("Asset1", cashInTransaction.asset)
     }
 
     @Test
     fun testAddNewAsset() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset4")
 
@@ -140,7 +140,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewWallet() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client3", "Asset2", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client3", "Asset2")
 
@@ -162,7 +162,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testRounding() {
-        val service = CashOperationService(testDatabaseAccessor, transactionQueue, balancesHolder)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         val updateService = BalanceUpdateService(balancesHolder)
 
         updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 29.99))
@@ -175,15 +175,29 @@ class CashOperationServiceTest {
         assertEquals("29.98", balance.toString())
     }
 
+    @Test
+    fun testRoundingWithReserved() {
+        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 1.00418803, 0.00418803))
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
+
+        service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0))
+
+        assertEquals(1, transactionQueue.size)
+        val cashInTransaction = transactionQueue.peek() as CashOperation
+        assertNotNull(cashInTransaction)
+        assertEquals("Client1", cashInTransaction.clientId)
+        assertEquals("-1.00000000", cashInTransaction.volume)
+        assertEquals("Asset5", cashInTransaction.asset)
+
+    }
+
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString()): MessageWrapper {
-        return MessageWrapper("Test", MessageType.CASH_OPERATION.type, ProtocolMessages.CashOperation.newBuilder()
-                .setUid(123)
+        return MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, ProtocolMessages.CashInOutOperation.newBuilder()
+                .setId(bussinesId)
                 .setClientId(clientId)
                 .setAssetId(assetId)
-                .setAmount(amount)
-                .setTimestamp(123)
-                .setSendToBitcoin(true)
-                .setBussinesId(bussinesId).build().toByteArray(), null)
+                .setVolume(amount)
+                .setTimestamp(Date().time).build().toByteArray(), null)
     }
 
     private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
