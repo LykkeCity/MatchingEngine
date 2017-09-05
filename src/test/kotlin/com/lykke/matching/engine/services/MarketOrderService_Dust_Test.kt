@@ -52,7 +52,7 @@ class MarketOrderService_Dust_Test {
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
 
-    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
     var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
     val DELTA = 1e-9
 
@@ -68,6 +68,7 @@ class MarketOrderService_Dust_Test {
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client2", "Client2-Multisig"))
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client3", "Client3-Multisig"))
         testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client4", "Client4-Multisig"))
+
         testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2, "LKK"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2, "SLR"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
@@ -77,6 +78,7 @@ class MarketOrderService_Dust_Test {
         testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2, "JPY"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8, "BTC1"))
+
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
@@ -97,7 +99,7 @@ class MarketOrderService_Dust_Test {
     }
 
     fun initServices() {
-        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
         service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
     }
 

@@ -51,8 +51,9 @@ class MatchingEngine(private val LOGGER: Logger,
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
             val marketRemainingVolume = getCrossVolume(remainingVolume, order.isStraight(), limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
+            val limitAsset = if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
             val limitBalance = limitBalances[limitOrder.clientId] ?: balancesHolder.getAvailableReservedBalance(limitOrder.clientId, if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
-            val limitVolume = Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume)
+            val limitVolume = RoundingUtils.parseDouble(Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume), assetsHolder.getAsset(limitAsset).accuracy).toDouble()
             if (order.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
             } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume) && limitBalance >= limitVolume) {
@@ -115,7 +116,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 var marketRoundedVolume = RoundingUtils.round(if (isBuy) volume else -volume, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
                 var oppositeRoundedVolume = RoundingUtils.round(if (isBuy) -limitOrder.price * volume else limitOrder.price * volume, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy)
 
-                LOGGER.info("Matching with limit order ${limitOrder.externalId}, price ${limitOrder.price}, " +
+                LOGGER.info("Matching with limit order ${limitOrder.externalId}, client ${limitOrder.clientId}, price ${limitOrder.price}, " +
                         "marketVolume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
                         "limitVolume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
 

@@ -59,7 +59,7 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(GenericLimitOrderService(testFileDatabaseAccessor,
+        val service = LimitOrderCancelService(GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
                 assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
 

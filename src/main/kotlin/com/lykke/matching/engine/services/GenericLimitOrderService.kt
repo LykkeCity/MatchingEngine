@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.BestPrice
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
 class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+                               private val assetsHolder: AssetsHolder,
                                private val assetsPairsHolder: AssetsPairsHolder,
                                private val balancesHolder: BalancesHolder,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
@@ -43,10 +45,6 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
         orderBook.addOrder(order)
         addOrder(order)
-    }
-
-    fun processLimitOrder(order: NewLimitOrder) {
-        updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
     fun addOrder(order: NewLimitOrder) {
@@ -83,17 +81,6 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return ordersToRemove
     }
 
-    fun cancelAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean) {
-        val ordersToRemove = LinkedList<NewLimitOrder>()
-        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide() == isBuy) {
-                cancelLimitOrder(limitOrder.externalId)
-                ordersToRemove.add(limitOrder)
-            }
-        }
-        clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
-    }
-
     fun updateOrderBook(asset: String, isBuy: Boolean) {
         orderBookDatabaseAccessor.updateOrderBook(asset, isBuy, getOrderBook(asset).getCopyOfOrderBook(isBuy))
     }
@@ -115,12 +102,14 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
         return if (order.isBuySide()) {
             val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.quotingAssetId)
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)}")
-            availableBalance >= volume * order.price
+            val result = RoundingUtils.parseDouble(availableBalance - volume * order.price, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy).toDouble() >= 0.0
+            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)} = $result")
+            result
         } else {
             val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.baseAssetId)
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)}")
-            availableBalance >= volume
+            val result = RoundingUtils.parseDouble(availableBalance - volume , assetsHolder.getAsset(assetPair.baseAssetId).accuracy).toDouble() >= 0.0
+            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
+            result
         }
     }
 
