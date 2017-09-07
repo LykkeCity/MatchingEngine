@@ -79,6 +79,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 6, 8))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTC1USD", "BTC1", "USD", 3, 7))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
@@ -436,5 +437,33 @@ class MarketOrderServiceTest {
         assertEquals(1350.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"), DELTA)
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(510.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+    }
+
+    @Test
+    fun testMatch1() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 100028.39125545))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 182207.39))
+
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4071.121, volume = -0.00662454, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4077.641, volume = -0.01166889, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4084.382, volume = -0.01980138, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4091.837, volume = -0.02316231, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4098.155, volume = -0.03013115, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4105.411, volume = -0.03790487, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4114.279, volume = -0.03841106, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4120.003, volume = -0.04839733, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4127.137, volume = -0.04879837, clientId = "Client1"))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4136.9, volume = -0.06450525, clientId = "Client1"))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "BTCCHF", volume = 0.3)))
+
+        assertEquals(1, rabbitSwapQueue.size)
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(Matched.name, marketOrderReport.order.status)
+        assertEquals(4111.117, marketOrderReport.order.price!!, DELTA)
+        assertEquals(10, marketOrderReport.trades.size)
+
+        assertEquals(4136.9, limitOrderService.getOrderBook("BTCCHF").getAskPrice(), DELTA)
     }
 }

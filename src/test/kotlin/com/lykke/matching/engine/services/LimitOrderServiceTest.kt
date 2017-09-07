@@ -466,14 +466,14 @@ class LimitOrderServiceTest {
         result = limitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(0.03154761, result.orders[0].order.remainingVolume)
-        assertEquals(139.6, result.orders[0].order.reservedLimitVolume)
+        assertEquals(139.59, result.orders[0].order.reservedLimitVolume)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(0.0, result.orders[1].order.remainingVolume)
 
         assertEquals(1999.99954761, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(2000.00045239, testWalletDatabaseAccessor.getBalance("Client4", "BTC"))
-        assertEquals(RoundingUtils.round(263.33 + 139.6, 2, true), testWalletDatabaseAccessor.getReservedBalance("Client4", "USD"))
+        assertEquals(RoundingUtils.round(263.33 + 139.59, 2, true), testWalletDatabaseAccessor.getReservedBalance("Client4", "USD"))
     }
 
     @Test
@@ -568,6 +568,28 @@ class LimitOrderServiceTest {
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(4680.0, result.orders[1].order.price)
+    }
+
+    @Test
+    fun testAddAndMatchWithLimitOrder2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 110.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 2000.0))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCEUR", price = 3571.922, volume = -0.00662454)))
+        limitOrdersQueue.poll()
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCEUR", price = 3571.922, volume = 0.03079574)))
+
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
+        assertEquals(0.0241712, result.orders[0].order.remainingVolume)
+        assertEquals(86.33, result.orders[0].order.reservedLimitVolume)
+        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+
+        assertEquals(86.33, testWalletDatabaseAccessor.getReservedBalance("Client4", "EUR"))
     }
 
 }
