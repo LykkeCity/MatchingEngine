@@ -113,7 +113,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.baseAssetId)),
                 Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.quotingAssetId)))
         orders.forEach { order ->
-            if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
+            if (orderBook.leadToNegativeSpreadForClient(order)) {
+                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
+            }
+            else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 val limitOrder = matchingResult.order as NewLimitOrder
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
