@@ -198,3 +198,18 @@ message OrderBookSnapshot {
 
     repeated OrderBookLevel levels = 4;
 }
+
+message ReservedBalanceUpdate {
+    required string uid = 1;
+    required string clientId = 2;
+    required string assetId = 3;
+    required double reservedAmount = 4;
+}
+
+message ReservedCashInOutOperation {
+    required string id = 1;
+    required string clientId = 2;
+    required int64 timestamp = 3;
+    required string assetId = 4;
+    required double reservedVolume = 5;
+}

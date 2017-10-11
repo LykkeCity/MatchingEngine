@@ -29,6 +29,10 @@ enum class MessageType (val type: Byte){
     ,MULTI_LIMIT_ORDER_CANCEL(57)
     ,NEW_RESPONSE(99)
     ,MARKER_ORDER_RESPONSE(100)
+    // fixme: type id ?
+    ,RESERVED_BALANCE_UPDATE(110)
+    // fixme: type id ?
+    ,RESERVED_CASH_IN_OUT_OPERATION(120)
     ;
 
 

@@ -21,7 +21,7 @@ import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.util.Date
 
-class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.OldBalanceUpdate> {
+class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
@@ -61,7 +61,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
             if (reservedBalance > message.amount) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
-                LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)} is lower that reserved balance ${RoundingUtils.roundForPrint(message.amount)}")
+                LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
                 return
             }
 

@@ -34,7 +34,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               private val orderBookQueue: BlockingQueue<OrderBook>,
-                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.OldLimitOrder> {
+                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
