@@ -17,6 +17,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -145,10 +146,10 @@ class MarketOrderServiceTest {
     fun testNoLiqudityToFullyFill() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 2000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 2000.0))
         initServices()
-        
-        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -2000.0)))
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -2000.0)))
         assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(NoLiquidity.name, marketOrderReport.order.status)
@@ -287,6 +288,10 @@ class MarketOrderServiceTest {
         assertEquals(140.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(1410.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+
+        val dbBids = testLimitDatabaseAccessor.getOrders("EURUSD", true)
+        assertEquals(1, dbBids.size)
+        assertEquals(OrderStatus.Processing.name, dbBids.first().status)
     }
 
     @Test

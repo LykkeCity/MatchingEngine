@@ -19,6 +19,7 @@ import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -590,6 +591,82 @@ class LimitOrderServiceTest {
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
         assertEquals(86.33, testWalletDatabaseAccessor.getReservedBalance("Client4", "EUR"))
+    }
+
+    @Test
+    fun testMatchWithOwnLimitOrder() {
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.0, volume = -10.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 10.00))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 10.00))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 10.00))
+
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.0, volume = 10.0)))
+
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.LeadToNegativeSpread.name, result.orders[0].order.status)
+
+
+        val dbAskOrders = testDatabaseAccessor.getOrders("EURUSD", false)
+        assertEquals(1, dbAskOrders.size)
+        assertEquals(1.0, dbAskOrders.first().price)
+        assertEquals(0, testDatabaseAccessor.getOrders("EURUSD", true).size)
+
+        val cacheOrderBook = genericService.getOrderBook("EURUSD")
+        assertEquals(1, cacheOrderBook.getOrderBook(false).size)
+        assertEquals(1.0, cacheOrderBook.getAskPrice())
+
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.0, volume = 10.0, clientId = "Client2")))
+
+        assertEquals(0, genericService.getOrderBook("EURUSD").getOrderBook(false).size)
+        assertEquals(0, testDatabaseAccessor.getOrders("EURUSD", false).size)
+        assertEquals(0, testDatabaseAccessor.getOrders("EURUSD", true).size)
+    }
+
+    @Test
+    fun testMatchMarketOrderWithOwnLimitOrder() {
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.0, volume = -10.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 10.00))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 11.00))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 10.00))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+
+        marketService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
+
+        assertEquals(1, rabbitSwapQueue.size)
+        var marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(OrderStatus.NoLiquidity.name, marketOrderReport.order.status)
+        assertEquals(0, marketOrderReport.trades.size)
+
+        assertEquals(1, genericService.getOrderBook("EURUSD").getOrderBook(false).size)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.1, volume = -10.0)))
+
+        assertEquals(2, genericService.getOrderBook("EURUSD").getOrderBook(false).size)
+
+        marketService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
+
+        assertEquals(1, rabbitSwapQueue.size)
+        marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(1.1, marketOrderReport.order.price!!)
+        assertEquals(1, marketOrderReport.trades.size)
+
+        val dbAskOrders = testDatabaseAccessor.getOrders("EURUSD", false)
+        assertEquals(1, dbAskOrders.size)
+        assertEquals(1.0, dbAskOrders.first().price)
+
+        val cacheOrderBook = genericService.getOrderBook("EURUSD")
+        assertEquals(1, cacheOrderBook.getOrderBook(false).size)
+        assertEquals(1.0, cacheOrderBook.getAskPrice())
     }
 
 }
