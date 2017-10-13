@@ -455,6 +455,29 @@ class MultiLimitOrderServiceTest {
         assertEquals(12.2, testWalletDatabaseAccessor.getBalance("Client3", "CHF"))
     }
 
+    @Test
+    fun testMatchWithLimitOrderForAllFunds() {
+        val marketMaker = "Client1"
+        val client = "Client2"
+
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "EUR", 700.04, reservedBalance = 700.04))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "BTC", 2.0))
+
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
+        genericLimitService = initLimitService()
+        service = initService()
+
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, volumes = listOf(VolumePrice(-0.4435, 4721.403)), cancel = true))
+
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+
+        assertEquals(0.0, testWalletDatabaseAccessor.getBalance(client, "EUR"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance(client, "EUR"))
+        assertEquals(0, genericLimitService.getOrderBook("BTCEUR").getOrderBook(true).size)
+    }
+
     private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
     private fun initSingleLimitOrderService() = SingleLimitOrderService(genericLimitService, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
     private fun initService() = MultiLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)

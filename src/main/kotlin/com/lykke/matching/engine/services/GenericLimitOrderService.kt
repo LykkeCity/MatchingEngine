@@ -99,18 +99,20 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
     fun isEnoughFunds(order: NewLimitOrder, volume: Double): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-
         return if (order.isBuySide()) {
-            val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.quotingAssetId)
-            val result = RoundingUtils.parseDouble(availableBalance - volume * order.price, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy).toDouble() >= 0.0
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)} = $result")
-            result
+            isEnoughFunds(order.clientId, assetPair.quotingAssetId, volume * order.price)
         } else {
-            val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.baseAssetId)
-            val result = RoundingUtils.parseDouble(availableBalance - volume , assetsHolder.getAsset(assetPair.baseAssetId).accuracy).toDouble() >= 0.0
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
-            result
+            isEnoughFunds(order.clientId, assetPair.baseAssetId, volume)
         }
+    }
+
+    private fun isEnoughFunds(clientId: String, assetId: String, requiredVolume: Double): Boolean {
+        val availableBalance = balancesHolder.getAvailableReservedBalance(clientId, assetId)
+        val accuracy = assetsHolder.getAsset(assetId).accuracy
+        val roundRequiredVolume = RoundingUtils.round(requiredVolume, accuracy, false)
+        val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
+        LOGGER.debug("$clientId $assetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
+        return result
     }
 
     fun cancelLimitOrder(uid: String): NewLimitOrder? {
