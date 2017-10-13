@@ -130,11 +130,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
                 if (matchingResult.uncompletedLimitOrder != null) {
-                    genericLimitOrderService.updateLimitOrder(matchingResult.uncompletedLimitOrder as NewLimitOrder)
                     matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
                 }
 
                 genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
+                genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
                 marketOrderDatabaseAccessor.addLkkTrades(matchingResult.lkkTrades)
 
