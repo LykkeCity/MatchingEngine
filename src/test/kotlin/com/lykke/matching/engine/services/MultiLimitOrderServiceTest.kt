@@ -310,10 +310,7 @@ class MultiLimitOrderServiceTest {
         assertEquals(-26.0, bestAskOrder.volume)
         assertEquals(-25.30968057, bestAskOrder.remainingVolume)
 
-        assertEquals(1, orderBook.getOrderBook(true).size)
-        val bestBidOrder = orderBook.getOrderBook(true).peek()
-        assertEquals(26.875076, bestBidOrder.price)
-        assertEquals(10.0, bestBidOrder.volume)
+        assertEquals(0, orderBook.getOrderBook(true).size)
     }
 
     @Test
