@@ -34,6 +34,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
             wallet.balances.values.forEach {
                 client.put(it.asset, AssetBalance(it.asset, it.balance, it.reserved))
                 updatedWallet.setBalance(it.asset, it.balance)
+                updatedWallet.setReservedBalance(it.asset, it.reserved)
             }
         }
     }

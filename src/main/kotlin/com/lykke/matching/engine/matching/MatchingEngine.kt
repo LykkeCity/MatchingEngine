@@ -53,7 +53,7 @@ class MatchingEngine(private val LOGGER: Logger,
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
             val limitAsset = if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
             val limitBalance = limitBalances[limitOrder.clientId] ?: balancesHolder.getAvailableReservedBalance(limitOrder.clientId, if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
-            val limitVolume = RoundingUtils.parseDouble(Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume), assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+            val limitVolume = RoundingUtils.round(Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume), assetsHolder.getAsset(limitAsset).accuracy, false)
             if (order.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
             } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume) && limitBalance >= limitVolume) {
