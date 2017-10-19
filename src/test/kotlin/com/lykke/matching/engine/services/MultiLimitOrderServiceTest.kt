@@ -310,7 +310,7 @@ class MultiLimitOrderServiceTest {
         assertEquals(-26.0, bestAskOrder.volume)
         assertEquals(-25.30968057, bestAskOrder.remainingVolume)
 
-        assertEquals(0, orderBook.getOrderBook(true).size)
+        assertEquals(1, orderBook.getOrderBook(true).size)
     }
 
     @Test
