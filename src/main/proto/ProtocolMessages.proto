@@ -48,6 +48,7 @@ message CashTransferOperation {
     required int64 timestamp = 4;
     required string assetId = 5;
     required double volume = 6;
+    optional Fee fee = 7;
 }
 
 message CashSwapOperation {
@@ -197,4 +198,17 @@ message OrderBookSnapshot {
     }
 
     repeated OrderBookLevel levels = 4;
+}
+
+message Fee {
+    required int32 type = 1;
+    optional double size = 2;
+    optional string sourceClientId = 3;
+    optional string targetClientId = 4;
+
+    enum Type {
+        NO_FEE = 0;
+        CLIENT_FEE = 1;
+        EXTERNAL_FEE = 2;
+    }
 }
