@@ -4,12 +4,11 @@ import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.HttpClientBuilder
-import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
 class HttpLogger(val path: String, val queue: BlockingQueue<LoggableObject>) : Thread() {
     companion object {
-        val LOGGER = Logger.getLogger(HttpLogger::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(HttpLogger::class.java.name)
     }
 
     override fun run() {

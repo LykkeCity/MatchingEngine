@@ -5,6 +5,7 @@ import com.lykke.matching.engine.logging.KeyValue
 import com.lykke.matching.engine.logging.LoggableObject
 import com.lykke.matching.engine.logging.ME_STATUS
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.HttpConfigParser
@@ -41,6 +42,8 @@ fun main(args: Array<String>) {
 
     MetricsLogger.init(config.me.metricLoggerKeyValue, config.me.metricLoggerLine, config.slackNotifications.azureQueue.connectionString,
             config.slackNotifications.azureQueue.queueName, config.me.metricLoggerSize, config.slackNotifications.throttlingLimitSeconds)
+
+    ThrottlingLogger.init(config.throttlingLogger)
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config.me.metricLoggerKeyValue))
 

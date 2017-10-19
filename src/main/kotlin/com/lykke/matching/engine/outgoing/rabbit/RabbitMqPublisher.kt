@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.rabbit
 
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.rabbitmq.client.Channel
@@ -18,7 +19,7 @@ class RabbitMqPublisher(
         private val logMessage: Boolean) : Thread() {
 
     companion object {
-        val LOGGER = Logger.getLogger(RabbitMqPublisher::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
         val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")
         val METRICS_LOGGER = MetricsLogger.getLogger()
         val EXCHANGE_TYPE = "fanout"
@@ -39,7 +40,7 @@ class RabbitMqPublisher(
 
             this.connection = factory.newConnection()
             this.channel = connection!!.createChannel()
-            channel!!.exchangeDeclare(exchangeName, "fanout", true)
+            channel!!.exchangeDeclare(exchangeName, EXCHANGE_TYPE, true)
 
             LOGGER.info("Connected to RabbitMQ: $host:$port, exchange: $exchangeName")
 
