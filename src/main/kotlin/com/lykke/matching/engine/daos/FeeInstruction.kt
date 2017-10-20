@@ -2,7 +2,7 @@ package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.messages.ProtocolMessages
 
-data class FeeInstruction(
+open class FeeInstruction(
         val type: FeeType,
         val size: Double?,
         val sourceClientId: String?,

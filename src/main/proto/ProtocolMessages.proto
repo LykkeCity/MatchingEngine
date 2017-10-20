@@ -80,6 +80,7 @@ message LimitOrder {
     required double volume = 5;
     required double price = 6;
     optional bool cancelAllPreviousLimitOrders = 7;
+    optional LimitOrderFee fee = 8;
 }
 
 message OldMarketOrder {
@@ -165,6 +166,7 @@ message MultiLimitOrder {
 
     repeated Order orders = 5;
     optional bool cancelAllPreviousLimitOrders = 6;
+    optional LimitOrderFee fee = 7;
 }
 
 message WalletCredentialsReload {
@@ -206,6 +208,20 @@ message Fee {
     optional double size = 2;
     optional string sourceClientId = 3;
     optional string targetClientId = 4;
+
+    enum Type {
+        NO_FEE = 0;
+        CLIENT_FEE = 1;
+        EXTERNAL_FEE = 2;
+    }
+}
+
+message LimitOrderFee {
+    required int32 type = 1;
+    optional double makerSize = 2;
+    optional double takerSize = 3;
+    optional string sourceClientId = 4;
+    optional string targetClientId = 5;
 
     enum Type {
         NO_FEE = 0;

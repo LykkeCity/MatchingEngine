@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -72,7 +73,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             val message = parseLimitOrder(messageWrapper.byteArray)
             val uid = UUID.randomUUID().toString()
             order = NewLimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
-                    message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null)
+                    message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null, fee = LimitOrderFeeInstruction.create(message.fee))
 
             LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}")
 
@@ -158,7 +159,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     marketOrderDatabaseAccessor.addLkkTrades(matchingResult.lkkTrades)
 
                     limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
-                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume)
+                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
                     }.toMutableList()))
 
                     if (matchingResult.limitOrdersReport != null) {
