@@ -10598,6 +10598,19 @@ public final class ProtocolMessages {
      * <code>optional double reservedLimitVolume = 7;</code>
      */
     double getReservedLimitVolume();
+
+    /**
+     * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+     */
+    boolean hasFee();
+    /**
+     * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+     */
+    com.lykke.matching.engine.messages.ProtocolMessages.Fee getFee();
+    /**
+     * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+     */
+    com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder getFeeOrBuilder();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MarketOrder}
@@ -10683,6 +10696,19 @@ public final class ProtocolMessages {
             case 57: {
               bitField0_ |= 0x00000040;
               reservedLimitVolume_ = input.readDouble();
+              break;
+            }
+            case 66: {
+              com.lykke.matching.engine.messages.ProtocolMessages.Fee.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                subBuilder = fee_.toBuilder();
+              }
+              fee_ = input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.Fee.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(fee_);
+                fee_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000080;
               break;
             }
           }
@@ -10897,6 +10923,27 @@ public final class ProtocolMessages {
       return reservedLimitVolume_;
     }
 
+    public static final int FEE_FIELD_NUMBER = 8;
+    private com.lykke.matching.engine.messages.ProtocolMessages.Fee fee_;
+    /**
+     * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+     */
+    public boolean hasFee() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+     */
+    public com.lykke.matching.engine.messages.ProtocolMessages.Fee getFee() {
+      return fee_ == null ? com.lykke.matching.engine.messages.ProtocolMessages.Fee.getDefaultInstance() : fee_;
+    }
+    /**
+     * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+     */
+    public com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder getFeeOrBuilder() {
+      return fee_ == null ? com.lykke.matching.engine.messages.ProtocolMessages.Fee.getDefaultInstance() : fee_;
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -10927,6 +10974,12 @@ public final class ProtocolMessages {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (hasFee()) {
+        if (!getFee().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -10953,6 +11006,9 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeDouble(7, reservedLimitVolume_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeMessage(8, getFee());
       }
       unknownFields.writeTo(output);
     }
@@ -10990,6 +11046,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(7, reservedLimitVolume_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(8, getFee());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -11099,6 +11159,7 @@ public final class ProtocolMessages {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getFeeFieldBuilder();
         }
       }
       public Builder clear() {
@@ -11117,6 +11178,12 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000020);
         reservedLimitVolume_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000040);
+        if (feeBuilder_ == null) {
+          fee_ = null;
+        } else {
+          feeBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -11169,6 +11236,14 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000040;
         }
         result.reservedLimitVolume_ = reservedLimitVolume_;
+        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        if (feeBuilder_ == null) {
+          result.fee_ = fee_;
+        } else {
+          result.fee_ = feeBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -11212,6 +11287,9 @@ public final class ProtocolMessages {
         if (other.hasReservedLimitVolume()) {
           setReservedLimitVolume(other.getReservedLimitVolume());
         }
+        if (other.hasFee()) {
+          mergeFee(other.getFee());
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -11235,6 +11313,11 @@ public final class ProtocolMessages {
         }
         if (!hasStraight()) {
           return false;
+        }
+        if (hasFee()) {
+          if (!getFee().isInitialized()) {
+            return false;
+          }
         }
         return true;
       }
@@ -11612,6 +11695,124 @@ public final class ProtocolMessages {
         reservedLimitVolume_ = 0D;
         onChanged();
         return this;
+      }
+
+      private com.lykke.matching.engine.messages.ProtocolMessages.Fee fee_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          com.lykke.matching.engine.messages.ProtocolMessages.Fee, com.lykke.matching.engine.messages.ProtocolMessages.Fee.Builder, com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder> feeBuilder_;
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public boolean hasFee() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.Fee getFee() {
+        if (feeBuilder_ == null) {
+          return fee_ == null ? com.lykke.matching.engine.messages.ProtocolMessages.Fee.getDefaultInstance() : fee_;
+        } else {
+          return feeBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public Builder setFee(com.lykke.matching.engine.messages.ProtocolMessages.Fee value) {
+        if (feeBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          fee_ = value;
+          onChanged();
+        } else {
+          feeBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000080;
+        return this;
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public Builder setFee(
+          com.lykke.matching.engine.messages.ProtocolMessages.Fee.Builder builderForValue) {
+        if (feeBuilder_ == null) {
+          fee_ = builderForValue.build();
+          onChanged();
+        } else {
+          feeBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000080;
+        return this;
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public Builder mergeFee(com.lykke.matching.engine.messages.ProtocolMessages.Fee value) {
+        if (feeBuilder_ == null) {
+          if (((bitField0_ & 0x00000080) == 0x00000080) &&
+              fee_ != null &&
+              fee_ != com.lykke.matching.engine.messages.ProtocolMessages.Fee.getDefaultInstance()) {
+            fee_ =
+              com.lykke.matching.engine.messages.ProtocolMessages.Fee.newBuilder(fee_).mergeFrom(value).buildPartial();
+          } else {
+            fee_ = value;
+          }
+          onChanged();
+        } else {
+          feeBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000080;
+        return this;
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public Builder clearFee() {
+        if (feeBuilder_ == null) {
+          fee_ = null;
+          onChanged();
+        } else {
+          feeBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000080);
+        return this;
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.Fee.Builder getFeeBuilder() {
+        bitField0_ |= 0x00000080;
+        onChanged();
+        return getFeeFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      public com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder getFeeOrBuilder() {
+        if (feeBuilder_ != null) {
+          return feeBuilder_.getMessageOrBuilder();
+        } else {
+          return fee_ == null ?
+              com.lykke.matching.engine.messages.ProtocolMessages.Fee.getDefaultInstance() : fee_;
+        }
+      }
+      /**
+       * <code>optional .com.lykke.matching.engine.messages.Fee fee = 8;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          com.lykke.matching.engine.messages.ProtocolMessages.Fee, com.lykke.matching.engine.messages.ProtocolMessages.Fee.Builder, com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder> 
+          getFeeFieldBuilder() {
+        if (feeBuilder_ == null) {
+          feeBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              com.lykke.matching.engine.messages.ProtocolMessages.Fee, com.lykke.matching.engine.messages.ProtocolMessages.Fee.Builder, com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder>(
+                  getFee(),
+                  getParentForChildren(),
+                  isClean());
+          fee_ = null;
+        }
+        return feeBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MarketOrder)
@@ -24238,48 +24439,50 @@ public final class ProtocolMessages {
       "(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022" +
       "\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010" +
       "straight\030\006 \002(\010\022\033\n\023reservedLimitVolume\030\007 " +
-      "\001(\001\"\223\001\n\013MarketOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttime" +
+      "\001(\001\"\311\001\n\013MarketOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttime" +
       "stamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPa" +
       "irId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010straight\030\006" +
-      " \002(\010\022\033\n\023reservedLimitVolume\030\007 \001(\001\"5\n\020Lim" +
-      "itOrderCancel\022\013\n\003uid\030\001 \002(\t\022\024\n\014limitOrder" +
-      "Id\030\002 \002(\t\"m\n\025MultiLimitOrderCancel\022\013\n\003uid",
-      "\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 " +
-      "\002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\r\n\005isBuy\030\005 \002(\010\"" +
-      "8\n\023OldLimitOrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014l" +
-      "imitOrderId\030\002 \002(\003\"O\n\rBalanceUpdate\022\013\n\003ui" +
-      "d\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002" +
-      "(\t\022\016\n\006amount\030\004 \002(\001\"R\n\020OldBalanceUpdate\022\013" +
-      "\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId" +
-      "\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"\367\001\n\022OldMultiLimit" +
-      "Order\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n" +
-      "\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022L\n\006",
-      "orders\030\005 \003(\0132<.com.lykke.matching.engine" +
-      ".messages.OldMultiLimitOrder.Order\022$\n\034ca" +
-      "ncelAllPreviousLimitOrders\030\006 \001(\010\032&\n\005Orde" +
-      "r\022\016\n\006volume\030\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\376\001\n\017Mul" +
-      "tiLimitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002" +
-      " \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 " +
-      "\002(\t\022I\n\006orders\030\005 \003(\01329.com.lykke.matching" +
-      ".engine.messages.MultiLimitOrder.Order\022$" +
-      "\n\034cancelAllPreviousLimitOrders\030\006 \001(\010\0323\n\005" +
-      "Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006volume\030\002 \002(\001\022\r\n\005pr",
-      "ice\030\003 \002(\001\"8\n\027WalletCredentialsReload\022\013\n\003" +
-      "uid\030\001 \002(\003\022\020\n\010clientId\030\002 \001(\t\"\032\n\030Subscribe" +
-      "ToBalanceUpdate\"\'\n\023BalanceNotification\022\020" +
-      "\n\010clientId\030\001 \002(\t\"\031\n\027SubscribeToQuotesUpd" +
-      "ate\">\n\014QuotesUpdate\022\017\n\007assetId\030\001 \002(\t\022\r\n\005" +
-      "price\030\002 \002(\001\022\016\n\006volume\030\003 \002(\001\"\313\001\n\021OrderBoo" +
-      "kSnapshot\022\r\n\005asset\030\001 \002(\t\022\r\n\005isBuy\030\002 \002(\010\022" +
-      "\021\n\ttimestamp\030\003 \002(\003\022T\n\006levels\030\004 \003(\0132D.com" +
-      ".lykke.matching.engine.messages.OrderBoo" +
-      "kSnapshot.OrderBookLevel\032/\n\016OrderBookLev",
-      "el\022\r\n\005price\030\001 \002(\t\022\016\n\006volume\030\002 \002(\t\"\207\001\n\003Fe" +
-      "e\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourceC" +
-      "lientId\030\003 \001(\t\022\026\n\016targetClientId\030\004 \001(\t\"4\n" +
-      "\004Type\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXT" +
-      "ERNAL_FEE\020\002B6\n\"com.lykke.matching.engine" +
-      ".messagesB\020ProtocolMessages"
+      " \002(\010\022\033\n\023reservedLimitVolume\030\007 \001(\001\0224\n\003fee" +
+      "\030\010 \001(\0132\'.com.lykke.matching.engine.messa" +
+      "ges.Fee\"5\n\020LimitOrderCancel\022\013\n\003uid\030\001 \002(\t",
+      "\022\024\n\014limitOrderId\030\002 \002(\t\"m\n\025MultiLimitOrde" +
+      "rCancel\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022" +
+      "\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\r" +
+      "\n\005isBuy\030\005 \002(\010\"8\n\023OldLimitOrderCancel\022\013\n\003" +
+      "uid\030\001 \002(\003\022\024\n\014limitOrderId\030\002 \002(\003\"O\n\rBalan" +
+      "ceUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022" +
+      "\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"R\n\020OldB" +
+      "alanceUpdate\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 " +
+      "\002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"\367\001\n" +
+      "\022OldMultiLimitOrder\022\013\n\003uid\030\001 \002(\003\022\021\n\ttime",
+      "stamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPa" +
+      "irId\030\004 \002(\t\022L\n\006orders\030\005 \003(\0132<.com.lykke.m" +
+      "atching.engine.messages.OldMultiLimitOrd" +
+      "er.Order\022$\n\034cancelAllPreviousLimitOrders" +
+      "\030\006 \001(\010\032&\n\005Order\022\016\n\006volume\030\001 \002(\001\022\r\n\005price" +
+      "\030\002 \002(\001\"\376\001\n\017MultiLimitOrder\022\013\n\003uid\030\001 \002(\t\022" +
+      "\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013" +
+      "assetPairId\030\004 \002(\t\022I\n\006orders\030\005 \003(\01329.com." +
+      "lykke.matching.engine.messages.MultiLimi" +
+      "tOrder.Order\022$\n\034cancelAllPreviousLimitOr",
+      "ders\030\006 \001(\010\0323\n\005Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006volu" +
+      "me\030\002 \002(\001\022\r\n\005price\030\003 \002(\001\"8\n\027WalletCredent" +
+      "ialsReload\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \001(" +
+      "\t\"\032\n\030SubscribeToBalanceUpdate\"\'\n\023Balance" +
+      "Notification\022\020\n\010clientId\030\001 \002(\t\"\031\n\027Subscr" +
+      "ibeToQuotesUpdate\">\n\014QuotesUpdate\022\017\n\007ass" +
+      "etId\030\001 \002(\t\022\r\n\005price\030\002 \002(\001\022\016\n\006volume\030\003 \002(" +
+      "\001\"\313\001\n\021OrderBookSnapshot\022\r\n\005asset\030\001 \002(\t\022\r" +
+      "\n\005isBuy\030\002 \002(\010\022\021\n\ttimestamp\030\003 \002(\003\022T\n\006leve" +
+      "ls\030\004 \003(\0132D.com.lykke.matching.engine.mes",
+      "sages.OrderBookSnapshot.OrderBookLevel\032/" +
+      "\n\016OrderBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006volum" +
+      "e\030\002 \002(\t\"\207\001\n\003Fee\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030\002 " +
+      "\001(\001\022\026\n\016sourceClientId\030\003 \001(\t\022\026\n\016targetCli" +
+      "entId\030\004 \001(\t\"4\n\004Type\022\n\n\006NO_FEE\020\000\022\016\n\nCLIEN" +
+      "T_FEE\020\001\022\020\n\014EXTERNAL_FEE\020\002B6\n\"com.lykke.m" +
+      "atching.engine.messagesB\020ProtocolMessage" +
+      "s"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -24358,7 +24561,7 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_MarketOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", "ReservedLimitVolume", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", "ReservedLimitVolume", "Fee", });
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_descriptor =
       getDescriptor().getMessageTypes().get(11);
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_fieldAccessorTable = new

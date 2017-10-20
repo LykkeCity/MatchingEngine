@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
@@ -20,7 +19,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
 
     fun processFee(feeInstruction: FeeInstruction?, receiptOperation: WalletOperation, operations: MutableList<WalletOperation>): FeeTransfer? {
         if (feeInstruction == null || feeInstruction.type == FeeType.NO_FEE
-                || feeInstruction.size == null || !feeInstruction.size.greaterThan(0.0)
+                || feeInstruction.size == null || !(feeInstruction.size > 0 && feeInstruction.size < 1)
                 || feeInstruction.targetClientId == null) {
             return null
         }

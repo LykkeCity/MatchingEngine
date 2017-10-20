@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.utils
 
+import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.messages.MessageType
@@ -21,14 +22,32 @@ class MessageBuilder {
                 NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, ProtocolMessages.MarketOrder.newBuilder()
+            val builder = ProtocolMessages.MarketOrder.newBuilder()
                     .setUid(UUID.randomUUID().toString())
                     .setTimestamp(order.createdAt.time)
                     .setClientId(order.clientId)
                     .setAssetPairId(order.assetPairId)
                     .setVolume(order.volume)
                     .setStraight(order.straight)
+            order.fee?.let {
+                builder.setFee(buildFee(it))
+            }
+            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
                     .build().toByteArray(), null)
+        }
+
+        private fun buildFee(fee: FeeInstruction?): ProtocolMessages.Fee? {
+            if (fee == null) {
+                return null
+            }
+            val builder = ProtocolMessages.Fee.newBuilder()
+                    .setType(fee.type.externalId)
+                    .setSourceClientId(fee.sourceClientId)
+                    .setTargetClientId(fee.targetClientId)
+            fee.size?.let {
+                builder.size = it
+            }
+            return builder.build()
         }
 
         fun buildMarketOrder(rowKey: String = UUID.randomUUID().toString(),

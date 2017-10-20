@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
-import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor

@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.NewOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -29,6 +31,8 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val assetsHolder: AssetsHolder,
                      private val assetsPairsHolder: AssetsPairsHolder,
                      private val balancesHolder: BalancesHolder) {
+
+    private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
 
     fun match(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: Double? = null): MatchingResult {
         val availableBalance = balance ?: getBalance(order)
@@ -96,7 +100,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val completedLimitOrders = LinkedList<NewLimitOrder>()
         var uncompletedLimitOrder: NewLimitOrder? = null
         val lkkTrades = LinkedList<LkkTrade>()
-        val cashMovements = LinkedList<WalletOperation>()
+        val allCashMovements = LinkedList<WalletOperation>()
 
         var marketBalance = availableBalance
 
@@ -139,8 +143,11 @@ class MatchingEngine(private val LOGGER: Logger,
                         "marketVolume ${RoundingUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
                         "limitVolume ${RoundingUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
 
-                cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, 0.0))
-                cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, 0.0))
+                val cashMovements = LinkedList<WalletOperation>()
+                val baseAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, 0.0)
+                cashMovements.add(baseAssetOperation)
+                val quotingAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, 0.0)
+                cashMovements.add(quotingAssetOperation)
                 cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, if (-marketRoundedVolume < 0) -marketRoundedVolume else 0.0))
                 cashMovements.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.quotingAssetId, now, -oppositeRoundedVolume, if (-oppositeRoundedVolume < 0) -oppositeRoundedVolume else 0.0))
 
@@ -171,9 +178,12 @@ class MatchingEngine(private val LOGGER: Logger,
                 remainingVolume = RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), order.isStraight(), limitOrder.price), assetsHolder.getAsset(assetPair.baseAssetId).accuracy, order.isOrigBuySide())
                 limitOrder.lastMatchTime = now
 
+                val feeTransfer: FeeTransfer? = feeProcessor.processFee(order.fee, if (isBuy) baseAssetOperation else quotingAssetOperation, cashMovements)
+                allCashMovements.addAll(cashMovements)
+
                 marketOrderTrades.add(TradeInfo(order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), asset.assetId,
                         limitOrder.clientId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
-                        limitOrder.price, limitOrder.id, limitOrder.externalId, now))
+                        limitOrder.price, limitOrder.id, limitOrder.externalId, now, order.fee, feeTransfer))
                 limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
                         order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy)))))
                 totalVolume += volume
@@ -194,7 +204,7 @@ class MatchingEngine(private val LOGGER: Logger,
         order.updatePrice(RoundingUtils.round(if (order.isStraight()) totalLimitPrice / order.getAbsVolume() else order.getAbsVolume() / totalVolume
                 , assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
 
-        return MatchingResult(order, cancelledLimitOrders, skipLimitOrders, completedLimitOrders, uncompletedLimitOrder, lkkTrades, cashMovements, marketOrderTrades, limitOrdersReport, workingOrderBook, marketBalance)
+        return MatchingResult(order, cancelledLimitOrders, skipLimitOrders, completedLimitOrders, uncompletedLimitOrder, lkkTrades, allCashMovements, marketOrderTrades, limitOrdersReport, workingOrderBook, marketBalance)
     }
 
     private fun getCrossVolume(volume: Double, straight: Boolean, price: Double): Double {

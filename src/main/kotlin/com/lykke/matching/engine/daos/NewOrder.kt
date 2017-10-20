@@ -12,7 +12,8 @@ abstract class NewOrder(
         var status: String,
         var createdAt: Date,
         var registered: Date,
-        var reservedLimitVolume: Double?
+        var reservedLimitVolume: Double?,
+        var fee: FeeInstruction?
 ) : Serializable {
 
     fun getAbsVolume(): Double {

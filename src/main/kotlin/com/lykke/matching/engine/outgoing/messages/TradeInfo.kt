@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.outgoing.messages
 
+import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.FeeTransfer
 import java.util.Date
 
 class TradeInfo(
@@ -12,5 +14,7 @@ class TradeInfo(
     val price: Double,
     val limitOrderId: String,
     val limitOrderExternalId: String,
-    val timestamp: Date
+    val timestamp: Date,
+    val feeInstruction: FeeInstruction?,
+    val feeTransfer: FeeTransfer?
 )
