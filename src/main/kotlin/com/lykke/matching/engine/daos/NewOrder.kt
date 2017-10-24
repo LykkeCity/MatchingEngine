@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
 import java.util.Date
 
@@ -13,6 +14,7 @@ abstract class NewOrder(
         var createdAt: Date,
         var registered: Date,
         var reservedLimitVolume: Double?,
+        @Version (1) // for compatibility with old serialized orders
         var fee: FeeInstruction?
 ) : Serializable {
 

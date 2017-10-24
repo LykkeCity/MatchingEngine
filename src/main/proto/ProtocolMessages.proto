@@ -23,6 +23,24 @@ message MarketOrderResponse {
     optional double price = 4;
 }
 
+message MultiLimitOrderResponse {
+    required string id = 1;
+    required int32 status = 2;
+    optional string statusReason = 3;
+    required string assetPairId = 4;
+
+    message OrderStatus {
+        required string id = 1;
+        optional string matchingEngineId = 2;
+        required int32 status = 3;
+        optional string statusReason = 4;
+        required double volume = 5;
+        required double price = 6;
+    }
+
+    repeated OrderStatus statuses = 5;
+}
+
 message CashOperation {
     required int64 uid = 1;
     required string clientId = 2;
@@ -162,11 +180,11 @@ message MultiLimitOrder {
         required string uid = 1;
         required double volume = 2;
         required double price = 3;
+        optional LimitOrderFee fee = 4;
     }
 
     repeated Order orders = 5;
     optional bool cancelAllPreviousLimitOrders = 6;
-    optional LimitOrderFee fee = 7;
 }
 
 message WalletCredentialsReload {
@@ -203,29 +221,25 @@ message OrderBookSnapshot {
     repeated OrderBookLevel levels = 4;
 }
 
-message Fee {
-    required int32 type = 1;
-    optional double size = 2;
-    optional string sourceClientId = 3;
-    optional string targetClientId = 4;
+enum FeeType {
+    NO_FEE = 0;
+    CLIENT_FEE = 1;
+    EXTERNAL_FEE = 2;
+}
 
-    enum Type {
-        NO_FEE = 0;
-        CLIENT_FEE = 1;
-        EXTERNAL_FEE = 2;
-    }
+message FeeCommon {
+    required FeeType type = 1;
+    optional string sourceClientId = 2;
+    optional string targetClientId = 3;
+}
+
+message Fee {
+    required FeeCommon feeCommon = 1;
+    optional double size = 2;
 }
 
 message LimitOrderFee {
-    required int32 type = 1;
+    required FeeCommon feeCommon = 1;
     optional double makerSize = 2;
     optional double takerSize = 3;
-    optional string sourceClientId = 4;
-    optional string targetClientId = 5;
-
-    enum Type {
-        NO_FEE = 0;
-        CLIENT_FEE = 1;
-        EXTERNAL_FEE = 2;
-    }
 }

@@ -15,7 +15,7 @@ class LimitOrderFeeInstruction(
             if (fee == null) {
                 return null
             }
-            return LimitOrderFeeInstruction(FeeType.getByExternalId(fee.type), fee.takerSize, fee.makerSize, fee.sourceClientId, fee.targetClientId)
+            return LimitOrderFeeInstruction(FeeType.getByExternalId(fee.feeCommon.type.number), fee.takerSize, fee.makerSize, fee.feeCommon.sourceClientId, fee.feeCommon.targetClientId)
         }
     }
 }
