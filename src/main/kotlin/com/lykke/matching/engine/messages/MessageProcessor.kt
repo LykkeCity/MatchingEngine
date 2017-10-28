@@ -53,6 +53,7 @@ import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
 import com.sun.net.httpserver.HttpServer
 import org.apache.log4j.Logger
@@ -160,22 +161,14 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         connectionsHolder.start()
 
         SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue, false).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeTransfer, rabbitTransferQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeSwapOperation, rabbitCashSwapQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeCashOperation, rabbitCashInOutQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeSwap, rabbitSwapQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeBalanceUpdate, balanceUpdatesQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeLimitOrders, rabbitLimitOrdersQueue, false).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.trustedExchangeLimitOrders, rabbitTrustedLimitOrdersQueue, true).start()
+        startRabbitMqPublisher(config.me.rabbitOrderBook, rabbitOrderBooksQueue, false)
+        startRabbitMqPublisher(config.me.rabbitTransfer, rabbitTransferQueue, true)
+        startRabbitMqPublisher(config.me.rabbitSwapOperation, rabbitCashSwapQueue, true)
+        startRabbitMqPublisher(config.me.rabbitCashOperation, rabbitCashInOutQueue, true)
+        startRabbitMqPublisher(config.me.rabbitSwap, rabbitSwapQueue, true)
+        startRabbitMqPublisher(config.me.rabbitBalanceUpdate, balanceUpdatesQueue, true)
+        startRabbitMqPublisher(config.me.rabbitLimitOrders, rabbitLimitOrdersQueue, false)
+        startRabbitMqPublisher(config.me.rabbitTrustedLimitOrders, rabbitTrustedLimitOrdersQueue, true)
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -208,6 +201,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
         server.executor = null
         server.start()
+    }
+
+    private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, logMessage: Boolean) {
+        RabbitMqPublisher(config.host, config.port, config.username, config.password, config.exchange, queue, logMessage).start()
     }
 
     override fun run() {
