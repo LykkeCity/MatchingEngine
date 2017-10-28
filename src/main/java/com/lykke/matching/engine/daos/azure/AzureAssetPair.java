@@ -9,17 +9,15 @@ public class AzureAssetPair extends TableServiceEntity {
     private String baseAssetId;
     private String quotingAssetId;
     private int accuracy;
-    private int invertedAccuracy;
 
     public AzureAssetPair() {
     }
 
-    public AzureAssetPair(String baseAssetId, String quotingAssetId, int accuracy, int invertedAccuracy) {
+    public AzureAssetPair(String baseAssetId, String quotingAssetId, int accuracy) {
         super(ASSET_PAIR, baseAssetId + quotingAssetId);
         this.baseAssetId = baseAssetId;
         this.quotingAssetId = quotingAssetId;
         this.accuracy = accuracy;
-        this.invertedAccuracy = invertedAccuracy;
     }
 
     public String getBaseAssetId() {
@@ -50,16 +48,8 @@ public class AzureAssetPair extends TableServiceEntity {
         this.accuracy = accuracy;
     }
 
-    public int getInvertedAccuracy() {
-        return invertedAccuracy;
-    }
-
-    public void setInvertedAccuracy(int invertedAccuracy) {
-        this.invertedAccuracy = invertedAccuracy;
-    }
-
     @Override
     public String toString() {
-        return "AssetPair(pairId=" + getAssetPairId() + ",baseAssetId=" + baseAssetId + ", quotingAssetId=" + quotingAssetId + ", accuracy=" + accuracy + ", invertedAccuracy=" + invertedAccuracy + ")";
+        return "AssetPair(pairId=" + getAssetPairId() + ",baseAssetId=" + baseAssetId + ", quotingAssetId=" + quotingAssetId + ", accuracy=" + accuracy + ")";
     }
 }

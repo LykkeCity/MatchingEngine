@@ -48,10 +48,10 @@ class LimitOrderServiceDustTest {
         testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAcessor.clear()
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))

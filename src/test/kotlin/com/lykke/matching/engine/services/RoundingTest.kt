@@ -1,10 +1,8 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
@@ -21,7 +19,6 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
@@ -37,7 +34,6 @@ class RoundingTest {
     var testLimitDatabaseAccessor = TestFileOrderDatabaseAccessor()
     var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-    val transactionQueue = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -45,41 +41,34 @@ class RoundingTest {
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAccessor)
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
 
     var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
 
     val DELTA = 1e-9
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.clear()
         testLimitDatabaseAccessor.clear()
         testWalletDatabaseAccessor.clear()
-        transactionQueue.clear()
         tradesInfoQueue.clear()
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2, "JPY"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2, "CHF"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0, "LKK"))
-        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client3", "Client3-Multisig"))
-        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client4", "Client4-Multisig"))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2, 8))
-
-        this.walletCredentialsCache.reloadCache()
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2))
     }
 
     @After
@@ -88,7 +77,7 @@ class RoundingTest {
 
     fun initServices() {
         limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
     }
 
     @Test

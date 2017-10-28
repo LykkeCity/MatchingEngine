@@ -149,7 +149,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
                     .where(TableQuery.generateFilterCondition("PartitionKey", EQUAL, ASSET_PAIR))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy, asset.invertedAccuracy)
+                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
@@ -164,7 +164,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, assetPair.invertedAccuracy)
+                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)

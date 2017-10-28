@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
@@ -45,7 +44,6 @@ class MultiLimitOrderServiceTest {
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAccessor)
     val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
 
 
@@ -60,17 +58,17 @@ class MultiLimitOrderServiceTest {
         testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAccessor.clear()
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2, "CHF"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("TIME", 8, "TIME"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("TIME", 8))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6, 6))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8, 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))

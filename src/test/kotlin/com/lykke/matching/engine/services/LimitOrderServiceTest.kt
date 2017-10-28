@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
@@ -45,7 +44,6 @@ class LimitOrderServiceTest {
     private val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     private val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAccessor)
     private val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
 
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
@@ -57,16 +55,16 @@ class LimitOrderServiceTest {
         testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAccessor.clear()
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6, "ETH"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("ETHBTC", "ETH", "BTC", 5, 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("ETHBTC", "ETH", "BTC", 5))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
@@ -437,7 +435,7 @@ class LimitOrderServiceTest {
         assertEquals(2000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(1347.72, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
         marketService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -10.0)))
 
         assertEquals(1, limitOrdersQueue.size)
@@ -645,7 +643,7 @@ class LimitOrderServiceTest {
 
         val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
         val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
 
         marketService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
 

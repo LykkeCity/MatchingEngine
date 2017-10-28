@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -53,7 +52,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                         private val walletCredentialsCache: WalletCredentialsCache,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MarketOrder> {
 
     companion object {

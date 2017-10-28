@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.messages
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
@@ -32,10 +31,8 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
-import com.lykke.matching.engine.queue.BackendQueueProcessor
 import com.lykke.matching.engine.queue.QueueWriter
 import com.lykke.matching.engine.queue.azure.AzureQueueWriter
-import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashOperationService
@@ -49,7 +46,6 @@ import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
@@ -73,7 +69,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     }
 
     val messagesQueue: BlockingQueue<MessageWrapper> = queue
-    val bitcoinQueue: BlockingQueue<Transaction> = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
     val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
@@ -109,15 +104,11 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val balanceUpdateService: BalanceUpdateService
     val tradesInfoService: TradesInfoService
     val historyTicksService: HistoryTicksService
-    val walletCredentialsService: WalletCredentialsCacheService
 
     val balanceUpdateHandler: BalanceUpdateHandler
     val quotesUpdateHandler: QuotesUpdateHandler
 
-    val backendQueueProcessor: BackendQueueProcessor
     val azureQueueWriter: QueueWriter
-
-    val walletCredentialsCache: WalletCredentialsCache
 
     val bestPriceBuilder: Timer
     val candlesBuilder: Timer
@@ -126,37 +117,34 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
     init {
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.aLimitOrdersConnString, config.me.db.hLimitOrdersConnString, config.me.db.hLiquidityConnString)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hMarketOrdersConnString, config.me.db.hTradesConnString)
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString)
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString)
+        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.me.db.sharedStorageConnString)
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
         this.azureQueueWriter = AzureQueueWriter(config.me.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
-        this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
-        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString), 60000))
+        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue, balanceHolder)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitLimitOrdersQueue, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache, rabbitSwapQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, assetsHolder, assetsPairsHolder, balanceHolder, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitLimitOrdersQueue, rabbitTrustedLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
-        this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
         historyTicksService.init()
         this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
         balanceUpdateHandler.start()
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
         quotesUpdateHandler.start()
-        this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
@@ -208,7 +196,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     }
 
     override fun run() {
-        backendQueueProcessor.start()
         tradesInfoService.start()
 
         while (true) {
@@ -256,9 +243,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.MULTI_LIMIT_ORDER,
                 MessageType.OLD_MULTI_LIMIT_ORDER -> {
                     multiLimitOrderService.processMessage(message)
-                }
-                MessageType.WALLET_CREDENTIALS_RELOAD -> {
-                    walletCredentialsService.processMessage(message)
                 }
                 MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
                     balanceUpdateHandler.subscribe(message.clientHandler!!)

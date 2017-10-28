@@ -16,7 +16,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String) : HistoryTic
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val historyBlobContainer: CloudBlobContainer
+    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(historyTicksString, "history")
 
     override fun loadHistoryTick(asset: String, period: String): CloudBlob? {
         try {
@@ -54,9 +54,5 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String) : HistoryTic
             LOGGER.error("Unable to save blob ${tick.name}", e)
             METRICS_LOGGER.logError(this.javaClass.name, "Unable to save blob ${tick.name}", e)
         }
-    }
-
-    init {
-        this.historyBlobContainer = getOrCreateBlob(historyTicksString, "history")
     }
 }

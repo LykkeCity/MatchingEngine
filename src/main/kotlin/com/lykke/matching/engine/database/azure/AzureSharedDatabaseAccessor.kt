@@ -18,7 +18,7 @@ class AzureSharedDatabaseAccessor(val sharedConfig: String) : SharedDatabaseAcce
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    var monitoringTable = getOrCreateTable(sharedConfig, "Monitoring")
+    private var monitoringTable = getOrCreateTable(sharedConfig, "Monitoring")
 
     override fun getLastKeepAlive(): Date? {
         try {
