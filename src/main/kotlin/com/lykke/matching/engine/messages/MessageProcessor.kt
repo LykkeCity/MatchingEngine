@@ -161,14 +161,14 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         connectionsHolder.start()
 
         SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        startRabbitMqPublisher(config.me.rabbitOrderBook, rabbitOrderBooksQueue, false)
-        startRabbitMqPublisher(config.me.rabbitTransfer, rabbitTransferQueue, true)
-        startRabbitMqPublisher(config.me.rabbitSwapOperation, rabbitCashSwapQueue, true)
-        startRabbitMqPublisher(config.me.rabbitCashOperation, rabbitCashInOutQueue, true)
-        startRabbitMqPublisher(config.me.rabbitSwap, rabbitSwapQueue, true)
-        startRabbitMqPublisher(config.me.rabbitBalanceUpdate, balanceUpdatesQueue, true)
-        startRabbitMqPublisher(config.me.rabbitLimitOrders, rabbitLimitOrdersQueue, false)
-        startRabbitMqPublisher(config.me.rabbitTrustedLimitOrders, rabbitTrustedLimitOrdersQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, false)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue, false)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue, true)
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -204,7 +204,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     }
 
     private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, logMessage: Boolean) {
-        RabbitMqPublisher(config.host, config.port, config.username, config.password, config.exchange, queue, logMessage).start()
+        RabbitMqPublisher(config.uri, config.exchange, queue, logMessage).start()
     }
 
     override fun run() {

@@ -12,22 +12,7 @@ data class MatchingEngineConfig(
     val serverOrderBookPort: Int,
     val serverOrderBookMaxConnections: Int,
     val httpOrderBookPort: Int,
-    @SerializedName("RabbitMqOrderBook")
-    val rabbitOrderBook: RabbitConfig,
-    @SerializedName("RabbitMqCashOperation")
-    val rabbitCashOperation: RabbitConfig,
-    @SerializedName("RabbitMqTransfer")
-    val rabbitTransfer: RabbitConfig,
-    @SerializedName("RabbitMqSwapOperation")
-    val rabbitSwapOperation: RabbitConfig,
-    @SerializedName("RabbitMqBalanceUpdate")
-    val rabbitBalanceUpdate: RabbitConfig,
-    @SerializedName("RabbitMqSwap")
-    val rabbitSwap: RabbitConfig,
-    @SerializedName("RabbitMqLimitOrders")
-    val rabbitLimitOrders: RabbitConfig,
-    @SerializedName("RabbitMqTrustedLimitOrders")
-    val rabbitTrustedLimitOrders: RabbitConfig,
+    val rabbitMqConfigs: RabbitMqConfigs,
     val bestPricesInterval: Long,
     val candleSaverInterval: Long,
     val hoursCandleSaverInterval: Long,

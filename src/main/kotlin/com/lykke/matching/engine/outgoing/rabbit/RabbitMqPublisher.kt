@@ -9,10 +9,7 @@ import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
 class RabbitMqPublisher(
-        private val host: String,
-        private val port: Int,
-        private val username: String,
-        private val password: String,
+        private val uri: String,
         private val exchangeName: String,
         private val queue: BlockingQueue<JsonSerializable>,
         private val logMessage: Boolean) : Thread() {
@@ -27,25 +24,24 @@ class RabbitMqPublisher(
     var connection: Connection? = null
     var channel: Channel? = null
 
-    fun connect(): Boolean {
-        LOGGER.info("Connecting to RabbitMQ: $host:$port, exchange: $exchangeName")
+    private fun connect(): Boolean {
+        val factory = ConnectionFactory()
+        factory.setUri(uri)
+        factory.requestedHeartbeat = 30
+        factory.isAutomaticRecoveryEnabled = true
+
+        LOGGER.info("Connecting to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
         try {
-            val factory = ConnectionFactory()
-            factory.host = host
-            factory.port = port
-            factory.username = username
-            factory.password = password
-
             this.connection = factory.newConnection()
             this.channel = connection!!.createChannel()
-            channel!!.exchangeDeclare(exchangeName, "fanout", true)
+            channel!!.exchangeDeclare(exchangeName, EXCHANGE_TYPE, true)
 
-            LOGGER.info("Connected to RabbitMQ: $host:$port, exchange: $exchangeName")
+            LOGGER.info("Connected to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
             return true
         } catch (e: Exception) {
-            LOGGER.error("Unable to connect to RabbitMQ: $host:$port, exchange: $exchangeName: ${e.message}", e)
+            LOGGER.error("Unable to connect to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName: ${e.message}", e)
             return false
         }
     }
@@ -58,14 +54,16 @@ class RabbitMqPublisher(
         }
     }
 
-    fun publish(item: JsonSerializable) {
+    private fun publish(item: JsonSerializable) {
+        var isLogged = false
         while (true) {
             try {
                 val stringValue = item.toJson()
-                channel!!.basicPublish(exchangeName, "", null, stringValue.toByteArray())
-                if (logMessage) {
+                if (logMessage && !isLogged) {
                     MESSAGES_LOGGER.info("$exchangeName : $stringValue")
+                    isLogged = true
                 }
+                channel!!.basicPublish(exchangeName, "", null, stringValue.toByteArray())
                 return
             } catch (exception: Exception) {
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
