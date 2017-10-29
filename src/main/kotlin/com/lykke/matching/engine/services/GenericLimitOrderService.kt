@@ -41,7 +41,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         }
     }
 
-    fun addToOrderBook(order: NewLimitOrder) {
+    private fun addToOrderBook(order: NewLimitOrder) {
         val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
         orderBook.addOrder(order)
         addOrder(order)

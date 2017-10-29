@@ -58,7 +58,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashTransferOperation.parseFrom(array)
     }
 
-    fun processTransferOperation(operation: TransferOperation) {
+    private fun processTransferOperation(operation: TransferOperation) {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,

@@ -33,7 +33,7 @@ class AzureBackOfficeDatabaseAccessor(dictsConfig: String) : BackOfficeDatabaseA
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load assets", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load assets", e)
+            METRICS_LOGGER.logError("Unable to load assets", e)
         }
 
         return result
@@ -48,7 +48,7 @@ class AzureBackOfficeDatabaseAccessor(dictsConfig: String) : BackOfficeDatabaseA
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load assetId: $assetId", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load assetId: $assetId", e)
+            METRICS_LOGGER.logError("Unable to load assetId: $assetId", e)
         }
         return null
     }

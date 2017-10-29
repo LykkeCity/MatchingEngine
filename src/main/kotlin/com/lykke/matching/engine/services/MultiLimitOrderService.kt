@@ -112,9 +112,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val balances = mutableMapOf(
                 Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.baseAssetId)),
                 Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.quotingAssetId)))
-        val availableBalances = mutableMapOf(
-                Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.baseAssetId)),
-                Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.quotingAssetId)))
 
         orders.forEach { order ->
             if (orderBook.leadToNegativeSpreadForClient(order)) {

@@ -5,7 +5,9 @@ import com.lykke.matching.engine.history.TickBlobHolder
 import java.util.Date
 import java.util.HashMap
 
-class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor, val genericLimitOrderService: GenericLimitOrderService) {
+class HistoryTicksService(
+        private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
+        private val genericLimitOrderService: GenericLimitOrderService) {
 
     private val COUNT: Long = 4000
 
@@ -74,7 +76,7 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
         saveTicks(now.time)
     }
 
-    fun addTicks(now: Long, asset: String, ask: Double, bid: Double) {
+    private fun addTicks(now: Long, asset: String, ask: Double, bid: Double) {
         addTick(oneHourTicks, asset, ONE_HOUR, ask, bid)
         if (oneDayLastUpdateTime + oneDayUpdateInterval < now ) {
             addTick(oneDayTicks, asset, ONE_DAY, ask, bid)
@@ -90,7 +92,7 @@ class HistoryTicksService(val historyTicksDatabaseAccessor: HistoryTicksDatabase
         }        
     }
     
-    fun addTick(ticks: HashMap<String, TickBlobHolder>, asset: String, suffix: String, ask: Double, bid: Double) {
+    private fun addTick(ticks: HashMap<String, TickBlobHolder>, asset: String, suffix: String, ask: Double, bid: Double) {
         if (!ticks.containsKey(asset)) {
             val blob = historyTicksDatabaseAccessor.loadHistoryTick(asset, suffix)
             if (blob != null) {

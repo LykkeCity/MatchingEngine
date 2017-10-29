@@ -30,7 +30,7 @@ class AzureSharedDatabaseAccessor(val sharedConfig: String) : SharedDatabaseAcce
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load hour candles", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load hour candles", e)
+            METRICS_LOGGER.logError( "Unable to load hour candles", e)
         }
 
         return null

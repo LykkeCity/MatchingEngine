@@ -4,23 +4,12 @@ import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.AMOUNT
-import com.lykke.matching.engine.logging.ASSET
-import com.lykke.matching.engine.logging.BUSSINES_ID
-import com.lykke.matching.engine.logging.CLIENT_ID
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.Line
-import com.lykke.matching.engine.logging.ME_CASH_OPERATION
 import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.SEND_TO_BITCOIN
-import com.lykke.matching.engine.logging.TIMESTAMP
-import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
-import java.time.LocalDateTime
 import java.util.Date
 import java.util.UUID
 
@@ -64,17 +53,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId)
                 .setRecordId(operation.id).build())
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}, sendToBitcoin: ${message.sendToBitcoin} processed")
-
-        METRICS_LOGGER.log(Line(ME_CASH_OPERATION, arrayOf(
-                KeyValue(UID, message.uid.toString()),
-                KeyValue(BUSSINES_ID, message.bussinesId),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
-                KeyValue(CLIENT_ID, message.clientId),
-                KeyValue(ASSET, message.assetId),
-                KeyValue(AMOUNT, message.amount.toString()),
-                KeyValue(SEND_TO_BITCOIN, message.sendToBitcoin.toString())
-        )))
-        METRICS_LOGGER.log(KeyValue(ME_CASH_OPERATION, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {

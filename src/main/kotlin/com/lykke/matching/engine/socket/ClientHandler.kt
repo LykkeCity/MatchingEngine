@@ -12,18 +12,21 @@ import java.net.Socket
 import java.time.LocalDateTime
 import java.util.concurrent.BlockingQueue
 
-class ClientHandler(val queue: BlockingQueue<MessageWrapper>, val socket: Socket, val socketServer: SocketServer): Thread() {
+class ClientHandler(
+        private val queue: BlockingQueue<MessageWrapper>,
+        private val socket: Socket,
+        private val socketServer: SocketServer): Thread() {
 
     companion object {
         val LOGGER = Logger.getLogger(ClientHandler::class.java.name)
     }
 
     @Volatile
-    var incomingSize: Long = 0
+    private var incomingSize: Long = 0
     @Volatile
-    var outgoingSize: Long = 0
+    private var outgoingSize: Long = 0
     @Volatile
-    var lastMessageAt: LocalDateTime = LocalDateTime.now()
+    private var lastMessageAt: LocalDateTime = LocalDateTime.now()
 
     var clientHostName = socket.inetAddress.hostAddress
 

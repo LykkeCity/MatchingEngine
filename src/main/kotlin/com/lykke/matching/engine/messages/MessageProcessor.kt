@@ -31,8 +31,6 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
-import com.lykke.matching.engine.queue.QueueWriter
-import com.lykke.matching.engine.queue.azure.AzureQueueWriter
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashOperationService
@@ -108,8 +106,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val balanceUpdateHandler: BalanceUpdateHandler
     val quotesUpdateHandler: QuotesUpdateHandler
 
-    val azureQueueWriter: QueueWriter
-
     val bestPriceBuilder: Timer
     val candlesBuilder: Timer
     val hoursCandlesBuilder: Timer
@@ -123,7 +119,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.me.db.sharedStorageConnString)
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-        this.azureQueueWriter = AzureQueueWriter(config.me.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
         val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
@@ -252,12 +247,12 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 }
                 else -> {
                     LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
-                    METRICS_LOGGER.logError(this.javaClass.name, "Unknown message type: ${message.type}")
+                    METRICS_LOGGER.logError( "Unknown message type: ${message.type}")
                 }
             }
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "[${message.sourceIp}]: Got error during message processing", exception)
+            METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message processing", exception)
         }
     }
 }

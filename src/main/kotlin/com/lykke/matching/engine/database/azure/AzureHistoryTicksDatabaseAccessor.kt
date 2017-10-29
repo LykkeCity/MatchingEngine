@@ -26,7 +26,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String) : HistoryTic
             }
         } catch (e: Exception) {
             LOGGER.error("Unable to load blobs", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load blobs", e)
+            METRICS_LOGGER.logError( "Unable to load blobs", e)
         }
         return null
     }
@@ -40,7 +40,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String) : HistoryTic
                     .filterTo(result) { it.name.startsWith("BA_") }
         } catch (e: Exception) {
             LOGGER.error("Unable to load blobs", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load blobs", e)
+            METRICS_LOGGER.logError( "Unable to load blobs", e)
         }
         return result
     }
@@ -52,7 +52,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String) : HistoryTic
             blob.upload(ByteArrayInputStream(byteArray), byteArray.size.toLong())
         } catch (e: Exception) {
             LOGGER.error("Unable to save blob ${tick.name}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to save blob ${tick.name}", e)
+            METRICS_LOGGER.logError( "Unable to save blob ${tick.name}", e)
         }
     }
 }

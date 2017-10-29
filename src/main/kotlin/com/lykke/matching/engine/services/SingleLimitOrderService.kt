@@ -7,8 +7,6 @@ import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.ME_LIMIT_ORDER
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
@@ -48,7 +46,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
     }
 
     private var messagesCount: Long = 0
-    private var logCount = 1000
+    private var logCount = 100
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
@@ -226,8 +224,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             limitOrderReportQueue.put(limitOrdersReport)
         }
 
-        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
-
         val endTime = System.nanoTime()
 
         messagesCount++
@@ -256,8 +252,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (limitOrdersReport.orders.isNotEmpty()) {
             limitOrderReportQueue.put(limitOrdersReport)
         }
-
-        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {

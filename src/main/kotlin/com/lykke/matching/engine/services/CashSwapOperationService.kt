@@ -73,7 +73,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashSwapOperation.parseFrom(array)
     }
 
-    fun processSwapOperation(operation: SwapOperation) {
+    private fun processSwapOperation(operation: SwapOperation) {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,

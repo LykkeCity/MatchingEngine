@@ -67,7 +67,7 @@ class RabbitMqPublisher(
                 return
             } catch (exception: Exception) {
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
-                METRICS_LOGGER.logError(this.javaClass.name, "Exception during RabbitMQ publishing: ${exception.message}", exception)
+                METRICS_LOGGER.logError( "Exception during RabbitMQ publishing: ${exception.message}", exception)
                 connect()
             }
         }

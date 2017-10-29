@@ -21,7 +21,7 @@ class AzureMarketOrderDatabaseAccessor(tradesConfig: String) : MarketOrderDataba
             batchInsertOrMerge(lkkTradesTable, trades.map { AzureLkkTrade(it.assetPair, it.clientId, it.price, it.volume, it.date) })
         } catch(e: Exception) {
             LOGGER.error("Unable to add lkk trades, size: ${trades.size}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add lkk trades, size: ${trades.size}", e)
+            METRICS_LOGGER.logError( "Unable to add lkk trades, size: ${trades.size}", e)
         }
     }
 }

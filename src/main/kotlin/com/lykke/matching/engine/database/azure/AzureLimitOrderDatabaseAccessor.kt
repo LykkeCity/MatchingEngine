@@ -31,7 +31,7 @@ class AzureLimitOrderDatabaseAccessor(liquidityConfig: String) : LimitOrderDatab
             batchInsertOrMerge(bestPricesTable, prices.map { AzureBestPrice(it.asset, it.ask, it.bid) })
         } catch(e: Exception) {
             LOGGER.error("Unable to update best prices, size: ${prices.size}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update best prices, size: ${prices.size}", e)
+            METRICS_LOGGER.logError( "Unable to update best prices, size: ${prices.size}", e)
         }
     }
 
@@ -40,7 +40,7 @@ class AzureLimitOrderDatabaseAccessor(liquidityConfig: String) : LimitOrderDatab
             candlesTable.execute(TableOperation.insertOrMerge(AzureCandle(candle.asset, candle.time, candle.data)))
         } catch(e: Exception) {
             LOGGER.error("Unable to add candle ${candle.asset} ${candle.time}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to add candle ${candle.asset} ${candle.time}", e)
+            METRICS_LOGGER.logError( "Unable to add candle ${candle.asset} ${candle.time}", e)
         }
     }
 
@@ -54,7 +54,7 @@ class AzureLimitOrderDatabaseAccessor(liquidityConfig: String) : LimitOrderDatab
             hourCandlesTable.execute(partitionQuery).mapTo(result) { HourCandle(it.asset, it.pricesList) }
         } catch(e: Exception) {
             LOGGER.error("Unable to load hour candles", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load hour candles", e)
+            METRICS_LOGGER.logError( "Unable to load hour candles", e)
         }
 
         return result
@@ -65,7 +65,7 @@ class AzureLimitOrderDatabaseAccessor(liquidityConfig: String) : LimitOrderDatab
             batchInsertOrMerge(hourCandlesTable, candles.map { AzureHourCandle(it.asset, it.prices) })
         } catch(e: Exception) {
             LOGGER.error("Unable to save hour candles, size: ${candles.size}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to save hour candles, size: ${candles.size}", e)
+            METRICS_LOGGER.logError( "Unable to save hour candles, size: ${candles.size}", e)
         }
     }
 }
