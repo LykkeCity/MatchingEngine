@@ -51,9 +51,9 @@ class MatchingEngine(private val LOGGER: Logger,
             val limitRemainingVolume = limitOrder.getAbsRemainingVolume()
             val marketRemainingVolume = getCrossVolume(remainingVolume, order.isStraight(), limitOrder.price)
             val volume = if (marketRemainingVolume >= limitRemainingVolume) limitRemainingVolume else marketRemainingVolume
-            val limitAsset = if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+            val limitAsset = assetsHolder.getAsset(if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
             val limitBalance = limitBalances[limitOrder.clientId] ?: balancesHolder.getAvailableReservedBalance(limitOrder.clientId, if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
-            val limitVolume = RoundingUtils.round(Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume), assetsHolder.getAsset(limitAsset).accuracy, false)
+            val limitVolume = RoundingUtils.round(Math.abs(if (limitOrder.isBuySide()) volume * limitOrder.price else volume), limitAsset.accuracy, false)
             if (order.clientId == limitOrder.clientId) {
                 skipLimitOrders.add(limitOrder)
             } else if (genericLimitOrderService.isEnoughFunds(limitOrder, volume) && limitBalance >= limitVolume) {
@@ -61,7 +61,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 remainingVolume -= getVolume(volume, order.isStraight(), limitOrder.price)
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price
-                limitBalances[limitOrder.clientId] = limitBalance - limitVolume
+                limitBalances[limitOrder.clientId] =  RoundingUtils.parseDouble(limitBalance - limitVolume, limitAsset.accuracy).toDouble()
             } else {
                 cancelledLimitOrders.add(limitOrder)
             }

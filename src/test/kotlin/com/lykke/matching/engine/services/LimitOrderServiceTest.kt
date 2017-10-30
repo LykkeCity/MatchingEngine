@@ -697,4 +697,35 @@ class LimitOrderServiceTest {
         assertEquals(0, testDatabaseAccessor.getOrders("BTCUSD", true).size)
     }
 
+    @Test
+    fun testMatchWithSeveralOrdersOfSameClient() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 100.00, reservedBalance = 29.99))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 100.00, reservedBalance = 0.0))
+
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 6110.0))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        assertEquals(29.99, balancesHolder.getReservedBalance("Client1", "BTC"))
+
+        limitOrdersQueue.clear()
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 30.0, price = 6110.0)))
+
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(4, result.orders.size)
+
+        assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+        assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
+        assertEquals("limit-order-1", result.orders[2].order.externalId)
+        assertEquals(OrderStatus.Processing.name, result.orders[3].order.status)
+        assertEquals(-0.09, result.orders[3].order.remainingVolume)
+        assertEquals(70.01, balancesHolder.getBalance("Client1", "BTC"))
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "BTC"))
+    }
+
 }
