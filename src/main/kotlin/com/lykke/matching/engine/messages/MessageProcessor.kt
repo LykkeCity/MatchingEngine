@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
@@ -20,6 +21,7 @@ import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
@@ -143,15 +145,16 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
+        val messageLogger = MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString))
         SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, false)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue, false)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue, messageLogger)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue, messageLogger)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue, messageLogger)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue, messageLogger)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue, messageLogger)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue, messageLogger)
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -186,8 +189,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         server.start()
     }
 
-    private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, logMessage: Boolean) {
-        RabbitMqPublisher(config.uri, config.exchange, queue, logMessage).start()
+    private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger? = null) {
+        RabbitMqPublisher(config.uri, config.exchange, queue, messageDatabaseLogger).start()
     }
 
     override fun run() {

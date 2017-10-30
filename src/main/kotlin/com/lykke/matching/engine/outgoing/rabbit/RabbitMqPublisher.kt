@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.rabbit
 
+import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -13,7 +14,8 @@ class RabbitMqPublisher(
         private val uri: String,
         private val exchangeName: String,
         private val queue: BlockingQueue<JsonSerializable>,
-        private val logMessage: Boolean) : Thread() {
+        /** null if do not need to log */
+        private val messageDatabaseLogger: MessageDatabaseLogger? = null) : Thread() {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
@@ -58,9 +60,12 @@ class RabbitMqPublisher(
         while (true) {
             try {
                 val stringValue = item.toJson()
-                if (logMessage && !isLogged) {
-                    MESSAGES_LOGGER.info("$exchangeName : $stringValue")
-                    isLogged = true
+                messageDatabaseLogger?.let {
+                    if (!isLogged) {
+                        MESSAGES_LOGGER.info("$exchangeName : $stringValue")
+                        it.log(item)
+                        isLogged = true
+                    }
                 }
                 channel!!.basicPublish(exchangeName, "", null, stringValue.toByteArray())
                 return
