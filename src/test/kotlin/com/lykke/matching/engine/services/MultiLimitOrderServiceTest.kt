@@ -31,9 +31,9 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFee
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildNewLimitOrderFee
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFee
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
@@ -85,6 +85,35 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
 
         initServices()
+    }
+
+    @Test
+    fun testSmallVolume() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
+
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+                volumes = listOf(
+                        VolumePrice(0.1, 2.0),
+                        VolumePrice(0.1, 1.5),
+                        VolumePrice(0.09, 1.3),
+                        VolumePrice(1.0, 1.2),
+                        VolumePrice(-1.0, 2.1),
+                        VolumePrice(-0.09, 2.2),
+                        VolumePrice(-0.1, 2.4)
+                ),
+                ordersFee = listOf(),
+                ordersFees = listOf()
+        ))
+        assertEquals(1, limitOrdersQueue.size)
+        val limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(5, limitOrders.orders.size)
+        assertEquals(2.0, limitOrders.orders[0].order.price)
+        assertEquals(1.5, limitOrders.orders[1].order.price)
+        assertEquals(1.2, limitOrders.orders[2].order.price)
+        assertEquals(2.1, limitOrders.orders[3].order.price)
+        assertEquals(2.4, limitOrders.orders[4].order.price)
     }
 
     @Test

@@ -28,7 +28,7 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                     .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ASSET_PAIR))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy)
+                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy, asset.minVolume, asset.minInvertedVolume)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
@@ -43,7 +43,7 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy)
+                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, assetPair.minVolume, assetPair.minInvertedVolume)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)

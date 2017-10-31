@@ -21,4 +21,6 @@ enum class OrderStatus {
     ,LeadToNegativeSpread
     //Invalid fee
     ,InvalidFee
+    //Too small volume
+    ,TooSmallVolume
 }

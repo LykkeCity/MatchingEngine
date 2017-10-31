@@ -214,6 +214,31 @@ class LimitOrderServiceTest {
     }
 
     @Test
+    fun testSmallVolume() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(volume = 0.09)))
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertEquals(OrderStatus.TooSmallVolume.name, result.orders[0].order.status)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.9, volume = 0.1)))
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertTrue(OrderStatus.TooSmallVolume.name != result.orders[0].order.status)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 2.0, volume = -0.1)))
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, result.orders.size)
+        assertTrue(OrderStatus.TooSmallVolume.name != result.orders[0].order.status)
+    }
+
+    @Test
     fun testBalanceCheck() {
         val service = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         val balances = HashMap<String, Double>()
