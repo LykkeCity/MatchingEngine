@@ -59,6 +59,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price
             } else {
+                LOGGER.debug("Added order (id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}) to cancelled limit orders")
                 cancelledLimitOrders.add(limitOrder)
             }
         }
