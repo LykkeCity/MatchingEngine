@@ -97,21 +97,26 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
     }
 
-    fun isEnoughFunds(order: NewLimitOrder, volume: Double): Boolean {
+    fun checkAndReduceBalance(order: NewLimitOrder, volume: Double, limitBalances: MutableMap<String, Double>): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        return if (order.isBuySide()) {
-            isEnoughFunds(order.clientId, assetPair.quotingAssetId, volume * order.price)
+        val limitAssetId: String
+        val requiredVolume: Double
+        if (order.isBuySide()) {
+            limitAssetId = assetPair.quotingAssetId
+            requiredVolume = volume * order.price
         } else {
-            isEnoughFunds(order.clientId, assetPair.baseAssetId, volume)
+            limitAssetId = assetPair.baseAssetId
+            requiredVolume = volume
         }
-    }
 
-    private fun isEnoughFunds(clientId: String, assetId: String, requiredVolume: Double): Boolean {
-        val availableBalance = balancesHolder.getAvailableReservedBalance(clientId, assetId)
-        val accuracy = assetsHolder.getAsset(assetId).accuracy
+        val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
+        val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
         val roundRequiredVolume = RoundingUtils.round(requiredVolume, accuracy, false)
         val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
-        LOGGER.debug("$clientId $assetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
+        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
+        if (result) {
+            limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble()
+        }
         return result
     }
 
