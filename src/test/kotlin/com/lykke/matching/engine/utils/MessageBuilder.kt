@@ -38,8 +38,14 @@ class MessageBuilder {
                     .build().toByteArray(), null)
         }
 
-        private fun buildFeeCommon(fee: FeeInstruction): ProtocolMessages.FeeCommon {
-            val builder = ProtocolMessages.FeeCommon.newBuilder().setType(ProtocolMessages.FeeType.valueOf(fee.type.externalId))
+        private fun buildFee(fee: FeeInstruction?): ProtocolMessages.Fee? {
+            if (fee == null) {
+                return null
+            }
+            val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
+            fee.size?.let {
+                builder.size = it
+            }
             fee.sourceClientId?.let {
                 builder.setSourceClientId(it)
             }
@@ -49,27 +55,22 @@ class MessageBuilder {
             return builder.build()
         }
 
-        private fun buildFee(fee: FeeInstruction?): ProtocolMessages.Fee? {
-            if (fee == null) {
-                return null
-            }
-            val builder = ProtocolMessages.Fee.newBuilder().setFeeCommon(buildFeeCommon(fee))
-            fee.size?.let {
-                builder.size = it
-            }
-            return builder.build()
-        }
-
         fun buildLimitOrderFee(fee: LimitOrderFeeInstruction?): ProtocolMessages.LimitOrderFee? {
             if (fee == null) {
                 return null
             }
-            val builder = ProtocolMessages.LimitOrderFee.newBuilder().setFeeCommon(buildFeeCommon(fee))
+            val builder = ProtocolMessages.LimitOrderFee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
                 builder.takerSize = it
             }
             fee.makerSize?.let {
                 builder.makerSize = it
+            }
+            fee.sourceClientId?.let {
+                builder.setSourceClientId(it)
+            }
+            fee.targetClientId?.let {
+                builder.setTargetClientId(it)
             }
             return builder.build()
         }

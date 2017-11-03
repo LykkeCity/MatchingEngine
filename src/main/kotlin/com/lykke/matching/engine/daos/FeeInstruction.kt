@@ -15,7 +15,7 @@ open class FeeInstruction(
             if (fee == null) {
                 return null
             }
-            return FeeInstruction(FeeType.getByExternalId(fee.feeCommon.type.number), fee.size, fee.feeCommon.sourceClientId, fee.feeCommon.targetClientId)
+            return FeeInstruction(FeeType.getByExternalId(fee.type), fee.size, fee.sourceClientId, fee.targetClientId)
         }
     }
 }

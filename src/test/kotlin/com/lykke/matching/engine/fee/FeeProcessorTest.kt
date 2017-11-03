@@ -35,7 +35,7 @@ class FeeProcessorTest {
 
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
 
