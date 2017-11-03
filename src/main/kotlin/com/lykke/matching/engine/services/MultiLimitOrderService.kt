@@ -95,7 +95,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         ordersToCancel.forEach { order ->
             orderBook.removeOrder(order)
-            if (order.remainingVolume != order.volume) {
+            if (order.isPartiallyMatched()) {
                 trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
             } else {
                 limitOrdersReport.orders.add(LimitOrderWithTrades(order))
@@ -129,10 +129,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     OrderStatus.Matched,
                     OrderStatus.Processing-> {
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
-                        matchingResult.cancelledLimitOrders.forEach { it ->
-                            it.status = OrderStatus.NotEnoughFunds.name
+
+                        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+                            val result = limitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList(), message.uid.toString(), MessageType.LIMIT_ORDER))
+                            walletOperations.addAll(result.walletOperation)
+                            limitOrdersReport.orders.addAll(result.limitOrderWithTrades)
+                            trustedLimitOrdersReport.orders.addAll(result.trustedLimitOrderWithTrades)
                         }
-                        limitOrderService.moveOrdersToDone(ArrayList<NewLimitOrder>(matchingResult.cancelledLimitOrders))
+                        cancelBuySide = cancelBuySide || matchingResult.cancelledLimitOrders.any { it.isBuySide() }
+                        cancelSellSide = cancelSellSide || matchingResult.cancelledLimitOrders.any { !it.isBuySide() }
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 

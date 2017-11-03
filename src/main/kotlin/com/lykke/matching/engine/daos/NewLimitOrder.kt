@@ -12,6 +12,10 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
         return Math.abs(remainingVolume)
     }
 
+    fun isPartiallyMatched(): Boolean {
+        return remainingVolume != volume
+    }
+
     override fun isOrigBuySide(): Boolean {
         return super.isBuySide()
     }
