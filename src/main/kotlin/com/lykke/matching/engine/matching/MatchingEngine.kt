@@ -180,6 +180,12 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 val takerFeeTransfer = feeProcessor.processFee(order.fee, if (isBuy) baseAssetOperation else quotingAssetOperation, cashMovements)
                 val makerFeeTransfer = feeProcessor.processMakerFee(limitOrder.fee, if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation, cashMovements)
+                if (takerFeeTransfer != null) {
+                    LOGGER.info(takerFeeTransfer.toString())
+                }
+                if (makerFeeTransfer != null) {
+                    LOGGER.info(makerFeeTransfer.toString())
+                }
 
                 allCashMovements.addAll(cashMovements)
 

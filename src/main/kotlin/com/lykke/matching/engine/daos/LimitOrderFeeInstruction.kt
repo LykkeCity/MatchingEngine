@@ -18,4 +18,13 @@ class LimitOrderFeeInstruction(
             return LimitOrderFeeInstruction(FeeType.getByExternalId(fee.type), fee.takerSize, fee.makerSize, fee.sourceClientId, fee.targetClientId)
         }
     }
+
+    override fun toString(): String {
+        return "LimitOrderFeeInstruction(type=$type " +
+                "${if (size != null) ", takerSize=$size" else ""} " +
+                "${if (makerSize != null) ", size=$makerSize" else ""} " +
+                "${if (sourceClientId != null) ", sourceClientId=$sourceClientId" else ""} " +
+                "${if (targetClientId != null) ", targetClientId=$targetClientId" else ""})"
+    }
+
 }

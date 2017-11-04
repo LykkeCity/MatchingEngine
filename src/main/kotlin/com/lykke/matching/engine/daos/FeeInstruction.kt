@@ -18,4 +18,11 @@ open class FeeInstruction(
             return FeeInstruction(FeeType.getByExternalId(fee.type), fee.size, fee.sourceClientId, fee.targetClientId)
         }
     }
+
+    override fun toString(): String {
+        return "FeeInstruction(type=$type " +
+                "${if (size != null) ", size=$size" else ""} " +
+                "${if (sourceClientId != null) ", sourceClientId=$sourceClientId" else ""} " +
+                "${if (targetClientId != null) ", targetClientId=$targetClientId" else ""})"
+    }
 }
