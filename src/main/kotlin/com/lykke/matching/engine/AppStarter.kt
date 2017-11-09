@@ -5,6 +5,9 @@ import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
+import com.lykke.utils.alivestatus.database.AliveStatusDatabaseAccessor
+import com.lykke.utils.alivestatus.database.azure.AzureAliveStatusDatabaseAccessor
+import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -38,7 +41,14 @@ fun main(args: Array<String>) {
             config.slackNotifications.azureQueue.queueName,
             config.slackNotifications.throttlingLimitSeconds)
 
-    Runtime.getRuntime().addShutdownHook(ShutdownHook())
+    val aliveStatusDatabaseAccessor = AzureAliveStatusDatabaseAccessor(config.me.db.matchingEngineConnString, "MatchingEngine")
+    try {
+        aliveStatusDatabaseAccessor.checkAndLock()
+    } catch (e: CheckAppInstanceRunningException) {
+        LOGGER.error(e.message)
+        return
+    }
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(aliveStatusDatabaseAccessor))
 
     SocketServer(config).run()
 }
@@ -48,12 +58,13 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook : Thread() {
+internal class ShutdownHook(private val aliveStatusDatabaseAccessor: AliveStatusDatabaseAccessor) : Thread() {
     init {
         this.name = "ShutdownHook"
     }
 
     override fun run() {
         LOGGER.info("Stopping application")
+        aliveStatusDatabaseAccessor.unlock()
     }
 }
