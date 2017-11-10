@@ -13,7 +13,7 @@ import java.util.HashMap
 class AzureBackOfficeDatabaseAccessor(dictsConfig: String) : BackOfficeDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
+        val LOGGER = Logger.getLogger(AzureBackOfficeDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

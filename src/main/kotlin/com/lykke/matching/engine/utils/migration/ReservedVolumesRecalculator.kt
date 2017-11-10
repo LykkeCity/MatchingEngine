@@ -1,9 +1,9 @@
 package com.lykke.matching.engine.utils.migration
 
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.database.createWalletDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -20,9 +20,9 @@ class ReservedVolumesRecalculator {
     }
 
     fun recalculate(config: Config) {
-        val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
+        val walletDatabaseAccessor = createWalletDatabaseAccessor(config.me)
         val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
+        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(createWalletDatabaseAccessor(config.me), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), config.me.trustedClients)
 
         val filePath = config.me.orderBookPath

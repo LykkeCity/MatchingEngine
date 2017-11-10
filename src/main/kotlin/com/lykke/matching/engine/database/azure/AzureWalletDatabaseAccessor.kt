@@ -23,7 +23,7 @@ import org.apache.log4j.Logger
 import java.util.HashMap
 
 
-class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) : WalletDatabaseAccessor {
+class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String, balancesTableName: String = "Accounts") : WalletDatabaseAccessor {
 
     companion object {
         val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
@@ -174,7 +174,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
     }
 
     init {
-        this.accountTable = getOrCreateTable(balancesConfig, "Accounts")
+        this.accountTable = getOrCreateTable(balancesConfig, balancesTableName)
         this.operationsTable = getOrCreateTable(balancesConfig, "OperationsCash")
         this.transferOperationsTable = getOrCreateTable(balancesConfig, "SwapOperationsCash")
         this.swapOperationsTable = getOrCreateTable(balancesConfig, "TransferOperationsCash")

@@ -1,11 +1,13 @@
 package com.lykke.matching.engine.outgoing.messages
 
+import com.lykke.matching.engine.AppContext
 import java.util.Date
 
 class BalanceUpdate( val id: String,
                      val type: String,
                      val timestamp: Date,
-                     val balances: List<ClientBalanceUpdate>): JsonSerializable() {
+                     val balances: List<ClientBalanceUpdate>,
+                     val storage: String? = AppContext.getWalletsStorage()?.name): JsonSerializable() {
 
     override fun toString(): String {
         return toJson()

@@ -5,6 +5,7 @@ import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -29,8 +30,14 @@ fun main(args: Array<String>) {
 
     val config = HttpConfigParser.initConfig(args[0])
 
+    AppContext.init(config)
+
     if (config.me.migrate) {
         ReservedVolumesRecalculator().recalculate(config)
+        return
+    }
+
+    if (migrateAccountsIfConfigured(config)) {
         return
     }
 

@@ -1,8 +1,9 @@
 package com.lykke.matching.engine.daos.wallet
 
+import java.io.Serializable
 import java.util.HashMap
 
-class Wallet {
+class Wallet: Serializable {
     val clientId: String
     val balances: MutableMap<String, AssetBalance> = HashMap()
 
