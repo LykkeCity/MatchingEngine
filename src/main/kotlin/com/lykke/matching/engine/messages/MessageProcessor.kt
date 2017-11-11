@@ -21,6 +21,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -50,7 +51,6 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
 import com.sun.net.httpserver.HttpServer
-import org.apache.log4j.Logger
 import java.net.InetSocketAddress
 import java.time.LocalDateTime
 import java.util.Date
@@ -62,7 +62,7 @@ import kotlin.concurrent.fixedRateTimer
 class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
-        val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

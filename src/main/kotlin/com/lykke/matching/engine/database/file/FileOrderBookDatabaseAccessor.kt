@@ -3,7 +3,7 @@ package com.lykke.matching.engine.database.file
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
-import org.apache.log4j.Logger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import java.io.File
 import java.nio.file.FileSystems
@@ -18,7 +18,7 @@ import java.util.concurrent.PriorityBlockingQueue
 class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

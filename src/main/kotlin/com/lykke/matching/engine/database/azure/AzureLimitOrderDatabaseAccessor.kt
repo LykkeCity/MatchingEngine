@@ -9,16 +9,16 @@ import com.lykke.matching.engine.daos.azure.AzureHourCandle
 import com.lykke.matching.engine.daos.azure.AzureHourCandle.MICRO
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
-import org.apache.log4j.Logger
 import java.util.ArrayList
 
 class AzureLimitOrderDatabaseAccessor(liquidityConfig: String) : LimitOrderDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(LimitOrderDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(LimitOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

@@ -1,17 +1,17 @@
 package com.lykke.matching.engine.outgoing.http
 
 import com.google.gson.GsonBuilder
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
-import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
 
 class RequestHandler (val genericLimitOrderService: GenericLimitOrderService) : HttpHandler {
     companion object {
-        val LOGGER = Logger.getLogger(RequestHandler::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(RequestHandler::class.java.name)
     }
 
     override fun handle(exchange: HttpExchange) {
