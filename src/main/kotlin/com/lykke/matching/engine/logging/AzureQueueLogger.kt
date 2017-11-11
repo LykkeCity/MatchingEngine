@@ -10,7 +10,7 @@ class AzureQueueLogger(queueConnectionString: String, queueName: String, val que
         val LOGGER = Logger.getLogger(AzureQueueLogger::class.java.name)
     }
 
-    val queueWriter: QueueWriter
+    private val queueWriter: QueueWriter
 
     override fun run() {
         while (true) {

@@ -21,7 +21,7 @@ class ReservedVolumesRecalculator {
 
     fun recalculate(config: Config) {
         val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
-        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString), 60000))
+        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), config.me.trustedClients)
 

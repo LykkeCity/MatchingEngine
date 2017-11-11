@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -8,18 +7,7 @@ import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.AMOUNT
-import com.lykke.matching.engine.logging.ASSET_PAIR
-import com.lykke.matching.engine.logging.CLIENT_ID
-import com.lykke.matching.engine.logging.ID
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.Line
-import com.lykke.matching.engine.logging.ME_MARKET_ORDER
 import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.STATUS
-import com.lykke.matching.engine.logging.STRAIGHT
-import com.lykke.matching.engine.logging.TIMESTAMP
-import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -38,7 +26,6 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
-import java.time.LocalDateTime
 import java.util.ArrayList
 import java.util.Date
 import java.util.UUID
@@ -53,7 +40,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                         private val walletCredentialsCache: WalletCredentialsCache,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MarketOrder> {
 
     companion object {
@@ -63,7 +49,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     }
 
     private var messagesCount: Long = 0
-    private var logCount = 1000
+    private var logCount = 100
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
@@ -91,8 +77,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Unknown asset: ${order.assetPairId}")
             writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
-            METRICS_LOGGER.log(getMetricLine(order.externalId, order))
-            METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
             return
         }
 
@@ -152,9 +136,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         }
 
-        METRICS_LOGGER.log(getMetricLine(order.externalId, order))
-        METRICS_LOGGER.log(KeyValue(ME_MARKET_ORDER, (++messagesCount).toString()))
-
         val endTime = System.nanoTime()
 
         messagesCount++
@@ -192,18 +173,5 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setStatus(status.type).setStatusReason(reason).build())
             }
         }
-    }
-
-    fun getMetricLine(uid: String, order: MarketOrder): Line {
-        return Line(ME_MARKET_ORDER, arrayOf(
-                KeyValue(UID, uid),
-                KeyValue(ID, order.id),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
-                KeyValue(CLIENT_ID, order.clientId),
-                KeyValue(ASSET_PAIR, order.assetPairId),
-                KeyValue(AMOUNT, order.volume.toString()),
-                KeyValue(STRAIGHT, order.straight.toString()),
-                KeyValue(STATUS, order.status)
-        ))
     }
 }

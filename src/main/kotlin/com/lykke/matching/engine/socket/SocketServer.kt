@@ -1,43 +1,26 @@
 package com.lykke.matching.engine.socket
 
-import com.lykke.matching.engine.logging.IP
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.Line
-import com.lykke.matching.engine.logging.ME_CONNECTIONS_COUNT
-import com.lykke.matching.engine.logging.ME_CONNECTIONS_DETAILS
-import com.lykke.matching.engine.logging.ME_CONNECTIONS_INCOMING
-import com.lykke.matching.engine.logging.ME_CONNECTIONS_OUTGOING
-import com.lykke.matching.engine.logging.ME_STATUS
 import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.MetricsLogger.Companion.DATE_TIME_FORMATTER
-import com.lykke.matching.engine.logging.NOTE
-import com.lykke.matching.engine.logging.STATUS
-import com.lykke.matching.engine.logging.TIMESTAMP
 import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.socket.ConnectionStatus.Blocked
-import com.lykke.matching.engine.socket.ConnectionStatus.Connected
-import com.lykke.matching.engine.socket.ConnectionStatus.Disconnected
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import java.net.ServerSocket
-import java.time.LocalDateTime
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
-import kotlin.concurrent.fixedRateTimer
 
-class SocketServer(val config: Config): Runnable {
+class SocketServer(private val config: Config): Runnable {
 
     companion object {
         val LOGGER = Logger.getLogger(SocketServer::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
-    val connections = CopyOnWriteArraySet<ClientHandler>()
+    private val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
+    private val connections = CopyOnWriteArraySet<ClientHandler>()
 
     override fun run() {
         val maxConnections = config.me.socket.maxConnections
@@ -45,9 +28,6 @@ class SocketServer(val config: Config): Runnable {
 
         val messageProcessor = MessageProcessor(config, messagesQueue)
         messageProcessor.start()
-
-        METRICS_LOGGER.log(KeyValue(ME_STATUS, "True"))
-        initMetricLogger()
 
         val port = config.me.socket.port
         val socket = ServerSocket(port)
@@ -63,19 +43,17 @@ class SocketServer(val config: Config): Runnable {
                 } else {
                     clientConnection.close()
                     LOGGER.info("Connection from host ${clientConnection.inetAddress.hostAddress} is not allowed.")
-                    METRICS_LOGGER.log(getMetricLine(clientConnection.inetAddress.hostAddress, Blocked.name, "Blocked due to white list"))
                 }
             }
         } catch (exception: Exception) {
             LOGGER.error("Got exception: ", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "Fatal exception", exception)
+            METRICS_LOGGER.logError( "Fatal exception", exception)
         } finally {
-            METRICS_LOGGER.log(KeyValue(ME_STATUS, "False"))
             socket.close()
         }
     }
 
-    fun isConnectionAllowed(whitelist: List<String>?, host: String): Boolean {
+    private fun isConnectionAllowed(whitelist: List<String>?, host: String): Boolean {
         if (whitelist != null) {
             whitelist.forEach {
                 if (Pattern.compile(it).matcher(host).matches()) {
@@ -87,54 +65,18 @@ class SocketServer(val config: Config): Runnable {
         return true
     }
 
-    fun getWhiteList() : List<String>? {
+    private fun getWhiteList() : List<String>? {
         if (config.me.whiteList != null) {
             return config.me.whiteList.split(";")
         }
         return null
     }
 
-    fun getMetricLine(ip: String, status: String, note: String): Line {
-        return Line(ME_CONNECTIONS_DETAILS, arrayOf(
-                KeyValue(IP, ip),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(DATE_TIME_FORMATTER)),
-                KeyValue(STATUS, status),
-                KeyValue(NOTE, note)))
-    }
-
-    fun initMetricLogger() {
-        fixedRateTimer(name = "ConnectionsStatusLogger", initialDelay = 60000, period = 60000) {
-            connections.forEach {
-                if (!it.isConnected()) {
-                    it.disconnect()
-                }
-            }
-            METRICS_LOGGER.log(KeyValue(ME_CONNECTIONS_COUNT, connections.size.toString()))
-        }
-
-        fixedRateTimer(name = "ConnectionsSizesLogger", initialDelay = 60000, period = 60000) {
-            var incoming: Long = 0
-            var outgoing: Long = 0
-            connections.forEach {
-                incoming += it.incomingSize
-                outgoing += it.outgoingSize
-                it.incomingSize = 0
-                it.outgoingSize = 0
-            }
-            METRICS_LOGGER.log(KeyValue(ME_CONNECTIONS_INCOMING, incoming.toString()))
-            METRICS_LOGGER.log(KeyValue(ME_CONNECTIONS_OUTGOING, outgoing.toString()))
-        }
-    }
-
-    fun connect(handler: ClientHandler, note: String = "") {
+    private fun connect(handler: ClientHandler) {
         connections.add(handler)
-        METRICS_LOGGER.log(KeyValue(ME_CONNECTIONS_COUNT, connections.size.toString()))
-        METRICS_LOGGER.log(getMetricLine(handler.clientHostName, Connected.name, note))
     }
 
-    fun disconnect(handler: ClientHandler, note: String = "") {
+    fun disconnect(handler: ClientHandler) {
         connections.remove(handler)
-        METRICS_LOGGER.log(KeyValue(ME_CONNECTIONS_COUNT, connections.size.toString()))
-        METRICS_LOGGER.log(getMetricLine(handler.clientHostName, Disconnected.name, note))
     }
 }

@@ -12,19 +12,21 @@ public class AzureLkkTrade extends TableServiceEntity {
     private static long counter = 0;
 
     private String assetPair;
+    private String clientId;
     private Double price;
     private Double volume;
     private Date date;
 
-    public AzureLkkTrade(String assetPair, Double price, Double volume, Date date) {
+    public AzureLkkTrade(String assetPair, String clientId, Double price, Double volume, Date date) {
         super(PARTITION_KEY, generateId(date));
         this.assetPair = assetPair;
+        this.clientId = clientId;
         this.price = price;
         this.volume = volume;
         this.date = date;
     }
 
-    public static String generateId(Date date) {
+    private static String generateId(Date date) {
         counter = ++counter % 99999;
         return String.format("%s_%05d", DATE_FORMAT.format(date), counter);
     }
@@ -41,6 +43,14 @@ public class AzureLkkTrade extends TableServiceEntity {
 
     public void setAssetPair(String assetPair) {
         this.assetPair = assetPair;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
     public Double getPrice() {

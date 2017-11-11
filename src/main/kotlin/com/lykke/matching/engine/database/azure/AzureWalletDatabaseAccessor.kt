@@ -59,7 +59,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load balances", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load balances", e)
+            METRICS_LOGGER.logError( "Unable to load balances", e)
         }
         LOGGER.info("Loaded $balancesCount balances for ${result.size} clients")
         return result
@@ -76,7 +76,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load accounts", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load accounts", e)
+            METRICS_LOGGER.logError( "Unable to load accounts", e)
         }
 
         return result
@@ -87,7 +87,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             batchInsertOrMerge(accountTable, wallets.map { AzureWallet(it.clientId, it.balances.map { it.value })})
         } catch(e: Exception) {
             LOGGER.error("Unable to update accounts, size: ${wallets.size}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to update accounts, size: ${wallets.size}", e)
+            METRICS_LOGGER.logError( "Unable to update accounts, size: ${wallets.size}", e)
         }
     }
 
@@ -96,7 +96,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             externalOperationsTable.execute(TableOperation.insertOrMerge(AzureExternalCashOperation(operation.clientId, operation.externalId, operation.cashOperationId)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert external operation: ${operation.clientId}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert external operation: ${operation.clientId}", e)
+            METRICS_LOGGER.logError( "Unable to insert external operation: ${operation.clientId}", e)
         }
     }
 
@@ -109,7 +109,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to check if operation processed: $clientId, $operationId", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to check if operation processed: $clientId, $operationId", e)
+            METRICS_LOGGER.logError( "Unable to check if operation processed: $clientId, $operationId", e)
         }
         return null
     }
@@ -119,7 +119,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.id, operation.externalId, operation.clientId, operation.assetId, operation.dateTime, operation.amount)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError( "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
         }
     }
 
@@ -128,7 +128,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.id, operation.externalId, operation.fromClientId, operation.toClientId, operation.asset, operation.dateTime, operation.volume)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError( "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
         }
     }
 
@@ -137,7 +137,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletSwapOperation(operation.id, operation.externalId, operation.clientId1, operation.asset1, operation.volume1, operation.clientId2, operation.asset2, operation.volume2, operation.dateTime)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError( "Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)
         }
     }
 
@@ -149,11 +149,11 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
                     .where(TableQuery.generateFilterCondition("PartitionKey", EQUAL, ASSET_PAIR))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy, asset.invertedAccuracy)
+                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load asset pairs", e)
+            METRICS_LOGGER.logError( "Unable to load asset pairs", e)
         }
 
         return result
@@ -164,11 +164,11 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, assetPair.invertedAccuracy)
+                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load asset: $assetId", e)
+            METRICS_LOGGER.logError( "Unable to load asset: $assetId", e)
         }
         return null
     }

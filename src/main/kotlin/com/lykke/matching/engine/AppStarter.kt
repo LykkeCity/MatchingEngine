@@ -1,9 +1,5 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.logging.HttpLogger
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.LoggableObject
-import com.lykke.matching.engine.logging.ME_STATUS
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
@@ -14,13 +10,12 @@ import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.LinkedBlockingQueue
 
 val LOGGER = Logger.getLogger("AppStarter")
 
 fun main(args: Array<String>) {
     if (args.isEmpty()) {
-        LOGGER.error("Not enough args. Usage: htppConfigString")
+        LOGGER.error("Not enough args. Usage: httpConfigString")
         return
     }
 
@@ -40,12 +35,12 @@ fun main(args: Array<String>) {
         return
     }
 
-    MetricsLogger.init(config.me.metricLoggerKeyValue, config.me.metricLoggerLine, config.slackNotifications.azureQueue.connectionString,
-            config.slackNotifications.azureQueue.queueName, config.me.metricLoggerSize, config.slackNotifications.throttlingLimitSeconds)
+    MetricsLogger.init(config.slackNotifications.azureQueue.connectionString,
+            config.slackNotifications.azureQueue.queueName,
+            config.slackNotifications.throttlingLimitSeconds)
 
     ThrottlingLogger.init(config.throttlingLogger)
-
-    Runtime.getRuntime().addShutdownHook(ShutdownHook(config.me.metricLoggerKeyValue))
+    Runtime.getRuntime().addShutdownHook(ShutdownHook())
 
     SocketServer(config).run()
 }
@@ -55,13 +50,12 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook(val link: String) : Thread() {
+internal class ShutdownHook : Thread() {
     init {
         this.name = "ShutdownHook"
     }
 
     override fun run() {
         LOGGER.info("Stopping application")
-        HttpLogger(link, LinkedBlockingQueue<LoggableObject>()).sendHttpRequest(KeyValue(ME_STATUS, "False"))
     }
 }

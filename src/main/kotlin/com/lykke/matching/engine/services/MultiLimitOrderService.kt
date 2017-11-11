@@ -112,18 +112,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val balances = mutableMapOf(
                 Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.baseAssetId)),
                 Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.quotingAssetId)))
-        val availableBalances = mutableMapOf(
-                Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.baseAssetId)),
-                Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(message.clientId, assetPair.quotingAssetId)))
 
         orders.forEach { order ->
-            val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-            var limitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsVolume() * order.price, assetsHolder.getAsset(limitAsset).accuracy, true) else order.getAbsVolume()
-            val availableBalance = availableBalances[limitAsset] ?: 0.0
-
-            if (limitVolume > availableBalance) {
-                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to low balance")
-            } else if (orderBook.leadToNegativeSpreadForClient(order)) {
+            if (orderBook.leadToNegativeSpreadForClient(order)) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
@@ -175,8 +166,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         if (matchingResult.order.status == OrderStatus.Processing.name) {
                             ordersToAdd.add(order)
                             orderBook.addOrder(order)
-                            limitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price, assetsHolder.getAsset(limitAsset).accuracy, true) else order.getAbsRemainingVolume()
-                            availableBalances[limitAsset] = availableBalance - limitVolume
                         }
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
 

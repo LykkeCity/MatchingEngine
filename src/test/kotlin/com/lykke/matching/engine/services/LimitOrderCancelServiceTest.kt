@@ -48,10 +48,10 @@ class LimitOrderCancelServiceTest {
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
 
-        testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2, "USD"))
+        testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5, 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))

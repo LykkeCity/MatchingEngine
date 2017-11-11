@@ -21,7 +21,7 @@ class AzureQueueWriter(queueConnectionString: String, queueName: String) : Queue
             outQueue.addMessage(CloudQueueMessage(data))
         } catch (e: Exception) {
             LOGGER.error("Unable to enqueue message to azure queue: $data", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to enqueue message to azure queue: $data", e)
+            METRICS_LOGGER.logError( "Unable to enqueue message to azure queue: $data", e)
         }
     }
 
