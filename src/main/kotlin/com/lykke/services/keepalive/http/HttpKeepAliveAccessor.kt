@@ -1,6 +1,7 @@
 package com.lykke.services.keepalive.http
 
 import com.google.gson.Gson
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.services.keepalive.KeepAliveAccessor
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.HttpPost
@@ -13,7 +14,7 @@ class HttpKeepAliveAccessor(
         private val path: String): KeepAliveAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(HttpKeepAliveAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(HttpKeepAliveAccessor::class.java.name)
     }
 
     private val gson = Gson()

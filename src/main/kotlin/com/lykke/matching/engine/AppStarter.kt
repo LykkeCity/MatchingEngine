@@ -1,6 +1,7 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.HttpConfigParser
@@ -38,6 +39,7 @@ fun main(args: Array<String>) {
             config.slackNotifications.azureQueue.queueName,
             config.slackNotifications.throttlingLimitSeconds)
 
+    ThrottlingLogger.init(config.throttlingLogger)
     Runtime.getRuntime().addShutdownHook(ShutdownHook())
 
     SocketServer(config).run()
