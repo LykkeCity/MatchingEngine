@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit
 
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -28,8 +28,6 @@ class RabbitMqPublisher(
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
         factory.setUri(uri)
-        factory.requestedHeartbeat = 30
-        factory.isAutomaticRecoveryEnabled = true
 
         LOGGER.info("Connecting to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
@@ -69,7 +67,9 @@ class RabbitMqPublisher(
             } catch (exception: Exception) {
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 METRICS_LOGGER.logError( "Exception during RabbitMQ publishing: ${exception.message}", exception)
-                connect()
+                while (!connect()) {
+                    Thread.sleep(1000)
+                }
             }
         }
     }
