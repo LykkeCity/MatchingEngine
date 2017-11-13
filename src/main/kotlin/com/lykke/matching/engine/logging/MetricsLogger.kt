@@ -18,6 +18,9 @@ class MetricsLogger {
 
         val ERROR_QUEUE = LinkedBlockingQueue<LoggableObject>()
 
+        private const val TYPE_ERROR = "Errors"
+        private const val TYPE_WARNING = "Warnings"
+
         fun init(azureQueueConnectionString: String,
                  queueName: String,
                  throttlingLimitSeconds: Int,
@@ -53,15 +56,23 @@ class MetricsLogger {
         }
     }
 
-    fun logError(note: String, exception: Exception? = null) {
-        if (!messageWasSentWithinTimeout(note)) {
-            ERROR_QUEUE.put(Error("Errors", "${LocalDateTime.now().format(DATE_TIME_FORMATTER)}: $note ${exception?.message ?: ""}"))
-            sentTimestamps[note] = Date().time
+    fun logError(message: String, exception: Exception? = null) {
+        log(TYPE_ERROR, message, exception)
+    }
+
+    fun logWarning(message: String, exception: Exception? = null) {
+        log(TYPE_WARNING, message, exception)
+    }
+
+    private fun log(type: String, message: String, exception: Exception? = null) {
+        if (!messageWasSentWithinTimeout(type, message)) {
+            ERROR_QUEUE.put(Error(type, "${LocalDateTime.now().format(DATE_TIME_FORMATTER)}: $message ${exception?.message ?: ""}"))
+            sentTimestamps["$type-$message"] = Date().time
         }
     }
 
-    private fun messageWasSentWithinTimeout(errorMessage: String): Boolean {
-        val lastSentTimestamp = sentTimestamps[errorMessage]
+    private fun messageWasSentWithinTimeout(type: String, message: String): Boolean {
+        val lastSentTimestamp = sentTimestamps["$type-$message"]
         return lastSentTimestamp != null && lastSentTimestamp > Date().time - throttlingLimit
     }
 }

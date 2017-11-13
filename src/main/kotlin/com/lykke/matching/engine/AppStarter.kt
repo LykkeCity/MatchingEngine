@@ -40,9 +40,11 @@ fun main(args: Array<String>) {
             config.slackNotifications.throttlingLimitSeconds)
 
     ThrottlingLogger.init(config.throttlingLogger)
-    Runtime.getRuntime().addShutdownHook(ShutdownHook())
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(config.me.name))
 
-    SocketServer(config).run()
+    SocketServer(config) { appInitialData ->
+        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
+    }.run()
 }
 
 private fun teeLog(message: String) {
@@ -50,12 +52,13 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook : Thread() {
+internal class ShutdownHook(private val appInstanceName: String) : Thread() {
     init {
         this.name = "ShutdownHook"
     }
 
     override fun run() {
         LOGGER.info("Stopping application")
+        MetricsLogger.getLogger().logWarning("Spot.$appInstanceName ${AppVersion.VERSION} : Stopped :")
     }
 }

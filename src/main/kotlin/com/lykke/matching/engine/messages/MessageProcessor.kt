@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.messages
 
+import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
@@ -110,6 +111,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val candlesBuilder: Timer
     val hoursCandlesBuilder: Timer
     val historyTicksBuilder: Timer
+    val appInitialData: AppInitialData
 
     init {
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
@@ -184,6 +186,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
         server.executor = null
         server.start()
+
+        appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
     }
 
     private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, logMessage: Boolean) {
