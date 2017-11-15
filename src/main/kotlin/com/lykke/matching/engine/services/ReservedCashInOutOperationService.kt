@@ -5,15 +5,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.ASSET
-import com.lykke.matching.engine.logging.CLIENT_ID
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.Line
-import com.lykke.matching.engine.logging.ME_RESERVED_CASH_OPERATION
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.RESERVED_AMOUNT
-import com.lykke.matching.engine.logging.TIMESTAMP
-import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -23,7 +14,6 @@ import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
-import java.time.LocalDateTime
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
@@ -37,10 +27,7 @@ class ReservedCashInOutOperationService(
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedCashInOutOperationService::class.java.name)
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
@@ -82,15 +69,6 @@ class ReservedCashInOutOperationService(
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(MessageStatus.OK.type).build())
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)} processed")
-
-        METRICS_LOGGER.log(Line(ME_RESERVED_CASH_OPERATION, arrayOf(
-                KeyValue(UID, message.id),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
-                KeyValue(CLIENT_ID, message.clientId),
-                KeyValue(ASSET, message.assetId),
-                KeyValue(RESERVED_AMOUNT, message.reservedVolume.toString())  // fixme: or com.lykke.matching.engine.logging.AMOUNT ?
-        )))
-        METRICS_LOGGER.log(KeyValue(ME_RESERVED_CASH_OPERATION, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedCashInOutOperation {
