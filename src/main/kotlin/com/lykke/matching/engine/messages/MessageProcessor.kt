@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.messages
 
+import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
@@ -9,6 +10,7 @@ import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
@@ -20,7 +22,9 @@ import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -50,7 +54,6 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
 import com.sun.net.httpserver.HttpServer
-import org.apache.log4j.Logger
 import java.net.InetSocketAddress
 import java.time.LocalDateTime
 import java.util.Date
@@ -62,7 +65,7 @@ import kotlin.concurrent.fixedRateTimer
 class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
-        val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -110,6 +113,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val candlesBuilder: Timer
     val hoursCandlesBuilder: Timer
     val historyTicksBuilder: Timer
+    val appInitialData: AppInitialData
 
     init {
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
@@ -144,14 +148,27 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         connectionsHolder.start()
 
         SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, false)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue, true)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue, false)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue, true)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue)
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineCashOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineTransfers")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineSwapOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineBalanceUpdates")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineMarketOrders")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue)
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineLimitOrders")))
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -184,10 +201,12 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
         server.executor = null
         server.start()
+
+        appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
     }
 
-    private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, logMessage: Boolean) {
-        RabbitMqPublisher(config.uri, config.exchange, queue, logMessage).start()
+    private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger? = null) {
+        RabbitMqPublisher(config.uri, config.exchange, queue, messageDatabaseLogger).start()
     }
 
     override fun run() {

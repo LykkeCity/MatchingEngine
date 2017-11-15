@@ -23,6 +23,8 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.junit.Before
 import org.junit.Test
@@ -741,4 +743,148 @@ class LimitOrderServiceTest {
         assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "BTC"))
     }
 
+    @Test
+    fun testMatchSellMinRemaining() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 50.00))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.01000199))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 49.99))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client1")))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 4999.0, volume = 0.01, clientId = "Client3")))
+
+        limitOrdersQueue.clear()
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 4998.0, volume = -0.01000199)))
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(3, result.orders.size)
+
+        val trades = result.orders[0].trades
+        assertEquals(2, trades.size)
+        assertEquals("0.00000199", trades[1].volume)
+        assertEquals("0.01", trades[1].oppositeVolume)
+    }
+
+    @Test
+    fun testMatchSellWithOppositeMinRemaining() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 50.01))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.02))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01000199, clientId = "Client1")))
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = -0.01)))
+        limitOrdersQueue.clear()
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = -0.01)))
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+
+        assertEquals(2, result.orders.size)
+
+        val trades = result.orders[0].trades
+        assertEquals(1, trades.size)
+        assertEquals("0.00000199", trades[0].volume)
+        assertEquals("0.01", trades[0].oppositeVolume)
+    }
+
+    @Test
+    fun testMatchBuyMinRemaining() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 0.01))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 50.03))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 0.01))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5001.0, volume = -0.01, clientId = "Client3")))
+
+        limitOrdersQueue.clear()
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5002.0 , volume = 0.01000199)))
+
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(3, result.orders.size)
+
+        val trades = result.orders[0].trades
+        assertEquals(2, trades.size)
+        assertEquals("0.01", trades[1].volume)
+        assertEquals("0.00000199", trades[1].oppositeVolume)
+    }
+
+    @Test
+    fun testMatchBuyWithOppositeMinRemaining() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 0.01000199))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 100.0))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 5000.0, volume = -0.01000199)))
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.01)))
+
+        limitOrdersQueue.clear()
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.01)))
+
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, result.orders.size)
+
+        val trades = result.orders[0].trades
+        assertEquals(1, trades.size)
+        assertEquals("0.01", trades[0].volume)
+        assertEquals("0.00000199", trades[0].oppositeVolume)
+    }
+
+    @Test
+    fun testMatchNotStraightSellMinRemaining() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 100.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.010002))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client1")))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client1")))
+
+        limitOrdersQueue.clear()
+        rabbitSwapQueue.clear()
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 50.01, straight = false)))
+        val result = rabbitSwapQueue.poll() as MarketOrderWithTrades
+
+        assertEquals(2, result.trades.size)
+        assertEquals("50.00", result.trades[0].limitVolume)
+        assertEquals("0.01000000", result.trades[0].marketVolume)
+        assertEquals("0.01", result.trades[1].limitVolume)
+        assertEquals("0.00000200", result.trades[1].marketVolume)
+    }
+
+    @Test
+    fun testMatchNotStraightBuyMinRemaining() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 0.02))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 50.01))
+
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 5))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = -0.01, clientId = "Client1")))
+
+        limitOrdersQueue.clear()
+        rabbitSwapQueue.clear()
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = -50.01, straight = false)))
+        val result = rabbitSwapQueue.poll() as MarketOrderWithTrades
+
+        assertEquals(2, result.trades.size)
+        assertEquals("0.01000", result.trades[0].limitVolume)
+        assertEquals("50.00", result.trades[0].marketVolume)
+
+        assertEquals("0.00001", result.trades[1].limitVolume)
+        assertEquals("0.01", result.trades[1].marketVolume)
+    }
 }

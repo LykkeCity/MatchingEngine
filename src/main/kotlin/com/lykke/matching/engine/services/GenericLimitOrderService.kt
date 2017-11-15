@@ -33,12 +33,14 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
+    val initialOrdersCount: Int
 
     init {
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
         }
+        initialOrdersCount = orders.size
     }
 
     private fun addToOrderBook(order: NewLimitOrder) {
@@ -111,7 +113,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
         val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val roundRequiredVolume = RoundingUtils.round(requiredVolume, accuracy, false)
+        val roundRequiredVolume = RoundingUtils.roundNoZero(requiredVolume, accuracy, false)
         val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
         if (result) {

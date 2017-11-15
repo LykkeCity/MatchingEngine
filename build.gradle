@@ -17,6 +17,8 @@ apply plugin: "kotlin"
 apply plugin: "application"
 apply plugin: "com.google.protobuf"
 
+compileKotlin.dependsOn ':generateProto'
+
 repositories {
     mavenCentral()
     maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }

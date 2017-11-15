@@ -4,16 +4,16 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.azure.AzureAsset
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
-import org.apache.log4j.Logger
 import java.util.HashMap
 
 class AzureBackOfficeDatabaseAccessor(dictsConfig: String) : BackOfficeDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

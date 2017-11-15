@@ -1,8 +1,10 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
 import com.lykke.utils.alivestatus.database.AliveStatusDatabaseAccessor
@@ -41,6 +43,8 @@ fun main(args: Array<String>) {
             config.slackNotifications.azureQueue.queueName,
             config.slackNotifications.throttlingLimitSeconds)
 
+    ThrottlingLogger.init(config.throttlingLogger)
+
     val aliveStatusDatabaseAccessor = AzureAliveStatusDatabaseAccessor(config.me.db.matchingEngineConnString, "MatchingEngine")
     try {
         aliveStatusDatabaseAccessor.checkAndLock()
@@ -48,9 +52,11 @@ fun main(args: Array<String>) {
         LOGGER.error(e.message)
         return
     }
-    Runtime.getRuntime().addShutdownHook(ShutdownHook(aliveStatusDatabaseAccessor))
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(config, aliveStatusDatabaseAccessor))
 
-    SocketServer(config).run()
+    SocketServer(config) { appInitialData ->
+        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
+    }.run()
 }
 
 private fun teeLog(message: String) {
@@ -58,13 +64,16 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook(private val aliveStatusDatabaseAccessor: AliveStatusDatabaseAccessor) : Thread() {
+internal class ShutdownHook(private val config: Config, private val aliveStatusDatabaseAccessor: AliveStatusDatabaseAccessor) : Thread() {
     init {
         this.name = "ShutdownHook"
     }
 
     override fun run() {
         LOGGER.info("Stopping application")
+
+        MetricsLogger.logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Stopped :")
+
         aliveStatusDatabaseAccessor.unlock()
     }
 }
