@@ -111,7 +111,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
         val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val roundRequiredVolume = RoundingUtils.round(requiredVolume, accuracy, false)
+        val roundRequiredVolume = RoundingUtils.roundNoZero(requiredVolume, accuracy, false)
         val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
         if (result) {
