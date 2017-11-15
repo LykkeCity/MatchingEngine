@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -58,16 +59,17 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val startTime = System.nanoTime()
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = parseOld(messageWrapper.byteArray)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+            LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
         } else {
             val message = parse(messageWrapper.byteArray)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+            val fee = FeeInstruction.create(message.fee)
+            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $fee")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
+                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, fee)
         }
 
         try {

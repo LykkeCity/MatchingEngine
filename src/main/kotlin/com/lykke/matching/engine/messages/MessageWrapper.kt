@@ -45,4 +45,15 @@ class MessageWrapper(val sourceIp: String, val type: Byte, val byteArray: ByteAr
             }
         }
     }
+
+    fun writeMultiLimitOrderResponse(response: ProtocolMessages.MultiLimitOrderResponse) {
+        if (clientHandler != null) {
+            try {
+                clientHandler.writeOutput(toByteArray(MessageType.MULTI_LIMIT_ORDER_RESPONSE.type, response.serializedSize, response.toByteArray()))
+            } catch (exception: IOException){
+                LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
+                METRICS_LOGGER.logError("[$sourceIp]: Unable to write response", exception)
+            }
+        }
+    }
 }

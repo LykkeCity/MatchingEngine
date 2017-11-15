@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.utils
 
+import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.messages.MessageType
@@ -17,18 +19,60 @@ class MessageBuilder {
                             price: Double = 100.0,
                             registered: Date = Date(),
                             status: String = OrderStatus.InOrderBook.name,
-                            volume:Double = 1000.0): NewLimitOrder =
-                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null)
+                            volume:Double = 1000.0,
+                            fee: LimitOrderFeeInstruction? = null): NewLimitOrder =
+                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, fee = fee)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
-            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, ProtocolMessages.MarketOrder.newBuilder()
+            val builder = ProtocolMessages.MarketOrder.newBuilder()
                     .setUid(UUID.randomUUID().toString())
                     .setTimestamp(order.createdAt.time)
                     .setClientId(order.clientId)
                     .setAssetPairId(order.assetPairId)
                     .setVolume(order.volume)
                     .setStraight(order.straight)
+            order.fee?.let {
+                builder.setFee(buildFee(it))
+            }
+            return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
                     .build().toByteArray(), null)
+        }
+
+        private fun buildFee(fee: FeeInstruction?): ProtocolMessages.Fee? {
+            if (fee == null) {
+                return null
+            }
+            val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
+            fee.size?.let {
+                builder.size = it
+            }
+            fee.sourceClientId?.let {
+                builder.setSourceClientId(it)
+            }
+            fee.targetClientId?.let {
+                builder.setTargetClientId(it)
+            }
+            return builder.build()
+        }
+
+        fun buildLimitOrderFee(fee: LimitOrderFeeInstruction?): ProtocolMessages.LimitOrderFee? {
+            if (fee == null) {
+                return null
+            }
+            val builder = ProtocolMessages.LimitOrderFee.newBuilder().setType(fee.type.externalId)
+            fee.size?.let {
+                builder.takerSize = it
+            }
+            fee.makerSize?.let {
+                builder.makerSize = it
+            }
+            fee.sourceClientId?.let {
+                builder.setSourceClientId(it)
+            }
+            fee.targetClientId?.let {
+                builder.setTargetClientId(it)
+            }
+            return builder.build()
         }
 
         fun buildMarketOrder(rowKey: String = UUID.randomUUID().toString(),
@@ -37,18 +81,24 @@ class MessageBuilder {
                              registered: Date = Date(),
                              status: String = OrderStatus.InOrderBook.name,
                              straight: Boolean = true,
-                             volume: Double = 1000.0): MarketOrder =
-                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight)
+                             volume: Double = 1000.0,
+                             fee: FeeInstruction? = null): MarketOrder =
+                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, fee = fee)
 
         fun buildLimitOrderWrapper(order: NewLimitOrder,
-                                   cancel: Boolean = false) =
-                MessageWrapper("Test", MessageType.LIMIT_ORDER.type, ProtocolMessages.LimitOrder.newBuilder()
-                        .setUid(order.externalId)
-                        .setTimestamp(order.createdAt.time)
-                        .setClientId(order.clientId)
-                        .setAssetPairId(order.assetPairId)
-                        .setVolume(order.volume)
-                        .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel).build().toByteArray(), null)
+                                   cancel: Boolean = false): MessageWrapper {
+            val builder = ProtocolMessages.LimitOrder.newBuilder()
+                    .setUid(order.externalId)
+                    .setTimestamp(order.createdAt.time)
+                    .setClientId(order.clientId)
+                    .setAssetPairId(order.assetPairId)
+                    .setVolume(order.volume)
+                    .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel)
+            order.fee?.let {
+                builder.setFee(buildLimitOrderFee(it as LimitOrderFeeInstruction))
+            }
+            return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null)
+        }
 
          fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
                     .setUid(UUID.randomUUID().toString()).setLimitOrderId(uid).build().toByteArray(), null)

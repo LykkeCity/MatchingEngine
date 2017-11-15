@@ -5,8 +5,8 @@ import java.util.Date
 
 class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, var price: Double,
                     status: String, createdAt: Date, registered: Date, var remainingVolume: Double, var lastMatchTime: Date?,
-                    reservedLimitVolume: Double? = null)
-    : NewOrder(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume), Serializable {
+                    reservedLimitVolume: Double? = null, fee: LimitOrderFeeInstruction? = null)
+    : NewOrder(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee), Serializable {
 
     fun getAbsRemainingVolume(): Double {
         return Math.abs(remainingVolume)
