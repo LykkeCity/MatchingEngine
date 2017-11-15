@@ -8,9 +8,12 @@ import java.util.TimeZone;
 
 public class AzureMessage extends TableServiceEntity {
 
-    private static final SimpleDateFormat DATE_FORMAT = createDateFormatter();
+    private static final SimpleDateFormat DATE_FORMAT_PARTITION_KEY = createDateFormatter("yyyyMMdd");
+    private static final SimpleDateFormat DATE_FORMAT_ROW_KEY = createDateFormatter("yyyy-MM-dd HH:mm:ss");
 
-    private String msgPart1;
+    private String messageId;
+    private Date messageTimestamp;
+    private String message;
     private String msgPart2;
     private String msgPart3;
     private String msgPart4;
@@ -20,9 +23,11 @@ public class AzureMessage extends TableServiceEntity {
     public AzureMessage() {
     }
 
-    public AzureMessage(String id, String type, String[] parts) {
-        super(generatePartitionKey(), String.format("%s_%s", id, type));
-        msgPart1 = parts.length > 0 ? parts[0] : null;
+    public AzureMessage(String id, Date timestamp, String[] parts) {
+        super(generatePartitionKey(), String.format("%s_%s", DATE_FORMAT_ROW_KEY.format(timestamp), id));
+        messageId = id;
+        messageTimestamp = timestamp;
+        message = parts.length > 0 ? parts[0] : null;
         msgPart2 = parts.length > 1 ? parts[1] : null;
         msgPart3 = parts.length > 2 ? parts[2] : null;
         msgPart4 = parts.length > 3 ? parts[3] : null;
@@ -32,21 +37,21 @@ public class AzureMessage extends TableServiceEntity {
     }
 
     private synchronized static String generatePartitionKey() {
-        return DATE_FORMAT.format(new Date());
+        return DATE_FORMAT_PARTITION_KEY.format(new Date());
     }
 
-    private static SimpleDateFormat createDateFormatter() {
-        SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+    private static SimpleDateFormat createDateFormatter(String pattern) {
+        SimpleDateFormat format = new SimpleDateFormat(pattern);
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
     }
 
-    public String getMsgPart1() {
-        return msgPart1;
+    public String getMessage() {
+        return message;
     }
 
-    public void setMsgPart1(String msgPart1) {
-        this.msgPart1 = msgPart1;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public String getMsgPart2() {
@@ -89,11 +94,29 @@ public class AzureMessage extends TableServiceEntity {
         this.msgPart6 = msgPart6;
     }
 
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public Date getMessageTimestamp() {
+        return messageTimestamp;
+    }
+
+    public void setMessageTimestamp(Date messageTimestamp) {
+        this.messageTimestamp = messageTimestamp;
+    }
+
     @Override
     public String toString() {
         return "AzureMessage(" +
                 "rowKey=" + rowKey +
-                ", msgPart1=" + msgPart1 +
+                ", messageId=" + messageId +
+                ", messageTimestamp=" + messageTimestamp +
+                ", message=" + message +
                 ", msgPart2=" + msgPart2 +
                 ", msgPart3=" + msgPart3 +
                 ", msgPart4=" + msgPart4 +

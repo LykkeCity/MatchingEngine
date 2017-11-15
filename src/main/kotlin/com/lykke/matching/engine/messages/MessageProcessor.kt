@@ -145,16 +145,28 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        val messageLogger = MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString))
         SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue, messageLogger)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue, messageLogger)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue, messageLogger)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue, messageLogger)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue, messageLogger)
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineCashOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineTransfers")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineSwapOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineBalanceUpdates")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineMarketOrders")))
+
         startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue)
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue, messageLogger)
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineLimitOrders")))
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())

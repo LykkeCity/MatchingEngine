@@ -1,30 +1,26 @@
 package com.lykke.matching.engine.logging
 
 import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
-abstract class DatabaseLogger<out T>(private val dbAccessor: MessageLogDatabaseAccessor<T>) {
+abstract class DatabaseLogger<in AppFormat, out DbFormat>(private val dbAccessor: MessageLogDatabaseAccessor<DbFormat>) {
 
     companion object {
-        private val LOGGER = Logger.getLogger(DatabaseLogger::class.java.name)
+        private val LOGGER = ThrottlingLogger.getLogger(DatabaseLogger::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val queue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue()
+    private val queue: BlockingQueue<AppFormat> = LinkedBlockingQueue()
 
-    fun log(message: JsonSerializable) {
+    fun log(message: AppFormat) {
         queue.put(message)
     }
 
     private fun takeAndSaveMessage() {
         try {
             val event = queue.take()
-            transformMessage(event)?.let {
-                dbAccessor.log(it)
-            }
+            dbAccessor.log(transformMessage(event))
         } catch (e: Exception) {
             val errorMessage = "Unable to write log to DB: ${e.message}"
             LOGGER.error(errorMessage, e)
@@ -32,7 +28,7 @@ abstract class DatabaseLogger<out T>(private val dbAccessor: MessageLogDatabaseA
         }
     }
 
-    protected abstract fun transformMessage(message: JsonSerializable): T?
+    protected abstract fun transformMessage(message: AppFormat): DbFormat
 
     init {
         Thread {
