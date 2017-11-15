@@ -5,20 +5,20 @@ import com.lykke.matching.engine.daos.azure.AzureKeepAliveUpdate.MATCHING_ENGINE
 import com.lykke.matching.engine.daos.azure.AzureKeepAliveUpdate.MONITORING
 import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.microsoft.azure.storage.StorageException
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableRequestOptions
-import org.apache.log4j.Logger
 import java.util.Date
 
 class AzureSharedDatabaseAccessor(val sharedConfig: String) : SharedDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(AzureSharedDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(AzureSharedDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    var monitoringTable = getOrCreateTable(sharedConfig, "Monitoring")
+    private var monitoringTable = getOrCreateTable(sharedConfig, "Monitoring")
 
     override fun getLastKeepAlive(): Date? {
         try {
@@ -30,7 +30,7 @@ class AzureSharedDatabaseAccessor(val sharedConfig: String) : SharedDatabaseAcce
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load hour candles", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load hour candles", e)
+            METRICS_LOGGER.logError( "Unable to load hour candles", e)
         }
 
         return null

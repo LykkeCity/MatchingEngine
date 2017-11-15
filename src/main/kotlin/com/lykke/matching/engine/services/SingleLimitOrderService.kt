@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
@@ -7,8 +8,6 @@ import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.ME_LIMIT_ORDER
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
@@ -48,7 +47,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
     }
 
     private var messagesCount: Long = 0
-    private var logCount = 1000
+    private var logCount = 100
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
@@ -73,10 +72,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         } else {
             val message = parseLimitOrder(messageWrapper.byteArray)
             val uid = UUID.randomUUID().toString()
+            val fee = LimitOrderFeeInstruction.create(message.fee)
             order = NewLimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
-                    message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null)
+                    message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null, fee = fee)
 
-            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}")
+            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}, fee: $fee")
 
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
@@ -160,7 +160,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     marketOrderDatabaseAccessor.addLkkTrades(matchingResult.lkkTrades)
 
                     limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
-                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume)
+                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
                     }.toMutableList()))
 
                     if (matchingResult.limitOrdersReport != null) {
@@ -226,8 +226,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             limitOrderReportQueue.put(limitOrdersReport)
         }
 
-        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
-
         val endTime = System.nanoTime()
 
         messagesCount++
@@ -256,8 +254,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (limitOrdersReport.orders.isNotEmpty()) {
             limitOrderReportQueue.put(limitOrdersReport)
         }
-
-        METRICS_LOGGER.log(KeyValue(ME_LIMIT_ORDER, (++messagesCount).toString()))
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {

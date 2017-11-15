@@ -15,7 +15,6 @@ enum class MessageType (val type: Byte){
     ,CASH_IN_OUT_OPERATION(9)
     ,CASH_SWAP_OPERATION(10)
     ,BALANCE_UPDATE(11)
-    ,WALLET_CREDENTIALS_RELOAD(20)
     ,BALANCE_UPDATE_SUBSCRIBE(30)
     ,BALANCE_UPDATE_NOTIFICATION(31)
     ,QUOTES_UPDATE_SUBSCRIBE(35)
@@ -29,15 +28,14 @@ enum class MessageType (val type: Byte){
     ,MULTI_LIMIT_ORDER_CANCEL(57)
     ,NEW_RESPONSE(99)
     ,MARKER_ORDER_RESPONSE(100)
-    // fixme: type id ?
+    ,MULTI_LIMIT_ORDER_RESPONSE(98)
     ,RESERVED_BALANCE_UPDATE(110)
-    // fixme: type id ?
     ,RESERVED_CASH_IN_OUT_OPERATION(120)
     ;
 
 
     companion object {
-        val typesMap = HashMap<Byte, MessageType>()
+        private val typesMap = HashMap<Byte, MessageType>()
 
         init {
             values().forEach {

@@ -17,13 +17,18 @@ apply plugin: "kotlin"
 apply plugin: "application"
 apply plugin: "com.google.protobuf"
 
-compileKotlin.dependsOn ":generateProto"
+compileKotlin.dependsOn ':generateProto'
 
 repositories {
     mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
 dependencies {
+    // internal libs
+    compile "org.bitbucket.lykke:kotlin-utils:0.0.2-SNAPSHOT"
+
+    // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile 'log4j:log4j:1.2.17'
     compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'

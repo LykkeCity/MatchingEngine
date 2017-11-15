@@ -23,6 +23,24 @@ message MarketOrderResponse {
     optional double price = 4;
 }
 
+message MultiLimitOrderResponse {
+    required string id = 1;
+    required int32 status = 2;
+    optional string statusReason = 3;
+    required string assetPairId = 4;
+
+    message OrderStatus {
+        required string id = 1;
+        optional string matchingEngineId = 2;
+        required int32 status = 3;
+        optional string statusReason = 4;
+        required double volume = 5;
+        required double price = 6;
+    }
+
+    repeated OrderStatus statuses = 5;
+}
+
 message CashOperation {
     required int64 uid = 1;
     required string clientId = 2;
@@ -48,6 +66,7 @@ message CashTransferOperation {
     required int64 timestamp = 4;
     required string assetId = 5;
     required double volume = 6;
+    optional Fee fee = 7;
 }
 
 message CashSwapOperation {
@@ -79,6 +98,7 @@ message LimitOrder {
     required double volume = 5;
     required double price = 6;
     optional bool cancelAllPreviousLimitOrders = 7;
+    optional LimitOrderFee fee = 8;
 }
 
 message OldMarketOrder {
@@ -99,6 +119,7 @@ message MarketOrder {
     required double volume = 5;
     required bool straight = 6;
     optional double reservedLimitVolume = 7;
+    optional Fee fee = 8;
 }
 
 message LimitOrderCancel {
@@ -159,6 +180,7 @@ message MultiLimitOrder {
         required string uid = 1;
         required double volume = 2;
         required double price = 3;
+        optional LimitOrderFee fee = 4;
     }
 
     repeated Order orders = 5;
@@ -212,4 +234,25 @@ message ReservedCashInOutOperation {
     required int64 timestamp = 3;
     required string assetId = 4;
     required double reservedVolume = 5;
+}
+
+enum FeeType {
+    NO_FEE = 0;
+    CLIENT_FEE = 1;
+    EXTERNAL_FEE = 2;
+}
+
+message Fee {
+    required int32 type = 1;
+    optional double size = 2;
+    optional string sourceClientId = 3;
+    optional string targetClientId = 4;
+}
+
+message LimitOrderFee {
+    required int32 type = 1;
+    optional double makerSize = 2;
+    optional double takerSize = 3;
+    optional string sourceClientId = 4;
+    optional string targetClientId = 5;
 }

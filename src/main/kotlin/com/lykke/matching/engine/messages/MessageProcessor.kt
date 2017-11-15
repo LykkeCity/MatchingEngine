@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.messages
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
+import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
@@ -10,6 +10,7 @@ import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.SharedDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
@@ -21,7 +22,9 @@ import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -32,10 +35,6 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
-import com.lykke.matching.engine.queue.BackendQueueProcessor
-import com.lykke.matching.engine.queue.QueueWriter
-import com.lykke.matching.engine.queue.azure.AzureQueueWriter
-import com.lykke.matching.engine.queue.transaction.Transaction
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashOperationService
@@ -51,13 +50,12 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.services.WalletCredentialsCacheService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
 import com.sun.net.httpserver.HttpServer
-import org.apache.log4j.Logger
 import java.net.InetSocketAddress
 import java.time.LocalDateTime
 import java.util.Date
@@ -69,12 +67,11 @@ import kotlin.concurrent.fixedRateTimer
 class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
-        val LOGGER = Logger.getLogger(MessageProcessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val messagesQueue: BlockingQueue<MessageWrapper> = queue
-    val bitcoinQueue: BlockingQueue<Transaction> = LinkedBlockingQueue<Transaction>()
     val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
     val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
     val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
@@ -110,38 +107,31 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val balanceUpdateService: BalanceUpdateService
     val tradesInfoService: TradesInfoService
     val historyTicksService: HistoryTicksService
-    val walletCredentialsService: WalletCredentialsCacheService
 
     val balanceUpdateHandler: BalanceUpdateHandler
     val quotesUpdateHandler: QuotesUpdateHandler
-
-    val backendQueueProcessor: BackendQueueProcessor
-    val azureQueueWriter: QueueWriter
-
-    val walletCredentialsCache: WalletCredentialsCache
 
     val bestPriceBuilder: Timer
     val candlesBuilder: Timer
     val hoursCandlesBuilder: Timer
     val historyTicksBuilder: Timer
+    val appInitialData: AppInitialData
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.aLimitOrdersConnString, config.me.db.hLimitOrdersConnString, config.me.db.hLiquidityConnString)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hMarketOrdersConnString, config.me.db.hTradesConnString)
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString)
+        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
+        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString)
+        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.sharedDatabaseAccessor = AzureSharedDatabaseAccessor(config.me.db.sharedStorageConnString)
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-        this.azureQueueWriter = AzureQueueWriter(config.me.db.bitCoinQueueConnectionString, config.me.backendQueueName ?: "indata")
-        this.walletCredentialsCache = WalletCredentialsCache(backOfficeDatabaseAccessor)
-        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.multisigConnString, config.me.db.bitCoinQueueConnectionString, config.me.db.dictsConnString), 60000))
+        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, bitcoinQueue, balanceHolder)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
@@ -149,40 +139,43 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitLimitOrdersQueue, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, walletCredentialsCache, rabbitSwapQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitTrustedLimitOrdersQueue, assetsHolder, assetsPairsHolder, balanceHolder, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitLimitOrdersQueue, rabbitTrustedLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
-        this.walletCredentialsService = WalletCredentialsCacheService(walletCredentialsCache)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
         historyTicksService.init()
         this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
         balanceUpdateHandler.start()
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
         quotesUpdateHandler.start()
-        this.backendQueueProcessor = BackendQueueProcessor(backOfficeDatabaseAccessor, bitcoinQueue, azureQueueWriter, walletCredentialsCache)
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
         SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeOrderbook, rabbitOrderBooksQueue, false).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeTransfer, rabbitTransferQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeSwapOperation, rabbitCashSwapQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeCashOperation, rabbitCashInOutQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeSwap, rabbitSwapQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeBalanceUpdate, balanceUpdatesQueue, true).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.exchangeLimitOrders, rabbitLimitOrdersQueue, false).start()
-        RabbitMqPublisher(config.me.rabbit.host, config.me.rabbit.port, config.me.rabbit.username,
-                config.me.rabbit.password, config.me.rabbit.trustedExchangeLimitOrders, rabbitTrustedLimitOrdersQueue, true).start()
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue)
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineCashOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineTransfers")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineSwapOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineBalanceUpdates")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineMarketOrders")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitLimitOrdersQueue)
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitTrustedLimitOrdersQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineLimitOrders")))
 
         this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
             limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -215,10 +208,15 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
         server.executor = null
         server.start()
+
+        appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
+    }
+
+    private fun startRabbitMqPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger? = null) {
+        RabbitMqPublisher(config.uri, config.exchange, queue, messageDatabaseLogger).start()
     }
 
     override fun run() {
-        backendQueueProcessor.start()
         tradesInfoService.start()
 
         while (true) {
@@ -273,9 +271,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.OLD_MULTI_LIMIT_ORDER -> {
                     multiLimitOrderService.processMessage(message)
                 }
-                MessageType.WALLET_CREDENTIALS_RELOAD -> {
-                    walletCredentialsService.processMessage(message)
-                }
                 MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
                     balanceUpdateHandler.subscribe(message.clientHandler!!)
                 }
@@ -284,12 +279,12 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 }
                 else -> {
                     LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
-                    METRICS_LOGGER.logError(this.javaClass.name, "Unknown message type: ${message.type}")
+                    METRICS_LOGGER.logError( "Unknown message type: ${message.type}")
                 }
             }
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
-            METRICS_LOGGER.logError(this.javaClass.name, "[${message.sourceIp}]: Got error during message processing", exception)
+            METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message processing", exception)
         }
     }
 }

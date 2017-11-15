@@ -3,7 +3,7 @@ package com.lykke.matching.engine.database.file
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
-import org.apache.log4j.Logger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import java.io.File
 import java.nio.file.FileSystems
@@ -18,7 +18,7 @@ import java.util.concurrent.PriorityBlockingQueue
 class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -46,7 +46,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load limit orders", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to load limit orders", e)
+            METRICS_LOGGER.logError( "Unable to load limit orders", e)
         }
         LOGGER.info("Loaded ${result.size} active limit orders")
         return result
@@ -74,7 +74,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             saveFile(fileName, orderBook)
         } catch(e: Exception) {
             LOGGER.error("Unable to save order book, size: ${orderBook.size}", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to save order book, size: ${orderBook.size}", e)
+            METRICS_LOGGER.logError( "Unable to save order book, size: ${orderBook.size}", e)
         }
     }
 
@@ -98,7 +98,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             Files.move(oldFile, newFile, StandardCopyOption.REPLACE_EXISTING)
         } catch(e: Exception) {
             LOGGER.error("Unable to archive and delete, name: $fileName", e)
-            METRICS_LOGGER.logError(this.javaClass.name, "Unable to archive and delete, name: $fileName", e)
+            METRICS_LOGGER.logError( "Unable to archive and delete, name: $fileName", e)
         }
     }
 }

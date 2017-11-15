@@ -5,15 +5,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.AMOUNT
-import com.lykke.matching.engine.logging.ASSET
-import com.lykke.matching.engine.logging.CLIENT_ID
-import com.lykke.matching.engine.logging.KeyValue
-import com.lykke.matching.engine.logging.Line
-import com.lykke.matching.engine.logging.ME_CASH_OPERATION
 import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.TIMESTAMP
-import com.lykke.matching.engine.logging.UID
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.ALREADY_PROCESSED
 import com.lykke.matching.engine.messages.MessageStatus.OK
@@ -25,7 +17,6 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
-import java.time.LocalDateTime
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
@@ -74,15 +65,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
-
-        METRICS_LOGGER.log(Line(ME_CASH_OPERATION, arrayOf(
-                KeyValue(UID, message.id),
-                KeyValue(TIMESTAMP, LocalDateTime.now().format(MetricsLogger.DATE_TIME_FORMATTER)),
-                KeyValue(CLIENT_ID, message.clientId),
-                KeyValue(ASSET, message.assetId),
-                KeyValue(AMOUNT, message.volume.toString())
-        )))
-        METRICS_LOGGER.log(KeyValue(ME_CASH_OPERATION, (++messagesCount).toString()))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashInOutOperation {

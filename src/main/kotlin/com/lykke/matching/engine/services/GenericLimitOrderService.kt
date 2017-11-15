@@ -33,15 +33,17 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
+    val initialOrdersCount: Int
 
     init {
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
         }
+        initialOrdersCount = orders.size
     }
 
-    fun addToOrderBook(order: NewLimitOrder) {
+    private fun addToOrderBook(order: NewLimitOrder) {
         val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
         orderBook.addOrder(order)
         addOrder(order)
@@ -97,20 +99,27 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
     }
 
-    fun isEnoughFunds(order: NewLimitOrder, volume: Double): Boolean {
+    fun checkAndReduceBalance(order: NewLimitOrder, volume: Double, limitBalances: MutableMap<String, Double>): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-
-        return if (order.isBuySide()) {
-            val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.quotingAssetId)
-            val result = RoundingUtils.parseDouble(availableBalance - volume * order.price, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy).toDouble() >= 0.0
-            LOGGER.debug("${order.clientId} ${assetPair.quotingAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume * order.price)} = $result")
-            result
+        val limitAssetId: String
+        val requiredVolume: Double
+        if (order.isBuySide()) {
+            limitAssetId = assetPair.quotingAssetId
+            requiredVolume = volume * order.price
         } else {
-            val availableBalance = balancesHolder.getAvailableReservedBalance(order.clientId, assetPair.baseAssetId)
-            val result = RoundingUtils.parseDouble(availableBalance - volume , assetsHolder.getAsset(assetPair.baseAssetId).accuracy).toDouble() >= 0.0
-            LOGGER.debug("${order.clientId} ${assetPair.baseAssetId} : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
-            result
+            limitAssetId = assetPair.baseAssetId
+            requiredVolume = volume
         }
+
+        val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
+        val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
+        val roundRequiredVolume = RoundingUtils.roundNoZero(requiredVolume, accuracy, false)
+        val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
+        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
+        if (result) {
+            limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble()
+        }
+        return result
     }
 
     fun cancelLimitOrder(uid: String): NewLimitOrder? {

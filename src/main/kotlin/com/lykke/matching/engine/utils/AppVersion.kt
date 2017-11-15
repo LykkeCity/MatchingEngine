@@ -34,7 +34,7 @@ object AppVersion {
 
         REVISION_NUMBER = attributes.getValue("Revision-number")
         BUILD_NUMBER = attributes.getValue("Build-number")
-        VERSION = attributes.getValue("Version")
+        VERSION = attributes.getValue("Version") ?: "local"
     }
 
     init {

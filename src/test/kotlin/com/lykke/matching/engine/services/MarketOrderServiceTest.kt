@@ -1,10 +1,8 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.cache.WalletCredentialsCache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletCredentials
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
@@ -17,6 +15,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -45,49 +44,41 @@ class MarketOrderServiceTest {
     val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    val walletCredentialsCache = WalletCredentialsCache(testBackOfficeDatabaseAccessor)
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
 
     var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
 
     val DELTA = 1e-9
 
     @Before
     fun setUp() {
-        testDatabaseAccessor.clear()
         testLimitDatabaseAccessor.clear()
         testWalletDatabaseAccessor.clear()
         tradesInfoQueue.clear()
 
-        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client1", "Client1-Multisig"))
-        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client2", "Client2-Multisig"))
-        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client3", "Client3-Multisig"))
-        testBackOfficeDatabaseAccessor.addWalletCredentials(WalletCredentials("Client4", "Client4-Multisig"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0, "LKK"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2, "SLR"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2, "EUR"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2, "GBP"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2, "CHF"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2, "USD"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2, "JPY"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8, "BTC"))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8, "BTC1"))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3, 6))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 6, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTC1USD", "BTC1", "USD", 3, 7))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3, 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8, 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5, 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5, 2))
-
-        this.walletCredentialsCache.reloadCache()
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 6))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTC1USD", "BTC1", "USD", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
     }
 
     @After
@@ -96,7 +87,7 @@ class MarketOrderServiceTest {
 
     fun initServices() {
         limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, walletCredentialsCache, rabbitSwapQueue)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
     }
 
     @Test
@@ -145,10 +136,10 @@ class MarketOrderServiceTest {
     fun testNoLiqudityToFullyFill() {
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 2000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 2000.0))
         initServices()
-        
-        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -2000.0)))
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -2000.0)))
         assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(NoLiquidity.name, marketOrderReport.order.status)
@@ -245,8 +236,6 @@ class MarketOrderServiceTest {
 
         assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
 
-        testDatabaseAccessor.orders.clear()
-
         balancesHolder.updateBalance("Client4", "EUR", 1000.0)
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
@@ -287,6 +276,10 @@ class MarketOrderServiceTest {
         assertEquals(140.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"), DELTA)
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client4", "EUR"), DELTA)
         assertEquals(1410.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+
+        val dbBids = testLimitDatabaseAccessor.getOrders("EURUSD", true)
+        assertEquals(1, dbBids.size)
+        assertEquals(OrderStatus.Processing.name, dbBids.first().status)
     }
 
     @Test

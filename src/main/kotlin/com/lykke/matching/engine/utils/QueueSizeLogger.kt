@@ -19,24 +19,19 @@ class QueueSizeLogger(
 
     fun log() {
         LOGGER.info("Incoming queue: ${queue.size}. " +
-                "Remote logger: ${MetricsLogger.LINE_QUEUE.size + MetricsLogger.KEY_VALUE_QUEUE.size}. " +
                 "Order Book queue: ${orderBookQueue.size}. " +
                 "Rabbit Order Book queue ${rabbitOrderBookQueue.size}")
 
         if (queue.size > queueSizeLimit) {
-            METRICS_LOGGER.logError(this.javaClass.name, "Internal queue size is higher than limit")
-        }
-
-        if (MetricsLogger.LINE_QUEUE.size + MetricsLogger.KEY_VALUE_QUEUE.size > queueSizeLimit) {
-            METRICS_LOGGER.logError(this.javaClass.name, "Metrics logger queue size is higher than limit")
+            METRICS_LOGGER.logError( "Internal queue size is higher than limit")
         }
 
         if (orderBookQueue.size > queueSizeLimit) {
-            METRICS_LOGGER.logError(this.javaClass.name, "Order book queue size is higher than limit")
+            METRICS_LOGGER.logError( "Order book queue size is higher than limit")
         }
 
         if (rabbitOrderBookQueue.size > queueSizeLimit) {
-            METRICS_LOGGER.logError(this.javaClass.name, "Rabbit order book size queue size is higher than limit")
+            METRICS_LOGGER.logError( "Rabbit order book size queue size is higher than limit")
         }
     }
 }
