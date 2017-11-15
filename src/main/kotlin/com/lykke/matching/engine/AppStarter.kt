@@ -4,6 +4,7 @@ import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
 import org.apache.log4j.Logger
@@ -40,9 +41,11 @@ fun main(args: Array<String>) {
             config.slackNotifications.throttlingLimitSeconds)
 
     ThrottlingLogger.init(config.throttlingLogger)
-    Runtime.getRuntime().addShutdownHook(ShutdownHook())
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 
-    SocketServer(config).run()
+    SocketServer(config) { appInitialData ->
+        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
+    }.run()
 }
 
 private fun teeLog(message: String) {
@@ -50,12 +53,14 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook : Thread() {
+internal class ShutdownHook(private val config: Config) : Thread() {
     init {
         this.name = "ShutdownHook"
     }
 
     override fun run() {
         LOGGER.info("Stopping application")
+
+        MetricsLogger.logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Stopped :")
     }
 }

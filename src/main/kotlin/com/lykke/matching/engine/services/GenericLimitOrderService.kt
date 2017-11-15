@@ -33,12 +33,14 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
+    val initialOrdersCount: Int
 
     init {
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
         }
+        initialOrdersCount = orders.size
     }
 
     private fun addToOrderBook(order: NewLimitOrder) {
