@@ -7,6 +7,9 @@ import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
+import com.lykke.utils.alivestatus.database.AliveStatusDatabaseAccessor
+import com.lykke.utils.alivestatus.database.azure.AzureAliveStatusDatabaseAccessor
+import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -41,7 +44,15 @@ fun main(args: Array<String>) {
             config.slackNotifications.throttlingLimitSeconds)
 
     ThrottlingLogger.init(config.throttlingLogger)
-    Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
+
+    val aliveStatusDatabaseAccessor = AzureAliveStatusDatabaseAccessor(config.me.db.matchingEngineConnString, "MatchingEngine")
+    try {
+        aliveStatusDatabaseAccessor.checkAndLock()
+    } catch (e: CheckAppInstanceRunningException) {
+        LOGGER.error(e.message)
+        return
+    }
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(config, aliveStatusDatabaseAccessor))
 
     SocketServer(config) { appInitialData ->
         MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
@@ -53,7 +64,7 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook(private val config: Config) : Thread() {
+internal class ShutdownHook(private val config: Config, private val aliveStatusDatabaseAccessor: AliveStatusDatabaseAccessor) : Thread() {
     init {
         this.name = "ShutdownHook"
     }
@@ -62,5 +73,7 @@ internal class ShutdownHook(private val config: Config) : Thread() {
         LOGGER.info("Stopping application")
 
         MetricsLogger.logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Stopped :")
+
+        aliveStatusDatabaseAccessor.unlock()
     }
 }
