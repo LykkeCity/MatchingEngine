@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.logging
 
+import com.lykke.matching.engine.queue.azure.AzureQueueWriter
 import org.apache.log4j.Logger
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -10,16 +11,18 @@ import kotlin.concurrent.fixedRateTimer
 
 class MetricsLogger {
     companion object {
-        val LOGGER = Logger.getLogger(MetricsLogger::class.java.name)!!
-        val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
+        private val LOGGER = Logger.getLogger(MetricsLogger::class.java.name)!!
+        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
 
-        val sentTimestamps = ConcurrentHashMap<String, Long>()
-        var throttlingLimit: Int = 0
+        private val sentTimestamps = ConcurrentHashMap<String, Long>()
+        private var throttlingLimit: Int = 0
 
-        val ERROR_QUEUE = LinkedBlockingQueue<LoggableObject>()
+        private val ERROR_QUEUE = LinkedBlockingQueue<LoggableObject>()
 
         private const val TYPE_ERROR = "Errors"
         private const val TYPE_WARNING = "Warnings"
+        private lateinit var azureQueueConnectionString: String
+        private lateinit var queueName: String
 
         fun init(azureQueueConnectionString: String,
                  queueName: String,
@@ -27,7 +30,8 @@ class MetricsLogger {
                  messagesTtlMinutes: Int = 60,
                  cleanerInterval: Long = 3 * 60 * 60 * 1000 // each 3 hour
         ) {
-
+            this.azureQueueConnectionString = azureQueueConnectionString
+            this.queueName = queueName
             AzureQueueLogger(azureQueueConnectionString, queueName, ERROR_QUEUE).start()
 
             throttlingLimit = throttlingLimitSeconds * 1000
@@ -41,7 +45,7 @@ class MetricsLogger {
             return MetricsLogger()
         }
 
-        fun clearSentMessageTimestamps(ttlMinutes: Int) {
+        private fun clearSentMessageTimestamps(ttlMinutes: Int) {
             var removedItems = 0
             val threshold = Date().time - ttlMinutes * 60 * 1000
             val iterator = sentTimestamps.iterator()
@@ -53,6 +57,16 @@ class MetricsLogger {
                 }
             }
             LOGGER.debug("Removed $removedItems from ErrorsLogger")
+        }
+
+        /** Saves 'Warnings' msg directly to azure queue without common thread using */
+        fun logWarning(message: String) {
+            log(TYPE_WARNING, message)
+        }
+
+        private fun log(type: String, message: String) {
+            val error = Error(type, "${LocalDateTime.now().format(DATE_TIME_FORMATTER)}: $message")
+            AzureQueueWriter(azureQueueConnectionString, queueName).write(error.getJson())
         }
     }
 
