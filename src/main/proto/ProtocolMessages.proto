@@ -227,7 +227,7 @@ enum FeeType {
     EXTERNAL_FEE = 2;
 }
 
-enum SizeType {
+enum FeeSizeType {
     PERCENTAGE = 0;
     ABSOLUTE = 1;
 }
