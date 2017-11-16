@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
+import com.lykke.utils.alivestatus.config.AliveStatusConfig
 
 data class MatchingEngineConfig(
     val db: DbConfig,
@@ -20,5 +21,6 @@ data class MatchingEngineConfig(
     val orderBookPath: String,
     val queueSizeLimit: Int,
     val name: String,
-    val trustedClients: Set<String>
+    val trustedClients: Set<String>,
+    val aliveStatus: AliveStatusConfig
 )
