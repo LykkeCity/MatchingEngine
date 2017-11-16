@@ -92,6 +92,11 @@ class FeeProcessorTest {
         assertNull(feeTransfer)
         assertEquals(originalOperations, operations)
 
+        feeInstruction = buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = null, size = 0.01, targetClientId = "Client3")
+        feeTransfer = feeProcessor.processFee(feeInstruction, receiptOperation, operations)
+        assertNull(feeTransfer)
+        assertEquals(originalOperations, operations)
+
         feeInstruction = buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.05, sourceClientId = "Client3")
         feeTransfer = feeProcessor.processFee(feeInstruction, receiptOperation, operations)
         assertNull(feeTransfer)

@@ -17,11 +17,22 @@ class LimitOrderFeeInstruction(
             if (fee == null) {
                 return null
             }
+            val feeType = FeeType.getByExternalId(fee.type)
+            var takerSizeType: FeeSizeType? = if (fee.hasTakerSize()) FeeSizeType.getByExternalId(fee.takerSizeType) else null
+            var makerSizeType: FeeSizeType? = if (fee.hasMakerSizeType()) FeeSizeType.getByExternalId(fee.makerSizeType) else null
+            if (feeType != FeeType.NO_FEE) {
+                if (takerSizeType == null) {
+                    takerSizeType = FeeSizeType.PERCENTAGE
+                }
+                if (makerSizeType == null) {
+                    makerSizeType = FeeSizeType.PERCENTAGE
+                }
+            }
             return LimitOrderFeeInstruction(
-                    FeeType.getByExternalId(fee.type),
-                    FeeSizeType.getByExternalId(fee.takerSizeType),
+                    feeType,
+                    takerSizeType,
                     fee.takerSize,
-                    FeeSizeType.getByExternalId(fee.makerSizeType),
+                    makerSizeType,
                     fee.makerSize,
                     fee.sourceClientId,
                     fee.targetClientId)

@@ -16,9 +16,14 @@ open class FeeInstruction(
             if (fee == null) {
                 return null
             }
+            val feeType = FeeType.getByExternalId(fee.type)
+            var sizeType: FeeSizeType? = if (fee.hasSizeType()) FeeSizeType.getByExternalId(fee.sizeType) else null
+            if (feeType != FeeType.NO_FEE && sizeType == null) {
+                sizeType = FeeSizeType.PERCENTAGE
+            }
             return FeeInstruction(
-                    FeeType.getByExternalId(fee.type),
-                    FeeSizeType.getByExternalId(fee.sizeType),
+                    feeType,
+                    sizeType,
                     fee.size,
                     fee.sourceClientId,
                     fee.targetClientId
