@@ -101,6 +101,90 @@ public final class ProtocolMessages {
     // @@protoc_insertion_point(enum_scope:com.lykke.matching.engine.messages.FeeType)
   }
 
+  /**
+   * Protobuf enum {@code com.lykke.matching.engine.messages.FeeSizeType}
+   */
+  public enum FeeSizeType
+      implements com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>PERCENTAGE = 0;</code>
+     */
+    PERCENTAGE(0, 0),
+    /**
+     * <code>ABSOLUTE = 1;</code>
+     */
+    ABSOLUTE(1, 1),
+    ;
+
+    /**
+     * <code>PERCENTAGE = 0;</code>
+     */
+    public static final int PERCENTAGE_VALUE = 0;
+    /**
+     * <code>ABSOLUTE = 1;</code>
+     */
+    public static final int ABSOLUTE_VALUE = 1;
+
+
+    public final int getNumber() {
+      return value;
+    }
+
+    public static FeeSizeType valueOf(int value) {
+      switch (value) {
+        case 0: return PERCENTAGE;
+        case 1: return ABSOLUTE;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<FeeSizeType>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<FeeSizeType>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<FeeSizeType>() {
+            public FeeSizeType findValueByNumber(int number) {
+              return FeeSizeType.valueOf(number);
+            }
+          };
+
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(1);
+    }
+
+    private static final FeeSizeType[] VALUES = values();
+
+    public static FeeSizeType valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int index;
+    private final int value;
+
+    private FeeSizeType(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:com.lykke.matching.engine.messages.FeeSizeType)
+  }
+
   public interface ResponseOrBuilder extends
       // @@protoc_insertion_point(interface_extends:com.lykke.matching.engine.messages.Response)
       com.google.protobuf.MessageOrBuilder {
@@ -26184,38 +26268,47 @@ public final class ProtocolMessages {
     int getType();
 
     /**
-     * <code>optional double size = 2;</code>
+     * <code>optional int32 sizeType = 2;</code>
+     */
+    boolean hasSizeType();
+    /**
+     * <code>optional int32 sizeType = 2;</code>
+     */
+    int getSizeType();
+
+    /**
+     * <code>optional double size = 3;</code>
      */
     boolean hasSize();
     /**
-     * <code>optional double size = 2;</code>
+     * <code>optional double size = 3;</code>
      */
     double getSize();
 
     /**
-     * <code>optional string sourceClientId = 3;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     boolean hasSourceClientId();
     /**
-     * <code>optional string sourceClientId = 3;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     java.lang.String getSourceClientId();
     /**
-     * <code>optional string sourceClientId = 3;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     com.google.protobuf.ByteString
         getSourceClientIdBytes();
 
     /**
-     * <code>optional string targetClientId = 4;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     boolean hasTargetClientId();
     /**
-     * <code>optional string targetClientId = 4;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     java.lang.String getTargetClientId();
     /**
-     * <code>optional string targetClientId = 4;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     com.google.protobuf.ByteString
         getTargetClientIdBytes();
@@ -26233,6 +26326,7 @@ public final class ProtocolMessages {
     }
     private Fee() {
       type_ = 0;
+      sizeType_ = 0;
       size_ = 0D;
       sourceClientId_ = "";
       targetClientId_ = "";
@@ -26270,20 +26364,25 @@ public final class ProtocolMessages {
               type_ = input.readInt32();
               break;
             }
-            case 17: {
+            case 16: {
               bitField0_ |= 0x00000002;
-              size_ = input.readDouble();
+              sizeType_ = input.readInt32();
               break;
             }
-            case 26: {
-              com.google.protobuf.ByteString bs = input.readBytes();
+            case 25: {
               bitField0_ |= 0x00000004;
-              sourceClientId_ = bs;
+              size_ = input.readDouble();
               break;
             }
             case 34: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000008;
+              sourceClientId_ = bs;
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
               targetClientId_ = bs;
               break;
             }
@@ -26328,31 +26427,46 @@ public final class ProtocolMessages {
       return type_;
     }
 
-    public static final int SIZE_FIELD_NUMBER = 2;
-    private double size_;
+    public static final int SIZETYPE_FIELD_NUMBER = 2;
+    private int sizeType_;
     /**
-     * <code>optional double size = 2;</code>
+     * <code>optional int32 sizeType = 2;</code>
      */
-    public boolean hasSize() {
+    public boolean hasSizeType() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional double size = 2;</code>
+     * <code>optional int32 sizeType = 2;</code>
+     */
+    public int getSizeType() {
+      return sizeType_;
+    }
+
+    public static final int SIZE_FIELD_NUMBER = 3;
+    private double size_;
+    /**
+     * <code>optional double size = 3;</code>
+     */
+    public boolean hasSize() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional double size = 3;</code>
      */
     public double getSize() {
       return size_;
     }
 
-    public static final int SOURCECLIENTID_FIELD_NUMBER = 3;
+    public static final int SOURCECLIENTID_FIELD_NUMBER = 4;
     private volatile java.lang.Object sourceClientId_;
     /**
-     * <code>optional string sourceClientId = 3;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     public boolean hasSourceClientId() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>optional string sourceClientId = 3;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     public java.lang.String getSourceClientId() {
       java.lang.Object ref = sourceClientId_;
@@ -26369,7 +26483,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string sourceClientId = 3;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     public com.google.protobuf.ByteString
         getSourceClientIdBytes() {
@@ -26385,16 +26499,16 @@ public final class ProtocolMessages {
       }
     }
 
-    public static final int TARGETCLIENTID_FIELD_NUMBER = 4;
+    public static final int TARGETCLIENTID_FIELD_NUMBER = 5;
     private volatile java.lang.Object targetClientId_;
     /**
-     * <code>optional string targetClientId = 4;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     public boolean hasTargetClientId() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>optional string targetClientId = 4;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     public java.lang.String getTargetClientId() {
       java.lang.Object ref = targetClientId_;
@@ -26411,7 +26525,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string targetClientId = 4;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     public com.google.protobuf.ByteString
         getTargetClientIdBytes() {
@@ -26447,13 +26561,16 @@ public final class ProtocolMessages {
         output.writeInt32(1, type_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeDouble(2, size_);
+        output.writeInt32(2, sizeType_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getSourceClientIdBytes());
+        output.writeDouble(3, size_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getTargetClientIdBytes());
+        output.writeBytes(4, getSourceClientIdBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getTargetClientIdBytes());
       }
       unknownFields.writeTo(output);
     }
@@ -26470,15 +26587,19 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(2, size_);
+          .computeInt32Size(2, sizeType_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getSourceClientIdBytes());
+          .computeDoubleSize(3, size_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getTargetClientIdBytes());
+          .computeBytesSize(4, getSourceClientIdBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getTargetClientIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -26594,12 +26715,14 @@ public final class ProtocolMessages {
         super.clear();
         type_ = 0;
         bitField0_ = (bitField0_ & ~0x00000001);
-        size_ = 0D;
+        sizeType_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
-        sourceClientId_ = "";
+        size_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000004);
-        targetClientId_ = "";
+        sourceClientId_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
+        targetClientId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -26631,13 +26754,17 @@ public final class ProtocolMessages {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.size_ = size_;
+        result.sizeType_ = sizeType_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.sourceClientId_ = sourceClientId_;
+        result.size_ = size_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
+        }
+        result.sourceClientId_ = sourceClientId_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
         }
         result.targetClientId_ = targetClientId_;
         result.bitField0_ = to_bitField0_;
@@ -26659,16 +26786,19 @@ public final class ProtocolMessages {
         if (other.hasType()) {
           setType(other.getType());
         }
+        if (other.hasSizeType()) {
+          setSizeType(other.getSizeType());
+        }
         if (other.hasSize()) {
           setSize(other.getSize());
         }
         if (other.hasSourceClientId()) {
-          bitField0_ |= 0x00000004;
+          bitField0_ |= 0x00000008;
           sourceClientId_ = other.sourceClientId_;
           onChanged();
         }
         if (other.hasTargetClientId()) {
-          bitField0_ |= 0x00000008;
+          bitField0_ |= 0x00000010;
           targetClientId_ = other.targetClientId_;
           onChanged();
         }
@@ -26735,904 +26865,66 @@ public final class ProtocolMessages {
         return this;
       }
 
-      private double size_ ;
+      private int sizeType_ ;
       /**
-       * <code>optional double size = 2;</code>
+       * <code>optional int32 sizeType = 2;</code>
        */
-      public boolean hasSize() {
+      public boolean hasSizeType() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional double size = 2;</code>
+       * <code>optional int32 sizeType = 2;</code>
+       */
+      public int getSizeType() {
+        return sizeType_;
+      }
+      /**
+       * <code>optional int32 sizeType = 2;</code>
+       */
+      public Builder setSizeType(int value) {
+        bitField0_ |= 0x00000002;
+        sizeType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 sizeType = 2;</code>
+       */
+      public Builder clearSizeType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        sizeType_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private double size_ ;
+      /**
+       * <code>optional double size = 3;</code>
+       */
+      public boolean hasSize() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional double size = 3;</code>
        */
       public double getSize() {
         return size_;
       }
       /**
-       * <code>optional double size = 2;</code>
+       * <code>optional double size = 3;</code>
        */
       public Builder setSize(double value) {
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         size_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional double size = 2;</code>
+       * <code>optional double size = 3;</code>
        */
       public Builder clearSize() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         size_ = 0D;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object sourceClientId_ = "";
-      /**
-       * <code>optional string sourceClientId = 3;</code>
-       */
-      public boolean hasSourceClientId() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>optional string sourceClientId = 3;</code>
-       */
-      public java.lang.String getSourceClientId() {
-        java.lang.Object ref = sourceClientId_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            sourceClientId_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string sourceClientId = 3;</code>
-       */
-      public com.google.protobuf.ByteString
-          getSourceClientIdBytes() {
-        java.lang.Object ref = sourceClientId_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          sourceClientId_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string sourceClientId = 3;</code>
-       */
-      public Builder setSourceClientId(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        sourceClientId_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string sourceClientId = 3;</code>
-       */
-      public Builder clearSourceClientId() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        sourceClientId_ = getDefaultInstance().getSourceClientId();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string sourceClientId = 3;</code>
-       */
-      public Builder setSourceClientIdBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        sourceClientId_ = value;
-        onChanged();
-        return this;
-      }
-
-      private java.lang.Object targetClientId_ = "";
-      /**
-       * <code>optional string targetClientId = 4;</code>
-       */
-      public boolean hasTargetClientId() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      /**
-       * <code>optional string targetClientId = 4;</code>
-       */
-      public java.lang.String getTargetClientId() {
-        java.lang.Object ref = targetClientId_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            targetClientId_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string targetClientId = 4;</code>
-       */
-      public com.google.protobuf.ByteString
-          getTargetClientIdBytes() {
-        java.lang.Object ref = targetClientId_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          targetClientId_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string targetClientId = 4;</code>
-       */
-      public Builder setTargetClientId(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000008;
-        targetClientId_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string targetClientId = 4;</code>
-       */
-      public Builder clearTargetClientId() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        targetClientId_ = getDefaultInstance().getTargetClientId();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string targetClientId = 4;</code>
-       */
-      public Builder setTargetClientIdBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000008;
-        targetClientId_ = value;
-        onChanged();
-        return this;
-      }
-
-      // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.Fee)
-    }
-
-    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.Fee)
-    private static final com.lykke.matching.engine.messages.ProtocolMessages.Fee DEFAULT_INSTANCE;
-    static {
-      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.Fee();
-    }
-
-    public static com.lykke.matching.engine.messages.ProtocolMessages.Fee getDefaultInstance() {
-      return DEFAULT_INSTANCE;
-    }
-
-    public static final com.google.protobuf.Parser<Fee> PARSER =
-        new com.google.protobuf.AbstractParser<Fee>() {
-      public Fee parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        try {
-          return new Fee(input, extensionRegistry);
-        } catch (RuntimeException e) {
-          if (e.getCause() instanceof
-              com.google.protobuf.InvalidProtocolBufferException) {
-            throw (com.google.protobuf.InvalidProtocolBufferException)
-                e.getCause();
-          }
-          throw e;
-        }
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<Fee> getParserForType() {
-      return PARSER;
-    }
-
-    public com.lykke.matching.engine.messages.ProtocolMessages.Fee getDefaultInstanceForType() {
-      return DEFAULT_INSTANCE;
-    }
-
-  }
-
-  public interface LimitOrderFeeOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:com.lykke.matching.engine.messages.LimitOrderFee)
-      com.google.protobuf.MessageOrBuilder {
-
-    /**
-     * <code>required int32 type = 1;</code>
-     */
-    boolean hasType();
-    /**
-     * <code>required int32 type = 1;</code>
-     */
-    int getType();
-
-    /**
-     * <code>optional double makerSize = 2;</code>
-     */
-    boolean hasMakerSize();
-    /**
-     * <code>optional double makerSize = 2;</code>
-     */
-    double getMakerSize();
-
-    /**
-     * <code>optional double takerSize = 3;</code>
-     */
-    boolean hasTakerSize();
-    /**
-     * <code>optional double takerSize = 3;</code>
-     */
-    double getTakerSize();
-
-    /**
-     * <code>optional string sourceClientId = 4;</code>
-     */
-    boolean hasSourceClientId();
-    /**
-     * <code>optional string sourceClientId = 4;</code>
-     */
-    java.lang.String getSourceClientId();
-    /**
-     * <code>optional string sourceClientId = 4;</code>
-     */
-    com.google.protobuf.ByteString
-        getSourceClientIdBytes();
-
-    /**
-     * <code>optional string targetClientId = 5;</code>
-     */
-    boolean hasTargetClientId();
-    /**
-     * <code>optional string targetClientId = 5;</code>
-     */
-    java.lang.String getTargetClientId();
-    /**
-     * <code>optional string targetClientId = 5;</code>
-     */
-    com.google.protobuf.ByteString
-        getTargetClientIdBytes();
-  }
-  /**
-   * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderFee}
-   */
-  public  static final class LimitOrderFee extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.LimitOrderFee)
-      LimitOrderFeeOrBuilder {
-    // Use LimitOrderFee.newBuilder() to construct.
-    private LimitOrderFee(com.google.protobuf.GeneratedMessage.Builder builder) {
-      super(builder);
-    }
-    private LimitOrderFee() {
-      type_ = 0;
-      makerSize_ = 0D;
-      takerSize_ = 0D;
-      sourceClientId_ = "";
-      targetClientId_ = "";
-    }
-
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-    private LimitOrderFee(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
-      this();
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              type_ = input.readInt32();
-              break;
-            }
-            case 17: {
-              bitField0_ |= 0x00000002;
-              makerSize_ = input.readDouble();
-              break;
-            }
-            case 25: {
-              bitField0_ |= 0x00000004;
-              takerSize_ = input.readDouble();
-              break;
-            }
-            case 34: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000008;
-              sourceClientId_ = bs;
-              break;
-            }
-            case 42: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000010;
-              targetClientId_ = bs;
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw new RuntimeException(e.setUnfinishedMessage(this));
-      } catch (java.io.IOException e) {
-        throw new RuntimeException(
-            new com.google.protobuf.InvalidProtocolBufferException(
-                e.getMessage()).setUnfinishedMessage(this));
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.class, com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.Builder.class);
-    }
-
-    private int bitField0_;
-    public static final int TYPE_FIELD_NUMBER = 1;
-    private int type_;
-    /**
-     * <code>required int32 type = 1;</code>
-     */
-    public boolean hasType() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <code>required int32 type = 1;</code>
-     */
-    public int getType() {
-      return type_;
-    }
-
-    public static final int MAKERSIZE_FIELD_NUMBER = 2;
-    private double makerSize_;
-    /**
-     * <code>optional double makerSize = 2;</code>
-     */
-    public boolean hasMakerSize() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>optional double makerSize = 2;</code>
-     */
-    public double getMakerSize() {
-      return makerSize_;
-    }
-
-    public static final int TAKERSIZE_FIELD_NUMBER = 3;
-    private double takerSize_;
-    /**
-     * <code>optional double takerSize = 3;</code>
-     */
-    public boolean hasTakerSize() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <code>optional double takerSize = 3;</code>
-     */
-    public double getTakerSize() {
-      return takerSize_;
-    }
-
-    public static final int SOURCECLIENTID_FIELD_NUMBER = 4;
-    private volatile java.lang.Object sourceClientId_;
-    /**
-     * <code>optional string sourceClientId = 4;</code>
-     */
-    public boolean hasSourceClientId() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    /**
-     * <code>optional string sourceClientId = 4;</code>
-     */
-    public java.lang.String getSourceClientId() {
-      java.lang.Object ref = sourceClientId_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          sourceClientId_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string sourceClientId = 4;</code>
-     */
-    public com.google.protobuf.ByteString
-        getSourceClientIdBytes() {
-      java.lang.Object ref = sourceClientId_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        sourceClientId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    public static final int TARGETCLIENTID_FIELD_NUMBER = 5;
-    private volatile java.lang.Object targetClientId_;
-    /**
-     * <code>optional string targetClientId = 5;</code>
-     */
-    public boolean hasTargetClientId() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    /**
-     * <code>optional string targetClientId = 5;</code>
-     */
-    public java.lang.String getTargetClientId() {
-      java.lang.Object ref = targetClientId_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          targetClientId_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string targetClientId = 5;</code>
-     */
-    public com.google.protobuf.ByteString
-        getTargetClientIdBytes() {
-      java.lang.Object ref = targetClientId_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        targetClientId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
-
-      if (!hasType()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeInt32(1, type_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeDouble(2, makerSize_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeDouble(3, takerSize_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getSourceClientIdBytes());
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(5, getTargetClientIdBytes());
-      }
-      unknownFields.writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, type_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(2, makerSize_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(3, takerSize_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getSourceClientIdBytes());
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, getTargetClientIdBytes());
-      }
-      size += unknownFields.getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder() {
-      return DEFAULT_INSTANCE.toBuilder();
-    }
-    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee prototype) {
-      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderFee}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:com.lykke.matching.engine.messages.LimitOrderFee)
-        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFeeOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.class, com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.Builder.class);
-      }
-
-      // Construct using com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      public Builder clear() {
-        super.clear();
-        type_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        makerSize_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        takerSize_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        sourceClientId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000008);
-        targetClientId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000010);
-        return this;
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor;
-      }
-
-      public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee getDefaultInstanceForType() {
-        return com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.getDefaultInstance();
-      }
-
-      public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee build() {
-        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee buildPartial() {
-        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee result = new com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.type_ = type_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.makerSize_ = makerSize_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.takerSize_ = takerSize_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.sourceClientId_ = sourceClientId_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.targetClientId_ = targetClientId_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee) {
-          return mergeFrom((com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee other) {
-        if (other == com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.getDefaultInstance()) return this;
-        if (other.hasType()) {
-          setType(other.getType());
-        }
-        if (other.hasMakerSize()) {
-          setMakerSize(other.getMakerSize());
-        }
-        if (other.hasTakerSize()) {
-          setTakerSize(other.getTakerSize());
-        }
-        if (other.hasSourceClientId()) {
-          bitField0_ |= 0x00000008;
-          sourceClientId_ = other.sourceClientId_;
-          onChanged();
-        }
-        if (other.hasTargetClientId()) {
-          bitField0_ |= 0x00000010;
-          targetClientId_ = other.targetClientId_;
-          onChanged();
-        }
-        this.mergeUnknownFields(other.unknownFields);
-        onChanged();
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        if (!hasType()) {
-          return false;
-        }
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      private int type_ ;
-      /**
-       * <code>required int32 type = 1;</code>
-       */
-      public boolean hasType() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <code>required int32 type = 1;</code>
-       */
-      public int getType() {
-        return type_;
-      }
-      /**
-       * <code>required int32 type = 1;</code>
-       */
-      public Builder setType(int value) {
-        bitField0_ |= 0x00000001;
-        type_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required int32 type = 1;</code>
-       */
-      public Builder clearType() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private double makerSize_ ;
-      /**
-       * <code>optional double makerSize = 2;</code>
-       */
-      public boolean hasMakerSize() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>optional double makerSize = 2;</code>
-       */
-      public double getMakerSize() {
-        return makerSize_;
-      }
-      /**
-       * <code>optional double makerSize = 2;</code>
-       */
-      public Builder setMakerSize(double value) {
-        bitField0_ |= 0x00000002;
-        makerSize_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional double makerSize = 2;</code>
-       */
-      public Builder clearMakerSize() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        makerSize_ = 0D;
-        onChanged();
-        return this;
-      }
-
-      private double takerSize_ ;
-      /**
-       * <code>optional double takerSize = 3;</code>
-       */
-      public boolean hasTakerSize() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>optional double takerSize = 3;</code>
-       */
-      public double getTakerSize() {
-        return takerSize_;
-      }
-      /**
-       * <code>optional double takerSize = 3;</code>
-       */
-      public Builder setTakerSize(double value) {
-        bitField0_ |= 0x00000004;
-        takerSize_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional double takerSize = 3;</code>
-       */
-      public Builder clearTakerSize() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        takerSize_ = 0D;
         onChanged();
         return this;
       }
@@ -27784,6 +27076,1032 @@ public final class ProtocolMessages {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000010;
+        targetClientId_ = value;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.Fee)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.lykke.matching.engine.messages.Fee)
+    private static final com.lykke.matching.engine.messages.ProtocolMessages.Fee DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.lykke.matching.engine.messages.ProtocolMessages.Fee();
+    }
+
+    public static com.lykke.matching.engine.messages.ProtocolMessages.Fee getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    public static final com.google.protobuf.Parser<Fee> PARSER =
+        new com.google.protobuf.AbstractParser<Fee>() {
+      public Fee parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new Fee(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Fee> getParserForType() {
+      return PARSER;
+    }
+
+    public com.lykke.matching.engine.messages.ProtocolMessages.Fee getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface LimitOrderFeeOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.lykke.matching.engine.messages.LimitOrderFee)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>required int32 type = 1;</code>
+     */
+    boolean hasType();
+    /**
+     * <code>required int32 type = 1;</code>
+     */
+    int getType();
+
+    /**
+     * <code>optional int32 makerSizeType = 2;</code>
+     */
+    boolean hasMakerSizeType();
+    /**
+     * <code>optional int32 makerSizeType = 2;</code>
+     */
+    int getMakerSizeType();
+
+    /**
+     * <code>optional double makerSize = 3;</code>
+     */
+    boolean hasMakerSize();
+    /**
+     * <code>optional double makerSize = 3;</code>
+     */
+    double getMakerSize();
+
+    /**
+     * <code>optional int32 takerSizeType = 4;</code>
+     */
+    boolean hasTakerSizeType();
+    /**
+     * <code>optional int32 takerSizeType = 4;</code>
+     */
+    int getTakerSizeType();
+
+    /**
+     * <code>optional double takerSize = 5;</code>
+     */
+    boolean hasTakerSize();
+    /**
+     * <code>optional double takerSize = 5;</code>
+     */
+    double getTakerSize();
+
+    /**
+     * <code>optional string sourceClientId = 6;</code>
+     */
+    boolean hasSourceClientId();
+    /**
+     * <code>optional string sourceClientId = 6;</code>
+     */
+    java.lang.String getSourceClientId();
+    /**
+     * <code>optional string sourceClientId = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getSourceClientIdBytes();
+
+    /**
+     * <code>optional string targetClientId = 7;</code>
+     */
+    boolean hasTargetClientId();
+    /**
+     * <code>optional string targetClientId = 7;</code>
+     */
+    java.lang.String getTargetClientId();
+    /**
+     * <code>optional string targetClientId = 7;</code>
+     */
+    com.google.protobuf.ByteString
+        getTargetClientIdBytes();
+  }
+  /**
+   * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderFee}
+   */
+  public  static final class LimitOrderFee extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:com.lykke.matching.engine.messages.LimitOrderFee)
+      LimitOrderFeeOrBuilder {
+    // Use LimitOrderFee.newBuilder() to construct.
+    private LimitOrderFee(com.google.protobuf.GeneratedMessage.Builder builder) {
+      super(builder);
+    }
+    private LimitOrderFee() {
+      type_ = 0;
+      makerSizeType_ = 0;
+      makerSize_ = 0D;
+      takerSizeType_ = 0;
+      takerSize_ = 0D;
+      sourceClientId_ = "";
+      targetClientId_ = "";
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private LimitOrderFee(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              type_ = input.readInt32();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              makerSizeType_ = input.readInt32();
+              break;
+            }
+            case 25: {
+              bitField0_ |= 0x00000004;
+              makerSize_ = input.readDouble();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              takerSizeType_ = input.readInt32();
+              break;
+            }
+            case 41: {
+              bitField0_ |= 0x00000010;
+              takerSize_ = input.readDouble();
+              break;
+            }
+            case 50: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000020;
+              sourceClientId_ = bs;
+              break;
+            }
+            case 58: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000040;
+              targetClientId_ = bs;
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(e.setUnfinishedMessage(this));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.class, com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int TYPE_FIELD_NUMBER = 1;
+    private int type_;
+    /**
+     * <code>required int32 type = 1;</code>
+     */
+    public boolean hasType() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required int32 type = 1;</code>
+     */
+    public int getType() {
+      return type_;
+    }
+
+    public static final int MAKERSIZETYPE_FIELD_NUMBER = 2;
+    private int makerSizeType_;
+    /**
+     * <code>optional int32 makerSizeType = 2;</code>
+     */
+    public boolean hasMakerSizeType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional int32 makerSizeType = 2;</code>
+     */
+    public int getMakerSizeType() {
+      return makerSizeType_;
+    }
+
+    public static final int MAKERSIZE_FIELD_NUMBER = 3;
+    private double makerSize_;
+    /**
+     * <code>optional double makerSize = 3;</code>
+     */
+    public boolean hasMakerSize() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional double makerSize = 3;</code>
+     */
+    public double getMakerSize() {
+      return makerSize_;
+    }
+
+    public static final int TAKERSIZETYPE_FIELD_NUMBER = 4;
+    private int takerSizeType_;
+    /**
+     * <code>optional int32 takerSizeType = 4;</code>
+     */
+    public boolean hasTakerSizeType() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional int32 takerSizeType = 4;</code>
+     */
+    public int getTakerSizeType() {
+      return takerSizeType_;
+    }
+
+    public static final int TAKERSIZE_FIELD_NUMBER = 5;
+    private double takerSize_;
+    /**
+     * <code>optional double takerSize = 5;</code>
+     */
+    public boolean hasTakerSize() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional double takerSize = 5;</code>
+     */
+    public double getTakerSize() {
+      return takerSize_;
+    }
+
+    public static final int SOURCECLIENTID_FIELD_NUMBER = 6;
+    private volatile java.lang.Object sourceClientId_;
+    /**
+     * <code>optional string sourceClientId = 6;</code>
+     */
+    public boolean hasSourceClientId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string sourceClientId = 6;</code>
+     */
+    public java.lang.String getSourceClientId() {
+      java.lang.Object ref = sourceClientId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          sourceClientId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string sourceClientId = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getSourceClientIdBytes() {
+      java.lang.Object ref = sourceClientId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        sourceClientId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int TARGETCLIENTID_FIELD_NUMBER = 7;
+    private volatile java.lang.Object targetClientId_;
+    /**
+     * <code>optional string targetClientId = 7;</code>
+     */
+    public boolean hasTargetClientId() {
+      return ((bitField0_ & 0x00000040) == 0x00000040);
+    }
+    /**
+     * <code>optional string targetClientId = 7;</code>
+     */
+    public java.lang.String getTargetClientId() {
+      java.lang.Object ref = targetClientId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          targetClientId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string targetClientId = 7;</code>
+     */
+    public com.google.protobuf.ByteString
+        getTargetClientIdBytes() {
+      java.lang.Object ref = targetClientId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        targetClientId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt32(1, type_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, makerSizeType_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeDouble(3, makerSize_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeInt32(4, takerSizeType_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeDouble(5, takerSize_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(6, getSourceClientIdBytes());
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        output.writeBytes(7, getTargetClientIdBytes());
+      }
+      unknownFields.writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(1, type_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(2, makerSizeType_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(3, makerSize_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(4, takerSizeType_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(5, takerSize_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(6, getSourceClientIdBytes());
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(7, getTargetClientIdBytes());
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderFee}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.lykke.matching.engine.messages.LimitOrderFee)
+        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFeeOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.class, com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.Builder.class);
+      }
+
+      // Construct using com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      public Builder clear() {
+        super.clear();
+        type_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        makerSizeType_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        makerSize_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        takerSizeType_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000008);
+        takerSize_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00000010);
+        sourceClientId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000020);
+        targetClientId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000040);
+        return this;
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor;
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee getDefaultInstanceForType() {
+        return com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.getDefaultInstance();
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee build() {
+        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee buildPartial() {
+        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee result = new com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.type_ = type_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.makerSizeType_ = makerSizeType_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.makerSize_ = makerSize_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.takerSizeType_ = takerSizeType_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.takerSize_ = takerSize_;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.sourceClientId_ = sourceClientId_;
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000040;
+        }
+        result.targetClientId_ = targetClientId_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee) {
+          return mergeFrom((com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee other) {
+        if (other == com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.getDefaultInstance()) return this;
+        if (other.hasType()) {
+          setType(other.getType());
+        }
+        if (other.hasMakerSizeType()) {
+          setMakerSizeType(other.getMakerSizeType());
+        }
+        if (other.hasMakerSize()) {
+          setMakerSize(other.getMakerSize());
+        }
+        if (other.hasTakerSizeType()) {
+          setTakerSizeType(other.getTakerSizeType());
+        }
+        if (other.hasTakerSize()) {
+          setTakerSize(other.getTakerSize());
+        }
+        if (other.hasSourceClientId()) {
+          bitField0_ |= 0x00000020;
+          sourceClientId_ = other.sourceClientId_;
+          onChanged();
+        }
+        if (other.hasTargetClientId()) {
+          bitField0_ |= 0x00000040;
+          targetClientId_ = other.targetClientId_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasType()) {
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private int type_ ;
+      /**
+       * <code>required int32 type = 1;</code>
+       */
+      public boolean hasType() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required int32 type = 1;</code>
+       */
+      public int getType() {
+        return type_;
+      }
+      /**
+       * <code>required int32 type = 1;</code>
+       */
+      public Builder setType(int value) {
+        bitField0_ |= 0x00000001;
+        type_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 type = 1;</code>
+       */
+      public Builder clearType() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        type_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private int makerSizeType_ ;
+      /**
+       * <code>optional int32 makerSizeType = 2;</code>
+       */
+      public boolean hasMakerSizeType() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>optional int32 makerSizeType = 2;</code>
+       */
+      public int getMakerSizeType() {
+        return makerSizeType_;
+      }
+      /**
+       * <code>optional int32 makerSizeType = 2;</code>
+       */
+      public Builder setMakerSizeType(int value) {
+        bitField0_ |= 0x00000002;
+        makerSizeType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 makerSizeType = 2;</code>
+       */
+      public Builder clearMakerSizeType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        makerSizeType_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private double makerSize_ ;
+      /**
+       * <code>optional double makerSize = 3;</code>
+       */
+      public boolean hasMakerSize() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional double makerSize = 3;</code>
+       */
+      public double getMakerSize() {
+        return makerSize_;
+      }
+      /**
+       * <code>optional double makerSize = 3;</code>
+       */
+      public Builder setMakerSize(double value) {
+        bitField0_ |= 0x00000004;
+        makerSize_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double makerSize = 3;</code>
+       */
+      public Builder clearMakerSize() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        makerSize_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private int takerSizeType_ ;
+      /**
+       * <code>optional int32 takerSizeType = 4;</code>
+       */
+      public boolean hasTakerSizeType() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional int32 takerSizeType = 4;</code>
+       */
+      public int getTakerSizeType() {
+        return takerSizeType_;
+      }
+      /**
+       * <code>optional int32 takerSizeType = 4;</code>
+       */
+      public Builder setTakerSizeType(int value) {
+        bitField0_ |= 0x00000008;
+        takerSizeType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 takerSizeType = 4;</code>
+       */
+      public Builder clearTakerSizeType() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        takerSizeType_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private double takerSize_ ;
+      /**
+       * <code>optional double takerSize = 5;</code>
+       */
+      public boolean hasTakerSize() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional double takerSize = 5;</code>
+       */
+      public double getTakerSize() {
+        return takerSize_;
+      }
+      /**
+       * <code>optional double takerSize = 5;</code>
+       */
+      public Builder setTakerSize(double value) {
+        bitField0_ |= 0x00000010;
+        takerSize_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double takerSize = 5;</code>
+       */
+      public Builder clearTakerSize() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        takerSize_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object sourceClientId_ = "";
+      /**
+       * <code>optional string sourceClientId = 6;</code>
+       */
+      public boolean hasSourceClientId() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional string sourceClientId = 6;</code>
+       */
+      public java.lang.String getSourceClientId() {
+        java.lang.Object ref = sourceClientId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            sourceClientId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string sourceClientId = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getSourceClientIdBytes() {
+        java.lang.Object ref = sourceClientId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          sourceClientId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string sourceClientId = 6;</code>
+       */
+      public Builder setSourceClientId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        sourceClientId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string sourceClientId = 6;</code>
+       */
+      public Builder clearSourceClientId() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        sourceClientId_ = getDefaultInstance().getSourceClientId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string sourceClientId = 6;</code>
+       */
+      public Builder setSourceClientIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        sourceClientId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object targetClientId_ = "";
+      /**
+       * <code>optional string targetClientId = 7;</code>
+       */
+      public boolean hasTargetClientId() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional string targetClientId = 7;</code>
+       */
+      public java.lang.String getTargetClientId() {
+        java.lang.Object ref = targetClientId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            targetClientId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string targetClientId = 7;</code>
+       */
+      public com.google.protobuf.ByteString
+          getTargetClientIdBytes() {
+        java.lang.Object ref = targetClientId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          targetClientId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string targetClientId = 7;</code>
+       */
+      public Builder setTargetClientId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        targetClientId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string targetClientId = 7;</code>
+       */
+      public Builder clearTargetClientId() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        targetClientId_ = getDefaultInstance().getTargetClientId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string targetClientId = 7;</code>
+       */
+      public Builder setTargetClientIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
         targetClientId_ = value;
         onChanged();
         return this;
@@ -28079,14 +28397,17 @@ public final class ProtocolMessages {
       "ls\030\004 \003(\0132D.com.lykke.matching.engine.mes" +
       "sages.OrderBookSnapshot.OrderBookLevel\032/" +
       "\n\016OrderBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006volum" +
-      "e\030\002 \002(\t\"Q\n\003Fee\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030\002 \001" +
-      "(\001\022\026\n\016sourceClientId\030\003 \001(\t\022\026\n\016targetClie" +
-      "ntId\030\004 \001(\t\"s\n\rLimitOrderFee\022\014\n\004type\030\001 \002(" +
-      "\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\ttakerSize\030\003 \001(\001\022" +
-      "\026\n\016sourceClientId\030\004 \001(\t\022\026\n\016targetClientI" +
-      "d\030\005 \001(\t*7\n\007FeeType\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT" +
-      "_FEE\020\001\022\020\n\014EXTERNAL_FEE\020\002B6\n\"com.lykke.ma",
-      "tching.engine.messagesB\020ProtocolMessages"
+      "e\030\002 \002(\t\"c\n\003Fee\022\014\n\004type\030\001 \002(\005\022\020\n\010sizeType" +
+      "\030\002 \001(\005\022\014\n\004size\030\003 \001(\001\022\026\n\016sourceClientId\030\004" +
+      " \001(\t\022\026\n\016targetClientId\030\005 \001(\t\"\241\001\n\rLimitOr" +
+      "derFee\022\014\n\004type\030\001 \002(\005\022\025\n\rmakerSizeType\030\002 " +
+      "\001(\005\022\021\n\tmakerSize\030\003 \001(\001\022\025\n\rtakerSizeType\030" +
+      "\004 \001(\005\022\021\n\ttakerSize\030\005 \001(\001\022\026\n\016sourceClient" +
+      "Id\030\006 \001(\t\022\026\n\016targetClientId\030\007 \001(\t*7\n\007FeeT",
+      "ype\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTER" +
+      "NAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020\000" +
+      "\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching.eng" +
+      "ine.messagesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -28279,13 +28600,13 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_Fee_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_Fee_descriptor,
-        new java.lang.String[] { "Type", "Size", "SourceClientId", "TargetClientId", });
+        new java.lang.String[] { "Type", "SizeType", "Size", "SourceClientId", "TargetClientId", });
     internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor =
       getDescriptor().getMessageTypes().get(26);
     internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor,
-        new java.lang.String[] { "Type", "MakerSize", "TakerSize", "SourceClientId", "TargetClientId", });
+        new java.lang.String[] { "Type", "MakerSizeType", "MakerSize", "TakerSizeType", "TakerSize", "SourceClientId", "TargetClientId", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
