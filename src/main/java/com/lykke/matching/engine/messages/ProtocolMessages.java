@@ -26268,50 +26268,50 @@ public final class ProtocolMessages {
     int getType();
 
     /**
-     * <code>optional int32 sizeType = 2;</code>
-     */
-    boolean hasSizeType();
-    /**
-     * <code>optional int32 sizeType = 2;</code>
-     */
-    int getSizeType();
-
-    /**
-     * <code>optional double size = 3;</code>
+     * <code>optional double size = 2;</code>
      */
     boolean hasSize();
     /**
-     * <code>optional double size = 3;</code>
+     * <code>optional double size = 2;</code>
      */
     double getSize();
 
     /**
-     * <code>optional string sourceClientId = 4;</code>
+     * <code>optional string sourceClientId = 3;</code>
      */
     boolean hasSourceClientId();
     /**
-     * <code>optional string sourceClientId = 4;</code>
+     * <code>optional string sourceClientId = 3;</code>
      */
     java.lang.String getSourceClientId();
     /**
-     * <code>optional string sourceClientId = 4;</code>
+     * <code>optional string sourceClientId = 3;</code>
      */
     com.google.protobuf.ByteString
         getSourceClientIdBytes();
 
     /**
-     * <code>optional string targetClientId = 5;</code>
+     * <code>optional string targetClientId = 4;</code>
      */
     boolean hasTargetClientId();
     /**
-     * <code>optional string targetClientId = 5;</code>
+     * <code>optional string targetClientId = 4;</code>
      */
     java.lang.String getTargetClientId();
     /**
-     * <code>optional string targetClientId = 5;</code>
+     * <code>optional string targetClientId = 4;</code>
      */
     com.google.protobuf.ByteString
         getTargetClientIdBytes();
+
+    /**
+     * <code>optional int32 sizeType = 5;</code>
+     */
+    boolean hasSizeType();
+    /**
+     * <code>optional int32 sizeType = 5;</code>
+     */
+    int getSizeType();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.Fee}
@@ -26326,10 +26326,10 @@ public final class ProtocolMessages {
     }
     private Fee() {
       type_ = 0;
-      sizeType_ = 0;
       size_ = 0D;
       sourceClientId_ = "";
       targetClientId_ = "";
+      sizeType_ = 0;
     }
 
     @java.lang.Override
@@ -26364,26 +26364,26 @@ public final class ProtocolMessages {
               type_ = input.readInt32();
               break;
             }
-            case 16: {
+            case 17: {
               bitField0_ |= 0x00000002;
-              sizeType_ = input.readInt32();
+              size_ = input.readDouble();
               break;
             }
-            case 25: {
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              size_ = input.readDouble();
+              sourceClientId_ = bs;
               break;
             }
             case 34: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000008;
-              sourceClientId_ = bs;
+              targetClientId_ = bs;
               break;
             }
-            case 42: {
-              com.google.protobuf.ByteString bs = input.readBytes();
+            case 40: {
               bitField0_ |= 0x00000010;
-              targetClientId_ = bs;
+              sizeType_ = input.readInt32();
               break;
             }
           }
@@ -26427,46 +26427,31 @@ public final class ProtocolMessages {
       return type_;
     }
 
-    public static final int SIZETYPE_FIELD_NUMBER = 2;
-    private int sizeType_;
+    public static final int SIZE_FIELD_NUMBER = 2;
+    private double size_;
     /**
-     * <code>optional int32 sizeType = 2;</code>
+     * <code>optional double size = 2;</code>
      */
-    public boolean hasSizeType() {
+    public boolean hasSize() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional int32 sizeType = 2;</code>
-     */
-    public int getSizeType() {
-      return sizeType_;
-    }
-
-    public static final int SIZE_FIELD_NUMBER = 3;
-    private double size_;
-    /**
-     * <code>optional double size = 3;</code>
-     */
-    public boolean hasSize() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <code>optional double size = 3;</code>
+     * <code>optional double size = 2;</code>
      */
     public double getSize() {
       return size_;
     }
 
-    public static final int SOURCECLIENTID_FIELD_NUMBER = 4;
+    public static final int SOURCECLIENTID_FIELD_NUMBER = 3;
     private volatile java.lang.Object sourceClientId_;
     /**
-     * <code>optional string sourceClientId = 4;</code>
+     * <code>optional string sourceClientId = 3;</code>
      */
     public boolean hasSourceClientId() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional string sourceClientId = 4;</code>
+     * <code>optional string sourceClientId = 3;</code>
      */
     public java.lang.String getSourceClientId() {
       java.lang.Object ref = sourceClientId_;
@@ -26483,7 +26468,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string sourceClientId = 4;</code>
+     * <code>optional string sourceClientId = 3;</code>
      */
     public com.google.protobuf.ByteString
         getSourceClientIdBytes() {
@@ -26499,16 +26484,16 @@ public final class ProtocolMessages {
       }
     }
 
-    public static final int TARGETCLIENTID_FIELD_NUMBER = 5;
+    public static final int TARGETCLIENTID_FIELD_NUMBER = 4;
     private volatile java.lang.Object targetClientId_;
     /**
-     * <code>optional string targetClientId = 5;</code>
+     * <code>optional string targetClientId = 4;</code>
      */
     public boolean hasTargetClientId() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>optional string targetClientId = 5;</code>
+     * <code>optional string targetClientId = 4;</code>
      */
     public java.lang.String getTargetClientId() {
       java.lang.Object ref = targetClientId_;
@@ -26525,7 +26510,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string targetClientId = 5;</code>
+     * <code>optional string targetClientId = 4;</code>
      */
     public com.google.protobuf.ByteString
         getTargetClientIdBytes() {
@@ -26539,6 +26524,21 @@ public final class ProtocolMessages {
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
+    }
+
+    public static final int SIZETYPE_FIELD_NUMBER = 5;
+    private int sizeType_;
+    /**
+     * <code>optional int32 sizeType = 5;</code>
+     */
+    public boolean hasSizeType() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional int32 sizeType = 5;</code>
+     */
+    public int getSizeType() {
+      return sizeType_;
     }
 
     private byte memoizedIsInitialized = -1;
@@ -26561,16 +26561,16 @@ public final class ProtocolMessages {
         output.writeInt32(1, type_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeInt32(2, sizeType_);
+        output.writeDouble(2, size_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeDouble(3, size_);
+        output.writeBytes(3, getSourceClientIdBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getSourceClientIdBytes());
+        output.writeBytes(4, getTargetClientIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(5, getTargetClientIdBytes());
+        output.writeInt32(5, sizeType_);
       }
       unknownFields.writeTo(output);
     }
@@ -26587,19 +26587,19 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(2, sizeType_);
+          .computeDoubleSize(2, size_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(3, size_);
+          .computeBytesSize(3, getSourceClientIdBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getSourceClientIdBytes());
+          .computeBytesSize(4, getTargetClientIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, getTargetClientIdBytes());
+          .computeInt32Size(5, sizeType_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -26715,13 +26715,13 @@ public final class ProtocolMessages {
         super.clear();
         type_ = 0;
         bitField0_ = (bitField0_ & ~0x00000001);
-        sizeType_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
         size_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000002);
         sourceClientId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000004);
         targetClientId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
+        sizeType_ = 0;
         bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
@@ -26754,19 +26754,19 @@ public final class ProtocolMessages {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.sizeType_ = sizeType_;
+        result.size_ = size_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.size_ = size_;
+        result.sourceClientId_ = sourceClientId_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
-        result.sourceClientId_ = sourceClientId_;
+        result.targetClientId_ = targetClientId_;
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000010;
         }
-        result.targetClientId_ = targetClientId_;
+        result.sizeType_ = sizeType_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -26786,21 +26786,21 @@ public final class ProtocolMessages {
         if (other.hasType()) {
           setType(other.getType());
         }
-        if (other.hasSizeType()) {
-          setSizeType(other.getSizeType());
-        }
         if (other.hasSize()) {
           setSize(other.getSize());
         }
         if (other.hasSourceClientId()) {
-          bitField0_ |= 0x00000008;
+          bitField0_ |= 0x00000004;
           sourceClientId_ = other.sourceClientId_;
           onChanged();
         }
         if (other.hasTargetClientId()) {
-          bitField0_ |= 0x00000010;
+          bitField0_ |= 0x00000008;
           targetClientId_ = other.targetClientId_;
           onChanged();
+        }
+        if (other.hasSizeType()) {
+          setSizeType(other.getSizeType());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -26865,65 +26865,33 @@ public final class ProtocolMessages {
         return this;
       }
 
-      private int sizeType_ ;
+      private double size_ ;
       /**
-       * <code>optional int32 sizeType = 2;</code>
+       * <code>optional double size = 2;</code>
        */
-      public boolean hasSizeType() {
+      public boolean hasSize() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional int32 sizeType = 2;</code>
-       */
-      public int getSizeType() {
-        return sizeType_;
-      }
-      /**
-       * <code>optional int32 sizeType = 2;</code>
-       */
-      public Builder setSizeType(int value) {
-        bitField0_ |= 0x00000002;
-        sizeType_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional int32 sizeType = 2;</code>
-       */
-      public Builder clearSizeType() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        sizeType_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private double size_ ;
-      /**
-       * <code>optional double size = 3;</code>
-       */
-      public boolean hasSize() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>optional double size = 3;</code>
+       * <code>optional double size = 2;</code>
        */
       public double getSize() {
         return size_;
       }
       /**
-       * <code>optional double size = 3;</code>
+       * <code>optional double size = 2;</code>
        */
       public Builder setSize(double value) {
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         size_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional double size = 3;</code>
+       * <code>optional double size = 2;</code>
        */
       public Builder clearSize() {
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000002);
         size_ = 0D;
         onChanged();
         return this;
@@ -26931,13 +26899,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object sourceClientId_ = "";
       /**
-       * <code>optional string sourceClientId = 4;</code>
+       * <code>optional string sourceClientId = 3;</code>
        */
       public boolean hasSourceClientId() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional string sourceClientId = 4;</code>
+       * <code>optional string sourceClientId = 3;</code>
        */
       public java.lang.String getSourceClientId() {
         java.lang.Object ref = sourceClientId_;
@@ -26954,7 +26922,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string sourceClientId = 4;</code>
+       * <code>optional string sourceClientId = 3;</code>
        */
       public com.google.protobuf.ByteString
           getSourceClientIdBytes() {
@@ -26970,36 +26938,36 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string sourceClientId = 4;</code>
+       * <code>optional string sourceClientId = 3;</code>
        */
       public Builder setSourceClientId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000008;
+  bitField0_ |= 0x00000004;
         sourceClientId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string sourceClientId = 4;</code>
+       * <code>optional string sourceClientId = 3;</code>
        */
       public Builder clearSourceClientId() {
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000004);
         sourceClientId_ = getDefaultInstance().getSourceClientId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string sourceClientId = 4;</code>
+       * <code>optional string sourceClientId = 3;</code>
        */
       public Builder setSourceClientIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000008;
+  bitField0_ |= 0x00000004;
         sourceClientId_ = value;
         onChanged();
         return this;
@@ -27007,13 +26975,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object targetClientId_ = "";
       /**
-       * <code>optional string targetClientId = 5;</code>
+       * <code>optional string targetClientId = 4;</code>
        */
       public boolean hasTargetClientId() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       /**
-       * <code>optional string targetClientId = 5;</code>
+       * <code>optional string targetClientId = 4;</code>
        */
       public java.lang.String getTargetClientId() {
         java.lang.Object ref = targetClientId_;
@@ -27030,7 +26998,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string targetClientId = 5;</code>
+       * <code>optional string targetClientId = 4;</code>
        */
       public com.google.protobuf.ByteString
           getTargetClientIdBytes() {
@@ -27046,37 +27014,69 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string targetClientId = 5;</code>
+       * <code>optional string targetClientId = 4;</code>
        */
       public Builder setTargetClientId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000010;
+  bitField0_ |= 0x00000008;
         targetClientId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string targetClientId = 5;</code>
+       * <code>optional string targetClientId = 4;</code>
        */
       public Builder clearTargetClientId() {
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000008);
         targetClientId_ = getDefaultInstance().getTargetClientId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string targetClientId = 5;</code>
+       * <code>optional string targetClientId = 4;</code>
        */
       public Builder setTargetClientIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000010;
+  bitField0_ |= 0x00000008;
         targetClientId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private int sizeType_ ;
+      /**
+       * <code>optional int32 sizeType = 5;</code>
+       */
+      public boolean hasSizeType() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional int32 sizeType = 5;</code>
+       */
+      public int getSizeType() {
+        return sizeType_;
+      }
+      /**
+       * <code>optional int32 sizeType = 5;</code>
+       */
+      public Builder setSizeType(int value) {
+        bitField0_ |= 0x00000010;
+        sizeType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 sizeType = 5;</code>
+       */
+      public Builder clearSizeType() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        sizeType_ = 0;
         onChanged();
         return this;
       }
@@ -27138,68 +27138,68 @@ public final class ProtocolMessages {
     int getType();
 
     /**
-     * <code>optional int32 makerSizeType = 2;</code>
-     */
-    boolean hasMakerSizeType();
-    /**
-     * <code>optional int32 makerSizeType = 2;</code>
-     */
-    int getMakerSizeType();
-
-    /**
-     * <code>optional double makerSize = 3;</code>
+     * <code>optional double makerSize = 2;</code>
      */
     boolean hasMakerSize();
     /**
-     * <code>optional double makerSize = 3;</code>
+     * <code>optional double makerSize = 2;</code>
      */
     double getMakerSize();
 
     /**
-     * <code>optional int32 takerSizeType = 4;</code>
-     */
-    boolean hasTakerSizeType();
-    /**
-     * <code>optional int32 takerSizeType = 4;</code>
-     */
-    int getTakerSizeType();
-
-    /**
-     * <code>optional double takerSize = 5;</code>
+     * <code>optional double takerSize = 3;</code>
      */
     boolean hasTakerSize();
     /**
-     * <code>optional double takerSize = 5;</code>
+     * <code>optional double takerSize = 3;</code>
      */
     double getTakerSize();
 
     /**
-     * <code>optional string sourceClientId = 6;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     boolean hasSourceClientId();
     /**
-     * <code>optional string sourceClientId = 6;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     java.lang.String getSourceClientId();
     /**
-     * <code>optional string sourceClientId = 6;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     com.google.protobuf.ByteString
         getSourceClientIdBytes();
 
     /**
-     * <code>optional string targetClientId = 7;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     boolean hasTargetClientId();
     /**
-     * <code>optional string targetClientId = 7;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     java.lang.String getTargetClientId();
     /**
-     * <code>optional string targetClientId = 7;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     com.google.protobuf.ByteString
         getTargetClientIdBytes();
+
+    /**
+     * <code>optional int32 makerSizeType = 6;</code>
+     */
+    boolean hasMakerSizeType();
+    /**
+     * <code>optional int32 makerSizeType = 6;</code>
+     */
+    int getMakerSizeType();
+
+    /**
+     * <code>optional int32 takerSizeType = 7;</code>
+     */
+    boolean hasTakerSizeType();
+    /**
+     * <code>optional int32 takerSizeType = 7;</code>
+     */
+    int getTakerSizeType();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderFee}
@@ -27214,12 +27214,12 @@ public final class ProtocolMessages {
     }
     private LimitOrderFee() {
       type_ = 0;
-      makerSizeType_ = 0;
       makerSize_ = 0D;
-      takerSizeType_ = 0;
       takerSize_ = 0D;
       sourceClientId_ = "";
       targetClientId_ = "";
+      makerSizeType_ = 0;
+      takerSizeType_ = 0;
     }
 
     @java.lang.Override
@@ -27254,36 +27254,36 @@ public final class ProtocolMessages {
               type_ = input.readInt32();
               break;
             }
-            case 16: {
+            case 17: {
               bitField0_ |= 0x00000002;
-              makerSizeType_ = input.readInt32();
+              makerSize_ = input.readDouble();
               break;
             }
             case 25: {
               bitField0_ |= 0x00000004;
-              makerSize_ = input.readDouble();
-              break;
-            }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              takerSizeType_ = input.readInt32();
-              break;
-            }
-            case 41: {
-              bitField0_ |= 0x00000010;
               takerSize_ = input.readDouble();
               break;
             }
-            case 50: {
+            case 34: {
               com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000020;
+              bitField0_ |= 0x00000008;
               sourceClientId_ = bs;
               break;
             }
-            case 58: {
+            case 42: {
               com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000040;
+              bitField0_ |= 0x00000010;
               targetClientId_ = bs;
+              break;
+            }
+            case 48: {
+              bitField0_ |= 0x00000020;
+              makerSizeType_ = input.readInt32();
+              break;
+            }
+            case 56: {
+              bitField0_ |= 0x00000040;
+              takerSizeType_ = input.readInt32();
               break;
             }
           }
@@ -27327,76 +27327,46 @@ public final class ProtocolMessages {
       return type_;
     }
 
-    public static final int MAKERSIZETYPE_FIELD_NUMBER = 2;
-    private int makerSizeType_;
+    public static final int MAKERSIZE_FIELD_NUMBER = 2;
+    private double makerSize_;
     /**
-     * <code>optional int32 makerSizeType = 2;</code>
+     * <code>optional double makerSize = 2;</code>
      */
-    public boolean hasMakerSizeType() {
+    public boolean hasMakerSize() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional int32 makerSizeType = 2;</code>
-     */
-    public int getMakerSizeType() {
-      return makerSizeType_;
-    }
-
-    public static final int MAKERSIZE_FIELD_NUMBER = 3;
-    private double makerSize_;
-    /**
-     * <code>optional double makerSize = 3;</code>
-     */
-    public boolean hasMakerSize() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <code>optional double makerSize = 3;</code>
+     * <code>optional double makerSize = 2;</code>
      */
     public double getMakerSize() {
       return makerSize_;
     }
 
-    public static final int TAKERSIZETYPE_FIELD_NUMBER = 4;
-    private int takerSizeType_;
-    /**
-     * <code>optional int32 takerSizeType = 4;</code>
-     */
-    public boolean hasTakerSizeType() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    /**
-     * <code>optional int32 takerSizeType = 4;</code>
-     */
-    public int getTakerSizeType() {
-      return takerSizeType_;
-    }
-
-    public static final int TAKERSIZE_FIELD_NUMBER = 5;
+    public static final int TAKERSIZE_FIELD_NUMBER = 3;
     private double takerSize_;
     /**
-     * <code>optional double takerSize = 5;</code>
+     * <code>optional double takerSize = 3;</code>
      */
     public boolean hasTakerSize() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional double takerSize = 5;</code>
+     * <code>optional double takerSize = 3;</code>
      */
     public double getTakerSize() {
       return takerSize_;
     }
 
-    public static final int SOURCECLIENTID_FIELD_NUMBER = 6;
+    public static final int SOURCECLIENTID_FIELD_NUMBER = 4;
     private volatile java.lang.Object sourceClientId_;
     /**
-     * <code>optional string sourceClientId = 6;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     public boolean hasSourceClientId() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
+      return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>optional string sourceClientId = 6;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     public java.lang.String getSourceClientId() {
       java.lang.Object ref = sourceClientId_;
@@ -27413,7 +27383,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string sourceClientId = 6;</code>
+     * <code>optional string sourceClientId = 4;</code>
      */
     public com.google.protobuf.ByteString
         getSourceClientIdBytes() {
@@ -27429,16 +27399,16 @@ public final class ProtocolMessages {
       }
     }
 
-    public static final int TARGETCLIENTID_FIELD_NUMBER = 7;
+    public static final int TARGETCLIENTID_FIELD_NUMBER = 5;
     private volatile java.lang.Object targetClientId_;
     /**
-     * <code>optional string targetClientId = 7;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     public boolean hasTargetClientId() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>optional string targetClientId = 7;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     public java.lang.String getTargetClientId() {
       java.lang.Object ref = targetClientId_;
@@ -27455,7 +27425,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string targetClientId = 7;</code>
+     * <code>optional string targetClientId = 5;</code>
      */
     public com.google.protobuf.ByteString
         getTargetClientIdBytes() {
@@ -27469,6 +27439,36 @@ public final class ProtocolMessages {
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
+    }
+
+    public static final int MAKERSIZETYPE_FIELD_NUMBER = 6;
+    private int makerSizeType_;
+    /**
+     * <code>optional int32 makerSizeType = 6;</code>
+     */
+    public boolean hasMakerSizeType() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional int32 makerSizeType = 6;</code>
+     */
+    public int getMakerSizeType() {
+      return makerSizeType_;
+    }
+
+    public static final int TAKERSIZETYPE_FIELD_NUMBER = 7;
+    private int takerSizeType_;
+    /**
+     * <code>optional int32 takerSizeType = 7;</code>
+     */
+    public boolean hasTakerSizeType() {
+      return ((bitField0_ & 0x00000040) == 0x00000040);
+    }
+    /**
+     * <code>optional int32 takerSizeType = 7;</code>
+     */
+    public int getTakerSizeType() {
+      return takerSizeType_;
     }
 
     private byte memoizedIsInitialized = -1;
@@ -27491,22 +27491,22 @@ public final class ProtocolMessages {
         output.writeInt32(1, type_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeInt32(2, makerSizeType_);
+        output.writeDouble(2, makerSize_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeDouble(3, makerSize_);
+        output.writeDouble(3, takerSize_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeInt32(4, takerSizeType_);
+        output.writeBytes(4, getSourceClientIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeDouble(5, takerSize_);
+        output.writeBytes(5, getTargetClientIdBytes());
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeBytes(6, getSourceClientIdBytes());
+        output.writeInt32(6, makerSizeType_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeBytes(7, getTargetClientIdBytes());
+        output.writeInt32(7, takerSizeType_);
       }
       unknownFields.writeTo(output);
     }
@@ -27523,27 +27523,27 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(2, makerSizeType_);
+          .computeDoubleSize(2, makerSize_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(3, makerSize_);
+          .computeDoubleSize(3, takerSize_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(4, takerSizeType_);
+          .computeBytesSize(4, getSourceClientIdBytes());
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(5, takerSize_);
+          .computeBytesSize(5, getTargetClientIdBytes());
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, getSourceClientIdBytes());
+          .computeInt32Size(6, makerSizeType_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(7, getTargetClientIdBytes());
+          .computeInt32Size(7, takerSizeType_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -27659,17 +27659,17 @@ public final class ProtocolMessages {
         super.clear();
         type_ = 0;
         bitField0_ = (bitField0_ & ~0x00000001);
-        makerSizeType_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
         makerSize_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        takerSizeType_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000002);
         takerSize_ = 0D;
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000004);
         sourceClientId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000008);
         targetClientId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
+        makerSizeType_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000020);
+        takerSizeType_ = 0;
         bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
@@ -27702,27 +27702,27 @@ public final class ProtocolMessages {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.makerSizeType_ = makerSizeType_;
+        result.makerSize_ = makerSize_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.makerSize_ = makerSize_;
+        result.takerSize_ = takerSize_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
-        result.takerSizeType_ = takerSizeType_;
+        result.sourceClientId_ = sourceClientId_;
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000010;
         }
-        result.takerSize_ = takerSize_;
+        result.targetClientId_ = targetClientId_;
         if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
           to_bitField0_ |= 0x00000020;
         }
-        result.sourceClientId_ = sourceClientId_;
+        result.makerSizeType_ = makerSizeType_;
         if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
           to_bitField0_ |= 0x00000040;
         }
-        result.targetClientId_ = targetClientId_;
+        result.takerSizeType_ = takerSizeType_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -27742,27 +27742,27 @@ public final class ProtocolMessages {
         if (other.hasType()) {
           setType(other.getType());
         }
-        if (other.hasMakerSizeType()) {
-          setMakerSizeType(other.getMakerSizeType());
-        }
         if (other.hasMakerSize()) {
           setMakerSize(other.getMakerSize());
-        }
-        if (other.hasTakerSizeType()) {
-          setTakerSizeType(other.getTakerSizeType());
         }
         if (other.hasTakerSize()) {
           setTakerSize(other.getTakerSize());
         }
         if (other.hasSourceClientId()) {
-          bitField0_ |= 0x00000020;
+          bitField0_ |= 0x00000008;
           sourceClientId_ = other.sourceClientId_;
           onChanged();
         }
         if (other.hasTargetClientId()) {
-          bitField0_ |= 0x00000040;
+          bitField0_ |= 0x00000010;
           targetClientId_ = other.targetClientId_;
           onChanged();
+        }
+        if (other.hasMakerSizeType()) {
+          setMakerSizeType(other.getMakerSizeType());
+        }
+        if (other.hasTakerSizeType()) {
+          setTakerSizeType(other.getTakerSizeType());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -27827,129 +27827,65 @@ public final class ProtocolMessages {
         return this;
       }
 
-      private int makerSizeType_ ;
+      private double makerSize_ ;
       /**
-       * <code>optional int32 makerSizeType = 2;</code>
+       * <code>optional double makerSize = 2;</code>
        */
-      public boolean hasMakerSizeType() {
+      public boolean hasMakerSize() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional int32 makerSizeType = 2;</code>
-       */
-      public int getMakerSizeType() {
-        return makerSizeType_;
-      }
-      /**
-       * <code>optional int32 makerSizeType = 2;</code>
-       */
-      public Builder setMakerSizeType(int value) {
-        bitField0_ |= 0x00000002;
-        makerSizeType_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional int32 makerSizeType = 2;</code>
-       */
-      public Builder clearMakerSizeType() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        makerSizeType_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private double makerSize_ ;
-      /**
-       * <code>optional double makerSize = 3;</code>
-       */
-      public boolean hasMakerSize() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>optional double makerSize = 3;</code>
+       * <code>optional double makerSize = 2;</code>
        */
       public double getMakerSize() {
         return makerSize_;
       }
       /**
-       * <code>optional double makerSize = 3;</code>
+       * <code>optional double makerSize = 2;</code>
        */
       public Builder setMakerSize(double value) {
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         makerSize_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional double makerSize = 3;</code>
+       * <code>optional double makerSize = 2;</code>
        */
       public Builder clearMakerSize() {
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000002);
         makerSize_ = 0D;
-        onChanged();
-        return this;
-      }
-
-      private int takerSizeType_ ;
-      /**
-       * <code>optional int32 takerSizeType = 4;</code>
-       */
-      public boolean hasTakerSizeType() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      /**
-       * <code>optional int32 takerSizeType = 4;</code>
-       */
-      public int getTakerSizeType() {
-        return takerSizeType_;
-      }
-      /**
-       * <code>optional int32 takerSizeType = 4;</code>
-       */
-      public Builder setTakerSizeType(int value) {
-        bitField0_ |= 0x00000008;
-        takerSizeType_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional int32 takerSizeType = 4;</code>
-       */
-      public Builder clearTakerSizeType() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        takerSizeType_ = 0;
         onChanged();
         return this;
       }
 
       private double takerSize_ ;
       /**
-       * <code>optional double takerSize = 5;</code>
+       * <code>optional double takerSize = 3;</code>
        */
       public boolean hasTakerSize() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional double takerSize = 5;</code>
+       * <code>optional double takerSize = 3;</code>
        */
       public double getTakerSize() {
         return takerSize_;
       }
       /**
-       * <code>optional double takerSize = 5;</code>
+       * <code>optional double takerSize = 3;</code>
        */
       public Builder setTakerSize(double value) {
-        bitField0_ |= 0x00000010;
+        bitField0_ |= 0x00000004;
         takerSize_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional double takerSize = 5;</code>
+       * <code>optional double takerSize = 3;</code>
        */
       public Builder clearTakerSize() {
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000004);
         takerSize_ = 0D;
         onChanged();
         return this;
@@ -27957,13 +27893,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object sourceClientId_ = "";
       /**
-       * <code>optional string sourceClientId = 6;</code>
+       * <code>optional string sourceClientId = 4;</code>
        */
       public boolean hasSourceClientId() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       /**
-       * <code>optional string sourceClientId = 6;</code>
+       * <code>optional string sourceClientId = 4;</code>
        */
       public java.lang.String getSourceClientId() {
         java.lang.Object ref = sourceClientId_;
@@ -27980,7 +27916,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string sourceClientId = 6;</code>
+       * <code>optional string sourceClientId = 4;</code>
        */
       public com.google.protobuf.ByteString
           getSourceClientIdBytes() {
@@ -27996,36 +27932,36 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string sourceClientId = 6;</code>
+       * <code>optional string sourceClientId = 4;</code>
        */
       public Builder setSourceClientId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000020;
+  bitField0_ |= 0x00000008;
         sourceClientId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string sourceClientId = 6;</code>
+       * <code>optional string sourceClientId = 4;</code>
        */
       public Builder clearSourceClientId() {
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000008);
         sourceClientId_ = getDefaultInstance().getSourceClientId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string sourceClientId = 6;</code>
+       * <code>optional string sourceClientId = 4;</code>
        */
       public Builder setSourceClientIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000020;
+  bitField0_ |= 0x00000008;
         sourceClientId_ = value;
         onChanged();
         return this;
@@ -28033,13 +27969,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object targetClientId_ = "";
       /**
-       * <code>optional string targetClientId = 7;</code>
+       * <code>optional string targetClientId = 5;</code>
        */
       public boolean hasTargetClientId() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>optional string targetClientId = 7;</code>
+       * <code>optional string targetClientId = 5;</code>
        */
       public java.lang.String getTargetClientId() {
         java.lang.Object ref = targetClientId_;
@@ -28056,7 +27992,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string targetClientId = 7;</code>
+       * <code>optional string targetClientId = 5;</code>
        */
       public com.google.protobuf.ByteString
           getTargetClientIdBytes() {
@@ -28072,37 +28008,101 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string targetClientId = 7;</code>
+       * <code>optional string targetClientId = 5;</code>
        */
       public Builder setTargetClientId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000040;
+  bitField0_ |= 0x00000010;
         targetClientId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string targetClientId = 7;</code>
+       * <code>optional string targetClientId = 5;</code>
        */
       public Builder clearTargetClientId() {
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000010);
         targetClientId_ = getDefaultInstance().getTargetClientId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string targetClientId = 7;</code>
+       * <code>optional string targetClientId = 5;</code>
        */
       public Builder setTargetClientIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000040;
+  bitField0_ |= 0x00000010;
         targetClientId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private int makerSizeType_ ;
+      /**
+       * <code>optional int32 makerSizeType = 6;</code>
+       */
+      public boolean hasMakerSizeType() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional int32 makerSizeType = 6;</code>
+       */
+      public int getMakerSizeType() {
+        return makerSizeType_;
+      }
+      /**
+       * <code>optional int32 makerSizeType = 6;</code>
+       */
+      public Builder setMakerSizeType(int value) {
+        bitField0_ |= 0x00000020;
+        makerSizeType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 makerSizeType = 6;</code>
+       */
+      public Builder clearMakerSizeType() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        makerSizeType_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private int takerSizeType_ ;
+      /**
+       * <code>optional int32 takerSizeType = 7;</code>
+       */
+      public boolean hasTakerSizeType() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional int32 takerSizeType = 7;</code>
+       */
+      public int getTakerSizeType() {
+        return takerSizeType_;
+      }
+      /**
+       * <code>optional int32 takerSizeType = 7;</code>
+       */
+      public Builder setTakerSizeType(int value) {
+        bitField0_ |= 0x00000040;
+        takerSizeType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 takerSizeType = 7;</code>
+       */
+      public Builder clearTakerSizeType() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        takerSizeType_ = 0;
         onChanged();
         return this;
       }
@@ -28397,13 +28397,13 @@ public final class ProtocolMessages {
       "ls\030\004 \003(\0132D.com.lykke.matching.engine.mes" +
       "sages.OrderBookSnapshot.OrderBookLevel\032/" +
       "\n\016OrderBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006volum" +
-      "e\030\002 \002(\t\"c\n\003Fee\022\014\n\004type\030\001 \002(\005\022\020\n\010sizeType" +
-      "\030\002 \001(\005\022\014\n\004size\030\003 \001(\001\022\026\n\016sourceClientId\030\004" +
-      " \001(\t\022\026\n\016targetClientId\030\005 \001(\t\"\241\001\n\rLimitOr" +
-      "derFee\022\014\n\004type\030\001 \002(\005\022\025\n\rmakerSizeType\030\002 " +
-      "\001(\005\022\021\n\tmakerSize\030\003 \001(\001\022\025\n\rtakerSizeType\030" +
-      "\004 \001(\005\022\021\n\ttakerSize\030\005 \001(\001\022\026\n\016sourceClient" +
-      "Id\030\006 \001(\t\022\026\n\016targetClientId\030\007 \001(\t*7\n\007FeeT",
+      "e\030\002 \002(\t\"c\n\003Fee\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030\002 \001" +
+      "(\001\022\026\n\016sourceClientId\030\003 \001(\t\022\026\n\016targetClie" +
+      "ntId\030\004 \001(\t\022\020\n\010sizeType\030\005 \001(\005\"\241\001\n\rLimitOr" +
+      "derFee\022\014\n\004type\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022" +
+      "\021\n\ttakerSize\030\003 \001(\001\022\026\n\016sourceClientId\030\004 \001" +
+      "(\t\022\026\n\016targetClientId\030\005 \001(\t\022\025\n\rmakerSizeT" +
+      "ype\030\006 \001(\005\022\025\n\rtakerSizeType\030\007 \001(\005*7\n\007FeeT",
       "ype\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTER" +
       "NAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020\000" +
       "\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching.eng" +
@@ -28600,13 +28600,13 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_Fee_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_Fee_descriptor,
-        new java.lang.String[] { "Type", "SizeType", "Size", "SourceClientId", "TargetClientId", });
+        new java.lang.String[] { "Type", "Size", "SourceClientId", "TargetClientId", "SizeType", });
     internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor =
       getDescriptor().getMessageTypes().get(26);
     internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor,
-        new java.lang.String[] { "Type", "MakerSizeType", "MakerSize", "TakerSizeType", "TakerSize", "SourceClientId", "TargetClientId", });
+        new java.lang.String[] { "Type", "MakerSize", "TakerSize", "SourceClientId", "TargetClientId", "MakerSizeType", "TakerSizeType", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

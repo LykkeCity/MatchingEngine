@@ -234,18 +234,18 @@ enum FeeSizeType {
 
 message Fee {
     required int32 type = 1;
-    optional int32 sizeType = 2;
-    optional double size = 3;
-    optional string sourceClientId = 4;
-    optional string targetClientId = 5;
+    optional double size = 2;
+    optional string sourceClientId = 3;
+    optional string targetClientId = 4;
+    optional int32 sizeType = 5;
 }
 
 message LimitOrderFee {
     required int32 type = 1;
-    optional int32 makerSizeType = 2;
-    optional double makerSize = 3;
-    optional int32 takerSizeType = 4;
-    optional double takerSize = 5;
-    optional string sourceClientId = 6;
-    optional string targetClientId = 7;
+    optional double makerSize = 2;
+    optional double takerSize = 3;
+    optional string sourceClientId = 4;
+    optional string targetClientId = 5;
+    optional int32 makerSizeType = 6;
+    optional int32 takerSizeType = 7;
 }
