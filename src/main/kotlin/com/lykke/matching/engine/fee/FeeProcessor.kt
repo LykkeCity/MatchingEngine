@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
@@ -32,11 +33,16 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
     private fun processFee(feeInstruction: FeeInstruction?, receiptOperation: WalletOperation, operations: MutableList<WalletOperation>, feeSize: Double?): FeeTransfer? {
         if (feeInstruction == null || feeInstruction.type == FeeType.NO_FEE
                 || feeSize == null || !(feeSize > 0 && feeSize < 1)
-                || feeInstruction.targetClientId == null) {
+                || feeInstruction.targetClientId == null || feeInstruction.sizeType == null) {
             return null
         }
         val asset = assetsHolder.getAsset(receiptOperation.assetId)
-        val feeAmount = RoundingUtils.round(receiptOperation.amount * feeSize, asset.accuracy, true)
+
+        val feeAmount = when (feeInstruction.sizeType) {
+            FeeSizeType.PERCENTAGE -> RoundingUtils.round(receiptOperation.amount * feeSize, asset.accuracy, true)
+            FeeSizeType.ABSOLUTE -> feeSize
+        }
+
         when (feeInstruction.type) {
             FeeType.CLIENT_FEE -> {
                 return processClientFee(feeInstruction, receiptOperation, operations, feeAmount, asset.accuracy)

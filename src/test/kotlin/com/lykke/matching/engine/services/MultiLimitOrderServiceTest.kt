@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.TradeInfo
@@ -500,7 +501,7 @@ class MultiLimitOrderServiceTest {
                 pair = "EURUSD",
                 clientId = marketMaker,
                 volumes = listOf(VolumePrice(60.0, 1.2), VolumePrice(60.0, 1.1)),
-                fees = listOf(LimitOrderFeeInstruction(FeeType.CLIENT_FEE, 0.01, 0.02, marketMaker, feeHolder), LimitOrderFeeInstruction(FeeType.CLIENT_FEE, 0.03, 0.04, marketMaker, feeHolder)),
+                fees = listOf(LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.01, FeeSizeType.PERCENTAGE, 0.02, marketMaker, feeHolder), LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.03, FeeSizeType.PERCENTAGE, 0.04, marketMaker, feeHolder)),
                 cancel = true))
 
         assertEquals(0.5, balancesHolder.getBalance(feeHolder, "EUR")) // 0.01 * 50 (expr1)

@@ -2,6 +2,7 @@ package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.WalletOperation
@@ -108,7 +109,7 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testClientFee() {
+    fun testClientPercentageFee() {
         val operations = LinkedList<WalletOperation>()
         val now = Date()
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -10.1))
@@ -138,7 +139,37 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testClientFeeRound() {
+    fun testClientAbsoluteFee() {
+        val operations = LinkedList<WalletOperation>()
+        val now = Date()
+        operations.add(WalletOperation("1", null, "Client1", "USD", now, -10.1))
+        operations.add(WalletOperation("2", null, "Client2", "USD", now, 10.1))
+        val receiptOperation = operations[1]
+        val originalOperations = LinkedList(operations)
+
+        val feeInstruction = buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 0.1, targetClientId = "Client3")
+        val feeTransfer = feeProcessor.processFee(feeInstruction, receiptOperation, operations)
+
+        assertNotNull(feeTransfer)
+        assertEquals("USD", feeTransfer!!.asset)
+        assertEquals("Client2", feeTransfer.fromClientId)
+        assertEquals("Client3", feeTransfer.toClientId)
+        assertNull(feeTransfer.externalId)
+        assertEquals(now, feeTransfer.dateTime)
+        assertEquals(0.1, feeTransfer.volume)
+
+        assertEquals(3, operations.size)
+        assertEquals(originalOperations[0], operations[0])
+        assertFalse { operations[0].isFee }
+        assertEquals(10.0, operations[1].amount)
+        assertFalse { operations[1].isFee }
+        assertEquals(0.1, operations[2].amount)
+        assertEquals("Client3", operations[2].clientId)
+        assertTrue { operations[2].isFee }
+    }
+
+    @Test
+    fun testClientPercentageFeeRound() {
         val operations = LinkedList<WalletOperation>()
         val now = Date()
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -29.99))
@@ -167,7 +198,7 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testExternalFee() {
+    fun testExternalPercentageFee() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
         initServices()
 
@@ -200,7 +231,7 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testExternalFeeNotEnoughFunds() {
+    fun testExternalPercentageFeeNotEnoughFunds() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 0.1))
         initServices()
 
@@ -232,7 +263,7 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testMakerFee() {
+    fun testMakerPercentageFee() {
         val operations = LinkedList<WalletOperation>()
         val now = Date()
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -10.1))
@@ -261,13 +292,59 @@ class FeeProcessorTest {
         assertTrue { operations[2].isFee }
     }
 
-    private fun buildFeeInstruction(type: FeeType? = null, size: Double? = null, sourceClientId: String? = null, targetClientId: String? = null): FeeInstruction? {
-        return if (type == null) null
-        else return FeeInstruction(type, size, sourceClientId, targetClientId)
+    @Test
+    fun testMakerAbsoluteFee() {
+        val operations = LinkedList<WalletOperation>()
+        val now = Date()
+        operations.add(WalletOperation("1", null, "Client1", "USD", now, -10.1))
+        operations.add(WalletOperation("2", null, "Client2", "USD", now, 10.1))
+        val receiptOperation = operations[1]
+        val originalOperations = LinkedList(operations)
+
+        val feeInstruction = buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
+                takerSizeType = FeeSizeType.ABSOLUTE,
+                takerSize = 0.1,
+                makerSizeType = FeeSizeType.ABSOLUTE,
+                makerSize = 0.2,
+                targetClientId = "Client3")
+
+        val feeTransfer = feeProcessor.processMakerFee(feeInstruction, receiptOperation, operations)
+
+        assertNotNull(feeTransfer)
+        assertEquals("USD", feeTransfer!!.asset)
+        assertEquals("Client2", feeTransfer.fromClientId)
+        assertEquals("Client3", feeTransfer.toClientId)
+        assertNull(feeTransfer.externalId)
+        assertEquals(now, feeTransfer.dateTime)
+        assertEquals(0.2, feeTransfer.volume)
+
+        assertEquals(3, operations.size)
+        assertEquals(originalOperations[0], operations[0])
+        assertFalse { operations[0].isFee }
+        assertEquals(9.9, operations[1].amount)
+        assertFalse { operations[1].isFee }
+        assertEquals(0.2, operations[2].amount)
+        assertEquals("Client3", operations[2].clientId)
+        assertTrue { operations[2].isFee }
     }
 
-    private fun buildLimitOrderFeeInstruction(type: FeeType? = null, takerSize: Double? = null, makerSize: Double? = null, sourceClientId: String? = null, targetClientId: String? = null): FeeInstruction? {
+    private fun buildFeeInstruction(type: FeeType? = null,
+                                    sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                    size: Double? = null,
+                                    sourceClientId: String? = null,
+                                    targetClientId: String? = null): FeeInstruction? {
         return if (type == null) null
-        else return LimitOrderFeeInstruction(type, takerSize, makerSize, sourceClientId, targetClientId)
+        else return FeeInstruction(type, sizeType, size, sourceClientId, targetClientId)
+    }
+
+    private fun buildLimitOrderFeeInstruction(type: FeeType? = null,
+                                              takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                              takerSize: Double? = null,
+                                              makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                              makerSize: Double? = null,
+                                              sourceClientId: String? = null,
+                                              targetClientId: String? = null): FeeInstruction? {
+        return if (type == null) null
+        else return LimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId)
     }
 }
