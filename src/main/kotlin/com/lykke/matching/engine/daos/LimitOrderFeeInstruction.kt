@@ -29,13 +29,13 @@ class LimitOrderFeeInstruction(
     }
 
     override fun toString(): String {
-        return "LimitOrderFeeInstruction(type=$type " +
-                "${if (sizeType != null) ", takerSizeType=$size" else ""} " +
-                "${if (size != null) ", takerSize=$size" else ""} " +
-                "${if (makerSizeType != null) ", makerSizeType=$makerSizeType" else ""} " +
-                "${if (makerSize != null) ", makerSize=$makerSize" else ""} " +
-                "${if (sourceClientId != null) ", sourceClientId=$sourceClientId" else ""} " +
-                "${if (targetClientId != null) ", targetClientId=$targetClientId" else ""})"
+        return "LimitOrderFeeInstruction(type=$type" +
+                (if (sizeType != null) ", takerSizeType=$sizeType" else "") +
+                (if (size != null) ", takerSize=$size" else "") +
+                (if (makerSizeType != null) ", makerSizeType=$makerSizeType" else "") +
+                (if (makerSize != null) ", makerSize=$makerSize" else "") +
+                (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
+                "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
 
 }

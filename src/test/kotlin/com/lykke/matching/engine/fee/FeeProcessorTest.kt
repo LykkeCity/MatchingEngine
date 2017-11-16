@@ -302,7 +302,6 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstruction = buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
-                takerSizeType = FeeSizeType.ABSOLUTE,
                 takerSize = 0.1,
                 makerSizeType = FeeSizeType.ABSOLUTE,
                 makerSize = 0.2,

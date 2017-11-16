@@ -27,10 +27,10 @@ open class FeeInstruction(
     }
 
     override fun toString(): String {
-        return "FeeInstruction(type=$type " +
-                "${if (sizeType != null) ", sizeType=$sizeType" else ""} " +
-                "${if (size != null) ", size=$size" else ""} " +
-                "${if (sourceClientId != null) ", sourceClientId=$sourceClientId" else ""} " +
-                "${if (targetClientId != null) ", targetClientId=$targetClientId" else ""})"
+        return "FeeInstruction(type=$type" +
+                (if (sizeType != null) ", sizeType=$sizeType" else "") +
+                (if (size != null) ", size=$size" else "") +
+                (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
+                "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
 }
