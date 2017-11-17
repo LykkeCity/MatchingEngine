@@ -46,14 +46,16 @@ class Connection(val socket: Socket,
 
             thread {
                 while (!isClosed()) {
-                    val type = inputStream.readByte()
-                    if (type == MessageType.PING.type) {
-                        //do not read, send back ping
-                        outputStream.write(byteArrayOf(MessageType.PING.type))
-                        outputStream.flush()
-                    } else {
-                        LOGGER.error("Unsupported message type: $type")
-                    }
+                    try {
+                        val type = inputStream.readByte()
+                        if (type == MessageType.PING.type) {
+                            //do not read, send back ping
+                            outputStream.write(byteArrayOf(MessageType.PING.type))
+                            outputStream.flush()
+                        } else {
+                            LOGGER.error("Unsupported message type: $type")
+                        }
+                    } catch (e: Exception) {}
                 }
             }
 

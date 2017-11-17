@@ -7,6 +7,8 @@ import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
+import com.lykke.utils.alivestatus.AliveStatusProcessor
+import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -41,6 +43,13 @@ fun main(args: Array<String>) {
             config.slackNotifications.throttlingLimitSeconds)
 
     ThrottlingLogger.init(config.throttlingLogger)
+
+    try {
+        AliveStatusProcessor(connectionString = config.me.db.matchingEngineConnString, appName = "MatchingEngine", config = config.me.aliveStatus).run()
+    } catch (e: CheckAppInstanceRunningException) {
+        LOGGER.error(e.message)
+        return
+    }
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 
     SocketServer(config) { appInitialData ->

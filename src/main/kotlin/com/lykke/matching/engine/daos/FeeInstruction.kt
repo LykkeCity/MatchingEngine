@@ -5,24 +5,37 @@ import java.io.Serializable
 
 open class FeeInstruction(
         val type: FeeType,
+        val sizeType: FeeSizeType?,
         val size: Double?,
         val sourceClientId: String?,
         val targetClientId: String?
-): Serializable {
+) : Serializable {
 
     companion object {
         fun create(fee: ProtocolMessages.Fee?): FeeInstruction? {
             if (fee == null) {
                 return null
             }
-            return FeeInstruction(FeeType.getByExternalId(fee.type), fee.size, fee.sourceClientId, fee.targetClientId)
+            val feeType = FeeType.getByExternalId(fee.type)
+            var sizeType: FeeSizeType? = if (fee.hasSizeType()) FeeSizeType.getByExternalId(fee.sizeType) else null
+            if (feeType != FeeType.NO_FEE && sizeType == null) {
+                sizeType = FeeSizeType.PERCENTAGE
+            }
+            return FeeInstruction(
+                    feeType,
+                    sizeType,
+                    fee.size,
+                    fee.sourceClientId,
+                    fee.targetClientId
+            )
         }
     }
 
     override fun toString(): String {
-        return "FeeInstruction(type=$type " +
-                "${if (size != null) ", size=$size" else ""} " +
-                "${if (sourceClientId != null) ", sourceClientId=$sourceClientId" else ""} " +
-                "${if (targetClientId != null) ", targetClientId=$targetClientId" else ""})"
+        return "FeeInstruction(type=$type" +
+                (if (sizeType != null) ", sizeType=$sizeType" else "") +
+                (if (size != null) ", size=$size" else "") +
+                (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
+                "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
 }

@@ -242,11 +242,17 @@ enum FeeType {
     EXTERNAL_FEE = 2;
 }
 
+enum FeeSizeType {
+    PERCENTAGE = 0;
+    ABSOLUTE = 1;
+}
+
 message Fee {
     required int32 type = 1;
     optional double size = 2;
     optional string sourceClientId = 3;
     optional string targetClientId = 4;
+    optional int32 sizeType = 5;
 }
 
 message LimitOrderFee {
@@ -255,4 +261,6 @@ message LimitOrderFee {
     optional double takerSize = 3;
     optional string sourceClientId = 4;
     optional string targetClientId = 5;
+    optional int32 makerSizeType = 6;
+    optional int32 takerSizeType = 7;
 }
