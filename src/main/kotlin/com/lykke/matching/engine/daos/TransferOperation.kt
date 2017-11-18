@@ -10,4 +10,5 @@ data class TransferOperation(
         val asset: String,
         val dateTime: Date,
         val volume: Double,
+        val overdraftLimit: Double?,
         val fee: FeeInstruction?)

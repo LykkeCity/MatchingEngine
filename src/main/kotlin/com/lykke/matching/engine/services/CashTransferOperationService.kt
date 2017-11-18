@@ -39,11 +39,12 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}")
 
-        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, FeeInstruction.create(message.fee))
+        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, FeeInstruction.create(message.fee))
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
-        if (fromBalance - reservedBalance < operation.volume) {
+        val overdraftLimit = if (operation.overdraftLimit != null) -operation.overdraftLimit else 0.0
+        if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
@@ -52,7 +53,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
 
         val feeTransfer = processTransferOperation(operation)
         walletDatabaseAccessor.insertTransferOperation(operation)
-        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.asset, operation.fee, feeTransfer))
+        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, operation.fee, feeTransfer))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)} processed")

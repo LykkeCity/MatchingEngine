@@ -10,6 +10,7 @@ class CashTransferOperation(
         val toClientId: String,
         val dateTime: Date,
         val volume: String,
+        val overdraftLimit: Double?,
         var asset: String,
         val feeInstruction: FeeInstruction?,
         val feeTransfer: FeeTransfer?): JsonSerializable()
