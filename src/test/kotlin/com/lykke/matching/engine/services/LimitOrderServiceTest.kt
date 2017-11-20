@@ -16,6 +16,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -73,6 +74,58 @@ class LimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+    }
+
+    @Test
+    fun testNotEnoughFundsClientOrder() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0, reservedBalance = 500.0))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.2, volume = -501.0)))
+
+        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.NotEnoughFunds.name, result.orders[0].order.status)
+        assertEquals(0, balanceUpdateQueue.size)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.2, volume = -501.0), true))
+
+        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.NotEnoughFunds.name, result.orders[0].order.status)
+        assertEquals(0, balanceUpdateQueue.size)
+    }
+
+    @Test
+    fun testNotEnoughFundsClientSellOrderWithCancel() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0, reservedBalance = 500.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = -500.0, uid = "forCancel"))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.2, volume = -1001.0, uid = "NotEnoughFunds"), true))
+
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Cancelled.name, result.orders.firstOrNull { it.order.externalId == "forCancel" }?.order?.status)
+        assertEquals(OrderStatus.NotEnoughFunds.name, result.orders.firstOrNull { it.order.externalId == "NotEnoughFunds" }?.order?.status)
+        assertEquals(1, balanceUpdateQueue.size)
+
+        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdate.balances.size)
+        assertEquals(500.0, balanceUpdate.balances[0].oldReserved)
+        assertEquals(0.0, balanceUpdate.balances[0].newReserved)
+
+        assertEquals(0, testDatabaseAccessor.getOrders("EURUSD", false).size)
+    }
+
+    @Test
+    fun testLeadToNegativeSpreadForClientOrder() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0, reservedBalance = 500.0))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.25, volume = 10.0))
+
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 1.2, volume = -500.0)))
+
+        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.LeadToNegativeSpread.name, result.orders[0].order.status)
+        assertEquals(0, balanceUpdateQueue.size)
     }
 
     @Test
