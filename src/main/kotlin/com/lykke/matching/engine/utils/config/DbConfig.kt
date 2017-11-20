@@ -5,5 +5,7 @@ data class DbConfig(
     val hTradesConnString: String,
     val hLiquidityConnString: String,
     val dictsConnString: String,
-    val sharedStorageConnString: String
+    val sharedStorageConnString: String,
+    val messageLogConnString: String,
+    val matchingEngineConnString: String
 )

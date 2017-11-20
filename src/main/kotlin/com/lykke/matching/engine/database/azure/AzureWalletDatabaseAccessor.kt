@@ -15,18 +15,18 @@ import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
-import org.apache.log4j.Logger
 import java.util.HashMap
 
 
 class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String, balancesTableName: String = "Accounts") : WalletDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 

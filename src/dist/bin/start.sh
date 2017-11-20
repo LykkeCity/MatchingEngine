@@ -19,7 +19,7 @@ if [ ! -x "$JAVACMD" ] ; then
 fi
 
 
-CLASSPATH=$BASEDIR/lib/lykke-me-prototype-0.1.jar:$BASEDIR/lib/kotlin-stdlib-1.1.1.jar:$BASEDIR/lib/log4j-1.2.17.jar:$BASEDIR/lib/protobuf-java-3.0.0-beta-2.jar:$BASEDIR/lib/azure-storage-4.0.0.jar:$BASEDIR/lib/gson-2.6.2.jar:$BASEDIR/lib/httpclient-4.5.2.jar:$BASEDIR/lib/amqp-client-3.6.5.jar:$BASEDIR/lib/fst-2.52.jar:$BASEDIR/lib/annotations-13.0.jar:$BASEDIR/lib/slf4j-api-1.7.12.jar:$BASEDIR/lib/commons-lang3-3.4.jar:$BASEDIR/lib/httpcore-4.4.4.jar:$BASEDIR/lib/commons-logging-1.2.jar:$BASEDIR/lib/commons-codec-1.9.jar:$BASEDIR/lib/javassist-3.21.0-GA.jar:$BASEDIR/lib/objenesis-2.5.1.jar:$BASEDIR/lib/jackson-core-2.8.8.jar
+CLASSPATH=$BASEDIR/lib/lykke-me-prototype-0.1.jar:$BASEDIR/lib/kotlin-utils-0.0.3-SNAPSHOT.jar:$BASEDIR/lib/kotlin-stdlib-1.1.3-2.jar:$BASEDIR/lib/log4j-1.2.17.jar:$BASEDIR/lib/protobuf-java-3.0.0-beta-2.jar:$BASEDIR/lib/azure-storage-4.0.0.jar:$BASEDIR/lib/gson-2.6.2.jar:$BASEDIR/lib/httpclient-4.5.2.jar:$BASEDIR/lib/amqp-client-3.6.5.jar:$BASEDIR/lib/fst-2.52.jar:$BASEDIR/lib/annotations-13.0.jar:$BASEDIR/lib/slf4j-api-1.7.12.jar:$BASEDIR/lib/commons-lang3-3.4.jar:$BASEDIR/lib/httpcore-4.4.4.jar:$BASEDIR/lib/commons-logging-1.2.jar:$BASEDIR/lib/commons-codec-1.9.jar:$BASEDIR/lib/javassist-3.21.0-GA.jar:$BASEDIR/lib/objenesis-2.5.1.jar:$BASEDIR/lib/jackson-core-2.8.8.jar
 mkdir $BASEDIR/log 2>/dev/null
 cd "$BINDIR"
 

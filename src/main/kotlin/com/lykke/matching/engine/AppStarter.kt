@@ -1,11 +1,15 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
+import com.lykke.utils.alivestatus.AliveStatusProcessor
+import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.apache.log4j.Logger
 import java.io.File
 import java.time.LocalDateTime
@@ -45,9 +49,19 @@ fun main(args: Array<String>) {
             config.slackNotifications.azureQueue.queueName,
             config.slackNotifications.throttlingLimitSeconds)
 
-    Runtime.getRuntime().addShutdownHook(ShutdownHook())
+    ThrottlingLogger.init(config.throttlingLogger)
 
-    SocketServer(config).run()
+    try {
+        AliveStatusProcessor(connectionString = config.me.db.matchingEngineConnString, appName = "MatchingEngine", config = config.me.aliveStatus).run()
+    } catch (e: CheckAppInstanceRunningException) {
+        LOGGER.error(e.message)
+        return
+    }
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
+
+    SocketServer(config) { appInitialData ->
+        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
+    }.run()
 }
 
 private fun teeLog(message: String) {
@@ -55,12 +69,14 @@ private fun teeLog(message: String) {
     LOGGER.info(message)
 }
 
-internal class ShutdownHook : Thread() {
+internal class ShutdownHook(private val config: Config) : Thread() {
     init {
         this.name = "ShutdownHook"
     }
 
     override fun run() {
         LOGGER.info("Stopping application")
+
+        MetricsLogger.logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Stopped :")
     }
 }

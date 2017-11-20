@@ -7,5 +7,6 @@ data class Config(
     @SerializedName("MatchingEngine")
     val me: MatchingEngineConfig,
     val slackNotifications: SlackNotificationConfig,
-    val keepAlive: KeepAliveConfig
+    val keepAlive: KeepAliveConfig,
+    val throttlingLogger: ThrottlingLoggerConfig
 )

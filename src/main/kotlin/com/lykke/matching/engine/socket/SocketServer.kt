@@ -1,10 +1,11 @@
 package com.lykke.matching.engine.socket
 
+import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.utils.config.Config
-import org.apache.log4j.Logger
 import java.net.ServerSocket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
@@ -12,10 +13,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 
-class SocketServer(private val config: Config): Runnable {
+class SocketServer(private val config: Config, private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
 
     companion object {
-        val LOGGER = Logger.getLogger(SocketServer::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -28,6 +29,8 @@ class SocketServer(private val config: Config): Runnable {
 
         val messageProcessor = MessageProcessor(config, messagesQueue)
         messageProcessor.start()
+
+        initializationCompleteCallback(messageProcessor.appInitialData)
 
         val port = config.me.socket.port
         val socket = ServerSocket(port)

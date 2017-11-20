@@ -43,12 +43,17 @@ class ClientHandler(
                 readMessage(inputStream!!, outputStream!!)
             }
         } catch (e: Exception) {
+            if (incomingSize > 0) {
+                LOGGER.info("Connection from $clientHostName disconnected. [${e.message}]")
+            }
             if (socket.isConnected && !socket.isClosed) {
                 socket.close()
             }
             socketServer.disconnect(this)
         } finally {
-            LOGGER.info("Connection from $clientHostName closed.")
+            if (incomingSize > 0) {
+                LOGGER.info("Connection from $clientHostName closed.")
+            }
         }
     }
 

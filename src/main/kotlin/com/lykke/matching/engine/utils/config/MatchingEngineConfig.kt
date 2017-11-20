@@ -2,6 +2,7 @@ package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
 import com.lykke.matching.engine.database.WalletsStorage
+import com.lykke.utils.alivestatus.config.AliveStatusConfig
 
 data class MatchingEngineConfig(
     val db: DbConfig,
@@ -22,6 +23,7 @@ data class MatchingEngineConfig(
     val queueSizeLimit: Int,
     val name: String,
     val trustedClients: Set<String>,
+    val aliveStatus: AliveStatusConfig,
     val walletsPath: String,
     val walletsStorage: WalletsStorage,
     val accountsMigration: AccountsMigrationConfig?

@@ -2,6 +2,7 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -9,7 +10,6 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
-import org.apache.log4j.Logger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.DataInputStream
@@ -28,7 +28,7 @@ class Connection(val socket: Socket,
                  val assetPairsCache: AssetsPairsHolder) : Thread() {
 
     companion object {
-        val LOGGER = Logger.getLogger(Connection::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(Connection::class.java.name)
     }
 
     var connectionHolder: ConnectionsHolder? = null
@@ -46,14 +46,16 @@ class Connection(val socket: Socket,
 
             thread {
                 while (!isClosed()) {
-                    val type = inputStream.readByte()
-                    if (type == MessageType.PING.type) {
-                        //do not read, send back ping
-                        outputStream.write(byteArrayOf(MessageType.PING.type))
-                        outputStream.flush()
-                    } else {
-                        LOGGER.error("Unsupported message type: $type")
-                    }
+                    try {
+                        val type = inputStream.readByte()
+                        if (type == MessageType.PING.type) {
+                            //do not read, send back ping
+                            outputStream.write(byteArrayOf(MessageType.PING.type))
+                            outputStream.flush()
+                        } else {
+                            LOGGER.error("Unsupported message type: $type")
+                        }
+                    } catch (e: Exception) {}
                 }
             }
 
@@ -69,7 +71,7 @@ class Connection(val socket: Socket,
                 writeOrderBook(item, outputStream)
             }
         } catch (e: Exception) {
-            LOGGER.error("Order book subscriber disconnected: $clientHostName")
+            LOGGER.error("Order book subscriber disconnected: $clientHostName", e)
         } finally {
             LOGGER.info("Order book subscriber connection from $clientHostName closed.")
             socket.close()

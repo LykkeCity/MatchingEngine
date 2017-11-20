@@ -4,13 +4,13 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.azure.AzureLkkTrade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
+import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
-import org.apache.log4j.Logger
 
 class AzureMarketOrderDatabaseAccessor(tradesConfig: String) : MarketOrderDatabaseAccessor {
 
     companion object {
-        val LOGGER = Logger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
