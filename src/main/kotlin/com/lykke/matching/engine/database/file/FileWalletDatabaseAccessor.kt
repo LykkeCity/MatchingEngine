@@ -20,15 +20,20 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.util.HashMap
 
-class FileWalletDatabaseAccessor(private val dir: String, azureBalancesConnectionString: String, azureDictsConnectionString: String) : WalletDatabaseAccessor {
+class FileWalletDatabaseAccessor(private val dir: String, private val delegateDatabaseAccessor: WalletDatabaseAccessor) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(FileWalletDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    init {
+        if (delegateDatabaseAccessor is FileWalletDatabaseAccessor) {
+            throw IllegalArgumentException("delegateDatabaseAccessor must not be FileWalletDatabaseAccessor instance")
+        }
+    }
+
     private val conf = FSTConfiguration.createDefaultConfiguration()
-    private val azureDbAccessor = AzureWalletDatabaseAccessor(azureBalancesConnectionString, azureDictsConnectionString)
 
     override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
         val result = HashMap<String, MutableMap<String, AssetBalance>>()
@@ -142,31 +147,31 @@ class FileWalletDatabaseAccessor(private val dir: String, azureBalancesConnectio
     }
 
     override fun insertExternalCashOperation(operation: ExternalCashOperation) {
-        azureDbAccessor.insertExternalCashOperation(operation)
+        delegateDatabaseAccessor.insertExternalCashOperation(operation)
     }
 
     override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
-        return azureDbAccessor.loadExternalCashOperation(clientId, operationId)
+        return delegateDatabaseAccessor.loadExternalCashOperation(clientId, operationId)
     }
 
     override fun insertOperation(operation: WalletOperation) {
-        azureDbAccessor.insertOperation(operation)
+        delegateDatabaseAccessor.insertOperation(operation)
     }
 
     override fun insertTransferOperation(operation: TransferOperation) {
-        azureDbAccessor.insertTransferOperation(operation)
+        delegateDatabaseAccessor.insertTransferOperation(operation)
     }
 
     override fun insertSwapOperation(operation: SwapOperation) {
-        azureDbAccessor.insertSwapOperation(operation)
+        delegateDatabaseAccessor.insertSwapOperation(operation)
     }
 
     override fun loadAssetPairs(): HashMap<String, AssetPair> {
-        return azureDbAccessor.loadAssetPairs()
+        return delegateDatabaseAccessor.loadAssetPairs()
     }
 
     override fun loadAssetPair(assetId: String): AssetPair? {
-        return azureDbAccessor.loadAssetPair(assetId)
+        return delegateDatabaseAccessor.loadAssetPair(assetId)
     }
 
 }

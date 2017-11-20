@@ -33,7 +33,7 @@ class AccountsMigration(config: MatchingEngineConfig) {
     private val azureAccountsTableName = config.accountsMigration!!.accountsTableName
     private val fileAccountsPath = config.walletsPath
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString, azureAccountsTableName)
-    private val fileDatabaseAccessor = FileWalletDatabaseAccessor(fileAccountsPath, config.db.balancesInfoConnString, config.db.dictsConnString)
+    private val fileDatabaseAccessor = FileWalletDatabaseAccessor(fileAccountsPath, AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString, azureAccountsTableName))
 
     fun fromDbToFile() {
         val startTime = Date().time
