@@ -26,7 +26,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                            private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService {
 
     companion object {
-        val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
+        val LOGGER = Logger.getLogger(CashSwapOperationService::class.java.name)
     }
 
     private var messagesCount: Long = 0
