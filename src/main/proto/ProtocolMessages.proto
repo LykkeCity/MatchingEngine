@@ -67,6 +67,7 @@ message CashTransferOperation {
     required string assetId = 5;
     required double volume = 6;
     optional Fee fee = 7;
+    optional double overdraftLimit = 8;
 }
 
 message CashSwapOperation {
