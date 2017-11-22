@@ -32,8 +32,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
 
     private fun processFee(feeInstruction: FeeInstruction?, receiptOperation: WalletOperation, operations: MutableList<WalletOperation>, feeSizeType: FeeSizeType?, feeSize: Double?): FeeTransfer? {
         if (feeInstruction == null || feeInstruction.type == FeeType.NO_FEE
-                || feeSize == null || feeSizeType == null || !(feeSize > 0 && feeSize < 1)
-                || feeInstruction.targetClientId == null) {
+                || feeSize == null || feeSizeType == null || feeInstruction.targetClientId == null) {
             return null
         }
         val asset = assetsHolder.getAsset(receiptOperation.assetId)
@@ -41,6 +40,10 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val feeAmount = when (feeSizeType) {
             FeeSizeType.PERCENTAGE -> RoundingUtils.round(receiptOperation.amount * feeSize, asset.accuracy, true)
             FeeSizeType.ABSOLUTE -> feeSize
+        }
+
+        if (feeAmount <= 0.0 || feeAmount >= receiptOperation.amount) {
+            return null
         }
 
         when (feeInstruction.type) {
@@ -73,4 +76,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         return FeeTransfer(receiptOperation.externalId, receiptOperation.clientId, feeInstruction.targetClientId, receiptOperation.dateTime, feeAmount, receiptOperation.assetId)
     }
 
+}
+
+fun main(args: Array<String>) {
+    println(RoundingUtils.round(0 * 0.01, 2, true))
 }
