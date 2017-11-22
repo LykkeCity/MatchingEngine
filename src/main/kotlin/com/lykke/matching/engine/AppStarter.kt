@@ -6,6 +6,7 @@ import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
+import com.lykke.matching.engine.utils.migration.AccountsMigrationException
 import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.alivestatus.AliveStatusProcessor
@@ -41,7 +42,11 @@ fun main(args: Array<String>) {
         return
     }
 
-    if (migrateAccountsIfConfigured(config)) {
+
+    try {
+        migrateAccountsIfConfigured(config)
+    } catch (e: AccountsMigrationException) {
+        LOGGER.error(e.message, e)
         return
     }
 

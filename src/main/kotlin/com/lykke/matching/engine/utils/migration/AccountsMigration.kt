@@ -1,41 +1,43 @@
 package com.lykke.matching.engine.utils.migration
 
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileWalletDatabaseAccessor
-import com.lykke.matching.engine.utils.config.AccountsMigrationConfig
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import org.apache.log4j.Logger
+import java.io.File
 import java.util.Date
 import java.util.LinkedList
 
-fun migrateAccountsIfConfigured(config: Config): Boolean {
-    val accountsMigrationConfig = config.me.accountsMigration
-    if (accountsMigrationConfig != null) {
-        if (accountsMigrationConfig.mode == AccountsMigrationConfig.MODE_FROM_DB_TO_FILES) {
-            AccountsMigration(config.me).fromDbToFile()
-            return true
-        }
-        if (accountsMigrationConfig.mode == AccountsMigrationConfig.MODE_FROM_FILES_TO_DB) {
-            AccountsMigration(config.me).fromFileToDb()
-            return true
-        }
+fun migrateAccountsIfConfigured(config: Config) {
+    if (!config.me.walletsMigration) {
+        return
     }
-    return false
+    when (config.me.walletsStorage) {
+        WalletsStorage.File -> AccountsMigration(config.me).fromDbToFile()
+        WalletsStorage.Azure -> AccountsMigration(config.me).fromFileToDb()
+    }
 }
+
+class AccountsMigrationException(message: String) : Exception(message)
 
 class AccountsMigration(config: MatchingEngineConfig) {
     companion object {
         private val LOGGER = Logger.getLogger(AccountsMigration::class.java.name)
     }
 
-    private val azureAccountsTableName = config.accountsMigration!!.accountsTableName
-    private val fileAccountsPath = config.walletsPath
-    private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString, azureAccountsTableName)
-    private val fileDatabaseAccessor = FileWalletDatabaseAccessor(fileAccountsPath, AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.dictsConnString, azureAccountsTableName))
+    private val azureAccountsTableName = config.db.accountsTableName ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME
+    private val fileAccountsPath = config.fileDb.walletsPath
+    private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, azureAccountsTableName)
+    private val fileDatabaseAccessor = FileWalletDatabaseAccessor(fileAccountsPath)
 
     fun fromDbToFile() {
+        if (File(fileAccountsPath).listFiles().any { it.isFile }) {
+            throw AccountsMigrationException("Accounts files already exist in $fileAccountsPath")
+        }
+
         val startTime = Date().time
         teeLog("Starting wallets migration from azure to files; azure table: $azureAccountsTableName, files path: $fileAccountsPath")
         val wallets = azureDatabaseAccessor.loadWallets()
@@ -49,6 +51,10 @@ class AccountsMigration(config: MatchingEngineConfig) {
     }
 
     fun fromFileToDb() {
+        if (!File(fileAccountsPath).listFiles().any { it.isFile }) {
+            throw AccountsMigrationException("There are no accounts files in $fileAccountsPath")
+        }
+
         val startTime = Date().time
         teeLog("Starting wallets migration from files to azure; files path: $fileAccountsPath, azure table: $azureAccountsTableName")
         val wallets = fileDatabaseAccessor.loadWallets()

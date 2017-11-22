@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.daos.wallet
 
-import java.io.Serializable
-import java.util.HashMap
+import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
 
-class Wallet: Serializable {
+class Wallet {
     val clientId: String
-    val balances: MutableMap<String, AssetBalance> = HashMap()
+    val balances: MutableMap<String, AssetBalance> = ConcurrentHashMap()
 
     constructor(clientId: String) {
         this.clientId = clientId
@@ -18,19 +18,19 @@ class Wallet: Serializable {
         }
     }
 
-    fun setBalance(asset: String, balance: Double) {
+    fun setBalance(asset: String, timestamp: Date, balance: Double) {
         val oldBalance = balances[asset]
         if (oldBalance == null) {
-            balances[asset] = AssetBalance(asset, balance)
+            balances[asset] = AssetBalance(asset, timestamp, balance)
         } else {
             oldBalance.balance = balance
         }
     }
 
-    fun setReservedBalance(asset: String, reservedBalance: Double) {
+    fun setReservedBalance(asset: String, timestamp: Date, reservedBalance: Double) {
         val oldBalance = balances[asset]
         if (oldBalance == null) {
-            balances[asset] = AssetBalance(asset, reservedBalance, reservedBalance)
+            balances[asset] = AssetBalance(asset, timestamp, reservedBalance, reservedBalance)
         } else {
             oldBalance.reserved = reservedBalance
         }

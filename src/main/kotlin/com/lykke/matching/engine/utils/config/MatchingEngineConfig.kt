@@ -6,11 +6,13 @@ import com.lykke.utils.alivestatus.config.AliveStatusConfig
 
 data class MatchingEngineConfig(
     val db: DbConfig,
+    val fileDb: FileDbConfig,
     @SerializedName("IpEndpoint")
     val socket: IpEndpoint,
     val serverOrderBookPort: Int,
     val serverOrderBookMaxConnections: Int,
     val httpOrderBookPort: Int,
+    val httpBalancesPort: Int,
     val rabbitMqConfigs: RabbitMqConfigs,
     val bestPricesInterval: Long,
     val candleSaverInterval: Long,
@@ -19,12 +21,10 @@ data class MatchingEngineConfig(
     val negativeSpreadAssets: String,
     val whiteList: String?,
     val migrate: Boolean,
-    val orderBookPath: String,
     val queueSizeLimit: Int,
     val name: String,
     val trustedClients: Set<String>,
     val aliveStatus: AliveStatusConfig,
-    val walletsPath: String,
     val walletsStorage: WalletsStorage,
-    val accountsMigration: AccountsMigrationConfig?
+    val walletsMigration: Boolean
 )

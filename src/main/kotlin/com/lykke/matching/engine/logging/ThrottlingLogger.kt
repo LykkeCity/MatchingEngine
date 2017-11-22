@@ -71,7 +71,7 @@ class ThrottlingLogger private constructor(name: String) {
     }
 
     init {
-        fixedRateTimer(name = "ThrottlingLoggerCleaner", initialDelay = cleanerInterval, period = cleanerInterval) {
+        fixedRateTimer(name = "ThrottlingLoggerCleaner", initialDelay = cleanerInterval, period = cleanerInterval, daemon = true) {
             clearSentMessageTimestamps(messagesTtlMinutes)
         }
     }

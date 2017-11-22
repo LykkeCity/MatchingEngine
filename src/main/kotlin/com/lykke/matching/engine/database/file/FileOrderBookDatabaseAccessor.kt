@@ -29,7 +29,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
         try {
             val dir = File(ordersDir)
             if (dir.exists()) {
-                dir.listFiles().forEach { file ->
+                dir.listFiles().filter { it.isFile }.forEach { file ->
                     if (!file.name.startsWith("_prev_")) {
                         try {
                             result.addAll(loadFile(file))

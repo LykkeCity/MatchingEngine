@@ -7,5 +7,6 @@ data class DbConfig(
     val dictsConnString: String,
     val sharedStorageConnString: String,
     val messageLogConnString: String,
-    val matchingEngineConnString: String
+    val matchingEngineConnString: String,
+    val accountsTableName: String?
 )

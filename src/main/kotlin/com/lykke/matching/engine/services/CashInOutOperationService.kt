@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MetricsLogger
@@ -21,7 +21,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashInOutOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
+class CashInOutOperationService(private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                            private val assetsHolder: AssetsHolder,
                            private val balancesHolder: BalancesHolder,
                            private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
@@ -31,13 +31,11 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var messagesCount: Long = 0
-
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}")
 
-        val externalCashOperation = walletDatabaseAccessor.loadExternalCashOperation(message.clientId, message.id)
+        val externalCashOperation = cashOperationsDatabaseAccessor.loadExternalCashOperation(message.clientId, message.id)
         if (externalCashOperation != null) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(externalCashOperation.cashOperationId)
                     .setStatus(ALREADY_PROCESSED.type).setStatusReason("ID:${externalCashOperation.cashOperationId}").build())
@@ -60,7 +58,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
 
         balancesHolder.processWalletOperations(message.id, MessageType.CASH_IN_OUT_OPERATION.name, listOf(operation))
-        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.id, operation.id))
+        cashOperationsDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.id, operation.id))
         rabbitCashInOutQueue.put(CashOperation(message.id, operation.clientId, operation.dateTime, operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy), operation.assetId))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())

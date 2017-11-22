@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.utils.migration
 
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.createWalletDatabaseAccessor
@@ -11,6 +12,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
+import java.util.Date
 import java.util.HashMap
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -22,10 +24,10 @@ class ReservedVolumesRecalculator {
     fun recalculate(config: Config) {
         val walletDatabaseAccessor = createWalletDatabaseAccessor(config.me)
         val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(createWalletDatabaseAccessor(config.me), 60000))
+        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString), 60000))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), config.me.trustedClients)
 
-        val filePath = config.me.orderBookPath
+        val filePath = config.me.fileDb.orderBookPath
         teeLog("Starting order books analyze, path: $filePath")
         val fileOrderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
         val orders = fileOrderBookDatabaseAccessor.loadLimitOrders()
@@ -54,6 +56,7 @@ class ReservedVolumesRecalculator {
 
         teeLog("---------------------------------------------------------------------------------------------------")
 
+        val timestamp = Date()
         balanceHolder.wallets.forEach {
             val wallet = it.value
             val id = wallet.clientId
@@ -63,12 +66,12 @@ class ReservedVolumesRecalculator {
                 if (newBalance != null && newBalance > 0.0) {
                     if (oldBalance != newBalance) {
                         teeLog("1 $id, ${it.asset} : Old $oldBalance New $newBalance")
-                        wallet.setReservedBalance(it.asset, newBalance)
+                        wallet.setReservedBalance(it.asset, timestamp, newBalance)
                         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
                     }
                 } else if (oldBalance > 0) {
                     teeLog("2 $id, ${it.asset} : Old $oldBalance New ${newBalance?:0.0}")
-                    wallet.setReservedBalance(it.asset, 0.0)
+                    wallet.setReservedBalance(it.asset, timestamp, 0.0)
                     walletDatabaseAccessor.insertOrUpdateWallet(wallet)
                 }
             }

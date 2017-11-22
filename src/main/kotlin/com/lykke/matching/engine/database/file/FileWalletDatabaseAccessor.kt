@@ -1,14 +1,9 @@
 package com.lykke.matching.engine.database.file
 
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.ExternalCashOperation
-import com.lykke.matching.engine.daos.SwapOperation
-import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
+import com.lykke.matching.engine.daos.file.wallet.FileWallet
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
@@ -20,17 +15,11 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.util.HashMap
 
-class FileWalletDatabaseAccessor(private val dir: String, private val delegateDatabaseAccessor: WalletDatabaseAccessor) : WalletDatabaseAccessor {
+class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(FileWalletDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-    }
-
-    init {
-        if (delegateDatabaseAccessor is FileWalletDatabaseAccessor) {
-            throw IllegalArgumentException("delegateDatabaseAccessor must not be FileWalletDatabaseAccessor instance")
-        }
     }
 
     private val conf = FSTConfiguration.createDefaultConfiguration()
@@ -43,7 +32,7 @@ class FileWalletDatabaseAccessor(private val dir: String, private val delegateDa
             wallets.values.forEach { wallet ->
                 val map = result.getOrPut(wallet.clientId) { HashMap() }
                 wallet.balances.values.forEach { balance ->
-                    map.put(balance.asset, AssetBalance(balance.asset, balance.balance, balance.reserved))
+                    map.put(balance.asset, AssetBalance(balance.asset, balance.timestamp, balance.balance, balance.reserved))
                     balancesCount++
                 }
             }
@@ -59,9 +48,9 @@ class FileWalletDatabaseAccessor(private val dir: String, private val delegateDa
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
         try {
-            val dir = File(dir)
+            val dir = File(walletsDirectory)
             if (dir.exists()) {
-                dir.listFiles().forEach { file ->
+                dir.listFiles().filter { it.isFile }.forEach { file ->
                     if (!file.name.startsWith("_prev_")) {
                         try {
                             readAndAddWallet(file, result)
@@ -88,7 +77,7 @@ class FileWalletDatabaseAccessor(private val dir: String, private val delegateDa
     private fun readAndAddWallet(file: File, wallets: MutableMap<String, Wallet>) {
         val wallet = loadFile(file)
         wallet?.let {
-            wallets.put(it.clientId, it)
+            wallets.put(it.clientId, it.toWallet())
         }
     }
 
@@ -100,7 +89,7 @@ class FileWalletDatabaseAccessor(private val dir: String, private val delegateDa
         try {
             val fileName = wallet.clientId
             archiveAndDeleteFile(fileName)
-            saveFile(fileName, wallet)
+            saveFile(fileName, FileWallet(wallet))
         } catch (e: Exception) {
             val message = "Unable to save wallet, clientId: ${wallet.clientId}"
             LOGGER.error(message, e)
@@ -108,20 +97,20 @@ class FileWalletDatabaseAccessor(private val dir: String, private val delegateDa
         }
     }
 
-    private fun loadFile(file: File): Wallet? {
+    private fun loadFile(file: File): FileWallet? {
         val fileLocation = file.toPath()
         val bytes = Files.readAllBytes(fileLocation)
         val readCase = conf.asObject(bytes)
-        return readCase as? Wallet
+        return readCase as? FileWallet
     }
 
     private fun archiveAndDeleteFile(fileName: String) {
         try {
-            val newFile = FileSystems.getDefault().getPath("$dir/_prev_$fileName")
-            val oldFile = FileSystems.getDefault().getPath("$dir/$fileName")
+            val newFile = FileSystems.getDefault().getPath("$walletsDirectory/_prev_$fileName")
+            val oldFile = FileSystems.getDefault().getPath("$walletsDirectory/$fileName")
             Files.move(oldFile, newFile, StandardCopyOption.REPLACE_EXISTING)
         } catch (e: NoSuchFileException) {
-            val message = "There are no file to archive and delete: ${e.message}"
+            val message = "There is no file to archive and delete: ${e.message}"
             LOGGER.error(message)
         } catch (e: Exception) {
             val message = "Unable to archive and delete, name: $fileName"
@@ -130,48 +119,19 @@ class FileWalletDatabaseAccessor(private val dir: String, private val delegateDa
         }
     }
 
-    private fun saveFile(fileName: String, wallet: Wallet) {
+    private fun saveFile(fileName: String, wallet: FileWallet) {
         try {
             wallet.balances.values.removeIf { it.balance == 0.0 }
-            val file = File("$dir/$fileName")
+            val file = File("$walletsDirectory/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asByteArray(wallet)
-            Files.write(FileSystems.getDefault().getPath("$dir/$fileName"), bytes, StandardOpenOption.CREATE)
+            Files.write(FileSystems.getDefault().getPath("$walletsDirectory/$fileName"), bytes, StandardOpenOption.CREATE)
         } catch (e: Exception) {
             val message = "Unable to save, name: $fileName"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
         }
     }
-
-    override fun insertExternalCashOperation(operation: ExternalCashOperation) {
-        delegateDatabaseAccessor.insertExternalCashOperation(operation)
-    }
-
-    override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
-        return delegateDatabaseAccessor.loadExternalCashOperation(clientId, operationId)
-    }
-
-    override fun insertOperation(operation: WalletOperation) {
-        delegateDatabaseAccessor.insertOperation(operation)
-    }
-
-    override fun insertTransferOperation(operation: TransferOperation) {
-        delegateDatabaseAccessor.insertTransferOperation(operation)
-    }
-
-    override fun insertSwapOperation(operation: SwapOperation) {
-        delegateDatabaseAccessor.insertSwapOperation(operation)
-    }
-
-    override fun loadAssetPairs(): HashMap<String, AssetPair> {
-        return delegateDatabaseAccessor.loadAssetPairs()
-    }
-
-    override fun loadAssetPair(assetId: String): AssetPair? {
-        return delegateDatabaseAccessor.loadAssetPair(assetId)
-    }
-
 }

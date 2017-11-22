@@ -33,8 +33,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var messagesCount: Long = 0
-
     override fun processMessage(messageWrapper: MessageWrapper) {
         val order: NewLimitOrder?
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
@@ -58,7 +56,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 val balance = balancesHolder.getBalance(order.clientId, limitAsset)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - limitVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-                balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
+                balancesHolder.updateReservedBalance(order.clientId, limitAsset, now, newReservedBalance)
                 balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
 

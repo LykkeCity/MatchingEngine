@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -25,14 +25,13 @@ import java.util.concurrent.BlockingQueue
 
 class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                                     private val assetsHolder: AssetsHolder,
-                                    private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                    private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                     private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
     }
 
-    private var messagesCount: Long = 0
     private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -52,7 +51,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         }
 
         val feeTransfer = processTransferOperation(operation)
-        walletDatabaseAccessor.insertTransferOperation(operation)
+        cashOperationsDatabaseAccessor.insertTransferOperation(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, operation.fee, feeTransfer))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
