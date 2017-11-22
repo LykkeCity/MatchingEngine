@@ -763,7 +763,7 @@ class LimitOrderServiceTest {
         val trades = result.orders[0].trades
         assertEquals(2, trades.size)
         assertEquals("0.00000199", trades[1].volume)
-        assertEquals("0.01", trades[1].oppositeVolume)
+        assertEquals("0.00", trades[1].oppositeVolume)
     }
 
     @Test
@@ -786,7 +786,7 @@ class LimitOrderServiceTest {
         val trades = result.orders[0].trades
         assertEquals(1, trades.size)
         assertEquals("0.00000199", trades[0].volume)
-        assertEquals("0.01", trades[0].oppositeVolume)
+        assertEquals("0.00", trades[0].oppositeVolume)
     }
 
     @Test
@@ -884,7 +884,7 @@ class LimitOrderServiceTest {
         assertEquals("0.01000", result.trades[0].limitVolume)
         assertEquals("50.00", result.trades[0].marketVolume)
 
-        assertEquals("0.00001", result.trades[1].limitVolume)
+        assertEquals("0.00000", result.trades[1].limitVolume)
         assertEquals("0.01", result.trades[1].marketVolume)
     }
 }
