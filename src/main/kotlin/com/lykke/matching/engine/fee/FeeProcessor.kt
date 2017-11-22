@@ -77,7 +77,3 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
     }
 
 }
-
-fun main(args: Array<String>) {
-    println(RoundingUtils.round(0 * 0.01, 2, true))
-}
