@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
-import com.lykke.matching.engine.daos.file.wallet.FileWallet
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
@@ -77,7 +76,7 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletD
     private fun readAndAddWallet(file: File, wallets: MutableMap<String, Wallet>) {
         val wallet = loadFile(file)
         wallet?.let {
-            wallets.put(it.clientId, it.toWallet())
+            wallets.put(it.clientId, it)
         }
     }
 
@@ -89,7 +88,7 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletD
         try {
             val fileName = wallet.clientId
             archiveAndDeleteFile(fileName)
-            saveFile(fileName, FileWallet(wallet))
+            saveFile(fileName, wallet)
         } catch (e: Exception) {
             val message = "Unable to save wallet, clientId: ${wallet.clientId}"
             LOGGER.error(message, e)
@@ -97,11 +96,11 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletD
         }
     }
 
-    private fun loadFile(file: File): FileWallet? {
+    private fun loadFile(file: File): Wallet? {
         val fileLocation = file.toPath()
         val bytes = Files.readAllBytes(fileLocation)
         val readCase = conf.asObject(bytes)
-        return readCase as? FileWallet
+        return readCase as? Wallet
     }
 
     private fun archiveAndDeleteFile(fileName: String) {
@@ -119,7 +118,7 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletD
         }
     }
 
-    private fun saveFile(fileName: String, wallet: FileWallet) {
+    private fun saveFile(fileName: String, wallet: Wallet) {
         try {
             wallet.balances.values.removeIf { it.balance == 0.0 }
             val file = File("$walletsDirectory/$fileName")

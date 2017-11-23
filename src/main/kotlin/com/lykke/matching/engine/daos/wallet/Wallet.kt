@@ -1,9 +1,10 @@
 package com.lykke.matching.engine.daos.wallet
 
+import java.io.Serializable
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 
-class Wallet {
+class Wallet: Serializable {
     val clientId: String
     val balances: MutableMap<String, AssetBalance> = ConcurrentHashMap()
 
