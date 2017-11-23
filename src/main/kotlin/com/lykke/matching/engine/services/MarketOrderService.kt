@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -33,7 +33,6 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
-                         private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
                          private val genericLimitOrderService: GenericLimitOrderService,
                          assetsHolder: AssetsHolder,
                          private val assetsPairsHolder: AssetsPairsHolder,
@@ -41,7 +40,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MarketOrder> {
+                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
+                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -122,7 +122,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                 genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
-                marketOrderDatabaseAccessor.addLkkTrades(matchingResult.lkkTrades)
+                lkkTradesQueue.put(matchingResult.lkkTrades)
 
                 balancesHolder.processWalletOperations(order.externalId, MessageType.MARKET_ORDER.name, matchingResult.cashMovements)
 

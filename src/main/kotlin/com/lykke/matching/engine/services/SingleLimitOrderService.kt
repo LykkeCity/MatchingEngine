@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -38,7 +38,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val negativeSpreadAssets: Set<String>,
                               private val balancesHolder: BalancesHolder,
-                              private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor): AbstractService<ProtocolMessages.OldLimitOrder> {
+                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService<ProtocolMessages.OldLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -157,7 +157,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     limitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                     limitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
-                    marketOrderDatabaseAccessor.addLkkTrades(matchingResult.lkkTrades)
+                    lkkTradesQueue.put(matchingResult.lkkTrades)
 
                     limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
                       LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)

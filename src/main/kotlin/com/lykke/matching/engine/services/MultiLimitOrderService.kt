@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -39,7 +38,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val negativeSpreadAssets: Set<String>,
                              private val balancesHolder: BalancesHolder,
-                             private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
+                             private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -218,7 +217,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val startPersistTime = System.nanoTime()
         balancesHolder.processWalletOperations(messageUid, MessageType.MULTI_LIMIT_ORDER.name, walletOperations)
-        marketOrderDatabaseAccessor.addLkkTrades(trades)
+        lkkTradesQueue.put(trades)
         limitOrderService.addOrders(ordersToAdd)
         limitOrderService.cancelLimitOrders(ordersToCancel)
         limitOrderService.setOrderBook(assetPairId, orderBook)
