@@ -20,10 +20,10 @@ class HttpKeepAliveAccessor(
     private val gson = Gson()
 
     override fun updateKeepAlive(date: Date, service: String, version: String) {
-        while (!sendHttpRequest(KeepAlive(service, version))) {}
+        sendHttpRequest(KeepAlive(service, version))
     }
 
-    private fun sendHttpRequest(keepAlive: KeepAlive): Boolean {
+    private fun sendHttpRequest(keepAlive: KeepAlive) {
         try {
             val requestConfig = RequestConfig.custom().setConnectTimeout(10 * 1000).build()
             val httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()
@@ -34,8 +34,6 @@ class HttpKeepAliveAccessor(
             httpClient.execute(request)
         } catch (e : Exception) {
             LOGGER.error("Unable to write log to http: ${e.message}", e)
-            return false
         }
-        return true
     }
 }
