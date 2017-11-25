@@ -28,6 +28,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.junit.Before
 import org.junit.Test
+import java.util.HashMap
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
