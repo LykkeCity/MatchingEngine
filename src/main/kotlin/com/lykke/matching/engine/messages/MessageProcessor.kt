@@ -13,6 +13,7 @@ import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccesso
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -50,6 +51,7 @@ import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
+import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -64,6 +66,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
+        val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -189,6 +192,19 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
             queueSizeLogger.log()
+        }
+
+        val healthService = MonitoringStatsCollector()
+        val monitoringDatabaseAccessor = AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString)
+        fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
+            val result = healthService.collectMonitoringResult()
+
+            MONITORING_LOGGER.info("CPU: ${result.vmCpuLoad}/${result.totalCpuLoad}, " +
+                    "RAM: ${result.freeMemory}/${result.totalMemory}, " +
+                    "swap: ${result.freeSwap}/${result.totalSwap}, " +
+                    "threads: ${result.threadsCount}")
+
+            monitoringDatabaseAccessor.saveMonitoringResult(result)
         }
 
         val keepAliveUpdater = HttpKeepAliveAccessor(config.keepAlive.path)
