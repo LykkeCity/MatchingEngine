@@ -8,5 +8,6 @@ data class DbConfig(
     val sharedStorageConnString: String,
     val messageLogConnString: String,
     val matchingEngineConnString: String,
+    val monitoringConnString: String,
     val accountsTableName: String?
 )

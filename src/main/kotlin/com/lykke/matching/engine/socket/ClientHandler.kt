@@ -34,11 +34,13 @@ class ClientHandler(
     var outputStream: DataOutputStream? = null
 
     override fun run() {
-        LOGGER.info("Got connection from $clientHostName.")
         try {
             inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
             outputStream = DataOutputStream(BufferedOutputStream(socket.outputStream))
             outputStream!!.flush()
+
+            readMessage(inputStream!!, outputStream!!)
+            LOGGER.info("Got connection from $clientHostName.")
             while (true) {
                 readMessage(inputStream!!, outputStream!!)
             }

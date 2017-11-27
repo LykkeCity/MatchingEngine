@@ -20,7 +20,10 @@ class AssetPairsCache(
     }
 
     override fun update() {
-        assetPairsMap = databaseAccessor.loadAssetPairs()
+        val newMap = databaseAccessor.loadAssetPairs()
+        if (newMap.isNotEmpty()) {
+            assetPairsMap = newMap
+        }
     }
 
     init {

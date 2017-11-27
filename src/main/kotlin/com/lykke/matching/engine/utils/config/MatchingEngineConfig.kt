@@ -9,8 +9,8 @@ data class MatchingEngineConfig(
     val fileDb: FileDbConfig,
     @SerializedName("IpEndpoint")
     val socket: IpEndpoint,
-    val serverOrderBookPort: Int,
-    val serverOrderBookMaxConnections: Int,
+    val serverOrderBookPort: Int?,
+    val serverOrderBookMaxConnections: Int?,
     val httpOrderBookPort: Int,
     val httpBalancesPort: Int,
     val rabbitMqConfigs: RabbitMqConfigs,

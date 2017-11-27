@@ -24,7 +24,7 @@ open class FeeInstruction(
             return FeeInstruction(
                     feeType,
                     sizeType,
-                    fee.size,
+                    if (fee.hasSize()) fee.size else null,
                     fee.sourceClientId,
                     fee.targetClientId
             )
