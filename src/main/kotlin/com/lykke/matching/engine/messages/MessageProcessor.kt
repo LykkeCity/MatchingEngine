@@ -49,6 +49,7 @@ import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
+import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -199,7 +200,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
             val result = healthService.collectMonitoringResult()
 
-            MONITORING_LOGGER.info("CPU: ${result.vmCpuLoad}/${result.totalCpuLoad}, " +
+            MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
                     "RAM: ${result.freeMemory}/${result.totalMemory}, " +
                     "swap: ${result.freeSwap}/${result.totalSwap}, " +
                     "threads: ${result.threadsCount}")
