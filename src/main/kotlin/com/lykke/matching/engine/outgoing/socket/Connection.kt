@@ -45,8 +45,8 @@ class Connection(val socket: Socket,
             outputStream.flush()
 
             thread {
-                while (!isClosed()) {
-                    try {
+                try {
+                    while (!isClosed()) {
                         val type = inputStream.readByte()
                         if (type == MessageType.PING.type) {
                             //do not read, send back ping
@@ -55,8 +55,8 @@ class Connection(val socket: Socket,
                         } else {
                             LOGGER.error("Unsupported message type: $type")
                         }
-                    } catch (e: Exception) {}
-                }
+                    }
+                } catch (e: Exception) {}
             }
 
             val now = Date()

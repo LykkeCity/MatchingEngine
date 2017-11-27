@@ -529,7 +529,7 @@ class MultiLimitOrderServiceTest {
                 .setClientId(clientId)
                 .setAssetPairId(assetPairId)
                 .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEachIndexed { index, volume ->
+        volumes.forEach{ volume ->
             orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
                     .setVolume(volume.volume)
                     .setPrice(volume.price)
