@@ -25,7 +25,7 @@ cd "$BINDIR"
 
 EXECSTR="$JAVACMD -DMatchingEngineService -server -Dlog4j.configuration=file:///"$BASEDIR"/cfg/log4j.properties $JAVA_OPTS \
     -classpath "$CLASSPATH" \
-    -Xloggc:sys.gc.log -XX:+PrintGC -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=2m \
+    -Xloggc:../log/sys.gc.log -XX:+PrintGC -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=2m \
     -Dapp.name="start.sh" \
     -Dapp.pid="$$" \
     -Dapp.home="$BASEDIR" \
