@@ -199,13 +199,15 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val monitoringDatabaseAccessor = AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString)
         fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
             val result = healthService.collectMonitoringResult()
+            if (result != null) {
+                MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
+                        "RAM: ${result.freeMemory}/${result.totalMemory}, " +
+                        "heap: ${result.freeHeap}/${result.totalHeap}/${result.maxHeap}, " +
+                        "swap: ${result.freeSwap}/${result.totalSwap}, " +
+                        "threads: ${result.threadsCount}")
 
-            MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
-                    "RAM: ${result.freeMemory}/${result.totalMemory}, " +
-                    "swap: ${result.freeSwap}/${result.totalSwap}, " +
-                    "threads: ${result.threadsCount}")
-
-            monitoringDatabaseAccessor.saveMonitoringResult(result)
+                monitoringDatabaseAccessor.saveMonitoringResult(result)
+            }
         }
 
         val keepAliveUpdater = HttpKeepAliveAccessor(config.keepAlive.path)
