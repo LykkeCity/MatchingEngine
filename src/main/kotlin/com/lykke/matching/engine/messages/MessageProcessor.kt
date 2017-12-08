@@ -47,17 +47,17 @@ import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.utils.AppVersion
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
-import com.lykke.services.keepalive.http.HttpKeepAliveAccessor
+import com.lykke.utils.AppVersion
+import com.lykke.utils.keepalive.http.DefaultIsAliveResponseGetter
+import com.lykke.utils.keepalive.http.KeepAliveStarter
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.time.LocalDateTime
-import java.util.Date
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -210,10 +210,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
             }
         }
 
-        val keepAliveUpdater = HttpKeepAliveAccessor(config.keepAlive.path)
-        fixedRateTimer(name = "KeepAliveUpdater", initialDelay = 0, period = config.keepAlive.interval) {
-            keepAliveUpdater.updateKeepAlive(Date(), config.me.name, AppVersion.VERSION ?: "")
-        }
+        KeepAliveStarter.start(config.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
