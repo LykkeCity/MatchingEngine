@@ -62,7 +62,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price
             } else {
-                LOGGER.debug("Added order (id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}) to cancelled limit orders")
+                LOGGER.debug("Added order (id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}) to cancelled limit orders")
                 cancelledLimitOrders.add(limitOrder)
             }
         }
@@ -152,9 +152,8 @@ class MatchingEngine(private val LOGGER: Logger,
                 val cashMovements = mutableListOf(baseAssetOperation, quotingAssetOperation, limitBaseAssetOperation, limitQuotingAssetOperation)
 
                 val limitVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).baseAssetId)
-                val marketVolumeAsset = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(limitOrder.assetPairId).quotingAssetId)
                 if (limitOrder.reservedLimitVolume != null && limitOrder.reservedLimitVolume!! > 0) {
-                    limitOrder.reservedLimitVolume =  RoundingUtils.parseDouble(limitOrder.reservedLimitVolume!! + if (-marketRoundedVolume < 0) -marketRoundedVolume else -oppositeRoundedVolume, if (-marketRoundedVolume < 0) limitAsset.accuracy else marketVolumeAsset.accuracy).toDouble()
+                    limitOrder.reservedLimitVolume =  RoundingUtils.parseDouble(limitOrder.reservedLimitVolume!! + if (-marketRoundedVolume < 0) -marketRoundedVolume else -oppositeRoundedVolume, limitAsset.accuracy).toDouble()
                 }
 
                 if (RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble() == 0.0) {

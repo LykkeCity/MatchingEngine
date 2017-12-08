@@ -1001,4 +1001,31 @@ class LimitOrderServiceTest {
         assertEquals("0.00000", result.trades[1].limitVolume)
         assertEquals("0.01", result.trades[1].marketVolume)
     }
+
+    @Test
+    fun testReservedBalanceAfterMatching() {
+        val client = "Client"
+
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "BTC", 1.0, reservedBalance = 0.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0, reservedBalance = 0.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 200.0, reservedBalance = 0.0))
+
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.00952774, price = 10495.66))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 10590.00))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
+
+        marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
+                clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
+        )))
+
+        marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
+                clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
+        )))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance(client, "BTC"))
+    }
 }
