@@ -1003,6 +1003,26 @@ class LimitOrderServiceTest {
     }
 
     @Test
+    fun testOverflowedRemainingVolume() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("PKT", 12))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("PKTETH", "PKT", "ETH", 5))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "PKT", 3.0))
+
+        val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        val service = SingleLimitOrderService(genericService, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "PKTETH", price = 0.0001, volume = -2.689999999998)))
+        limitOrdersQueue.clear()
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "PKTETH", price = 0.0001, volume = 100.0)))
+
+
+        val orderWithTrade = (limitOrdersQueue.poll() as LimitOrdersReport).orders.first { it.order.clientId == "Client2" }
+        assertNotNull(orderWithTrade)
+        assertEquals(0.0, orderWithTrade.order.remainingVolume)
+        assertEquals(OrderStatus.Matched.name, orderWithTrade.order.status)
+    }
+      
     fun testReservedBalanceAfterMatching() {
         val client = "Client"
 
