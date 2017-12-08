@@ -157,7 +157,12 @@ class MatchingEngine(private val LOGGER: Logger,
                     limitOrder.reservedLimitVolume =  RoundingUtils.parseDouble(limitOrder.reservedLimitVolume!! + if (-marketRoundedVolume < 0) -marketRoundedVolume else -oppositeRoundedVolume, if (-marketRoundedVolume < 0) limitAsset.accuracy else marketVolumeAsset.accuracy).toDouble()
                 }
 
-                if (RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble() == 0.0) {
+                val newRemainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble()
+                val isMatched = newRemainingVolume == 0.0 || Math.signum(newRemainingVolume) != Math.signum(limitOrder.remainingVolume)
+                if (isMatched) {
+                    if (Math.signum(newRemainingVolume) * Math.signum(limitOrder.remainingVolume) < 0) {
+                        LOGGER.debug("Matched volume is overflowed (previous: ${limitOrder.remainingVolume}, current: $newRemainingVolume)")
+                    }
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.clientId, limitOrder.price, limitOrder.remainingVolume, now))
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, order.clientId, limitOrder.price, -limitOrder.remainingVolume, now))
                     limitOrder.remainingVolume = 0.0
@@ -170,7 +175,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 } else {
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, limitOrder.clientId, limitOrder.price, -marketRoundedVolume, now))
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, order.clientId, limitOrder.price, marketRoundedVolume, now))
-                    limitOrder.remainingVolume = RoundingUtils.parseDouble(limitOrder.remainingVolume + marketRoundedVolume, limitVolumeAsset.accuracy).toDouble()
+                    limitOrder.remainingVolume = newRemainingVolume
                     limitOrder.status = OrderStatus.Processing.name
                     uncompletedLimitOrder = limitOrder
                 }
