@@ -19,6 +19,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.LinkedBlockingQueue
@@ -43,8 +44,8 @@ class LimitOrderCancelServiceTest {
 
     @Before
     fun setUp() {
-        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
+        testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
@@ -60,8 +61,10 @@ class LimitOrderCancelServiceTest {
 
     @Test
     fun testCancel() {
-        val service = LimitOrderCancelService(GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
-                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
+        val genericService = GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+        val service = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
+      
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
 
         assertEquals(1, orderBookQueue.size)
@@ -69,5 +72,8 @@ class LimitOrderCancelServiceTest {
         val order = testFileDatabaseAccessor.loadLimitOrders().find { it.id == "3" }
         assertNull(order)
         assertEquals(4, testFileDatabaseAccessor.loadLimitOrders().size)
+        val previousOrders = genericService.getAllPreviousOrders("Client1", "EURUSD", true)
+        assertEquals(4, previousOrders.size)
+        assertFalse(previousOrders.any { it.externalId == "3" })
     }
 }
