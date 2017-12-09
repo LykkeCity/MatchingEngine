@@ -19,9 +19,10 @@ class MessageBuilder {
                             price: Double = 100.0,
                             registered: Date = Date(),
                             status: String = OrderStatus.InOrderBook.name,
-                            volume:Double = 1000.0,
+                            volume: Double = 1000.0,
+                            reservedVolume: Double = volume,
                             fee: LimitOrderFeeInstruction? = null): NewLimitOrder =
-                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, fee = fee)
+                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, fee = fee, reservedLimitVolume = reservedVolume)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()

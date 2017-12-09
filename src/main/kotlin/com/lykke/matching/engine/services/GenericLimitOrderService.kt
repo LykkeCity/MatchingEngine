@@ -23,7 +23,8 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                private val assetsPairsHolder: AssetsPairsHolder,
                                private val balancesHolder: BalancesHolder,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
-                               private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>) {
+                               private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>,
+                               trustedClients: Set<String>) {
 
     companion object {
         val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -33,6 +34,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
+    private val notEnoughFundsLimitOrderCancelService: NotEnoughFundsLimitOrderCancelService = NotEnoughFundsLimitOrderCancelService(this, assetsPairsHolder, balancesHolder, trustedClients)
     val initialOrdersCount: Int
 
     init {
@@ -124,9 +126,11 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
     fun cancelLimitOrder(uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
+      
         if (removeFromClientMap) {
             removeFromClientMap(uid)
         }
+      
         getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
         updateOrderBook(order.assetPairId, order.isBuySide())
@@ -141,6 +145,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     fun cancelLimitOrders(orders: List<NewLimitOrder>) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
+            clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.status = Cancelled.name
             }
@@ -163,5 +168,9 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         }
 
         return result
+    }
+
+    fun cancelNotEnoughFundsOrder(params: NotEnoughFundsLimitOrderCancelParams): NotEnoughFundsLimitOrderCancelResult {
+        return notEnoughFundsLimitOrderCancelService.cancelOrder(params)
     }
 }

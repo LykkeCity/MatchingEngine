@@ -8,6 +8,9 @@ public class AzureMonitoringResult extends TableServiceEntity {
     private Double totalCpuLoad;
     private Long totalMemory;
     private Long freeMemory;
+    private Long maxHeap;
+    private Long totalHeap;
+    private Long freeHeap;
     private Long totalSwap;
     private Long freeSwap;
     private int threadsCount;
@@ -21,6 +24,9 @@ public class AzureMonitoringResult extends TableServiceEntity {
         this.totalCpuLoad = monitoringResult.getTotalCpuLoad();
         this.totalMemory = monitoringResult.getTotalMemory();
         this.freeMemory = monitoringResult.getFreeMemory();
+        this.maxHeap = monitoringResult.getMaxHeap();
+        this.totalHeap = monitoringResult.getTotalHeap();
+        this.freeHeap = monitoringResult.getFreeHeap();
         this.totalSwap = monitoringResult.getTotalSwap();
         this.freeSwap = monitoringResult.getFreeSwap();
         this.threadsCount = monitoringResult.getThreadsCount();
@@ -56,6 +62,30 @@ public class AzureMonitoringResult extends TableServiceEntity {
 
     public void setFreeMemory(Long freeMemory) {
         this.freeMemory = freeMemory;
+    }
+
+    public Long getMaxHeap() {
+        return maxHeap;
+    }
+
+    public void setMaxHeap(Long maxHeap) {
+        this.maxHeap = maxHeap;
+    }
+
+    public Long getTotalHeap() {
+        return totalHeap;
+    }
+
+    public void setTotalHeap(Long totalHeap) {
+        this.totalHeap = totalHeap;
+    }
+
+    public Long getFreeHeap() {
+        return freeHeap;
+    }
+
+    public void setFreeHeap(Long freeHeap) {
+        this.freeHeap = freeHeap;
     }
 
     public Long getTotalSwap() {

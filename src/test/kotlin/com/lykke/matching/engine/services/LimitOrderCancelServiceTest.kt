@@ -39,7 +39,8 @@ class LimitOrderCancelServiceTest {
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
+    val trustedClients = emptySet<String>()
+    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, trustedClients)
 
     @Before
     fun setUp() {
@@ -61,8 +62,9 @@ class LimitOrderCancelServiceTest {
     @Test
     fun testCancel() {
         val genericService = GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
-                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         val service = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
+      
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
 
         assertEquals(1, orderBookQueue.size)
