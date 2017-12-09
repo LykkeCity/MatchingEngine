@@ -76,7 +76,7 @@ class MatchingEngineTest {
 
     private fun initService() {
         balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, setOf())
-        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
+        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, emptySet())
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }
 

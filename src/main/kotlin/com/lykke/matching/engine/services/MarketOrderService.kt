@@ -39,8 +39,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          assetsHolder: AssetsHolder,
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
-                         private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                         private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                         private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                         private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MarketOrder> {
@@ -112,15 +112,15 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
 
                 val walletOperations = LinkedList<WalletOperation>()
-                val trustedLimitOrdersReport = LimitOrdersReport()
+                val clientLimitOrdersReport = LimitOrdersReport()
 
                 if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
                     val result = genericLimitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList(), order.externalId, MessageType.MARKET_ORDER))
                     walletOperations.addAll(result.walletOperation)
-                    if (result.limitOrderWithTrades.isNotEmpty()) {
-                        limitOrderReportQueue.put(LimitOrdersReport(result.limitOrderWithTrades.toMutableList()))
+                    if (result.trustedClientLimitOrderWithTrades.isNotEmpty()) {
+                        trustedClientLimitOrderReportQueue.put(LimitOrdersReport(result.trustedClientLimitOrderWithTrades.toMutableList()))
                     }
-                    trustedLimitOrdersReport.orders.addAll(result.trustedLimitOrderWithTrades)
+                    clientLimitOrdersReport.orders.addAll(result.clientLimitOrderWithTrades)
                 }
 
                 matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
@@ -140,10 +140,10 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder, matchingResult.marketOrderTrades.toMutableList()))
 
                 matchingResult.limitOrdersReport?.let {
-                    trustedLimitOrdersReport.orders.addAll(it.orders)
+                    clientLimitOrdersReport.orders.addAll(it.orders)
                 }
 
-                trustedLimitOrderReportQueue.put(trustedLimitOrdersReport)
+                clientLimitOrderReportQueue.put(clientLimitOrdersReport)
 
                 val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).getCopyOfOrderBook(!marketOrder.isBuySide()))
                 orderBookQueue.put(newOrderBook)

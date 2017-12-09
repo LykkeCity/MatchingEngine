@@ -507,7 +507,7 @@ class MarketOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
 
-        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.0))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.0, reservedVolume = 1.19))
         testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 2.1))
 
         initServices()

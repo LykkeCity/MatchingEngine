@@ -19,8 +19,8 @@ data class NotEnoughFundsLimitOrderCancelParams(
 
 data class NotEnoughFundsLimitOrderCancelResult(
         val walletOperation: List<WalletOperation> = LinkedList(),
-        val trustedLimitOrderWithTrades: List<LimitOrderWithTrades> = LinkedList(),
-        val limitOrderWithTrades: List<LimitOrderWithTrades> = LinkedList()
+        val clientLimitOrderWithTrades: List<LimitOrderWithTrades> = LinkedList(),
+        val trustedClientLimitOrderWithTrades: List<LimitOrderWithTrades> = LinkedList()
 )
 
 class NotEnoughFundsLimitOrderCancelService(
