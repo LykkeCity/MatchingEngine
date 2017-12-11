@@ -1010,6 +1010,7 @@ class LimitOrderServiceTest {
         assertEquals(OrderStatus.Matched.name, orderWithTrade.order.status)
     }
 
+    @Test
     fun testReservedBalanceAfterMatching() {
         val client = "Client"
 
