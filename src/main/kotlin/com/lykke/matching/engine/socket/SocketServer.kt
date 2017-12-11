@@ -36,7 +36,6 @@ class SocketServer(private val config: Config, private val initializationComplet
         val socket = ServerSocket(port)
         LOGGER.info("Waiting connection on port: $port.")
         try {
-
             while (true) {
                 val clientConnection = socket.accept()
                 if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {

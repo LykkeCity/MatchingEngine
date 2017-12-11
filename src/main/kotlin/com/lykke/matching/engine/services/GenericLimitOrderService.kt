@@ -23,7 +23,8 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                private val assetsPairsHolder: AssetsPairsHolder,
                                private val balancesHolder: BalancesHolder,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
-                               private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>) {
+                               private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>,
+                               trustedClients: Set<String>) {
 
     companion object {
         val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -33,6 +34,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
+    private val notEnoughFundsLimitOrderCancelService: NotEnoughFundsLimitOrderCancelService = NotEnoughFundsLimitOrderCancelService(this, assetsPairsHolder, balancesHolder, trustedClients)
     val initialOrdersCount: Int
 
     init {
@@ -113,7 +115,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
         val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val roundRequiredVolume = RoundingUtils.roundNoZero(requiredVolume, accuracy, false)
+        val roundRequiredVolume = RoundingUtils.round(requiredVolume, accuracy, false)
         val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
         if (result) {
@@ -122,18 +124,28 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return result
     }
 
-    fun cancelLimitOrder(uid: String): NewLimitOrder? {
+    fun cancelLimitOrder(uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
-
+      
+        if (removeFromClientMap) {
+            removeFromClientMap(uid)
+        }
+      
         getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
         updateOrderBook(order.assetPairId, order.isBuySide())
         return order
     }
 
+    private fun removeFromClientMap(uid: String): Boolean {
+        val order: NewLimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull{it.externalId == uid} ?: return false
+        return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
+    }
+
     fun cancelLimitOrders(orders: List<NewLimitOrder>) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
+            clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.status = Cancelled.name
             }
@@ -156,5 +168,9 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         }
 
         return result
+    }
+
+    fun cancelNotEnoughFundsOrder(params: NotEnoughFundsLimitOrderCancelParams): NotEnoughFundsLimitOrderCancelResult {
+        return notEnoughFundsLimitOrderCancelService.cancelOrder(params)
     }
 }

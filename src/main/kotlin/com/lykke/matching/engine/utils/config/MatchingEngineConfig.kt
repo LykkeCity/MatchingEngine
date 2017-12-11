@@ -7,8 +7,8 @@ data class MatchingEngineConfig(
     val db: DbConfig,
     @SerializedName("IpEndpoint")
     val socket: IpEndpoint,
-    val serverOrderBookPort: Int,
-    val serverOrderBookMaxConnections: Int,
+    val serverOrderBookPort: Int?,
+    val serverOrderBookMaxConnections: Int?,
     val httpOrderBookPort: Int,
     val rabbitMqConfigs: RabbitMqConfigs,
     val bestPricesInterval: Long,

@@ -31,9 +31,9 @@ class LimitOrderFeeInstruction(
             return LimitOrderFeeInstruction(
                     feeType,
                     takerSizeType,
-                    fee.takerSize,
+                    if (fee.hasTakerSize()) fee.takerSize else null,
                     makerSizeType,
-                    fee.makerSize,
+                    if (fee.hasMakerSize()) fee.makerSize else null,
                     fee.sourceClientId,
                     fee.targetClientId)
         }

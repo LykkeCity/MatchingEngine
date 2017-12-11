@@ -22,10 +22,10 @@ class SocketServer(val config: Config,
 
     override fun run() {
         val maxConnections = config.me.serverOrderBookMaxConnections
-        val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
+        val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections!!)
 
         val port = config.me.serverOrderBookPort
-        val socket = ServerSocket(port)
+        val socket = ServerSocket(port!!)
         LOGGER.info("Waiting connection on port: $port.")
         try {
 
