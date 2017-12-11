@@ -30,8 +30,8 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
-                             private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                             private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                             private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                             private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                              private val assetsHolder: AssetsHolder,
@@ -58,8 +58,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val startTime = System.nanoTime()
         val orders: List<NewLimitOrder>
         val now = Date()
-        val limitOrdersReport = LimitOrdersReport()
-        val trustedLimitOrdersReport = LimitOrdersReport()
+        val trustedClientLimitOrdersReport = LimitOrdersReport()
+        val clientLimitOrdersReport = LimitOrdersReport()
         var cancelBuySide = false
         var cancelSellSide = false
         val cancelAllPreviousLimitOrders: Boolean
@@ -127,10 +127,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         ordersToCancel.forEach { order ->
             orderBook.removeOrder(order)
-            if (order.remainingVolume != order.volume) {
-                trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
+            if (order.isPartiallyMatched()) {
+                clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
             } else {
-                limitOrdersReport.orders.add(LimitOrderWithTrades(order))
+                trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
             }
         }
 
@@ -153,18 +153,23 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 val limitOrder = matchingResult.order as NewLimitOrder
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
-                        limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                        trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
                     OrderStatus.NotEnoughFunds -> {
-                        limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                        trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
                     OrderStatus.Matched,
                     OrderStatus.Processing-> {
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
-                        matchingResult.cancelledLimitOrders.forEach { it ->
-                            it.status = OrderStatus.NotEnoughFunds.name
+
+                        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+                            val result = limitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList(), messageUid, MessageType.LIMIT_ORDER))
+                            walletOperations.addAll(result.walletOperation)
+                            trustedClientLimitOrdersReport.orders.addAll(result.trustedClientLimitOrderWithTrades)
+                            clientLimitOrdersReport.orders.addAll(result.clientLimitOrderWithTrades)
                         }
-                        limitOrderService.moveOrdersToDone(ArrayList<NewLimitOrder>(matchingResult.cancelledLimitOrders))
+                        cancelBuySide = cancelBuySide || matchingResult.cancelledLimitOrders.any { it.isBuySide() }
+                        cancelSellSide = cancelSellSide || matchingResult.cancelledLimitOrders.any { !it.isBuySide() }
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
@@ -175,10 +180,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
                         trades.addAll(matchingResult.lkkTrades)
-                        var limitOrderWithTrades = trustedLimitOrdersReport.orders.find { it.order.externalId == limitOrder.externalId}
+                        var limitOrderWithTrades = clientLimitOrdersReport.orders.find { it.order.externalId == limitOrder.externalId}
                         if (limitOrderWithTrades == null) {
                             limitOrderWithTrades = LimitOrderWithTrades(limitOrder)
-                            trustedLimitOrdersReport.orders.add(limitOrderWithTrades)
+                            clientLimitOrdersReport.orders.add(limitOrderWithTrades)
                         }
 
                         limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
@@ -186,10 +191,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         })
 
                         matchingResult.limitOrdersReport?.orders?.forEach { order ->
-                            var trustedOrder = trustedLimitOrdersReport.orders.find { it.order.externalId == order.order.externalId}
+                            var trustedOrder = clientLimitOrdersReport.orders.find { it.order.externalId == order.order.externalId}
                             if (trustedOrder == null) {
                                 trustedOrder = LimitOrderWithTrades(order.order)
-                                trustedLimitOrdersReport.orders.add(trustedOrder)
+                                clientLimitOrdersReport.orders.add(trustedOrder)
                             }
                             trustedOrder.trades.addAll(order.trades)
                         }
@@ -210,7 +215,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             } else {
                 ordersToAdd.add(order)
                 orderBook.addOrder(order)
-                limitOrdersReport.orders.add(LimitOrderWithTrades(order))
+                trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
         }
@@ -270,12 +275,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             totalTime = 0.0
         }
 
-        if (limitOrdersReport.orders.isNotEmpty()) {
-            limitOrderReportQueue.put(limitOrdersReport)
+        if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
+            trustedClientLimitOrderReportQueue.put(trustedClientLimitOrdersReport)
         }
 
-        if (trustedLimitOrdersReport.orders.isNotEmpty()) {
-            trustedLimitOrderReportQueue.put(trustedLimitOrdersReport)
+        if (clientLimitOrdersReport.orders.isNotEmpty()) {
+            clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
     }
 

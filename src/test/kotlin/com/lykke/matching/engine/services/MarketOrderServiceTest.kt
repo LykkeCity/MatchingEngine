@@ -19,6 +19,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -40,6 +41,7 @@ class MarketOrderServiceTest {
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
+    val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
@@ -47,10 +49,11 @@ class MarketOrderServiceTest {
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
-    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
+    val trustedClients = emptySet<String>()
+    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
-    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-    var service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
+    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
 
     val DELTA = 1e-9
 
@@ -86,8 +89,8 @@ class MarketOrderServiceTest {
     }
 
     fun initServices() {
-        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
+        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
     }
 
     @Test
@@ -113,8 +116,9 @@ class MarketOrderServiceTest {
         initServices()
 
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))
-        val result = limitOrdersQueue.poll() as LimitOrdersReport
-        assertEquals(1, result.orders.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, result.orders.size)
+        assertEquals(OrderStatus.Cancelled.name, result.orders.find { it.order.price == 1.6 }?.order?.status)
     }
 
     @Test
@@ -458,5 +462,76 @@ class MarketOrderServiceTest {
         assertEquals(10, marketOrderReport.trades.size)
 
         assertEquals(4136.9, limitOrderService.getOrderBook("BTCCHF").getAskPrice(), DELTA)
+    }
+
+    @Test
+    fun testMatchWithNotEnoughFundsOrder1() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 1.19))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+
+        val order = buildLimitOrder(assetId = "EURUSD", price = 1.2, volume = 1.0, clientId = "Client1")
+        order.reservedLimitVolume = 1.19
+        testLimitDatabaseAccessor.addLimitOrder(order)
+
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 2.1))
+
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(assetId = "EURUSD", volume = -2.0, clientId = "Client2")))
+
+        assertEquals(1, testLimitDatabaseAccessor.getOrders("EURUSD", true).size)
+
+        assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"), DELTA)
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"), DELTA)
+
+        assertEquals(0, limitOrdersQueue.size)
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        val cancelledOrder = result.orders.filter { it.order.status == OrderStatus.Cancelled.name }
+        assertEquals(1, cancelledOrder.size)
+        assertEquals("Client1", cancelledOrder.first().order.clientId)
+
+        assertEquals(1, balanceUpdateQueue.size)
+        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+
+        val filteredBalances = balanceUpdate.balances.filter { it.id == "Client1" }
+        assertEquals(1, filteredBalances.size)
+        val refund = filteredBalances.first()
+        assertEquals(0.0, refund.newReserved, DELTA)
+    }
+
+    @Test
+    fun testMatchWithNotEnoughFundsOrder2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 1.19))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.0, reservedVolume = 1.19))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 2.1))
+
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(assetId = "EURUSD", volume = -2.0, clientId = "Client2")))
+
+        assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"), DELTA)
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"), DELTA)
+    }
+
+    @Test
+    fun testMatchWithNotEnoughFundsOrder3() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1.19))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.0))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 2.1))
+
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(assetId = "EURUSD", volume = -2.0, clientId = "Client2")))
+
+        assertEquals(1, balanceUpdateQueue.size)
+        assertEquals(0, (balanceUpdateQueue.poll() as BalanceUpdate).balances.filter { it.id == "Client1" }.size)
     }
 }

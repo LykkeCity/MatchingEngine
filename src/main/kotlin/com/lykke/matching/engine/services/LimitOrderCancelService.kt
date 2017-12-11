@@ -41,13 +41,13 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             val message = parseOldLimitOrderCancel(messageWrapper.byteArray)
             LOGGER.debug("Got old limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
-            genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString())
+            genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
         } else {
             val message = parseLimitOrderCancel(messageWrapper.byteArray)
             LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
-            order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId)
+            order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId, true)
 
             if (order != null) {
                 val now = Date()

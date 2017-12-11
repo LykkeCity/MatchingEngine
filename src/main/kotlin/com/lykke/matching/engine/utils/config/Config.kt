@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
-import com.lykke.services.keepalive.KeepAliveConfig
+import com.lykke.utils.keepalive.http.KeepAliveConfig
 
 data class Config(
     @SerializedName("MatchingEngine")
