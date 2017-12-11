@@ -39,6 +39,7 @@ class MarketOrderService_Dust_Test {
     val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
+    val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -47,6 +48,7 @@ class MarketOrderService_Dust_Test {
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
+    val trustedClients = emptySet<String>()
     private lateinit var balancesHolder: BalancesHolder
     private lateinit var limitOrderService: GenericLimitOrderService
     private lateinit var service: MarketOrderService
@@ -88,9 +90,9 @@ class MarketOrderService_Dust_Test {
     }
 
     fun initServices() {
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
-        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
+        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
     }
 
     @Test
@@ -349,8 +351,8 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        assertEquals(1, limitOrdersQueue.size)
-        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
@@ -372,8 +374,8 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        assertEquals(1, limitOrdersQueue.size)
-        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
@@ -395,8 +397,8 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        assertEquals(1, limitOrdersQueue.size)
-        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
@@ -418,8 +420,8 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        assertEquals(1, limitOrdersQueue.size)
-        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 

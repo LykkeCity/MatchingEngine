@@ -40,9 +40,11 @@ class LimitOrderServiceDustTest {
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
+    val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
+    val trustedClients = setOf("Client3")
     lateinit var balancesHolder: BalancesHolder
 
     @Before
@@ -64,16 +66,16 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust1() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
-        assertEquals(1, limitOrdersQueue.size)
-        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.04997355)))
-        assertEquals(1, limitOrdersQueue.size)
-        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
@@ -86,16 +88,16 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust2() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
-        assertEquals(1, limitOrdersQueue.size)
-        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.05002635)))
-        assertEquals(1, limitOrdersQueue.size)
-        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
@@ -108,16 +110,16 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust3() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
-        assertEquals(1, limitOrdersQueue.size)
-        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.04997355)))
-        assertEquals(1, limitOrdersQueue.size)
-        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
@@ -130,16 +132,16 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust4() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
-        assertEquals(1, limitOrdersQueue.size)
-        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.05002635)))
-        assertEquals(1, limitOrdersQueue.size)
-        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
@@ -152,16 +154,16 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust5() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
-        assertEquals(1, limitOrdersQueue.size)
-        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.0499727)))
-        assertEquals(1, limitOrdersQueue.size)
-        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
@@ -174,16 +176,16 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust6() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue), limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
-        assertEquals(1, limitOrdersQueue.size)
-        var result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.0499727)))
-        assertEquals(1, limitOrdersQueue.size)
-        result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedLimitOrdersQueue.size)
+        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)

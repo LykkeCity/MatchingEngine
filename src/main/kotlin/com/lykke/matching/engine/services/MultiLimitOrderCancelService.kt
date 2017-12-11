@@ -40,7 +40,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
             ordersToCancel.forEach { order ->
                 orderBook.removeOrder(order)
-                if (order.remainingVolume != order.volume) {
+                if (order.isPartiallyMatched()) {
                     trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 } else {
                     limitOrdersReport.orders.add(LimitOrderWithTrades(order))

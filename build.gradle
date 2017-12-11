@@ -26,7 +26,7 @@ repositories {
 
 dependencies {
     // internal libs
-    compile "org.bitbucket.lykke:kotlin-utils:0.0.3-SNAPSHOT"
+    compile "org.bitbucket.lykke:kotlin-utils:0.0.4-SNAPSHOT"
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
