@@ -3,10 +3,10 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
+import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
-import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
@@ -28,12 +28,6 @@ fun main(args: Array<String>) {
 
     AppContext.init(config)
 
-    if (config.me.migrate) {
-        ReservedVolumesRecalculator().recalculate(config)
-        return
-    }
-
-
     try {
         migrateAccountsIfConfigured(config)
     } catch (e: AccountsMigrationException) {
@@ -46,6 +40,8 @@ fun main(args: Array<String>) {
             config.slackNotifications.throttlingLimitSeconds)
 
     ThrottlingLogger.init(config.throttlingLogger)
+
+    correctReservedVolumesIfNeed(config)
 
     try {
         AliveStatusProcessorFactory

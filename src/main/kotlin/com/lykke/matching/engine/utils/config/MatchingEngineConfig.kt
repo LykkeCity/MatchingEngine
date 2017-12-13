@@ -21,6 +21,7 @@ data class MatchingEngineConfig(
     val negativeSpreadAssets: String,
     val whiteList: String?,
     val migrate: Boolean,
+    val correctReservedVolumes: Boolean,
     val queueSizeLimit: Int,
     val name: String,
     val trustedClients: Set<String>,

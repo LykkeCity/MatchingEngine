@@ -34,8 +34,8 @@ class LimitOrderFeeInstruction(
                     if (fee.hasTakerSize()) fee.takerSize else null,
                     makerSizeType,
                     if (fee.hasMakerSize()) fee.makerSize else null,
-                    fee.sourceClientId,
-                    fee.targetClientId)
+                    if (fee.hasSourceClientId()) fee.sourceClientId else null,
+                    if (fee.hasTargetClientId()) fee.targetClientId else null)
         }
     }
 
