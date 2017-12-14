@@ -188,16 +188,16 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         }
 
                         limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
-                            LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
+                            LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
                         })
 
-                        matchingResult.limitOrdersReport?.orders?.forEach { order ->
-                            var trustedOrder = clientLimitOrdersReport.orders.find { it.order.externalId == order.order.externalId}
+                        matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
+                            var trustedOrder = clientLimitOrdersReport.orders.find { it.order.externalId == orderReport.order.externalId}
                             if (trustedOrder == null) {
-                                trustedOrder = LimitOrderWithTrades(order.order)
+                                trustedOrder = LimitOrderWithTrades(orderReport.order)
                                 clientLimitOrdersReport.orders.add(trustedOrder)
                             }
-                            trustedOrder.trades.addAll(order.trades)
+                            trustedOrder.trades.addAll(orderReport.trades)
                         }
 
                         walletOperations.addAll(matchingResult.cashMovements)
