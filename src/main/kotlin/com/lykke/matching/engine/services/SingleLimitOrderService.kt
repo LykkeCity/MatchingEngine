@@ -220,13 +220,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
             orderBookQueue.put(rabbitOrderBook)
             rabbitOrderBookQueue.put(rabbitOrderBook)
+            writeResponse(messageWrapper, order, MessageStatus.OK)
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
-        }
-
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())
-        } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(MessageStatus.OK.type).build())
         }
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
