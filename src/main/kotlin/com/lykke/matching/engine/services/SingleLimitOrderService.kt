@@ -98,7 +98,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 limitOrderService.cancelLimitOrder(orderToCancel.externalId)
                 orderBook.removeOrder(orderToCancel)
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(orderToCancel))
-                cancelVolume += if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.remainingVolume
+                cancelVolume += if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.getAbsRemainingVolume()
             }
         }
 
@@ -113,7 +113,9 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 rabbitOrderBookQueue.put(rabbitOrderBook)
             }
             return
-        } else if (orderBook.leadToNegativeSpreadForClient(order)) {
+        }
+
+        if (orderBook.leadToNegativeSpreadForClient(order)) {
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} lead to negative spread")
             order.status = OrderStatus.LeadToNegativeSpread.name
             rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.LEAD_TO_NEGATIVE_SPREAD, now)
@@ -243,9 +245,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
     }
 
     private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date) {
-        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-        balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+        if (cancelVolume > 0) {
+            val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+            balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+        }
 
         trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
         limitOrderService.setOrderBook(order.assetPairId, orderBook)
