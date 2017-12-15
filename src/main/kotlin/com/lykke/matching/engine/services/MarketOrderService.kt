@@ -18,6 +18,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
+import com.lykke.matching.engine.order.OrderStatus.PriceIsOutsideThreshold
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
@@ -27,6 +28,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -43,7 +45,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MarketOrder> {
+                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
+                         private val properties: ApplicationProperties): AbstractService<ProtocolMessages.MarketOrder> {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -68,10 +71,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         } else {
             val message = parse(messageWrapper.byteArray)
             val fee = FeeInstruction.create(message.fee)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $fee")
+            val expectedPrice = if (message.hasExpectedPrice()) message.expectedPrice else null
+            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, expectedPrice: $expectedPrice, straight: ${message.straight}, fee: $fee")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, fee)
+                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, fee, expectedPrice)
         }
 
         try {
@@ -93,12 +97,16 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val matchingResult = matchingEngine.match(order, orderBook)
+        val matchingResult = matchingEngine.match(order, orderBook, priceDifferenceThreshold = properties.priceDifferenceThreshold)
         val marketOrder = matchingResult.order as MarketOrder
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
                 writeResponse(messageWrapper, marketOrder, MessageStatus.NO_LIQUIDITY)
+            }
+            PriceIsOutsideThreshold -> {
+                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+                writeResponse(messageWrapper, marketOrder, MessageStatus.PRICE_IS_OUTSIDE_THRESHOLD)
             }
             ReservedVolumeGreaterThanBalance -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))

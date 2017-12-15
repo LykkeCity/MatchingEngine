@@ -49,6 +49,7 @@ import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -63,7 +64,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
+class MessageProcessor(config: Config, properties: ApplicationProperties, queue: BlockingQueue<MessageWrapper>) : Thread() {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
@@ -133,7 +134,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, marketOrderDatabaseAccessor)
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, marketOrderDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, properties)
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitClientLimitOrdersQueue, assetsHolder, assetsPairsHolder, balanceHolder, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)

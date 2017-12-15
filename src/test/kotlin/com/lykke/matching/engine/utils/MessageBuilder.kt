@@ -35,6 +35,9 @@ class MessageBuilder {
             order.fee?.let {
                 builder.setFee(buildFee(it))
             }
+            order.expectedPrice?.let {
+                builder.expectedPrice = it
+            }
             return MessageWrapper("Test", MessageType.MARKET_ORDER.type, builder
                     .build().toByteArray(), null)
         }
@@ -83,8 +86,9 @@ class MessageBuilder {
                              status: String = OrderStatus.InOrderBook.name,
                              straight: Boolean = true,
                              volume: Double = 1000.0,
-                             fee: FeeInstruction? = null): MarketOrder =
-                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, fee = fee)
+                             fee: FeeInstruction? = null,
+                             expectedPrice: Double? = null): MarketOrder =
+                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, fee = fee, expectedPrice = expectedPrice)
 
         fun buildLimitOrderWrapper(order: NewLimitOrder,
                                    cancel: Boolean = false): MessageWrapper {

@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -27,6 +28,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderW
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import org.junit.Before
 import org.junit.Test
 import java.util.HashMap
@@ -56,6 +58,8 @@ class LimitOrderServiceTest {
     private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
     private val trustedClients = setOf("Client3")
     private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
+    private val configDatabaseAccessor = TestConfigDatabaseAccessor()
+    private val applicationProperties: ApplicationProperties = ApplicationProperties(configDatabaseAccessor, 60000)
 
     @Before
     fun setUp() {
@@ -77,6 +81,9 @@ class LimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.05")
+        applicationProperties.update()
     }
 
     @Test
@@ -506,7 +513,7 @@ class LimitOrderServiceTest {
         assertEquals(2000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(1347.72, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
         marketService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -10.0)))
 
         assertEquals(1, trustedLimitOrdersQueue.size)
@@ -714,7 +721,7 @@ class LimitOrderServiceTest {
 
         val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         val service = SingleLimitOrderService(genericService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
 
         marketService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(volume = 10.0)))
 
@@ -1016,7 +1023,7 @@ class LimitOrderServiceTest {
 
         limitOrdersQueue.clear()
         rabbitSwapQueue.clear()
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
         marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 50.01, straight = false)))
         val result = rabbitSwapQueue.poll() as MarketOrderWithTrades
 
@@ -1042,7 +1049,7 @@ class LimitOrderServiceTest {
 
         limitOrdersQueue.clear()
         rabbitSwapQueue.clear()
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
         marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = -50.01, straight = false)))
         val result = rabbitSwapQueue.poll() as MarketOrderWithTrades
 
@@ -1088,7 +1095,7 @@ class LimitOrderServiceTest {
 
         val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, emptySet())
         val service = SingleLimitOrderService(genericService, trustedLimitOrdersQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, testMarketDatabaseAccessor)
-        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, testMarketDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
 
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
 

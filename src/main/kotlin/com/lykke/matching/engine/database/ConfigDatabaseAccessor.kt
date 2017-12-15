@@ -1,0 +1,5 @@
+package com.lykke.matching.engine.database
+
+interface ConfigDatabaseAccessor {
+    fun loadConfigs(): Map<String, String>?
+}

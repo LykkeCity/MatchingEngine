@@ -1,11 +1,13 @@
 package com.lykke.matching.engine
 
+import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
 import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
@@ -23,6 +25,7 @@ fun main(args: Array<String>) {
     AppInitializer.init()
 
     val config = HttpConfigParser.initConfig(args[0])
+    val properties = ApplicationProperties(AzureConfigDatabaseAccessor(config.me.db.configConnString, config.me.db.configTableName), config.me.configUpdateInterval)
 
     MetricsLogger.init(config.slackNotifications.azureQueue.connectionString,
             config.slackNotifications.azureQueue.queueName,
@@ -44,7 +47,7 @@ fun main(args: Array<String>) {
     }
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 
-    SocketServer(config) { appInitialData ->
+    SocketServer(config, properties) { appInitialData ->
         MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
     }.run()
 }

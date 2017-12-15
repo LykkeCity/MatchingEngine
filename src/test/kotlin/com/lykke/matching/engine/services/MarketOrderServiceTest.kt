@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -19,6 +20,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
+import com.lykke.matching.engine.order.OrderStatus.PriceIsOutsideThreshold
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -27,6 +29,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -52,8 +55,10 @@ class MarketOrderServiceTest {
     val trustedClients = emptySet<String>()
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
+    private val configDatabaseAccessor = TestConfigDatabaseAccessor()
+    private val applicationProperties: ApplicationProperties = ApplicationProperties(configDatabaseAccessor, 60000)
     var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
-    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
 
     val DELTA = 1e-9
 
@@ -82,6 +87,9 @@ class MarketOrderServiceTest {
         testWalletDatabaseAccessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5))
         testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
+
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.05")
+        applicationProperties.update()
     }
 
     @After
@@ -90,7 +98,7 @@ class MarketOrderServiceTest {
 
     fun initServices() {
         limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, testDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, applicationProperties)
     }
 
     @Test
@@ -533,5 +541,80 @@ class MarketOrderServiceTest {
 
         assertEquals(1, balanceUpdateQueue.size)
         assertEquals(0, (balanceUpdateQueue.poll() as BalanceUpdate).balances.filter { it.id == "Client1" }.size)
+    }
+
+    @Test
+    fun testSellPriceDifferenceThresholdCheck() {
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.2)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.15)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.0)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.26)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.27)))
+        assertEquals(PriceIsOutsideThreshold.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+        assertEquals(2, testLimitDatabaseAccessor.getOrders("EURUSD", true).filter { it.status == OrderStatus.InOrderBook.name }.size)
+
+
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.2")
+        applicationProperties.update()
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.27)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+    }
+
+    @Test
+    fun testBuyPriceDifferenceThresholdCheck() {
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.2)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.25)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.5)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.15)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.14)))
+        assertEquals(PriceIsOutsideThreshold.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+        assertEquals(2, testLimitDatabaseAccessor.getOrders("EURUSD", false).filter { it.status == OrderStatus.InOrderBook.name }.size)
+
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.2")
+        applicationProperties.update()
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.14)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+    }
+
+    private fun initThresholdTestContext() {
+        rabbitSwapQueue.clear()
+        testLimitDatabaseAccessor.clear()
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 2.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 2.0))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.1, volume = 0.5))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.3, volume = 0.5))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.1, volume = -0.5))
+        testLimitDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.3, volume = -0.5))
+        initServices()
     }
 }
