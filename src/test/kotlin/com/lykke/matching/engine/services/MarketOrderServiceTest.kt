@@ -549,6 +549,18 @@ class MarketOrderServiceTest {
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.2)))
         assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
 
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.0")
+        applicationProperties.update()
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.2)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.26)))
+        assertEquals(PriceIsOutsideThreshold.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.05")
+        applicationProperties.update()
         initThresholdTestContext()
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.15)))
         assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
@@ -573,6 +585,10 @@ class MarketOrderServiceTest {
         initThresholdTestContext()
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 1.27)))
         assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = -1.0, expectedPrice = 0.0)))
+        assertEquals(PriceIsOutsideThreshold.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
     }
 
     @Test
@@ -581,6 +597,18 @@ class MarketOrderServiceTest {
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.2)))
         assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
 
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.0")
+        applicationProperties.update()
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.2)))
+        assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.15)))
+        assertEquals(PriceIsOutsideThreshold.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        configDatabaseAccessor.setProperty(ApplicationProperties.PROP_NAME_PRICE_DIFFERENCE_THRESHOLD, "0.05")
+        applicationProperties.update()
         initThresholdTestContext()
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.25)))
         assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
@@ -604,6 +632,10 @@ class MarketOrderServiceTest {
         initThresholdTestContext()
         service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 1.14)))
         assertEquals(Matched.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
+
+        initThresholdTestContext()
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, expectedPrice = 0.0)))
+        assertEquals(PriceIsOutsideThreshold.name, (rabbitSwapQueue.poll() as MarketOrderWithTrades).order.status)
     }
 
     private fun initThresholdTestContext() {

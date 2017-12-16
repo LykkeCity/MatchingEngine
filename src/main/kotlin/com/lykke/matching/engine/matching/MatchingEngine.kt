@@ -249,10 +249,13 @@ class MatchingEngine(private val LOGGER: Logger,
             return true
         }
         val expectedPrice = order.expectedPrice() ?: return true
+        if (expectedPrice == 0.0) {
+            return false
+        }
         return if (order.isBuySide()) {
-            (price - expectedPrice) / expectedPrice < threshold
+            (price - expectedPrice) / expectedPrice <= threshold
         } else {
-            (expectedPrice - price) / expectedPrice < threshold
+            (expectedPrice - price) / expectedPrice <= threshold
         }
     }
 }
