@@ -43,7 +43,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.MarketOrder> {
+                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)

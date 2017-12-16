@@ -26,7 +26,7 @@ import java.util.concurrent.BlockingQueue
 class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                                     private val assetsHolder: AssetsHolder,
                                     private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                    private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
+                                    private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)

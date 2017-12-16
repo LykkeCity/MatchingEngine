@@ -39,7 +39,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val negativeSpreadAssets: Set<String>,
                              private val balancesHolder: BalancesHolder,
-                             private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor): AbstractService<ProtocolMessages.OldMultiLimitOrder> {
+                             private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)

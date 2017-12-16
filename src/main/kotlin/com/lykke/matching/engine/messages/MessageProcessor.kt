@@ -45,6 +45,8 @@ import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.ReservedBalanceUpdateService
+import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.utils.QueueSizeLogger
@@ -116,6 +118,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     val historyTicksBuilder: Timer
     val appInitialData: AppInitialData
 
+    private val reservedBalanceUpdateService: ReservedBalanceUpdateService
+    private val reservedCashInOutOperationService: ReservedCashInOutOperationService
+
     init {
         this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
@@ -128,6 +133,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
+        this.reservedCashInOutOperationService = ReservedCashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitTransferQueue)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
@@ -137,6 +143,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitClientLimitOrdersQueue, assetsHolder, assetsPairsHolder, balanceHolder, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
+        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
         historyTicksService.init()
@@ -249,6 +256,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.CASH_SWAP_OPERATION -> {
                     cashSwapOperationService.processMessage(message)
                 }
+                MessageType.RESERVED_CASH_IN_OUT_OPERATION -> {
+                    reservedCashInOutOperationService.processMessage(message)
+                }
                 MessageType.LIMIT_ORDER,
                 MessageType.OLD_LIMIT_ORDER -> {
                     singleLimitOrderService.processMessage(message)
@@ -268,6 +278,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 MessageType.OLD_BALANCE_UPDATE,
                 MessageType.BALANCE_UPDATE -> {
                     balanceUpdateService.processMessage(message)
+                }
+                MessageType.RESERVED_BALANCE_UPDATE -> {
+                    reservedBalanceUpdateService.processMessage(message)
                 }
                 MessageType.MULTI_LIMIT_ORDER,
                 MessageType.OLD_MULTI_LIMIT_ORDER -> {
