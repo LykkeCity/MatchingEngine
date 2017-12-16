@@ -121,6 +121,7 @@ message MarketOrder {
     required bool straight = 6;
     optional double reservedLimitVolume = 7;
     optional Fee fee = 8;
+    optional double expectedPrice = 9;
 }
 
 message LimitOrderCancel {

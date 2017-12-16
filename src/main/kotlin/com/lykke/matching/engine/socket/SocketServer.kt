@@ -6,6 +6,7 @@ import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import java.net.ServerSocket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
@@ -13,7 +14,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 
-class SocketServer(private val config: Config, private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+class SocketServer(private val config: Config, private val properties: ApplicationProperties, private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
@@ -27,7 +28,7 @@ class SocketServer(private val config: Config, private val initializationComplet
         val maxConnections = config.me.socket.maxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
-        val messageProcessor = MessageProcessor(config, messagesQueue)
+        val messageProcessor = MessageProcessor(config, properties, messagesQueue)
         messageProcessor.start()
 
         initializationCompleteCallback(messageProcessor.appInitialData)

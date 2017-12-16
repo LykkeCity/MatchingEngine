@@ -156,6 +156,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     OrderStatus.NoLiquidity -> {
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
+                    OrderStatus.PriceIsOutsideThreshold -> {
+                        trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                    }
                     OrderStatus.NotEnoughFunds -> {
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }

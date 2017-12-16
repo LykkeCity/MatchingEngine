@@ -136,6 +136,10 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     writeResponse(messageWrapper, limitOrder, MessageStatus.NO_LIQUIDITY)
                 }
+                OrderStatus.PriceIsOutsideThreshold -> {
+                    clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                    writeResponse(messageWrapper, limitOrder, MessageStatus.PRICE_IS_OUTSIDE_THRESHOLD)
+                }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     writeResponse(messageWrapper, limitOrder, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")

@@ -26,6 +26,7 @@ abstract class NewOrder(
         return volume > 0
     }
 
+    open fun expectedPrice(): Double? = takePrice()
     abstract fun isOrigBuySide(): Boolean
     abstract fun isStraight(): Boolean
     abstract fun calculateReservedVolume(): Double

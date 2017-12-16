@@ -4,7 +4,7 @@ import java.util.Date
 
 class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String, volume: Double,
                   var price: Double?, status: String, createdAt: Date, registered: Date,
-                  var matchedAt: Date?, var straight: Boolean, reservedLimitVolume: Double? = null, fee: FeeInstruction? = null)
+                  var matchedAt: Date?, var straight: Boolean, reservedLimitVolume: Double? = null, fee: FeeInstruction? = null, val expectedPrice: Double? = null)
     : NewOrder(id, uid, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee) {
 
     override fun isOrigBuySide(): Boolean {
@@ -38,4 +38,6 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
     override fun updateRemainingVolume(volume: Double) {
         //nothing to do
     }
+
+    override fun expectedPrice() = expectedPrice
 }
