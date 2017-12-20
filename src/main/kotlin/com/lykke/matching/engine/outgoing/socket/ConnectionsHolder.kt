@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.socket
 
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.ArrayList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet

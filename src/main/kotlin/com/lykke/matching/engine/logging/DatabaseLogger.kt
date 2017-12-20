@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.logging
 
 import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 

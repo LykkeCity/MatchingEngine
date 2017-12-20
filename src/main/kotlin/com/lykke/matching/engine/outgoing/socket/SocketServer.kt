@@ -2,10 +2,10 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.logging.ThrottlingLogger
 import java.net.ServerSocket
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue

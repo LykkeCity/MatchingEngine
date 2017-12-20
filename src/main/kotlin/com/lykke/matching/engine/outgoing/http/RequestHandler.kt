@@ -1,9 +1,9 @@
 package com.lykke.matching.engine.outgoing.http
 
 import com.google.gson.GsonBuilder
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import java.util.Date
