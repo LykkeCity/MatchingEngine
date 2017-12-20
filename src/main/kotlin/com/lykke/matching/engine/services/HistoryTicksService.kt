@@ -2,6 +2,8 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
+import com.lykke.utils.logging.PerformanceLogger
+import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashMap
 
@@ -33,6 +35,8 @@ class HistoryTicksService(
     private val oneYearTicks = HashMap<String, TickBlobHolder>()
     private var oneYearLastUpdateTime: Long = 0
     private val oneYearUpdateInterval: Long = (365L * 24 * 60 * 60 * 1000) / COUNT
+
+    private val performanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 10, "buildTicks: ")
 
     fun init() {
         val blobs = historyTicksDatabaseAccessor.loadHistoryTicks()
@@ -68,12 +72,17 @@ class HistoryTicksService(
     }
 
     fun buildTicks() {
+        performanceLogger.start()
         val now = Date()
         val ticks = genericLimitOrderService.buildMarketProfile()
         for (tick in ticks) {
             addTicks(now.time, tick.asset, tick.ask, tick.bid)
         }
+        performanceLogger.startPersist()
         saveTicks(now.time)
+        performanceLogger.endPersist()
+        performanceLogger.end()
+        performanceLogger.fixTime()
     }
 
     private fun addTicks(now: Long, asset: String, ask: Double, bid: Double) {

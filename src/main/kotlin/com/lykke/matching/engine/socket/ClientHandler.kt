@@ -15,7 +15,7 @@ import java.util.concurrent.BlockingQueue
 class ClientHandler(
         private val queue: BlockingQueue<MessageWrapper>,
         private val socket: Socket,
-        private val socketServer: SocketServer): Thread() {
+        private val socketServer: SocketServer): Thread(ClientHandler::class.java.name) {
 
     companion object {
         val LOGGER = Logger.getLogger(ClientHandler::class.java.name)

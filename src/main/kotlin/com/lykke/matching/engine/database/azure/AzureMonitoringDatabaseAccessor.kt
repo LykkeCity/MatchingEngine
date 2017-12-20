@@ -3,8 +3,7 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.azure.monitoring.AzureMonitoringResult
 import com.lykke.matching.engine.daos.monitoring.MonitoringResult
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import java.text.SimpleDateFormat
@@ -14,7 +13,6 @@ import java.util.TimeZone
 class AzureMonitoringDatabaseAccessor(connString: String): MonitoringDatabaseAccessor{
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureMonitoringDatabaseAccessor::class.java.name)
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     private val monitoringTable: CloudTable = getOrCreateTable(connString, "MatchingEngineMonitoring")

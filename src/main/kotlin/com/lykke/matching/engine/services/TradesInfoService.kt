@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.Tick
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -15,7 +16,7 @@ import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 
 class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
-                        private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor): Thread() {
+                        private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor): Thread(TradesInfoService::class.java.name) {
 
     companion object {
         val LOGGER = Logger.getLogger(TradesInfoService::class.java.name)
@@ -31,6 +32,9 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
 
     val bid = "Bid"
     val ask = "Ask"
+
+    private val candlesPerformanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 1, "saveCandles: ")
+    private val hourCandlesPerformanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 1, "saveHourCandles: ")
 
     override fun run() {
         while (true) {
@@ -65,9 +69,11 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
     }
 
     fun saveCandles() {
+        candlesPerformanceLogger.start()
         val time = formatter.format(Date())
         synchronized(candles) {
             val keys = candles.keys.filter { it != time }
+            candlesPerformanceLogger.startPersist()
             keys.forEach { keyTime ->
                 candles[keyTime]?.forEach { asset ->
                     limitOrderDatabaseAccessor.writeCandle(Candle(asset.key, keyTime, asset.value.entries.joinToString("|")
@@ -75,10 +81,14 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                 }
                 candles.remove(keyTime)
             }
+            candlesPerformanceLogger.endPersist()
         }
+        candlesPerformanceLogger.end()
+        candlesPerformanceLogger.fixTime()
     }
 
     fun saveHourCandles() {
+        hourCandlesPerformanceLogger.start()
         synchronized(hoursCandles) {
             hoursCandles.keys.forEach { asset ->
                 var hourCandle = savedHoursCandles.find { it.asset == asset }
@@ -92,6 +102,10 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
             }
             hoursCandles.clear()
         }
+        hourCandlesPerformanceLogger.startPersist()
         limitOrderDatabaseAccessor.writeHourCandles(savedHoursCandles)
+        hourCandlesPerformanceLogger.endPersist()
+        hourCandlesPerformanceLogger.end()
+        hourCandlesPerformanceLogger.fixTime()
     }
 }

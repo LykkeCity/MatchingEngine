@@ -22,8 +22,6 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -55,6 +53,8 @@ import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.utils.AppVersion
 import com.lykke.utils.keepalive.http.DefaultIsAliveResponseGetter
 import com.lykke.utils.keepalive.http.KeepAliveStarter
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.time.LocalDateTime
@@ -63,7 +63,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
+class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread(MessageProcessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)

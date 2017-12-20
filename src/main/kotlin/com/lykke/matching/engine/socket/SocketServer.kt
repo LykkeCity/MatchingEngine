@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.socket
 
 import com.lykke.matching.engine.AppInitialData
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import java.net.ServerSocket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
