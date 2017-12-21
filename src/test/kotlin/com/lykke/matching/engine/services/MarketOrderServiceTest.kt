@@ -323,7 +323,7 @@ class MarketOrderServiceTest {
         assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(Matched.name, marketOrderReport.order.status)
-        assertEquals(13591.395424, marketOrderReport.order.price!!, DELTA)
+        assertEquals(13591.031869, marketOrderReport.order.price!!, DELTA)
         assertEquals(3, marketOrderReport.trades.size)
 
         assertEquals(3.67889654, testWalletDatabaseAccessor.getBalance("Client1", "BTC"), DELTA)
@@ -345,7 +345,7 @@ class MarketOrderServiceTest {
         assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(Matched.name, marketOrderReport.order.status)
-        assertEquals(0.03854, marketOrderReport.order.price!!, DELTA)
+        assertEquals(0.03851, marketOrderReport.order.price!!, DELTA)
         assertEquals(2, marketOrderReport.trades.size)
 
         assertEquals(982.78, testWalletDatabaseAccessor.getBalance("Client1", "GBP"), DELTA)

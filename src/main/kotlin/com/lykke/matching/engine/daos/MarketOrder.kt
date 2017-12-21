@@ -20,7 +20,7 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
     }
 
     override fun calculateReservedVolume(): Double {
-        return reservedLimitVolume ?: volume
+        return reservedLimitVolume ?: 0.0
     }
 
     override fun updateMatchTime(time: Date) {

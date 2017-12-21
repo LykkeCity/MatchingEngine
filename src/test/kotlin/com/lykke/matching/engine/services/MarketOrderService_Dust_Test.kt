@@ -265,7 +265,7 @@ class MarketOrderService_Dust_Test {
         Assert.assertEquals("0.00999961", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("127.88", marketOrderReport.trades.first().limitVolume)
+        Assert.assertEquals("127.87", marketOrderReport.trades.first().limitVolume)
         Assert.assertEquals("SLR", marketOrderReport.trades.first().limitAsset)
         Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
     }

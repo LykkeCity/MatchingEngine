@@ -25,7 +25,7 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
     }
 
     override fun calculateReservedVolume(): Double {
-        return if (isBuySide()) remainingVolume * price else remainingVolume
+        return if (isBuySide()) remainingVolume * price else getAbsRemainingVolume()
     }
 
     override fun updateMatchTime(time: Date) {

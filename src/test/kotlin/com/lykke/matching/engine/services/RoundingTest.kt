@@ -348,7 +348,7 @@ class RoundingTest {
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(14945.59, marketOrderReport.order.price!!, DELTA)
+        Assert.assertEquals(14945.93, marketOrderReport.order.price!!, DELTA)
         Assert.assertEquals(3, marketOrderReport.trades.size)
 
         Assert.assertEquals(50800.0, testWalletDatabaseAccessor.getBalance("Client3", "LKK"), DELTA)

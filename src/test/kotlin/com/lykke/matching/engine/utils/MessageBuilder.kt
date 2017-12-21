@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.utils
 
 import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.FeeSizeType
+import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
@@ -20,7 +22,7 @@ class MessageBuilder {
                             registered: Date = Date(),
                             status: String = OrderStatus.InOrderBook.name,
                             volume: Double = 1000.0,
-                            reservedVolume: Double = volume,
+                            reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null): NewLimitOrder =
                 NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, fee = fee, reservedLimitVolume = reservedVolume)
 
@@ -83,8 +85,9 @@ class MessageBuilder {
                              status: String = OrderStatus.InOrderBook.name,
                              straight: Boolean = true,
                              volume: Double = 1000.0,
+                             reservedVolume: Double? = null,
                              fee: FeeInstruction? = null): MarketOrder =
-                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, fee = fee)
+                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, reservedVolume, fee = fee)
 
         fun buildLimitOrderWrapper(order: NewLimitOrder,
                                    cancel: Boolean = false): MessageWrapper {
@@ -103,5 +106,25 @@ class MessageBuilder {
 
          fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
                     .setUid(UUID.randomUUID().toString()).setLimitOrderId(uid).build().toByteArray(), null)
+
+        fun buildFeeInstruction(type: FeeType? = null,
+                                        sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                        size: Double? = null,
+                                        sourceClientId: String? = null,
+                                        targetClientId: String? = null): FeeInstruction? {
+            return if (type == null) null
+            else return FeeInstruction(type, sizeType, size, sourceClientId, targetClientId)
+        }
+
+        fun buildLimitOrderFeeInstruction(type: FeeType? = null,
+                                                  takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                                  takerSize: Double? = null,
+                                                  makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                                  makerSize: Double? = null,
+                                                  sourceClientId: String? = null,
+                                                  targetClientId: String? = null): LimitOrderFeeInstruction? {
+            return if (type == null) null
+            else return LimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId)
+        }
     }
 }

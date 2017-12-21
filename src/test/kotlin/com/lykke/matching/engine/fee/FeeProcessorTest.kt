@@ -1,10 +1,8 @@
 package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -14,6 +12,8 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
@@ -345,25 +345,5 @@ class FeeProcessorTest {
         assertEquals(0.2, operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
         assertTrue { operations[2].isFee }
-    }
-
-    private fun buildFeeInstruction(type: FeeType? = null,
-                                    sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                    size: Double? = null,
-                                    sourceClientId: String? = null,
-                                    targetClientId: String? = null): FeeInstruction? {
-        return if (type == null) null
-        else return FeeInstruction(type, sizeType, size, sourceClientId, targetClientId)
-    }
-
-    private fun buildLimitOrderFeeInstruction(type: FeeType? = null,
-                                              takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                              takerSize: Double? = null,
-                                              makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                              makerSize: Double? = null,
-                                              sourceClientId: String? = null,
-                                              targetClientId: String? = null): FeeInstruction? {
-        return if (type == null) null
-        else return LimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId)
     }
 }

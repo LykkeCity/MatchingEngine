@@ -1090,11 +1090,13 @@ class LimitOrderServiceTest {
         val service = SingleLimitOrderService(genericService, trustedLimitOrdersQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
         val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
 
         marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
         )))
+
+        assertNotNull(testDatabaseAccessor.getOrders("BTCUSD", false).firstOrNull { it.externalId == "order1" })
 
         marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
