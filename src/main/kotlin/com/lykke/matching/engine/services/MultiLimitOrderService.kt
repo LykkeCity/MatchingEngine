@@ -35,7 +35,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                             private val assetsHolder: AssetsHolder,
+                             assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val negativeSpreadAssets: Set<String>,
                              private val balancesHolder: BalancesHolder,
@@ -69,8 +69,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val assetPairId: String
         val isOldTypeMessage = messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type
 
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         if (isOldTypeMessage) {
-            val message = parseOldMultiLimitOrder(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMultiLimitOrder
             messageUid = message.uid.toString()
             clientId = message.clientId
             assetPairId = message.assetPairId
@@ -91,7 +94,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 }
             }
         } else {
-            val message = parseMultiLimitOrder(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
             messageUid = message.uid
             clientId = message.clientId
             assetPairId = message.assetPairId
@@ -291,5 +294,27 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     private fun parseMultiLimitOrder(array: ByteArray): ProtocolMessages.MultiLimitOrder {
         return ProtocolMessages.MultiLimitOrder.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
+            val message =  parseOldMultiLimitOrder(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.timestamp = message.timestamp
+            messageWrapper.parsedMessage = message
+        } else {
+            val message =  parseMultiLimitOrder(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid
+            messageWrapper.timestamp = message.timestamp
+            messageWrapper.parsedMessage = message
+        }
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+        } else {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+        }
     }
 }

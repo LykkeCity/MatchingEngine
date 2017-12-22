@@ -59,7 +59,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         var count = 1
         orders.forEach { order ->
             if (!trustedClients.contains(order.clientId)) {
-                teeLog("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
                 if (order.reservedLimitVolume != null) {
                     val clientAssets = reservedBalances.getOrPut(order.clientId) { HashMap() }
                     val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
@@ -69,17 +69,17 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                     balance.volume = newBalance
                     balance.orderIds.add(order.externalId)
                 } else {
-                    teeLog("Reserved volume is null")
+                    LOGGER.info("Reserved volume is null")
                 }
             }
         }
-        teeLog("---------------------------------------------------------------------------------------------------")
+        LOGGER.info("---------------------------------------------------------------------------------------------------")
 
         reservedBalances.forEach { client ->
-            teeLog("${client.key} : ${client.value}")
+            LOGGER.info("${client.key} : ${client.value}")
         }
 
-        teeLog("---------------------------------------------------------------------------------------------------")
+        LOGGER.info("---------------------------------------------------------------------------------------------------")
 
         val corrections = LinkedList<ReservedVolumeCorrection>()
         balanceHolder.wallets.forEach {

@@ -62,8 +62,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         val isCancelOrders: Boolean
         val clientLimitOrdersReport = LimitOrdersReport()
         val trustedClientLimitOrdersReport = LimitOrdersReport()
+
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            val oldMessage = parseOldLimitOrder(messageWrapper.byteArray)
+            val oldMessage = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
             val uid = UUID.randomUUID().toString()
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null)
@@ -72,7 +76,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
         } else {
-            val message = parseLimitOrder(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrder
             val uid = UUID.randomUUID().toString()
             val fee = LimitOrderFeeInstruction.create(message.fee)
             order = NewLimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
@@ -283,5 +287,27 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
     private fun parseOldLimitOrder(array: ByteArray): ProtocolMessages.OldLimitOrder {
         return ProtocolMessages.OldLimitOrder.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            val message =  parseOldLimitOrder(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.timestamp = message.timestamp
+            messageWrapper.parsedMessage = message
+        } else {
+            val message =  parseLimitOrder(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid
+            messageWrapper.timestamp = message.timestamp
+            messageWrapper.parsedMessage = message
+        }
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+        } else {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+        }
     }
 }

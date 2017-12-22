@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
@@ -35,7 +36,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
     private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
         val fee = FeeInstruction.create(message.fee)
         LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, fee: $fee")
 
@@ -77,5 +78,17 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, operations)
 
         return feeTransfer
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
+        messageWrapper.messageId = message.id
+        messageWrapper.timestamp = message.timestamp
+        messageWrapper.parsedMessage = message
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
     }
 }

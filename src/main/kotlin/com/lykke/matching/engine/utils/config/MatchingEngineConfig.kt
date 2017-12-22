@@ -23,5 +23,7 @@ data class MatchingEngineConfig(
     val queueSizeLimit: Int,
     val name: String,
     val trustedClients: Set<String>,
-    val aliveStatus: AliveStatusConfig
+    val aliveStatus: AliveStatusConfig,
+    val processedMessagesPath: String,
+    val processedMessagesInterval: Long
 )

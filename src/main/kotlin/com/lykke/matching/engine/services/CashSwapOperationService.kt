@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
@@ -32,7 +33,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
     private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
         LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
                 "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)}")
 
@@ -87,5 +88,17 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 operation.dateTime, -operation.volume2))
 
         balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, operations)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
+        messageWrapper.messageId = message.id
+        messageWrapper.timestamp = message.timestamp
+        messageWrapper.parsedMessage = message
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
     }
 }
