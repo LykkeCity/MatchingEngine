@@ -2,7 +2,7 @@ package com.lykke.matching.engine.outgoing.database
 
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.logging.ThrottlingLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.concurrent.BlockingQueue
 
 class LkkTradeSaveService(private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
