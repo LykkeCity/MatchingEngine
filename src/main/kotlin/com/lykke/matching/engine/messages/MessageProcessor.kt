@@ -67,6 +67,8 @@ import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Date
 import java.util.HashMap
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
@@ -165,7 +167,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         connectionsHolder.start()
 
         processedMessagesDatabaseAccessor = FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
-        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(LocalDate.now().minusDays(1)))
+        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
         servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {

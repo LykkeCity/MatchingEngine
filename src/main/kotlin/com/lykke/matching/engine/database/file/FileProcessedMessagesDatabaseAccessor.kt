@@ -10,7 +10,6 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.util.Date
 import java.util.LinkedList
 
@@ -25,7 +24,7 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
 
     private var conf = FSTConfiguration.createDefaultConfiguration()
 
-    override fun loadProcessedMessages(startDate: LocalDate): List<ProcessedMessage> {
+    override fun loadProcessedMessages(startDate: Date): List<ProcessedMessage> {
         val result = LinkedList<ProcessedMessage>()
         val startFileName = DATE_FORMAT.format(startDate)
 
