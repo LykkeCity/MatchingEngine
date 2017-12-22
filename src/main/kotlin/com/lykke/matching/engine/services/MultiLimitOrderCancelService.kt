@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -9,6 +8,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.concurrent.BlockingQueue
@@ -25,7 +25,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrderCancel
         LOGGER.debug("Got multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
 
         val now = Date()
@@ -72,5 +72,16 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
     private fun parse(array: ByteArray): ProtocolMessages.MultiLimitOrderCancel {
         return ProtocolMessages.MultiLimitOrderCancel.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
+        messageWrapper.messageId = message.uid
+        messageWrapper.timestamp = message.timestamp
+        messageWrapper.parsedMessage = message
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId).setStatus(status.type).build())
     }
 }

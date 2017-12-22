@@ -1,13 +1,13 @@
 package com.lykke.matching.engine.outgoing.socket
 
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.ArrayList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.concurrent.fixedRateTimer
 
-class ConnectionsHolder(val orderBookQueue: BlockingQueue<OrderBook>) : Thread() {
+class ConnectionsHolder(val orderBookQueue: BlockingQueue<OrderBook>) : Thread(ConnectionsHolder::class.java.name) {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(ConnectionsHolder::class.java.name)
     }

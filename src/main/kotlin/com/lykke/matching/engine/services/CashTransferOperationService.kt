@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
@@ -29,17 +30,17 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                                     private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
-        val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
+        private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
     }
 
-    private var messagesCount: Long = 0
     private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}")
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+        val fee = FeeInstruction.create(message.fee)
+        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, fee: $fee")
 
-        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, FeeInstruction.create(message.fee))
+        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, fee)
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
@@ -77,5 +78,17 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, operations)
 
         return feeTransfer
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
+        messageWrapper.messageId = message.id
+        messageWrapper.timestamp = message.timestamp
+        messageWrapper.parsedMessage = message
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
     }
 }

@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -9,6 +8,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 
@@ -22,8 +22,11 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
-            val message = parseOld(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
             LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
 
 
@@ -36,7 +39,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         } else {
-            val message = parse(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.BalanceUpdate
             LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
 
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
@@ -61,5 +64,27 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
 
     private fun parseOld(array: ByteArray): ProtocolMessages.OldBalanceUpdate {
         return ProtocolMessages.OldBalanceUpdate.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
+            val message =  parseOld(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.timestamp = Date().time
+            messageWrapper.parsedMessage = message
+        } else {
+            val message =  parse(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid
+            messageWrapper.timestamp = Date().time
+            messageWrapper.parsedMessage = message
+        }
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+        } else {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+        }
     }
 }

@@ -1,21 +1,17 @@
 package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.azure.AzureAssetPair
-import com.lykke.matching.engine.daos.azure.AzureExternalCashOperation
-import com.lykke.matching.engine.daos.azure.AzureWalletOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletSwapOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletTransferOperation
 import com.lykke.matching.engine.daos.azure.wallet.AzureWallet
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
@@ -30,12 +26,9 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val accountTable: CloudTable
-    val operationsTable: CloudTable
-    val transferOperationsTable: CloudTable
-    val swapOperationsTable: CloudTable
-    val externalOperationsTable: CloudTable
-    val assetsTable: CloudTable
+    private val accountTable: CloudTable = getOrCreateTable(balancesConfig, "Accounts")
+    private val transferOperationsTable: CloudTable = getOrCreateTable(balancesConfig, "SwapOperationsCash")
+    private val assetsTable: CloudTable = getOrCreateTable(dictsConfig, "Dictionaries")
 
     private val ASSET_PAIR = "AssetPair"
     private val PARTITION_KEY = "PartitionKey"
@@ -49,7 +42,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             val partitionQuery = TableQuery.from(AzureWallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
-                val map = result.getOrPut(wallet.rowKey) { HashMap<String, AssetBalance>() }
+                val map = result.getOrPut(wallet.rowKey) { HashMap() }
                 wallet.balancesList.forEach { balance ->
                     if (balance.balance != null) {
                         map.put(balance.asset, AssetBalance(balance.asset, balance.balance, balance.reserved ?: 0.0))
@@ -88,38 +81,6 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
         } catch(e: Exception) {
             LOGGER.error("Unable to update accounts, size: ${wallets.size}", e)
             METRICS_LOGGER.logError( "Unable to update accounts, size: ${wallets.size}", e)
-        }
-    }
-
-    override fun insertExternalCashOperation(operation: ExternalCashOperation) {
-        try {
-            externalOperationsTable.execute(TableOperation.insertOrMerge(AzureExternalCashOperation(operation.clientId, operation.externalId, operation.cashOperationId)))
-        } catch(e: Exception) {
-            LOGGER.error("Unable to insert external operation: ${operation.clientId}", e)
-            METRICS_LOGGER.logError( "Unable to insert external operation: ${operation.clientId}", e)
-        }
-    }
-
-    override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
-        try {
-            val retrieveOperation = TableOperation.retrieve(clientId, operationId, AzureExternalCashOperation::class.java)
-            val operation = externalOperationsTable.execute(retrieveOperation).getResultAsType<AzureExternalCashOperation>()
-            if (operation != null) {
-                return ExternalCashOperation(operation.partitionKey, operation.rowKey, operation.cashOperationId)
-            }
-        } catch(e: Exception) {
-            LOGGER.error("Unable to check if operation processed: $clientId, $operationId", e)
-            METRICS_LOGGER.logError( "Unable to check if operation processed: $clientId, $operationId", e)
-        }
-        return null
-    }
-
-    override fun insertOperation(operation: WalletOperation) {
-        try {
-            operationsTable.execute(TableOperation.insertOrMerge(AzureWalletOperation(operation.id, operation.externalId, operation.clientId, operation.assetId, operation.dateTime, operation.amount)))
-        } catch(e: Exception) {
-            LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
-            METRICS_LOGGER.logError( "Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
         }
     }
 
@@ -171,14 +132,5 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             METRICS_LOGGER.logError( "Unable to load asset: $assetId", e)
         }
         return null
-    }
-
-    init {
-        this.accountTable = getOrCreateTable(balancesConfig, "Accounts")
-        this.operationsTable = getOrCreateTable(balancesConfig, "OperationsCash")
-        this.transferOperationsTable = getOrCreateTable(balancesConfig, "SwapOperationsCash")
-        this.swapOperationsTable = getOrCreateTable(balancesConfig, "TransferOperationsCash")
-        this.externalOperationsTable = getOrCreateTable(balancesConfig, "ExternalOperationsCash")
-        this.assetsTable = getOrCreateTable(dictsConfig, "Dictionaries")
     }
 }

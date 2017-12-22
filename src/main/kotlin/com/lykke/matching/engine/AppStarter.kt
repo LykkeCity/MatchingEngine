@@ -1,15 +1,15 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
-import com.lykke.matching.engine.utils.migration.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.log4j.Logger
 
 val LOGGER = Logger.getLogger("AppStarter")
@@ -24,16 +24,11 @@ fun main(args: Array<String>) {
 
     val config = HttpConfigParser.initConfig(args[0])
 
-    if (config.me.migrate) {
-        ReservedVolumesRecalculator().recalculate(config)
-        return
-    }
-
-    MetricsLogger.init(config.slackNotifications.azureQueue.connectionString,
-            config.slackNotifications.azureQueue.queueName,
-            config.slackNotifications.throttlingLimitSeconds)
+    MetricsLogger.init("ME", config.slackNotifications)
 
     ThrottlingLogger.init(config.throttlingLogger)
+
+    correctReservedVolumesIfNeed(config)
 
     try {
         AliveStatusProcessorFactory

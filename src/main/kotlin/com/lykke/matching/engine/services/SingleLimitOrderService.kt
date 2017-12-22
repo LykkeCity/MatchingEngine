@@ -8,7 +8,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -24,6 +23,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -62,8 +62,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         val isCancelOrders: Boolean
         val clientLimitOrdersReport = LimitOrdersReport()
         val trustedClientLimitOrdersReport = LimitOrdersReport()
+
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            val oldMessage = parseOldLimitOrder(messageWrapper.byteArray)
+            val oldMessage = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
             val uid = UUID.randomUUID().toString()
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null)
@@ -72,7 +76,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
         } else {
-            val message = parseLimitOrder(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrder
             val uid = UUID.randomUUID().toString()
             val fee = LimitOrderFeeInstruction.create(message.fee)
             order = NewLimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
@@ -98,7 +102,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 limitOrderService.cancelLimitOrder(orderToCancel.externalId)
                 orderBook.removeOrder(orderToCancel)
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(orderToCancel))
-                cancelVolume += if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.remainingVolume
+                cancelVolume += if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.getAbsRemainingVolume()
             }
         }
 
@@ -113,7 +117,9 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 rabbitOrderBookQueue.put(rabbitOrderBook)
             }
             return
-        } else if (orderBook.leadToNegativeSpreadForClient(order)) {
+        }
+
+        if (orderBook.leadToNegativeSpreadForClient(order)) {
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} lead to negative spread")
             order.status = OrderStatus.LeadToNegativeSpread.name
             rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.LEAD_TO_NEGATIVE_SPREAD, now)
@@ -167,7 +173,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
-                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, now, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
+                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, it.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
                     }.toMutableList()))
 
                     if (matchingResult.limitOrdersReport != null) {
@@ -184,8 +190,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
                         order.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price , assetsHolder.getAsset(limitAsset).accuracy, false) else order.getAbsRemainingVolume()
                         val newReservedBalance =  RoundingUtils.parseDouble(order.reservedLimitVolume!! - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-                        walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, now, 0.0, newReservedBalance))
-                        limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), now))
+                        walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, matchingResult.timestamp, 0.0, newReservedBalance))
+                        limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), matchingResult.timestamp))
                     }
 
                     balancesHolder.processWalletOperations(order.externalId, MessageType.LIMIT_ORDER.name, walletOperations)
@@ -220,13 +226,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
             orderBookQueue.put(rabbitOrderBook)
             rabbitOrderBookQueue.put(rabbitOrderBook)
+            writeResponse(messageWrapper, order, MessageStatus.OK)
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} added to order book")
-        }
-
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())
-        } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(MessageStatus.OK.type).build())
         }
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
@@ -248,9 +249,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
     }
 
     private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date) {
-        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-        balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+        if (cancelVolume > 0) {
+            val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+            balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+        }
 
         trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
         limitOrderService.setOrderBook(order.assetPairId, orderBook)
@@ -284,5 +287,27 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
     private fun parseOldLimitOrder(array: ByteArray): ProtocolMessages.OldLimitOrder {
         return ProtocolMessages.OldLimitOrder.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            val message =  parseOldLimitOrder(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.timestamp = message.timestamp
+            messageWrapper.parsedMessage = message
+        } else {
+            val message =  parseLimitOrder(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid
+            messageWrapper.timestamp = message.timestamp
+            messageWrapper.parsedMessage = message
+        }
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+        } else {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+        }
     }
 }

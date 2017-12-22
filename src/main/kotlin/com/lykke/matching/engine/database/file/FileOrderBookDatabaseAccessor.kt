@@ -2,8 +2,8 @@ package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import java.io.File
 import java.nio.file.FileSystems
@@ -30,7 +30,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
             val dir = File(ordersDir)
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
-                    if (!file.name.startsWith("_prev_")) {
+                    if (!file.isDirectory && !file.name.startsWith("_prev_")) {
                         try {
                             result.addAll(loadFile(file))
                         } catch (e: Exception) {

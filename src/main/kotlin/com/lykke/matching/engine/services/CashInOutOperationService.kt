@@ -1,13 +1,10 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageStatus.ALREADY_PROCESSED
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -16,6 +13,7 @@ import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
@@ -34,16 +32,11 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
     private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}")
-
-        val externalCashOperation = walletDatabaseAccessor.loadExternalCashOperation(message.clientId, message.id)
-        if (externalCashOperation != null) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(externalCashOperation.cashOperationId)
-                    .setStatus(ALREADY_PROCESSED.type).setStatusReason("ID:${externalCashOperation.cashOperationId}").build())
-            LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} already processed")
-            return
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
         }
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
+        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}")
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
                 Date(message.timestamp), message.volume, 0.0)
@@ -60,7 +53,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
 
         balancesHolder.processWalletOperations(message.id, MessageType.CASH_IN_OUT_OPERATION.name, listOf(operation))
-        walletDatabaseAccessor.insertExternalCashOperation(ExternalCashOperation(operation.clientId, message.id, operation.id))
         rabbitCashInOutQueue.put(CashOperation(message.id, operation.clientId, operation.dateTime, operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy), operation.assetId))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
@@ -69,5 +61,17 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
     private fun parse(array: ByteArray): ProtocolMessages.CashInOutOperation {
         return ProtocolMessages.CashInOutOperation.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        val message = parse(messageWrapper.byteArray)
+        messageWrapper.messageId = message.id
+        messageWrapper.timestamp = message.timestamp
+        messageWrapper.parsedMessage = message
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
     }
 }

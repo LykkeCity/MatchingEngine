@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.logging.MetricsLogger
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -16,6 +15,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.concurrent.BlockingQueue
@@ -37,14 +37,17 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val order: NewLimitOrder?
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            val message = parseOldLimitOrderCancel(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
             LOGGER.debug("Got old limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
             genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
         } else {
-            val message = parseLimitOrderCancel(messageWrapper.byteArray)
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderCancel
             LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
             order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId, true)
@@ -82,5 +85,27 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
     private fun parseLimitOrderCancel(array: ByteArray): ProtocolMessages.LimitOrderCancel {
         return ProtocolMessages.LimitOrderCancel.parseFrom(array)
+    }
+
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
+            val message =  parseOldLimitOrderCancel(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.timestamp = Date().time
+            messageWrapper.parsedMessage = message
+        } else {
+            val message =  parseLimitOrderCancel(messageWrapper.byteArray)
+            messageWrapper.messageId = message.uid
+            messageWrapper.timestamp = Date().time
+            messageWrapper.parsedMessage = message
+        }
+    }
+
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+        } else {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+        }
     }
 }

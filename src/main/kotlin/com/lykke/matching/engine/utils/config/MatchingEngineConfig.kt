@@ -18,9 +18,12 @@ data class MatchingEngineConfig(
     val negativeSpreadAssets: String,
     val whiteList: String?,
     val migrate: Boolean,
+    val correctReservedVolumes: Boolean,
     val orderBookPath: String,
     val queueSizeLimit: Int,
     val name: String,
     val trustedClients: Set<String>,
-    val aliveStatus: AliveStatusConfig
+    val aliveStatus: AliveStatusConfig,
+    val processedMessagesPath: String,
+    val processedMessagesInterval: Long
 )

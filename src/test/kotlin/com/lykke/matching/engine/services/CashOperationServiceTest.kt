@@ -106,29 +106,6 @@ class CashOperationServiceTest {
     }
 
     @Test
-    fun testResendCashIn() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
-        service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
-        var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
-        assertNotNull(balance)
-        assertEquals(150.0, balance, DELTA)
-
-        val externalOperation = testDatabaseAccessor.loadExternalCashOperation("Client1", "TestId")
-        assertNotNull(externalOperation)
-
-        service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0, "TestId"))
-        balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
-        assertNotNull(balance)
-        assertEquals(150.0, balance, DELTA)
-
-        val cashInTransaction = transactionQueue.peek() as CashOperation
-        assertNotNull(cashInTransaction)
-        assertEquals("Client1", cashInTransaction.clientId)
-        assertEquals("50.00", cashInTransaction.volume)
-        assertEquals("Asset1", cashInTransaction.asset)
-    }
-
-    @Test
     fun testAddNewAsset() {
         val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
         service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))

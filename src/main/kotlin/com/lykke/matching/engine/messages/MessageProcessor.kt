@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.messages
 
+import com.google.protobuf.MessageOrBuilder
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -8,6 +9,7 @@ import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
@@ -19,12 +21,13 @@ import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -36,6 +39,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
+import com.lykke.matching.engine.services.AbstractService
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
 import com.lykke.matching.engine.services.CashOperationService
@@ -57,66 +61,76 @@ import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.utils.AppVersion
 import com.lykke.utils.keepalive.http.DefaultIsAliveResponseGetter
 import com.lykke.utils.keepalive.http.KeepAliveStarter
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.HashMap
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread() {
+class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread(MessageProcessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
         val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
+  
+    private val messagesQueue: BlockingQueue<MessageWrapper> = queue
+    private val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
+    private val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
+    private val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
+    private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
+    private val balanceUpdatesQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
 
-    val messagesQueue: BlockingQueue<MessageWrapper> = queue
-    val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
-    val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
-    val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
-    val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
-    val balanceUpdatesQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
-    val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
+    private val walletDatabaseAccessor: WalletDatabaseAccessor
+    private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
+    private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
+    private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
+    private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
+    private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
 
-    val walletDatabaseAccessor: WalletDatabaseAccessor
-    val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
-    val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
-    val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
-    val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
-    val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
+    private val cashOperationService: CashOperationService
+    private val cashInOutOperationService: CashInOutOperationService
+    private val cashTransferOperationService: CashTransferOperationService
+    private val cashSwapOperationService: CashSwapOperationService
+    private val genericLimitOrderService: GenericLimitOrderService
+    private val singleLimitOrderService: SingleLimitOrderService
+    private val multiLimitOrderService: MultiLimitOrderService
+    private val marketOrderService: MarketOrderService
+    private val limitOrderCancelService: LimitOrderCancelService
+    private val multiLimitOrderCancelService: MultiLimitOrderCancelService
+    private val balanceUpdateService: BalanceUpdateService
+    private val tradesInfoService: TradesInfoService
+    private val historyTicksService: HistoryTicksService
 
-    val cashOperationService: CashOperationService
-    val cashInOutOperationService: CashInOutOperationService
-    val cashTransferOperationService: CashTransferOperationService
-    val cashSwapOperationService: CashSwapOperationService
-    val genericLimitOrderService: GenericLimitOrderService
-    val singleLimitOrderService: SingleLimitOrderService
-    val multiLimitOrderService: MultiLimitOrderService
-    val marketOrderService: MarketOrderService
-    val limitOrderCancelService: LimitOrderCancelService
-    val multiLimitOrderCancelService: MultiLimitOrderCancelService
-    val balanceUpdateService: BalanceUpdateService
-    val tradesInfoService: TradesInfoService
-    val historyTicksService: HistoryTicksService
+    private val balanceUpdateHandler: BalanceUpdateHandler
+    private val quotesUpdateHandler: QuotesUpdateHandler
 
-    val balanceUpdateHandler: BalanceUpdateHandler
-    val quotesUpdateHandler: QuotesUpdateHandler
+    private val servicesMap: Map<MessageType, AbstractService<MessageOrBuilder>>
+    private val notDeduplicateMessageTypes = setOf(MessageType.MULTI_LIMIT_ORDER, MessageType.OLD_MULTI_LIMIT_ORDER, MessageType.MULTI_LIMIT_ORDER_CANCEL)
+    private val processedMessagesCache: ProcessedMessagesCache
+    private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
 
-    val bestPriceBuilder: Timer
-    val candlesBuilder: Timer
-    val hoursCandlesBuilder: Timer
-    val historyTicksBuilder: Timer
+    private val bestPriceBuilder: Timer
+    private val candlesBuilder: Timer
+    private val hoursCandlesBuilder: Timer
+    private val historyTicksBuilder: Timer
+  
     val appInitialData: AppInitialData
 
     init {
@@ -149,6 +163,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         quotesUpdateHandler.start()
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
+
+        processedMessagesDatabaseAccessor = FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
+        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(LocalDate.now().minusDays(1)))
+        servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {
             SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
@@ -239,58 +257,69 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private fun processMessage(message: MessageWrapper) {
         try {
             val messageType = MessageType.Companion.valueOf(message.type)
-            when (messageType) {
-            //MessageType.PING -> already processed by client handler
-                MessageType.CASH_OPERATION -> {
-                    cashOperationService.processMessage(message)
+            if (messageType == null) {
+                LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
+                METRICS_LOGGER.logError("Unknown message type: ${message.type}")
+                return
+            }
+
+            val service = servicesMap[messageType]
+
+            if (service == null) {
+                when (messageType) {
+                    MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
+                        balanceUpdateHandler.subscribe(message.clientHandler!!)
+                    }
+                    MessageType.QUOTES_UPDATE_SUBSCRIBE -> {
+                        quotesUpdateHandler.subscribe(message.clientHandler!!)
+                    }
+                    else -> {
+                        LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
+                        METRICS_LOGGER.logError("Unknown message type: ${message.type}")
+                    }
                 }
-                MessageType.CASH_IN_OUT_OPERATION -> {
-                    cashInOutOperationService.processMessage(message)
+                return
+            }
+
+            service.parseMessage(message)
+            if (!notDeduplicateMessageTypes.contains(messageType)) {
+                if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
+                    service.writeResponse(message, MessageStatus.DUPLICATE)
+                    LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
+                    METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
                 }
-                MessageType.CASH_TRANSFER_OPERATION -> {
-                    cashTransferOperationService.processMessage(message)
-                }
-                MessageType.CASH_SWAP_OPERATION -> {
-                    cashSwapOperationService.processMessage(message)
-                }
-                MessageType.LIMIT_ORDER,
-                MessageType.OLD_LIMIT_ORDER -> {
-                    singleLimitOrderService.processMessage(message)
-                }
-                MessageType.MARKET_ORDER,
-                MessageType.NEW_MARKET_ORDER,
-                MessageType.OLD_MARKET_ORDER -> {
-                    marketOrderService.processMessage(message)
-                }
-                MessageType.LIMIT_ORDER_CANCEL,
-                MessageType.OLD_LIMIT_ORDER_CANCEL -> {
-                    limitOrderCancelService.processMessage(message)
-                }
-                MessageType.MULTI_LIMIT_ORDER_CANCEL -> {
-                    multiLimitOrderCancelService.processMessage(message)
-                }
-                MessageType.OLD_BALANCE_UPDATE,
-                MessageType.BALANCE_UPDATE -> {
-                    balanceUpdateService.processMessage(message)
-                }
-                MessageType.MULTI_LIMIT_ORDER,
-                MessageType.OLD_MULTI_LIMIT_ORDER -> {
-                    multiLimitOrderService.processMessage(message)
-                }
-                MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
-                    balanceUpdateHandler.subscribe(message.clientHandler!!)
-                }
-                MessageType.QUOTES_UPDATE_SUBSCRIBE -> {
-                    quotesUpdateHandler.subscribe(message.clientHandler!!)
-                }
-                else -> {
-                    LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
-                    METRICS_LOGGER.logError( "Unknown message type: ${message.type}")
-                }
+            }
+
+            service.processMessage(message)
+            if (!notDeduplicateMessageTypes.contains(messageType)) {
+                val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
+                processedMessagesCache.addMessage(processedMessage)
+                processedMessagesDatabaseAccessor.saveProcessedMessage(processedMessage)
             }
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message processing", exception)
         }
+    }
+
+    private fun initServicesMap(): Map<MessageType, AbstractService<MessageOrBuilder>> {
+        val result = HashMap<MessageType, AbstractService<MessageOrBuilder>>()
+        result[MessageType.CASH_OPERATION] = cashOperationService
+        result[MessageType.CASH_IN_OUT_OPERATION] = cashInOutOperationService
+        result[MessageType.CASH_TRANSFER_OPERATION] = cashTransferOperationService
+        result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
+        result[MessageType.LIMIT_ORDER] = singleLimitOrderService
+        result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
+        result[MessageType.MARKET_ORDER] = marketOrderService
+        result[MessageType.NEW_MARKET_ORDER] = marketOrderService
+        result[MessageType.OLD_MARKET_ORDER] = marketOrderService
+        result[MessageType.LIMIT_ORDER_CANCEL] = limitOrderCancelService
+        result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
+        result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
+        result[MessageType.OLD_BALANCE_UPDATE] = balanceUpdateService
+        result[MessageType.BALANCE_UPDATE] = balanceUpdateService
+        result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
+        result[MessageType.OLD_MULTI_LIMIT_ORDER] = multiLimitOrderService
+        return result
     }
 }

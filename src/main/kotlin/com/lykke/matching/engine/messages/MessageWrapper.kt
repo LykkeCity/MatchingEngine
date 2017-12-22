@@ -1,12 +1,20 @@
 package com.lykke.matching.engine.messages
 
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
+import com.google.protobuf.MessageOrBuilder
 import com.lykke.matching.engine.socket.ClientHandler
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import java.io.IOException
 
-class MessageWrapper(val sourceIp: String, val type: Byte, val byteArray: ByteArray, val clientHandler: ClientHandler?) {
+class MessageWrapper(
+        val sourceIp: String,
+        val type: Byte,
+        val byteArray: ByteArray,
+        val clientHandler: ClientHandler?,
+        var timestamp: Long? = null,
+        var messageId: String? = null,
+        var parsedMessage: MessageOrBuilder? = null) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)

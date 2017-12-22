@@ -9,7 +9,7 @@ import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArrayList
 
-class QuotesUpdateHandler(private val notificationQueue: BlockingQueue<QuotesUpdate>): Thread() {
+class QuotesUpdateHandler(private val notificationQueue: BlockingQueue<QuotesUpdate>): Thread(QuotesUpdateHandler::class.java.name) {
 
     companion object {
         val LOGGER = Logger.getLogger(QuotesUpdateHandler::class.java.name)

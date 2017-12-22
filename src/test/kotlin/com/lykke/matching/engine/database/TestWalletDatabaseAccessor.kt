@@ -1,10 +1,8 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.ExternalCashOperation
 import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import java.util.HashMap
@@ -12,12 +10,10 @@ import java.util.LinkedList
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
-    val balances = HashMap<String, MutableMap<String, AssetBalance>>()
-    val wallets = HashMap<String, Wallet>()
-    val operations = LinkedList<WalletOperation>()
-    val transferOperations = LinkedList<TransferOperation>()
-    val externalOperations = LinkedList<ExternalCashOperation>()
-    val assetPairs = HashMap<String, AssetPair>()
+    private val balances = HashMap<String, MutableMap<String, AssetBalance>>()
+    private val wallets = HashMap<String, Wallet>()
+    private val transferOperations = LinkedList<TransferOperation>()
+    private val assetPairs = HashMap<String, AssetPair>()
 
     override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
         return balances
@@ -62,17 +58,6 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         return 0.0
     }
 
-    override fun loadExternalCashOperation(clientId: String, operationId: String): ExternalCashOperation? {
-        return externalOperations.find { it.clientId == clientId && it.externalId == operationId }
-    }
-
-    override fun insertExternalCashOperation(operation: ExternalCashOperation) {
-        this.externalOperations.add(operation)
-    }
-
-    override fun insertOperation(operation: WalletOperation) {
-        this.operations.add(operation)
-    }
     override fun insertTransferOperation(operation: TransferOperation) {
         this.transferOperations.add(operation)
     }
@@ -96,9 +81,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     fun clear() {
         balances.clear()
         wallets.clear()
-        operations.clear()
         transferOperations.clear()
-        externalOperations.clear()
         assetPairs.clear()
     }
 
