@@ -565,11 +565,11 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client3", assetId = "BTCUSD", volume = -100.0, straight = false)
-        val matchingResult = matchingEngine.match(marketOrder, getOrderBook("BTCUSD", false))
+        matchingEngine.match(marketOrder, getOrderBook("BTCUSD", false))
 
-        assertEquals(1, matchingResult.skipLimitOrders.size)
-        assertEquals("Client1", matchingResult.skipLimitOrders.first().clientId)
-        assertEquals(0.00947867, matchingResult.skipLimitOrders.first().reservedLimitVolume)
+        val orders = testDatabaseAccessor.getOrders("BTCUSD", false).filter { it.clientId == "Client1" }
+        assertEquals(1, orders.size)
+        assertEquals(0.00947867, orders.first().reservedLimitVolume)
     }
 
     @Test
@@ -588,7 +588,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     }
 
     @Test
-    fun testAdjustingMarketVolumeDueToLowBalance() {
+    fun testMatchMarketOrderBuyNotEnoughFunds4() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "CHF", 100.00))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.02))
 
@@ -600,10 +600,6 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         val marketOrder = buildMarketOrder(clientId = "Client1", assetId = "BTCCHF", volume = 0.01665173)
         val matchingResult = matchingEngine.match(marketOrder, getOrderBook("BTCCHF", false))
 
-        assertEquals(2, matchingResult.marketOrderTrades.size)
-        assertEquals("30.00", matchingResult.marketOrderTrades.first().marketVolume)
-        assertEquals("0.00500000", matchingResult.marketOrderTrades.first().limitVolume)
-        assertEquals("70.00", matchingResult.marketOrderTrades.last().marketVolume)
-        assertEquals("0.01165173", matchingResult.marketOrderTrades.last().limitVolume)
+        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.NotEnoughFunds)
     }
 }
