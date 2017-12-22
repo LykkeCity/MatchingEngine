@@ -2,7 +2,6 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -10,13 +9,13 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
+import com.lykke.utils.logging.ThrottlingLogger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.Socket
 import java.util.Date
-import java.util.HashSet
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
@@ -25,7 +24,7 @@ class Connection(val socket: Socket,
                  val inputQueue: BlockingQueue<OrderBook>,
                  val orderBooks: ConcurrentHashMap<String, AssetOrderBook>,
                  val assetsCache: AssetsHolder,
-                 val assetPairsCache: AssetsPairsHolder) : Thread() {
+                 val assetPairsCache: AssetsPairsHolder) : Thread(Connection::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(Connection::class.java.name)
@@ -34,8 +33,6 @@ class Connection(val socket: Socket,
     var connectionHolder: ConnectionsHolder? = null
 
     var clientHostName = socket.inetAddress.canonicalHostName
-    var assetsPairs = HashSet<String>()
-
 
     override fun run() {
         LOGGER.info("Got order book subscriber from $clientHostName.")
@@ -44,7 +41,7 @@ class Connection(val socket: Socket,
             val outputStream = DataOutputStream(BufferedOutputStream(socket.outputStream))
             outputStream.flush()
 
-            thread {
+            thread(name = "${Connection::class.java.name}.inputStreamListener") {
                 try {
                     while (!isClosed()) {
                         val type = inputStream.readByte()

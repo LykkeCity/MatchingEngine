@@ -8,8 +8,8 @@ import com.lykke.matching.engine.daos.azure.AzureCandle
 import com.lykke.matching.engine.daos.azure.AzureHourCandle
 import com.lykke.matching.engine.daos.azure.AzureHourCandle.MICRO
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.logging.MetricsLogger
-import com.lykke.matching.engine.logging.ThrottlingLogger
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery

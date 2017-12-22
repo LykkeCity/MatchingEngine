@@ -2,10 +2,10 @@ package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.logging.ThrottlingLogger
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.logging.ThrottlingLogger
 import java.net.ServerSocket
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -14,7 +14,7 @@ class SocketServer(val config: Config,
                    val connectionsHolder: ConnectionsHolder,
                    val genericLimitOrderService: GenericLimitOrderService,
                    val assetsHolder: AssetsHolder,
-                   val assetsPairsHolder: AssetsPairsHolder): Thread() {
+                   val assetsPairsHolder: AssetsPairsHolder): Thread(SocketServer::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)

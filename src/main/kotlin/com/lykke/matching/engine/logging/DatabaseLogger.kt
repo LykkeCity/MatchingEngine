@@ -1,8 +1,11 @@
 package com.lykke.matching.engine.logging
 
 import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
+import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
 abstract class DatabaseLogger<in AppFormat, out DbFormat>(private val dbAccessor: MessageLogDatabaseAccessor<DbFormat>) {
 
@@ -31,10 +34,10 @@ abstract class DatabaseLogger<in AppFormat, out DbFormat>(private val dbAccessor
     protected abstract fun transformMessage(message: AppFormat): DbFormat
 
     init {
-        Thread {
+        thread(name = DatabaseLogger::class.java.name) {
             while (true) {
                 takeAndSaveMessage()
             }
-        }.start()
+        }
     }
 }
