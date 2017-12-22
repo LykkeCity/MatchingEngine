@@ -40,6 +40,8 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
                         }
                     }
                 }
+            } else {
+                dir.mkdir()
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to processed messages", e)
