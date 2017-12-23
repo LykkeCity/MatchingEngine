@@ -10,6 +10,7 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
+import java.util.Arrays
 import java.util.Date
 import java.util.LinkedList
 
@@ -22,7 +23,7 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
         val DATE_FORMAT = SimpleDateFormat("yyyyMMdd")
     }
 
-    private var conf = FSTConfiguration.createDefaultConfiguration()
+    private var conf = FSTConfiguration.createJsonConfiguration()
 
     override fun loadProcessedMessages(startDate: Date): List<ProcessedMessage> {
         val result = LinkedList<ProcessedMessage>()
@@ -56,9 +57,11 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
         val result = LinkedList<ProcessedMessage>()
         val fileLocation = file.toPath()
         Files.readAllLines(fileLocation).forEach {
-            val readCase = conf.asObject(it.toByteArray())
-            if (readCase is ProcessedMessage) {
-                result.add(readCase)
+            if (it != null && it.isNotBlank()) {
+                val readCase = conf.asObject(it.toByteArray())
+                if (readCase is ProcessedMessage) {
+                    result.add(readCase)
+                }
             }
         }
         return result
@@ -71,8 +74,8 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
             if (!file.exists()) {
                 file.createNewFile()
             }
-            val bytes = conf.asByteArray(message)
-            Files.write(FileSystems.getDefault().getPath("$messagesDir/$fileName"), bytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            val bytes = conf.asJsonString(message)
+            Files.write(FileSystems.getDefault().getPath("$messagesDir/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (ex: Exception) {
             LOGGER.error("Unable to save message info: $message", ex)
             METRICS_LOGGER.logError( "Unable to save message info: $message", ex)
