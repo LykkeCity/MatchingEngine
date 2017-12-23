@@ -18,6 +18,7 @@ class AzureMonitoringDatabaseAccessor(connString: String): MonitoringDatabaseAcc
     }
 
     private val monitoringTable: CloudTable = getOrCreateTable(connString, "MatchingEngineMonitoring")
+    private val performanceStatsTable: CloudTable = getOrCreateTable(connString, "MatchingEnginePerformance")
 
     private val DATE_FORMAT_PARTITION_KEY = initTimeFormatter("yyyyMMdd")
     private val DATE_FORMAT_ROW_KEY = initTimeFormatter("yyyy-MM-dd HH:mm:ss")
@@ -38,7 +39,7 @@ class AzureMonitoringDatabaseAccessor(connString: String): MonitoringDatabaseAcc
     override fun savePerformanceStats(stats: TypePerformanceStats) {
         try {
             val now = Date()
-            monitoringTable.execute(TableOperation.insertOrMerge(
+            performanceStatsTable.execute(TableOperation.insertOrMerge(
                     AzurePerformanceStats(
                             DATE_FORMAT_PARTITION_KEY.format(now),
                             DATE_FORMAT_ROW_KEY.format(now),
