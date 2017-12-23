@@ -11,5 +11,15 @@ class PrintUtils {
                 return "${RoundingUtils.roundForPrint(value / 1000000)} millis"
             }
         }
+
+        fun convertToString2(value: Double): String {
+            if ((value / 100000).toInt() == 0) {
+                //microseconds
+                return "${RoundingUtils.roundForPrint2(value / 1000)} micros"
+            } else {
+                //milliseconds
+                return "${RoundingUtils.roundForPrint2(value / 1000000)} millis"
+            }
+        }
     }
 }

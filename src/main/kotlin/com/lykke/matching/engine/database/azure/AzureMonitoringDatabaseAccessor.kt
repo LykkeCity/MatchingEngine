@@ -42,7 +42,7 @@ class AzureMonitoringDatabaseAccessor(connString: String): MonitoringDatabaseAcc
             performanceStatsTable.execute(TableOperation.insertOrMerge(
                     AzurePerformanceStats(
                             DATE_FORMAT_PARTITION_KEY.format(now),
-                            DATE_FORMAT_ROW_KEY.format(now),
+                            "${stats.type}_${DATE_FORMAT_ROW_KEY.format(now)}",
                             stats)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert performance result $stats: ${e.message}")

@@ -3,8 +3,8 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.TypePerformanceStats
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.ThrottlingLogger
-import com.lykke.utils.number.PrintUtils
 import java.util.Date
 
 class PerformanceStatsLogger(private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
@@ -16,8 +16,8 @@ class PerformanceStatsLogger(private val monitoringDatabaseAccessor: MonitoringD
         val now = Date()
         stats.forEach { typeStats ->
             val type = MessageType.valueOf(typeStats.type)!!.name
-            val totalTime = PrintUtils.convertToString(typeStats.totalTime.toDouble() / typeStats.count)
-            val processingTime = PrintUtils.convertToString(typeStats.processingTime.toDouble() / typeStats.count)
+            val totalTime = PrintUtils.convertToString2(typeStats.totalTime.toDouble() / typeStats.count)
+            val processingTime = PrintUtils.convertToString2(typeStats.processingTime.toDouble() / typeStats.count)
             LOGGER.info("$type: count: ${typeStats.count}, total time: $totalTime, processing time: $processingTime")
 
             monitoringDatabaseAccessor.savePerformanceStats(TypePerformanceStats(now, type, totalTime, processingTime, typeStats.count))
