@@ -233,7 +233,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
             }
         }
 
-        KeepAliveStarter.start(config.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
+        KeepAliveStarter.start(config.me.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
@@ -289,6 +289,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                     service.writeResponse(message, MessageStatus.DUPLICATE)
                     LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
                     METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
+                    return
                 }
             }
 
