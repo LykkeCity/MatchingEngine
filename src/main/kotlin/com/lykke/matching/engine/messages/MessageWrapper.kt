@@ -12,6 +12,7 @@ class MessageWrapper(
         val type: Byte,
         val byteArray: ByteArray,
         val clientHandler: ClientHandler?,
+        val startTimestamp: Long = System.nanoTime(),
         var timestamp: Long? = null,
         var messageId: String? = null,
         var parsedMessage: MessageOrBuilder? = null) {

@@ -39,6 +39,8 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqPublisher
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
+import com.lykke.matching.engine.performance.PerformanceStatsHolder
+import com.lykke.matching.engine.performance.PerformanceStatsLogger
 import com.lykke.matching.engine.services.AbstractService
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
@@ -132,6 +134,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val candlesBuilder: Timer
     private val hoursCandlesBuilder: Timer
     private val historyTicksBuilder: Timer
+
+    private val performanceStatsHolder = PerformanceStatsHolder()
   
     val appInitialData: AppInitialData
 
@@ -233,6 +237,11 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
             }
         }
 
+        val performanceStatsLogger = PerformanceStatsLogger(monitoringDatabaseAccessor)
+        fixedRateTimer(name = "PerformanceStatsLogger", initialDelay = config.me.performanceStatsInterval, period = config.me.performanceStatsInterval) {
+            performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
+        }
+
         KeepAliveStarter.start(config.me.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
@@ -257,6 +266,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     }
 
     private fun processMessage(message: MessageWrapper) {
+        val startTime = System.nanoTime()
         try {
             val messageType = MessageType.Companion.valueOf(message.type)
             if (messageType == null) {
@@ -299,6 +309,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 processedMessagesCache.addMessage(processedMessage)
                 processedMessagesDatabaseAccessor.saveProcessedMessage(processedMessage)
             }
+
+            val endTime = System.nanoTime()
+
+            performanceStatsHolder.addMessage(message.type, endTime - message.startTimestamp, endTime - startTime)
         } catch (exception: Exception) {
             LOGGER.error("[${message.sourceIp}]: Got error during message processing: ${exception.message}", exception)
             METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message processing", exception)

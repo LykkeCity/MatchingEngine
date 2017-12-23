@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.database.azure
 
+import com.lykke.matching.engine.daos.TypePerformanceStats
 import com.lykke.matching.engine.daos.azure.monitoring.AzureMonitoringResult
+import com.lykke.matching.engine.daos.azure.monitoring.AzurePerformanceStats
 import com.lykke.matching.engine.daos.monitoring.MonitoringResult
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.utils.logging.ThrottlingLogger
@@ -30,6 +32,19 @@ class AzureMonitoringDatabaseAccessor(connString: String): MonitoringDatabaseAcc
                             monitoringResult)))
         } catch(e: Exception) {
             LOGGER.error("Unable to insert monitoring result: ${e.message}")
+        }
+    }
+
+    override fun savePerformanceStats(stats: TypePerformanceStats) {
+        try {
+            val now = Date()
+            monitoringTable.execute(TableOperation.insertOrMerge(
+                    AzurePerformanceStats(
+                            DATE_FORMAT_PARTITION_KEY.format(now),
+                            DATE_FORMAT_ROW_KEY.format(now),
+                            stats)))
+        } catch(e: Exception) {
+            LOGGER.error("Unable to insert performance result $stats: ${e.message}")
         }
     }
 

@@ -7,7 +7,7 @@ import com.lykke.utils.keepalive.http.KeepAliveConfig
 data class MatchingEngineConfig(
         val db: DbConfig,
         @SerializedName("IpEndpoint")
-    val socket: IpEndpoint,
+        val socket: IpEndpoint,
         val serverOrderBookPort: Int?,
         val serverOrderBookMaxConnections: Int?,
         val httpOrderBookPort: Int,
@@ -27,5 +27,6 @@ data class MatchingEngineConfig(
         val aliveStatus: AliveStatusConfig,
         val processedMessagesPath: String,
         val processedMessagesInterval: Long,
+        val performanceStatsInterval: Long,
         val keepAlive: KeepAliveConfig
 )
