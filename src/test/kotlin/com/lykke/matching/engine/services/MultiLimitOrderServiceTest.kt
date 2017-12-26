@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -29,8 +30,9 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFee
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildNewLimitOrderFee
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFee
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
@@ -501,7 +503,8 @@ class MultiLimitOrderServiceTest {
                 pair = "EURUSD",
                 clientId = marketMaker,
                 volumes = listOf(VolumePrice(60.0, 1.2), VolumePrice(60.0, 1.1)),
-                fees = listOf(LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.01, FeeSizeType.PERCENTAGE, 0.02, marketMaker, feeHolder), LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.03, FeeSizeType.PERCENTAGE, 0.04, marketMaker, feeHolder)),
+                ordersFee = listOf(LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.01, FeeSizeType.PERCENTAGE, 0.02, marketMaker, feeHolder), LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.03, FeeSizeType.PERCENTAGE, 0.04, marketMaker, feeHolder)),
+                ordersFees = listOf(),
                 cancel = true))
 
         assertEquals(0.5, balancesHolder.getBalance(feeHolder, "EUR")) // 0.01 * 50 (expr1)
@@ -536,8 +539,7 @@ class MultiLimitOrderServiceTest {
                         VolumePrice(2.0, 1.13),
                         VolumePrice(2.0, 1.1)
                 ),
-                cancel = true,
-                fees = listOf()))
+                cancel = true, ordersFee = listOf(), ordersFees = listOf()))
 
         singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
 
@@ -574,7 +576,7 @@ class MultiLimitOrderServiceTest {
         genericLimitService = initLimitService()
         service = initService()
 
-        service.processMessage(buildMultiLimitOrderWrapper(clientId = marketMaker, pair = "EURUSD", volumes = listOf(VolumePrice(-2.0, 1.1)), cancel = false, fees = listOf()))
+        service.processMessage(buildMultiLimitOrderWrapper(clientId = marketMaker, pair = "EURUSD", volumes = listOf(VolumePrice(-2.0, 1.1)), cancel = false, ordersFee = listOf(), ordersFees = listOf()))
 
         assertEquals(0, testDatabaseAccessor.getOrders("EURUSD", true).size)
         assertEquals(1, testDatabaseAccessor.getOrders("EURUSD", false).size)
@@ -626,11 +628,21 @@ class MultiLimitOrderServiceTest {
         return orderBuilder.build()
     }
 
-    private fun buildMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, fees: List<LimitOrderFeeInstruction>, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId, volumes, fees, cancel).toByteArray(), null)
+    private fun buildMultiLimitOrderWrapper(pair: String,
+                                            clientId: String,
+                                            volumes: List<VolumePrice>,
+                                            ordersFee: List<LimitOrderFeeInstruction>,
+                                            ordersFees: List<List<NewLimitOrderFeeInstruction>>,
+                                            cancel: Boolean = false): MessageWrapper {
+        return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId, volumes, ordersFee, ordersFees, cancel).toByteArray(), null)
     }
 
-    private fun buildMultiLimitOrder(assetPairId: String, clientId: String, volumes: List<VolumePrice>, fees: List<LimitOrderFeeInstruction>, cancel: Boolean): ProtocolMessages.MultiLimitOrder {
+    private fun buildMultiLimitOrder(assetPairId: String,
+                                     clientId: String,
+                                     volumes: List<VolumePrice>,
+                                     ordersFee: List<LimitOrderFeeInstruction>,
+                                     ordersFees: List<List<NewLimitOrderFeeInstruction>>,
+                                     cancel: Boolean): ProtocolMessages.MultiLimitOrder {
         val multiOrderBuilder = ProtocolMessages.MultiLimitOrder.newBuilder()
                 .setUid(UUID.randomUUID().toString())
                 .setTimestamp(Date().time)
@@ -642,8 +654,13 @@ class MultiLimitOrderServiceTest {
                     .setVolume(volume.volume)
                     .setPrice(volume.price)
                     .setUid(UUID.randomUUID().toString())
-            if (fees.size > index) {
-                orderBuilder.fee = buildLimitOrderFee(fees[index])
+            if (ordersFee.size > index) {
+                orderBuilder.fee = buildLimitOrderFee(ordersFee[index])
+            }
+            if (ordersFees.size > index) {
+                ordersFees[index].forEach {
+                    orderBuilder.addFees(buildNewLimitOrderFee(it))
+                }
             }
             multiOrderBuilder.addOrders(orderBuilder.build())
         }

@@ -17,5 +17,7 @@ class LimitTradeInfo(
         val oppositeClientId: String,
         val oppositeVolume: String,
         val feeInstruction: FeeInstruction?,
-        val feeTransfer: FeeTransfer?
+        val feeTransfer: FeeTransfer?,
+        val feeInstructions: List<FeeInstruction>?,
+        val feeTransfers: List<FeeTransfer>?
 )

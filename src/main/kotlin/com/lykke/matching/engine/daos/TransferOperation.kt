@@ -11,4 +11,4 @@ data class TransferOperation(
         val dateTime: Date,
         val volume: Double,
         val overdraftLimit: Double?,
-        val fee: FeeInstruction?)
+        val fees: List<FeeInstruction>?)

@@ -4,11 +4,17 @@ import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.fee.listOfFee
+import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
@@ -37,10 +43,16 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
-        val fee = FeeInstruction.create(message.fee)
-        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, fee: $fee")
+        val fee = if (message.hasFee()) FeeInstruction.create(message.fee) else null
+        val fees = NewFeeInstruction.create(message.feesList)
+        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, fee: $fee, fees: $fees")
 
-        val operation = TransferOperation(UUID.randomUUID().toString(), message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, fee)
+        val operationId = UUID.randomUUID().toString()
+        if (!checkFee(fee, fees)) {
+            writeInvalidFeeResponse(messageWrapper, message, operationId)
+            return
+        }
+        val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(fee, fees))
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
@@ -52,9 +64,14 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
             return
         }
 
-        val feeTransfer = processTransferOperation(operation)
+        val feeTransfers = try {
+            processTransferOperation(operation)
+        } catch (e: FeeException) {
+            writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
+            return
+        }
         walletDatabaseAccessor.insertTransferOperation(operation)
-        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, operation.fee, feeTransfer))
+        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, fee, singleFeeTransfer(fee, feeTransfers), operation.fees, feeTransfers))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)} processed")
@@ -64,7 +81,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashTransferOperation.parseFrom(array)
     }
 
-    private fun processTransferOperation(operation: TransferOperation): FeeTransfer? {
+    private fun processTransferOperation(operation: TransferOperation): List<FeeTransfer> {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,
@@ -73,11 +90,11 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                 operation.dateTime, operation.volume)
         operations.add(receiptOperation)
 
-        val feeTransfer = feeProcessor.processFee(operation.fee, receiptOperation, operations)
+        val feeTransfers = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
         balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, operations)
 
-        return feeTransfer
+        return feeTransfers
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -90,5 +107,16 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+    }
+
+    private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashTransferOperation, operationId: String, errorMessage: String = "invalid fee for client") {
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setId(message.id)
+                .setMatchingEngineId(operationId)
+                .setStatus(INVALID_FEE.type)
+                .setStatusReason(errorMessage)
+                .build())
+        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
+        return
     }
 }
