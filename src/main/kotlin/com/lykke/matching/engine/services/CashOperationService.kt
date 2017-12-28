@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -13,14 +12,11 @@ import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
 
-class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val balancesHolder: BalancesHolder): AbstractService {
+class CashOperationService(private val balancesHolder: BalancesHolder): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation

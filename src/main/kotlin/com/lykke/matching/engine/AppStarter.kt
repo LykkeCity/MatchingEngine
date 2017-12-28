@@ -4,6 +4,8 @@ import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
+import com.lykke.matching.engine.utils.migration.AccountsMigrationException
+import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
@@ -24,6 +26,8 @@ fun main(args: Array<String>) {
 
     val config = HttpConfigParser.initConfig(args[0])
 
+    AppContext.init(config)
+
     try {
         AliveStatusProcessorFactory
                 .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
@@ -40,6 +44,14 @@ fun main(args: Array<String>) {
     ThrottlingLogger.init(config.throttlingLogger)
 
     correctReservedVolumesIfNeed(config)
+
+    try {
+        migrateAccountsIfConfigured(config)
+    } catch (e: AccountsMigrationException) {
+        LOGGER.error(e.message, e)
+        return
+    }
+
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 
     SocketServer(config) { appInitialData ->

@@ -1,12 +1,12 @@
 package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import org.apache.log4j.Logger
 import kotlin.concurrent.fixedRateTimer
 
 class AssetPairsCache(
-        private val databaseAccessor: WalletDatabaseAccessor,
+        private val databaseAccessor: DictionariesDatabaseAccessor,
         updateInterval: Long? = null) : DataCache() {
 
     companion object {
