@@ -15,6 +15,7 @@ import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 
 class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                      private val assetsHolder: AssetsHolder,
@@ -28,7 +29,8 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     }
 
     private val balances = walletDatabaseAccessor.loadBalances()
-    val wallets = walletDatabaseAccessor.loadWallets()
+    val wallets = walletDatabaseAccessor.loadWallets().toMap(ConcurrentHashMap())
+
     val initialClientsCount: Int = balances.size
     val initialBalancesCount: Int = balances.values.sumBy { it.size }
 
@@ -84,6 +86,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         if (operations.isEmpty()) {
             return
         }
+        val now = Date()
         val updates = HashMap<String, ClientBalanceUpdate>()
         val walletsToAdd = LinkedList<Wallet>()
         val clients = HashSet<String>()
@@ -96,11 +99,11 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
             val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
             val newReservedBalance = if (!trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
 
-            client.put(operation.assetId, AssetBalance(operation.assetId, newBalance, newReservedBalance))
+            client.put(operation.assetId, AssetBalance(operation.assetId, now, newBalance, newReservedBalance))
 
             val wallet = wallets.getOrPut(operation.clientId) { Wallet(operation.clientId) }
-            wallet.setBalance(operation.assetId, newBalance)
-            wallet.setReservedBalance(operation.assetId, newReservedBalance)
+            wallet.setBalance(operation.assetId, now, newBalance)
+            wallet.setReservedBalance(operation.assetId, now, newReservedBalance)
 
             if (!walletsToAdd.contains(wallet)) {
                 walletsToAdd.add(wallet)
@@ -116,37 +119,37 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
 
-        sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
+        sendBalanceUpdate(BalanceUpdate(id, type, now, updates.values.toList()))
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: Double) {
+    fun updateBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
         val client = balances.getOrPut(clientId) { HashMap<String, AssetBalance>() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
-            client.put(assetId, AssetBalance(assetId, balance))
+            client.put(assetId, AssetBalance(assetId, timestamp, balance))
         } else {
             oldBalance.balance = balance
         }
 
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setBalance(assetId, balance)
+        wallet.setBalance(assetId, timestamp, balance)
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, balance: Double) {
+    fun updateReservedBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
         val client = balances.getOrPut(clientId) { HashMap<String, AssetBalance>() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
-            client.put(assetId, AssetBalance(assetId, balance, balance))
+            client.put(assetId, AssetBalance(assetId, timestamp, balance, balance))
         } else {
             oldBalance.reserved = balance
         }
 
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setReservedBalance(assetId, balance)
+        wallet.setReservedBalance(assetId, timestamp, balance)
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
