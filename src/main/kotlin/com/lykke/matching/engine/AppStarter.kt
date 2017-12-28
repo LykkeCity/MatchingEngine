@@ -43,14 +43,14 @@ fun main(args: Array<String>) {
 
     ThrottlingLogger.init(config.throttlingLogger)
 
-    correctReservedVolumesIfNeed(config)
-
     try {
         migrateAccountsIfConfigured(config)
     } catch (e: AccountsMigrationException) {
         LOGGER.error(e.message, e)
         return
     }
+
+    correctReservedVolumesIfNeed(config)
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 

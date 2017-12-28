@@ -145,7 +145,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
     init {
         val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString)
-        this.walletDatabaseAccessor = createWalletDatabaseAccessor(config.me)
+        this.walletDatabaseAccessor = createWalletDatabaseAccessor(config.me, true)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.database.file
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.outgoing.database.WalletsSaveService
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
@@ -13,8 +14,11 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.util.HashMap
+import java.util.concurrent.LinkedBlockingQueue
 
-class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletDatabaseAccessor {
+class FileWalletDatabaseAccessor(private val walletsDirectory: String,
+                                 /** accessor to save wallets to another db async; null, if don't need it */
+                                 walletDatabaseAccessor: WalletDatabaseAccessor? = null) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(FileWalletDatabaseAccessor::class.java.name)
@@ -22,6 +26,16 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletD
     }
 
     private val conf = FSTConfiguration.createDefaultConfiguration()
+    private val saveToAnotherDb = walletDatabaseAccessor != null
+    private val updatedWalletsQueue = LinkedBlockingQueue<List<Wallet>>()
+
+    init {
+        if (saveToAnotherDb) {
+            WalletsSaveService(walletDatabaseAccessor!!, updatedWalletsQueue).start()
+            // synchronize wallets with another db
+            updatedWalletsQueue.put(loadWallets().values.toList())
+        }
+    }
 
     override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
         val result = HashMap<String, MutableMap<String, AssetBalance>>()
@@ -75,20 +89,32 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String) : WalletD
 
     private fun readAndAddWallet(file: File, wallets: MutableMap<String, Wallet>) {
         val wallet = loadFile(file)
-        wallet?.let {
-            wallets.put(it.clientId, it)
+        if (wallet != null) {
+            wallets.put(wallet.clientId, wallet)
+        } else {
+            LOGGER.error("File '${file.name}' has invalid data format")
         }
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
-        wallets.forEach { insertOrUpdateWallet(it) }
+        if (saveToAnotherDb) {
+            updatedWalletsQueue.put(wallets)
+        }
+        wallets.forEach { insertOrUpdateWallet(it, false) }
     }
 
     override fun insertOrUpdateWallet(wallet: Wallet) {
+        insertOrUpdateWallet(wallet, saveToAnotherDb)
+    }
+
+    private fun insertOrUpdateWallet(wallet: Wallet, saveToAnotherDb: Boolean) {
         try {
             val fileName = wallet.clientId
             archiveAndDeleteFile(fileName)
             saveFile(fileName, wallet)
+            if (saveToAnotherDb) {
+                updatedWalletsQueue.put(listOf(wallet))
+            }
         } catch (e: Exception) {
             val message = "Unable to save wallet, clientId: ${wallet.clientId}"
             LOGGER.error(message, e)
