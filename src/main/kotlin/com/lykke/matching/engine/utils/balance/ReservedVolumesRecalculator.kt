@@ -29,7 +29,7 @@ fun correctReservedVolumesIfNeed(config: Config) {
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val walletDatabaseAccessor = createWalletDatabaseAccessor(config.me)
+    val walletDatabaseAccessor = createWalletDatabaseAccessor(config.me, false)
     val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
     val filePath = config.me.fileDb.orderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
@@ -108,7 +108,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
                     }
                 } else if (oldBalance > 0) {
-                    val orderIds = if (newBalance != null) newBalance.orderIds.joinToString(",") else null
+                    val orderIds = newBalance?.orderIds?.joinToString(",")
                     val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: 0.0)
                     corrections.add(correction)
                     teeLog("2 $id, ${it.asset} : Old $oldBalance New ${newBalance ?: 0.0}")

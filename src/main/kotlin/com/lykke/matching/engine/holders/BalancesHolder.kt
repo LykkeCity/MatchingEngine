@@ -21,11 +21,10 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                      private val assetsHolder: AssetsHolder,
                      private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
-                     private val trustedClients: Set<String>
-                     ) {
+                     private val trustedClients: Set<String>) {
 
     companion object {
-        val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
+        private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
 
     private val balances = walletDatabaseAccessor.loadBalances()
@@ -91,7 +90,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         val walletsToAdd = LinkedList<Wallet>()
         val clients = HashSet<String>()
         operations.forEach { operation ->
-            val client = balances.getOrPut(operation.clientId) { HashMap<String, AssetBalance>() }
+            val client = balances.getOrPut(operation.clientId) { HashMap() }
             val balance = client[operation.assetId]?.balance ?: 0.0
             val reservedBalance = client[operation.assetId]?.reserved ?: 0.0
             val asset = assetsHolder.getAsset(operation.assetId)
@@ -123,7 +122,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     }
 
     fun updateBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
-        val client = balances.getOrPut(clientId) { HashMap<String, AssetBalance>() }
+        val client = balances.getOrPut(clientId) { HashMap() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
             client.put(assetId, AssetBalance(assetId, timestamp, balance))
@@ -140,7 +139,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     }
 
     fun updateReservedBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
-        val client = balances.getOrPut(clientId) { HashMap<String, AssetBalance>() }
+        val client = balances.getOrPut(clientId) { HashMap() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
             client.put(assetId, AssetBalance(assetId, timestamp, balance, balance))
