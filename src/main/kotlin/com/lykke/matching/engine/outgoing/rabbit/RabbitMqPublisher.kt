@@ -9,6 +9,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.MessageProperties
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
@@ -76,7 +77,7 @@ class RabbitMqPublisher(
                     }
                 }
                 val startPersistTime = System.nanoTime()
-                channel!!.basicPublish(exchangeName, "", null, stringValue.toByteArray())
+                channel!!.basicPublish(exchangeName, "", MessageProperties.MINIMAL_PERSISTENT_BASIC, stringValue.toByteArray())
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
