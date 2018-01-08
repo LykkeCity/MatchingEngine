@@ -6,7 +6,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import java.util.concurrent.BlockingQueue
 
 class LkkTradeSaveService(private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor,
-                          private val trades: BlockingQueue<List<LkkTrade>>) : Thread() {
+                          private val trades: BlockingQueue<List<LkkTrade>>) : Thread(LkkTradeSaveService::class.java.name) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(LkkTradeSaveService::class.java.name)
