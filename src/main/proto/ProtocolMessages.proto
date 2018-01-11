@@ -57,6 +57,7 @@ message CashInOutOperation {
     required int64 timestamp = 3;
     required string assetId = 4;
     required double volume = 5;
+    repeated Fee fees = 6;
 }
 
 message CashTransferOperation {
