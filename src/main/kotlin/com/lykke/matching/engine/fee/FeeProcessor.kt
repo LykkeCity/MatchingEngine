@@ -10,14 +10,18 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.LinkedList
 import java.util.UUID
 
 class FeeProcessor(private val balancesHolder: BalancesHolder,
-                   private val assetsHolder: AssetsHolder) {
+                   private val assetsHolder: AssetsHolder,
+                   private val assetsPairsHolder: AssetsPairsHolder,
+                   private val genericLimitOrderService: GenericLimitOrderService) {
 
     companion object {
         private val LOGGER = Logger.getLogger(FeeProcessor::class.java.name)
@@ -125,7 +129,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val receiptOperation = receiptOperationWrapper.baseReceiptOperation
         val feeAsset = getFeeAsset(feeInstruction, operationAsset)
         val anotherAsset = operationAsset.assetId != feeAsset.assetId
-        val feeAmount = RoundingUtils.round(if (anotherAsset) absBaseAssetFeeAmount * (invertCoef ?: throw FeeException("Invert coef is null")) else absBaseAssetFeeAmount, feeAsset.accuracy, true)
+        val feeAmount = RoundingUtils.round(if (anotherAsset) absBaseAssetFeeAmount * (invertCoef ?: computeInvertCoef(operationAsset.assetId, feeAsset.assetId)) else absBaseAssetFeeAmount, feeAsset.accuracy, true)
 
         val clientBalances = balances.getOrPut(feeInstruction.sourceClientId) { HashMap() }
         val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesHolder.getAvailableBalance(feeInstruction.sourceClientId, feeAsset.assetId) }
@@ -150,7 +154,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val feeAsset = getFeeAsset(feeInstruction, operationAsset)
         val anotherAsset = operationAsset.assetId != feeAsset.assetId
 
-        val feeAmount = RoundingUtils.round(if (anotherAsset) absBaseAssetFeeAmount * (invertCoef ?: throw FeeException("Invert coef is null")) else absBaseAssetFeeAmount, feeAsset.accuracy, true)
+        val feeAmount = RoundingUtils.round(if (anotherAsset) absBaseAssetFeeAmount * (invertCoef ?: computeInvertCoef(operationAsset.assetId, feeAsset.assetId)) else absBaseAssetFeeAmount, feeAsset.accuracy, true)
         val clientBalances = balances.getOrPut(receiptOperation.clientId) { HashMap() }
         val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesHolder.getAvailableBalance(receiptOperation.clientId, feeAsset.assetId) }
 
@@ -187,6 +191,20 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             else -> listOf()
         }
         return if (assetIds.isNotEmpty()) assetsHolder.getAsset(assetIds.first()) else operationAsset
+    }
+
+    private fun computeInvertCoef(operationAssetId: String, feeAssetId: String): Double {
+        val assetPair = try {
+            assetsPairsHolder.getAssetPair(operationAssetId, feeAssetId)
+        } catch (e: Exception) {
+            throw FeeException(e.message ?: "Unable to get asset pair for ($operationAssetId, $feeAssetId})")
+        }
+        val orderBook = genericLimitOrderService.getOrderBook(assetPair.assetPairId)
+        val price = if (assetPair.baseAssetId == feeAssetId) orderBook.getAskPrice() else orderBook.getBidPrice()
+        if (price <= 0.0) {
+            throw FeeException("Unable to get a price to convert to fee asset (price is 0 or order book is empty)")
+        }
+        return if (assetPair.baseAssetId == feeAssetId) price else 1 / price
     }
 
 }

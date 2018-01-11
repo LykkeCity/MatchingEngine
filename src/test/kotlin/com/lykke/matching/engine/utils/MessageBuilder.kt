@@ -47,7 +47,7 @@ class MessageBuilder {
                     .build().toByteArray(), null)
         }
 
-        private fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
+        fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
             val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
                 builder.size = it
@@ -148,41 +148,43 @@ class MessageBuilder {
                     .setUid(UUID.randomUUID().toString()).setLimitOrderId(uid).build().toByteArray(), null)
 
         fun buildFeeInstructions(type: FeeType? = null,
-                                         sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                         size: Double? = null,
-                                         sourceClientId: String? = null,
-                                         targetClientId: String? = null): List<NewFeeInstruction> {
+                                 sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                 size: Double? = null,
+                                 sourceClientId: String? = null,
+                                 targetClientId: String? = null,
+                                 assetIds: List<String> = emptyList()): List<NewFeeInstruction> {
             return if (type == null) listOf()
-            else return listOf(NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, listOf()))
+            else return listOf(NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, assetIds))
         }
 
         fun buildFeeInstruction(type: FeeType? = null,
-                                        sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                        size: Double? = null,
-                                        sourceClientId: String? = null,
-                                        targetClientId: String? = null): NewFeeInstruction? {
+                                sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                size: Double? = null,
+                                sourceClientId: String? = null,
+                                targetClientId: String? = null,
+                                assetIds: List<String> = emptyList()): NewFeeInstruction? {
             return if (type == null) null
-            else return NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, listOf())
+            else return NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, assetIds)
         }
 
         fun buildLimitOrderFeeInstruction(type: FeeType? = null,
-                                                  takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                                  takerSize: Double? = null,
-                                                  makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                                  makerSize: Double? = null,
-                                                  sourceClientId: String? = null,
-                                                  targetClientId: String? = null): LimitOrderFeeInstruction? {
+                                          takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                          takerSize: Double? = null,
+                                          makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                          makerSize: Double? = null,
+                                          sourceClientId: String? = null,
+                                          targetClientId: String? = null): LimitOrderFeeInstruction? {
             return if (type == null) null
             else return LimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId)
         }
 
         fun buildLimitOrderFeeInstructions(type: FeeType? = null,
-                                                   takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                                   takerSize: Double? = null,
-                                                   makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
-                                                   makerSize: Double? = null,
-                                                   sourceClientId: String? = null,
-                                                   targetClientId: String? = null): List<NewFeeInstruction> {
+                                           takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                           takerSize: Double? = null,
+                                           makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
+                                           makerSize: Double? = null,
+                                           sourceClientId: String? = null,
+                                           targetClientId: String? = null): List<NewFeeInstruction> {
             return if (type == null) listOf()
             else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, listOf()))
         }

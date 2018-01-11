@@ -34,7 +34,7 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val assetsPairsHolder: AssetsPairsHolder,
                      private val balancesHolder: BalancesHolder) {
 
-    private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
+    private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
     fun match(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: Double? = null): MatchingResult {
         val availableBalance = balance ?: getBalance(order)

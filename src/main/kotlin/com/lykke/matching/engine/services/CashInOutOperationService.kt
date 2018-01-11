@@ -24,16 +24,15 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class CashInOutOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val assetsHolder: AssetsHolder,
-                           private val balancesHolder: BalancesHolder,
-                           private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
+                                private val assetsHolder: AssetsHolder,
+                                private val balancesHolder: BalancesHolder,
+                                private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
+                                private val feeProcessor: FeeProcessor) : AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
 
     private var messagesCount: Long = 0
 

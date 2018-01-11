@@ -33,13 +33,12 @@ import java.util.concurrent.BlockingQueue
 class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                                     private val assetsHolder: AssetsHolder,
                                     private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                    private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService<ProtocolMessages.CashOperation> {
+                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                    private val feeProcessor: FeeProcessor): AbstractService<ProtocolMessages.CashOperation> {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
     }
-
-    private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
