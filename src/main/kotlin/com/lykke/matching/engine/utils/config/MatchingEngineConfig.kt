@@ -1,16 +1,19 @@
 package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
+import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.utils.alivestatus.config.AliveStatusConfig
 import com.lykke.utils.keepalive.http.KeepAliveConfig
 
 data class MatchingEngineConfig(
         val db: DbConfig,
+        val fileDb: FileDbConfig,
         @SerializedName("IpEndpoint")
         val socket: IpEndpoint,
         val serverOrderBookPort: Int?,
         val serverOrderBookMaxConnections: Int?,
         val httpOrderBookPort: Int,
+        val httpBalancesPort: Int,
         val rabbitMqConfigs: RabbitMqConfigs,
         val bestPricesInterval: Long,
         val candleSaverInterval: Long,
@@ -20,7 +23,6 @@ data class MatchingEngineConfig(
         val whiteList: String?,
         val migrate: Boolean,
         val correctReservedVolumes: Boolean,
-        val orderBookPath: String,
         val queueSizeLimit: Int,
         val name: String,
         val trustedClients: Set<String>,
@@ -28,5 +30,7 @@ data class MatchingEngineConfig(
         val processedMessagesPath: String,
         val processedMessagesInterval: Long,
         val performanceStatsInterval: Long,
-        val keepAlive: KeepAliveConfig
+        val keepAlive: KeepAliveConfig,
+        val walletsStorage: WalletsStorage,
+        val walletsMigration: Boolean
 )

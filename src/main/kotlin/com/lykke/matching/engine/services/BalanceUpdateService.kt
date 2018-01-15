@@ -19,8 +19,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var messagesCount: Long = 0
-
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
@@ -33,8 +31,9 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(), MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            val now = Date()
+            balancesHolder.updateBalance(message.clientId, message.assetId, now, message.amount)
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(), MessageType.BALANCE_UPDATE.name, now, listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
 
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
@@ -50,8 +49,9 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
                 return
             }
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            val now = Date()
+            balancesHolder.updateBalance(message.clientId, message.assetId, now, message.amount)
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.BALANCE_UPDATE.name, now, listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")

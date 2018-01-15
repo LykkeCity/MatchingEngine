@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
@@ -32,7 +32,7 @@ import java.util.concurrent.BlockingQueue
 
 class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                                     private val assetsHolder: AssetsHolder,
-                                    private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                    private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                     private val notificationQueue: BlockingQueue<JsonSerializable>,
                                     private val feeProcessor: FeeProcessor): AbstractService<ProtocolMessages.CashOperation> {
 
@@ -69,7 +69,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
             writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
             return
         }
-        walletDatabaseAccessor.insertTransferOperation(operation)
+        cashOperationsDatabaseAccessor.insertTransferOperation(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, fee, singleFeeTransfer(fee, feeTransfers), operation.fees, feeTransfers))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())

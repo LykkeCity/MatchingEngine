@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -28,7 +29,8 @@ import kotlin.test.assertNull
 class LimitOrderCancelServiceTest {
     val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
+    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    val testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
@@ -38,7 +40,7 @@ class LimitOrderCancelServiceTest {
     val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor, 60000))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
     val trustedClients = emptySet<String>()
     val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, trustedClients)
 
@@ -52,8 +54,8 @@ class LimitOrderCancelServiceTest {
 
         testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
@@ -64,7 +66,7 @@ class LimitOrderCancelServiceTest {
         val genericService = GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
                 assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         val service = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
-      
+
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
 
         assertEquals(1, orderBookQueue.size)

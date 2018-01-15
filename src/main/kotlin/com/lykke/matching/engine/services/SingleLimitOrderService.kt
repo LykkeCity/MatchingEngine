@@ -240,8 +240,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
             val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-            balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+            balancesHolder.updateReservedBalance(order.clientId, limitAsset, now, newReservedBalance)
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
 
             val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
             orderBookQueue.put(rabbitOrderBook)
@@ -271,8 +271,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
     private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date) {
         if (cancelVolume > 0) {
             val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-            balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+            balancesHolder.updateReservedBalance(order.clientId, limitAsset, now, newReservedBalance)
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
         }
 
         trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))

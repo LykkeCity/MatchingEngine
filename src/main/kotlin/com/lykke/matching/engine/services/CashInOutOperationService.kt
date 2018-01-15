@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.checkFee
@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashInOutOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
+class CashInOutOperationService(private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                 private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
                                 private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
@@ -33,8 +33,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {

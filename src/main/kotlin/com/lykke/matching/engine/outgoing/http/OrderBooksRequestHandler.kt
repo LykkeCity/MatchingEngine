@@ -9,9 +9,9 @@ import com.sun.net.httpserver.HttpHandler
 import java.util.Date
 import java.util.LinkedList
 
-class RequestHandler (val genericLimitOrderService: GenericLimitOrderService) : HttpHandler {
+class OrderBooksRequestHandler(val genericLimitOrderService: GenericLimitOrderService) : HttpHandler {
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(RequestHandler::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(OrderBooksRequestHandler::class.java.name)
     }
 
     override fun handle(exchange: HttpExchange) {
