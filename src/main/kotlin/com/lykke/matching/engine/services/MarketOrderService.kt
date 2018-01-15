@@ -4,7 +4,9 @@ import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -14,6 +16,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -70,20 +73,29 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
-            val fee = FeeInstruction.create(message.fee)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $fee")
+            val fee = if (message.hasFee()) FeeInstruction.create(message.fee) else null
+            val fees = NewFeeInstruction.create(message.feesList)
+            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $fee, fees: $fees")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, fee)
+                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, fee, fees)
         }
 
-        try {
+        val assetPair = try {
             assetsPairsHolder.getAssetPair(order.assetPairId)
         } catch (e: Exception) {
             order.status = UnknownAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Unknown asset: ${order.assetPairId}")
             writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
+            return
+        }
+
+        if (!checkFee(order.fee, order.fees, assetPair)) {
+            order.status = InvalidFee.name
+            rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
+            writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE, order.assetPairId)
             return
         }
 
@@ -110,6 +122,10 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             NotEnoughFunds -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
                 writeResponse(messageWrapper, marketOrder, MessageStatus.NOT_ENOUGH_FUNDS)
+            }
+            OrderStatus.InvalidFee -> {
+                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
+                writeResponse(messageWrapper, marketOrder, MessageStatus.INVALID_FEE)
             }
             Matched -> {
                 genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)

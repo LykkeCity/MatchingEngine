@@ -57,6 +57,7 @@ message CashInOutOperation {
     required int64 timestamp = 3;
     required string assetId = 4;
     required double volume = 5;
+    repeated Fee fees = 6;
 }
 
 message CashTransferOperation {
@@ -68,6 +69,7 @@ message CashTransferOperation {
     required double volume = 6;
     optional Fee fee = 7;
     optional double overdraftLimit = 8;
+    repeated Fee fees = 9;
 }
 
 message CashSwapOperation {
@@ -100,6 +102,7 @@ message LimitOrder {
     required double price = 6;
     optional bool cancelAllPreviousLimitOrders = 7;
     optional LimitOrderFee fee = 8;
+    repeated LimitOrderFee fees = 9;
 }
 
 message OldMarketOrder {
@@ -121,6 +124,7 @@ message MarketOrder {
     required bool straight = 6;
     optional double reservedLimitVolume = 7;
     optional Fee fee = 8;
+    repeated Fee fees = 9;
 }
 
 message LimitOrderCancel {
@@ -182,6 +186,7 @@ message MultiLimitOrder {
         required double volume = 2;
         required double price = 3;
         optional LimitOrderFee fee = 4;
+        repeated LimitOrderFee fees = 5;
     }
 
     repeated Order orders = 5;
@@ -239,6 +244,7 @@ message Fee {
     optional string sourceClientId = 3;
     optional string targetClientId = 4;
     optional int32 sizeType = 5;
+    repeated string assetId = 6;
 }
 
 message LimitOrderFee {
@@ -249,4 +255,5 @@ message LimitOrderFee {
     optional string targetClientId = 5;
     optional int32 makerSizeType = 6;
     optional int32 takerSizeType = 7;
+    repeated string assetId = 8;
 }

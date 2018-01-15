@@ -17,7 +17,7 @@ data class MatchingResult(
         val cancelledLimitOrders: Set<NewLimitOrder> = HashSet(),
         val skipLimitOrders: Set<NewLimitOrder> = HashSet(),
         val completedLimitOrders: List<NewLimitOrder> = LinkedList(),
-        var uncompletedLimitOrder: NewLimitOrder? = null,
+        val uncompletedLimitOrder: NewLimitOrder? = null,
         val lkkTrades: List<LkkTrade> = LinkedList(),
         val cashMovements: List<WalletOperation> = LinkedList(),
         val marketOrderTrades: List<TradeInfo> = LinkedList(),

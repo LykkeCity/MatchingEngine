@@ -219,11 +219,11 @@ class LimitOrderServiceTest {
         assertNull(balances["Client1"])
 
         balances.clear()
-        assertTrue { service.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 500.0), 500.0, balances) }
+        assertTrue { service.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 500.0), 1000.0, balances) }
         assertEquals(0.0, balances["Client2"])
 
         balances.clear()
-        assertFalse { service.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 501.0), 501.0, balances) }
+        assertFalse { service.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 501.0), 1001.0, balances) }
         assertNull(balances["Client2"])
     }
 
@@ -233,7 +233,7 @@ class LimitOrderServiceTest {
         val service = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         val balances = HashMap<String, Double>()
 
-        assertTrue { service.checkAndReduceBalance(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 4722.00, volume = 0.14825074), 0.14825226, balances) }
+        assertTrue { service.checkAndReduceBalance(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 4722.00, volume = 0.14825074), 700.04, balances) }
         assertEquals(0.0, balances["Client2"])
     }
 
@@ -1090,11 +1090,13 @@ class LimitOrderServiceTest {
         val service = SingleLimitOrderService(genericService, trustedLimitOrdersQueue, limitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
         val marketService = MarketOrderService(testBackOfficeDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = client, assetId = "BTCUSD", volume = -0.00947867, price = 10550.0)))
 
         marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
         )))
+
+        assertNotNull(testDatabaseAccessor.getOrders("BTCUSD", false).firstOrNull { it.externalId == "order1" })
 
         marketService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false

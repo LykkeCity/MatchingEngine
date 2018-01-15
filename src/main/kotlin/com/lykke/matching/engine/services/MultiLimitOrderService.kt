@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -97,13 +98,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageUid = message.uid
             clientId = message.clientId
             assetPairId = message.assetPairId
-            LOGGER.debug("Got old multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
+            LOGGER.debug("Got multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
             orders = ArrayList(message.ordersList.size)
             cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
             message.ordersList.forEach { currentOrder ->
                 val uid = UUID.randomUUID().toString()
                 orders.add(NewLimitOrder(uid, currentOrder.uid, message.assetPairId, message.clientId, currentOrder.volume,
-                        currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null, fee = LimitOrderFeeInstruction.create(currentOrder.fee)))
+                        currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
+                        fee = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null,
+                        fees = NewLimitOrderFeeInstruction.create(currentOrder.feesList)))
 
                 if (cancelAllPreviousLimitOrders) {
                     if (currentOrder.volume > 0) {
@@ -161,6 +164,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     OrderStatus.NotEnoughFunds -> {
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
+                    OrderStatus.InvalidFee -> {
+                        trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+                    }
                     OrderStatus.Matched,
                     OrderStatus.Processing-> {
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
@@ -190,7 +196,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         }
 
                         limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
-                            LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer)
+                            LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.feeInstructions, it.feeTransfers)
                         })
 
                         matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->

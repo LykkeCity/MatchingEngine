@@ -103,23 +103,13 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
     fun checkAndReduceBalance(order: NewLimitOrder, volume: Double, limitBalances: MutableMap<String, Double>): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        val limitAssetId: String
-        val requiredVolume: Double
-        if (order.isBuySide()) {
-            limitAssetId = assetPair.quotingAssetId
-            requiredVolume = volume * order.price
-        } else {
-            limitAssetId = assetPair.baseAssetId
-            requiredVolume = volume
-        }
-
+        val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
         val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val roundRequiredVolume = RoundingUtils.round(requiredVolume, accuracy, false)
-        val result = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble() >= 0.0
-        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(roundRequiredVolume)} = $result")
+        val result = availableBalance >= volume
+        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
         if (result) {
-            limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - roundRequiredVolume, accuracy).toDouble()
+            limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - volume, accuracy).toDouble()
         }
         return result
     }

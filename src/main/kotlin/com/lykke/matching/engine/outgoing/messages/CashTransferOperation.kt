@@ -13,4 +13,6 @@ class CashTransferOperation(
         val overdraftLimit: Double?,
         var asset: String,
         val feeInstruction: FeeInstruction?,
-        val feeTransfer: FeeTransfer?): JsonSerializable()
+        val feeTransfer: FeeTransfer?,
+        val feeInstructions: List<FeeInstruction>?,
+        val feeTransfers: List<FeeTransfer>?): JsonSerializable()

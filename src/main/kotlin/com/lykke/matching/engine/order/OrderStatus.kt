@@ -19,4 +19,6 @@ enum class OrderStatus {
     ,Cancelled
     //Lead to negative spread
     ,LeadToNegativeSpread
+    //Invalid fee
+    ,InvalidFee
 }

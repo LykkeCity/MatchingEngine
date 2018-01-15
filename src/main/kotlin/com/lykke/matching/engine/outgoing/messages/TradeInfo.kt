@@ -16,5 +16,7 @@ class TradeInfo(
         val limitOrderExternalId: String,
         val timestamp: Date,
         val feeInstruction: FeeInstruction?,
-        val feeTransfer: FeeTransfer?
+        val feeTransfer: FeeTransfer?,
+        val feeInstructions: List<FeeInstruction>?,
+        val feeTransfers: List<FeeTransfer>?
 )
