@@ -5,9 +5,9 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestCashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -38,15 +38,17 @@ import java.util.concurrent.LinkedBlockingQueue
 
 class CashOperationServiceTest {
 
+    private var testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    private var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     private val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val transactionQueue = LinkedBlockingQueue<JsonSerializable>()
     private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    private val assetsPairsCache = AssetPairsCache(testDatabaseAccessor, 60000)
+    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor, 60000)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
-    private lateinit var balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
+    private lateinit var balancesHolder: BalancesHolder
     private val testFileOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private lateinit var genericLimitOrderService: GenericLimitOrderService
     private val DELTA = 1e-15
@@ -66,18 +68,14 @@ class CashOperationServiceTest {
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "Asset1", 100.0, reservedBalance = 50.0))
         transactionQueue.clear()
         initService()
-        initFeeProcessor()
     }
 
     private fun initService() {
-        balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
-        service = CashInOutOperationService(testCashOperationsDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue)
-    }
-
-    private fun initFeeProcessor() {
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
         assetsPairsCache.update()
         genericLimitOrderService = GenericLimitOrderService(testFileOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), emptySet())
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        service = CashInOutOperationService(testCashOperationsDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
     }
 
     @Test
@@ -266,12 +264,11 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOutFee() {
-        testDatabaseAccessor.addAssetPair(AssetPair("AssetPair", "Asset5", "Asset4", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("AssetPair", "Asset5", "Asset4", 2))
         testFileOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = 1.0, price = 2.0))
-        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
-        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))
-        initFeeProcessor()
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))
+        initService()
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
 
