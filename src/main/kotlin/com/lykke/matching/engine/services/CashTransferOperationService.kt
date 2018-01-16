@@ -34,7 +34,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
                                     private val assetsHolder: AssetsHolder,
                                     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                     private val notificationQueue: BlockingQueue<JsonSerializable>,
-                                    private val feeProcessor: FeeProcessor): AbstractService<ProtocolMessages.CashOperation> {
+                                    private val feeProcessor: FeeProcessor): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
