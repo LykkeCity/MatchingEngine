@@ -41,7 +41,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val negativeSpreadAssets: Set<String>,
                               private val balancesHolder: BalancesHolder,
-                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService<ProtocolMessages.OldLimitOrder> {
+                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)

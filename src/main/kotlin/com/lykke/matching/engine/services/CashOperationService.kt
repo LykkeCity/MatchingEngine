@@ -12,7 +12,7 @@ import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
 
-class CashOperationService(private val balancesHolder: BalancesHolder): AbstractService<ProtocolMessages.CashOperation> {
+class CashOperationService(private val balancesHolder: BalancesHolder): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()

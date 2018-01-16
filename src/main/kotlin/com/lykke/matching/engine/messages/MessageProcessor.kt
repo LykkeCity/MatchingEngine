@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.messages
 
-import com.google.protobuf.MessageOrBuilder
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -57,6 +56,8 @@ import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.ReservedBalanceUpdateService
+import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.utils.QueueSizeLogger
@@ -100,6 +101,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitReservedCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -129,7 +131,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
 
-    private val servicesMap: Map<MessageType, AbstractService<MessageOrBuilder>>
+    private val servicesMap: Map<MessageType, AbstractService>
     private val notDeduplicateMessageTypes = setOf(MessageType.MULTI_LIMIT_ORDER, MessageType.OLD_MULTI_LIMIT_ORDER, MessageType.MULTI_LIMIT_ORDER_CANCEL)
     private val processedMessagesCache: ProcessedMessagesCache
     private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
@@ -142,6 +144,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val performanceStatsHolder = PerformanceStatsHolder()
 
     val appInitialData: AppInitialData
+
+    private val reservedBalanceUpdateService: ReservedBalanceUpdateService
+    private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
         val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString)
@@ -159,6 +164,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
         this.cashOperationService = CashOperationService(balanceHolder)
         this.cashInOutOperationService = CashInOutOperationService(cashOperationsDatabaseAccessor, assetsHolder, balanceHolder, rabbitCashInOutQueue, feeProcessor)
+        this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, config.me.negativeSpreadAssets.split(";").toSet(), balanceHolder, lkkTradesQueue)
@@ -167,6 +173,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitClientLimitOrdersQueue, assetsHolder, assetsPairsHolder, balanceHolder, orderBooksQueue, rabbitOrderBooksQueue)
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
+        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
@@ -190,6 +197,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineCashOperations")))
+
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.reservedCashOperations, rabbitReservedCashInOutQueue,
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineReservedCashOperations")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineTransfers")))
@@ -332,12 +342,13 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         }
     }
 
-    private fun initServicesMap(): Map<MessageType, AbstractService<MessageOrBuilder>> {
-        val result = HashMap<MessageType, AbstractService<MessageOrBuilder>>()
+    private fun initServicesMap(): Map<MessageType, AbstractService> {
+        val result = HashMap<MessageType, AbstractService>()
         result[MessageType.CASH_OPERATION] = cashOperationService
         result[MessageType.CASH_IN_OUT_OPERATION] = cashInOutOperationService
         result[MessageType.CASH_TRANSFER_OPERATION] = cashTransferOperationService
         result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
+        result[MessageType.RESERVED_CASH_IN_OUT_OPERATION] = reservedCashInOutOperationService
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.MARKET_ORDER] = marketOrderService
@@ -348,6 +359,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
         result[MessageType.OLD_BALANCE_UPDATE] = balanceUpdateService
         result[MessageType.BALANCE_UPDATE] = balanceUpdateService
+        result[MessageType.RESERVED_BALANCE_UPDATE] = reservedBalanceUpdateService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
         result[MessageType.OLD_MULTI_LIMIT_ORDER] = multiLimitOrderService
         return result

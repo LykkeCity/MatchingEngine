@@ -27,7 +27,7 @@ class CashInOutOperationService(private val cashOperationsDatabaseAccessor: Cash
                                 private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
                                 private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
-                                private val feeProcessor: FeeProcessor) : AbstractService<ProtocolMessages.CashOperation> {
+                                private val feeProcessor: FeeProcessor) : AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)

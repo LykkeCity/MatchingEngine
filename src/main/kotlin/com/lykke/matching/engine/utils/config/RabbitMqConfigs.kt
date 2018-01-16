@@ -7,6 +7,8 @@ data class RabbitMqConfigs (
     val orderBooks: RabbitConfig,
     @SerializedName("CashOperations")
     val cashOperations: RabbitConfig,
+    @SerializedName("ReservedCashOperations")
+    val reservedCashOperations: RabbitConfig,
     @SerializedName("Transfers")
     val transfers: RabbitConfig,
     @SerializedName("SwapOperations")
