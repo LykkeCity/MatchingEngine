@@ -28,11 +28,16 @@ class BalanceUpdateServiceTest {
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
+    private lateinit var balancesHolder: BalancesHolder
 
     @Before
     fun setUp() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
+        initBalanceHolder()
+    }
+
+    private fun initBalanceHolder() {
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
     }
 
     @Test
@@ -46,6 +51,7 @@ class BalanceUpdateServiceTest {
     @Test
     fun testUpdateBalanceWithAnotherAssetBalance() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        initBalanceHolder()
 
         val updateService = BalanceUpdateService(balancesHolder)
         updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -65,6 +71,7 @@ class BalanceUpdateServiceTest {
     @Test
     fun testUpdateBalanceLowerThanResolved() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0, 1000.0))
+        initBalanceHolder()
 
         val updateService = BalanceUpdateService(balancesHolder)
         updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -83,6 +90,7 @@ class BalanceUpdateServiceTest {
     @Test
     fun testUpdateReservedBalanceWithAnotherAssetBalance() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        initBalanceHolder()
 
         val updateService = ReservedBalanceUpdateService(balancesHolder)
         updateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))

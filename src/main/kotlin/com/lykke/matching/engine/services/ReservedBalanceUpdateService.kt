@@ -31,9 +31,10 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
             return
         }
 
+        val now = Date()
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-        balancesHolder.updateReservedBalance(message.clientId, message.assetId, message.reservedAmount)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.RESERVED_BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount))))
+        balancesHolder.updateReservedBalance(message.clientId, message.assetId, now, message.reservedAmount)
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.RESERVED_BALANCE_UPDATE.name, now, listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount))))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
         LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
