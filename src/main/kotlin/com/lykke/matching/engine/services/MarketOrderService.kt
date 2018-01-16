@@ -46,7 +46,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService<ProtocolMessages.MarketOrder> {
+                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
