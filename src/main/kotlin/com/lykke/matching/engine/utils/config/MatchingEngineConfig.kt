@@ -27,8 +27,6 @@ data class MatchingEngineConfig(
         val name: String,
         val trustedClients: Set<String>,
         val aliveStatus: AliveStatusConfig,
-        val processedMessagesPath: String,
-        val processedMessagesInterval: Long,
         val performanceStatsInterval: Long,
         val keepAlive: KeepAliveConfig,
         val walletsStorage: WalletsStorage,

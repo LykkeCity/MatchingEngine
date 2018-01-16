@@ -178,8 +178,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        processedMessagesDatabaseAccessor = FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
-        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
+        processedMessagesDatabaseAccessor = FileProcessedMessagesDatabaseAccessor(config.me.fileDb.processedMessagesPath)
+        processedMessagesCache = ProcessedMessagesCache(config.me.fileDb.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
         servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {

@@ -30,6 +30,10 @@ class FileWalletDatabaseAccessor(private val walletsDirectory: String,
     private val updatedWalletsQueue = LinkedBlockingQueue<List<Wallet>>()
 
     init {
+        val dir = File(walletsDirectory)
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
         if (saveToAnotherDb) {
             WalletsSaveService(walletDatabaseAccessor!!, updatedWalletsQueue).start()
             // synchronize wallets with another db
