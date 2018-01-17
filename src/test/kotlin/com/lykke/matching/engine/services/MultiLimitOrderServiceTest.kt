@@ -598,6 +598,41 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.0, balanceUpdate.balances.first().newReserved)
     }
 
+    @Test
+    fun testTrustedClientReservedFunds() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "EUR", balance = 10.0, reservedBalance = 1.5))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 11.0, reservedBalance = 1.8))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "CHF", 10.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.0))
+
+        initServices(true)
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.3, volume = -1.5)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.5)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "EURCHF", price = 1.05, volume = -1.5)))
+
+        assertEquals(1.5, balancesHolder.getReservedBalance("Client1", "EUR"))
+        assertEquals(1.8, balancesHolder.getReservedBalance("Client1", "USD"))
+
+        service.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1", pair = "EURUSD", volumes = listOf(
+                VolumePrice(-1.5, 1.3),
+                VolumePrice(-1.5, 1.35),
+                VolumePrice(1.5, 1.2),
+                VolumePrice(1.5, 1.15)
+        ), cancel = true, ordersFee = listOf(), ordersFees = listOf()))
+
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "EUR"))
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "USD"))
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURCHF", price = 1.05, volume = 1.5)))
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "EUR"))
+        assertEquals(1.5, balancesHolder.getBalance("Client2", "EUR"))
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.2, volume = -1.5)))
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "EUR"))
+        assertEquals(0.0, balancesHolder.getBalance("Client2", "EUR"))
+    }
+
     private fun initServices(withSingle: Boolean = false) {
         balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
         genericLimitService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)

@@ -96,7 +96,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
             val asset = assetsHolder.getAsset(operation.assetId)
 
             val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
-            val newReservedBalance = if (!trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
+            val newReservedBalance = if (!trustedClients.contains(operation.clientId) || operation.isTrustedReservedUpd) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
 
             client.put(operation.assetId, AssetBalance(operation.assetId, now, newBalance, newReservedBalance))
 
@@ -138,7 +138,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
+    private fun updateReservedBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
         val client = balances.getOrPut(clientId) { HashMap() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
@@ -153,6 +153,16 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
         notificationQueue.put(BalanceUpdateNotification(clientId))
+    }
+
+    fun updateReservedBalanceAndSend(id: String, type: String, timestamp: Date, clientId: String, assetId: String, newReservedBalance: Double, ignoreTrustedClients: Boolean = true) {
+        if (ignoreTrustedClients && trustedClients.contains(clientId)) {
+            return
+        }
+        val balance = getBalance(clientId, assetId)
+        val reservedBalance = getReservedBalance(clientId, assetId)
+        updateReservedBalance(clientId, assetId, timestamp, newReservedBalance)
+        sendBalanceUpdate(BalanceUpdate(id, type, timestamp, listOf(ClientBalanceUpdate(clientId, assetId, balance, balance, reservedBalance, newReservedBalance))))
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {

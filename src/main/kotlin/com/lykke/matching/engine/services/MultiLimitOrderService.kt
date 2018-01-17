@@ -35,7 +35,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                             assetsHolder: AssetsHolder,
+                             private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val negativeSpreadAssets: Set<String>,
                              private val balancesHolder: BalancesHolder,
@@ -119,13 +119,17 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         val ordersToCancel = ArrayList<NewLimitOrder>()
-
+        val assetPair = assetsPairsHolder.getAssetPair(assetPairId)
+        var baseAssetReservedVolume = 0.0
+        var quotingAssetReservedVolume = 0.0
         if (cancelAllPreviousLimitOrders) {
             if (cancelBuySide) {
                 ordersToCancel.addAll(limitOrderService.getAllPreviousOrders(clientId, assetPairId, true))
+                quotingAssetReservedVolume = balancesHolder.getReservedBalance(clientId, assetPair.quotingAssetId)
             }
             if (cancelSellSide) {
                 ordersToCancel.addAll(limitOrderService.getAllPreviousOrders(clientId, assetPairId, false))
+                baseAssetReservedVolume = balancesHolder.getReservedBalance(clientId, assetPair.baseAssetId)
             }
         }
 
@@ -146,7 +150,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val trades = LinkedList<LkkTrade>()
         val walletOperations = LinkedList<WalletOperation>()
         val ordersToAdd = LinkedList<NewLimitOrder>()
-        val assetPair = assetsPairsHolder.getAssetPair(assetPairId)
         val balances = mutableMapOf(
                 Pair(assetPair.baseAssetId, balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId)),
                 Pair(assetPair.quotingAssetId, balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId)))
@@ -230,6 +233,14 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         val startPersistTime = System.nanoTime()
+        if (baseAssetReservedVolume > 0) {
+            walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.baseAssetId, now, 0.0,
+                    RoundingUtils.parseDouble(-baseAssetReservedVolume, assetsHolder.getAsset(assetPair.baseAssetId).accuracy).toDouble(), isTrustedReservedUpd = true))
+        }
+        if (quotingAssetReservedVolume > 0) {
+            walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.quotingAssetId, now, 0.0,
+                    RoundingUtils.parseDouble(-quotingAssetReservedVolume, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy).toDouble(), isTrustedReservedUpd = true))
+        }
         balancesHolder.processWalletOperations(messageUid, MessageType.MULTI_LIMIT_ORDER.name, walletOperations)
         lkkTradesQueue.put(trades)
         limitOrderService.addOrders(ordersToAdd)

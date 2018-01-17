@@ -8,8 +8,6 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -55,12 +53,9 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
                 val limitVolume = order.reservedLimitVolume ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
-
-                val balance = balancesHolder.getBalance(order.clientId, limitAsset)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - limitVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
-                balancesHolder.updateReservedBalance(order.clientId, limitAsset, now, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+                balancesHolder.updateReservedBalanceAndSend(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, now, order.clientId, limitAsset, newReservedBalance)
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
 
                 val report = LimitOrdersReport()
