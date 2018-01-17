@@ -17,7 +17,6 @@ import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
-import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
@@ -30,8 +29,7 @@ class CashInOutOperationService(private val cashOperationsDatabaseAccessor: Cash
                                 private val feeProcessor: FeeProcessor) : AbstractService {
 
     companion object {
-        val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -39,11 +37,11 @@ class CashInOutOperationService(private val cashOperationsDatabaseAccessor: Cash
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
-        val fees = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}, fees: $fees")
+        val feeInstructions = NewFeeInstruction.create(message.feesList)
+        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
 
         val operationId = UUID.randomUUID().toString()
-        if (!checkFee(null, fees)) {
+        if (!checkFee(null, feeInstructions)) {
             writeInvalidFeeResponse(messageWrapper, message, operationId)
             return
         }
@@ -63,15 +61,22 @@ class CashInOutOperationService(private val cashOperationsDatabaseAccessor: Cash
             }
         }
 
-        val feeTransfers = try {
-            feeProcessor.processFee(fees, operation, operations)
+        val fees = try {
+            feeProcessor.processFee(feeInstructions, operation, operations)
         } catch (e: FeeException) {
             writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
             return
         }
 
         balancesHolder.processWalletOperations(message.id, MessageType.CASH_IN_OUT_OPERATION.name, operations)
-        rabbitCashInOutQueue.put(CashOperation(message.id, operation.clientId, operation.dateTime, operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy), operation.assetId, fees, feeTransfers))
+        rabbitCashInOutQueue.put(CashOperation(
+                message.id,
+                operation.clientId,
+                operation.dateTime,
+                operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy),
+                operation.assetId,
+                fees
+        ))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")

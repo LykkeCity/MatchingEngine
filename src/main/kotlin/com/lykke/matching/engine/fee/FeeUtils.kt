@@ -2,7 +2,7 @@ package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeInstruction
-import com.lykke.matching.engine.daos.FeeTransfer
+import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import java.util.LinkedList
 
@@ -13,12 +13,12 @@ fun listOfFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?): List<FeeIns
     return result
 }
 
-fun singleFeeTransfer(fee: FeeInstruction?, feeTransfers: List<FeeTransfer>) = if (fee != null && feeTransfers.isNotEmpty()) feeTransfers.first() else null
+fun singleFeeTransfer(feeInstruction: FeeInstruction?, fees: List<Fee>) = if (feeInstruction != null && fees.isNotEmpty()) fees.first().transfer else null
 
-fun checkFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?, assetPair: AssetPair? = null): Boolean {
-    if (fee != null && fees?.isNotEmpty() == true) return false
+fun checkFee(feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?, assetPair: AssetPair? = null): Boolean {
+    if (feeInstruction != null && feeInstructions?.isNotEmpty() == true) return false
     if (assetPair == null) return true
-    listOfFee(fee, fees).forEach {
+    listOfFee(feeInstruction, feeInstructions).forEach {
         if (!checkFee(it, assetPair)) {
             return false
         }
@@ -26,9 +26,9 @@ fun checkFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?, assetPair: As
     return true
 }
 
-private fun checkFee(fee: FeeInstruction, assetPair: AssetPair): Boolean {
-    if (fee is NewFeeInstruction) {
-        fee.assetIds.forEach { assetId ->
+private fun checkFee(feeInstruction: FeeInstruction, assetPair: AssetPair): Boolean {
+    if (feeInstruction is NewFeeInstruction) {
+        feeInstruction.assetIds.forEach { assetId ->
             if (assetPair.baseAssetId != assetId && assetPair.quotingAssetId != assetId) {
                 return false
             }

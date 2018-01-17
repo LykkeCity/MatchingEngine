@@ -2,6 +2,7 @@ package com.lykke.matching.engine.outgoing.messages
 
 import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
+import com.lykke.matching.engine.daos.fee.Fee
 import java.util.Date
 
 class LimitTradeInfo(
@@ -18,6 +19,5 @@ class LimitTradeInfo(
         val oppositeVolume: String,
         val feeInstruction: FeeInstruction?,
         val feeTransfer: FeeTransfer?,
-        val feeInstructions: List<FeeInstruction>?,
-        val feeTransfers: List<FeeTransfer>?
+        val fees: List<Fee>?
 )
