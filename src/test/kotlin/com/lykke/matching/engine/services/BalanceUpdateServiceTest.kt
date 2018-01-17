@@ -37,7 +37,7 @@ class BalanceUpdateServiceTest {
     }
 
     private fun initBalanceHolder() {
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, setOf("trustedClient"))
     }
 
     @Test
@@ -85,6 +85,17 @@ class BalanceUpdateServiceTest {
         updateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.RESERVED_BALANCE_UPDATE, "Client1", "Asset1", 1000.0, 1000.0, 999.0, 0.0)
+    }
+
+    @Test
+    fun testUpdateTrustedClientReservedBalance() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient", "Asset1", 10.0, 0.0))
+        initBalanceHolder()
+
+        val updateService = ReservedBalanceUpdateService(balancesHolder)
+        updateService.processMessage(buildReservedBalanceUpdateWrapper("trustedClient", "Asset1", 9.0))
+
+        assertSuccessfulUpdate(MessageType.RESERVED_BALANCE_UPDATE, "trustedClient", "Asset1", 10.0, 10.0, 9.0, 0.0)
     }
 
     @Test

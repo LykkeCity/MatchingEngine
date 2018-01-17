@@ -10,5 +10,6 @@ data class WalletOperation(
         val dateTime: Date,
         val amount: Double,
         val reservedAmount: Double = 0.0,
-        val isFee: Boolean = false
+        val isFee: Boolean = false,
+        val isTrustedReservedUpd: Boolean = false
 )
