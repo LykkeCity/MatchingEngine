@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -15,6 +16,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
 
@@ -44,7 +46,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                            operations: MutableList<WalletOperation>,
                            invertCoef: Double?,
                            isMakerFee: Boolean,
-                           externalBalances: MutableMap<String, MutableMap<String, Double>>? = null): List<FeeTransfer> {
+                           externalBalances: MutableMap<String, MutableMap<String, Double>>? = null): List<Fee> {
         if (feeInstructions?.isNotEmpty() != true) {
             return listOf()
         }
@@ -54,8 +56,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             balances.putAll(it.mapValues { HashMap<String, Double>(it.value) })
         }
         val newOperations = LinkedList(operations)
-        val feeTransfers = feeInstructions.mapNotNull { feeInstruction ->
-            if (isMakerFee) {
+        val fees = feeInstructions.map { feeInstruction ->
+            val feeTransfer = if (isMakerFee) {
                 when (feeInstruction) {
                     is LimitOrderFeeInstruction -> processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType, feeInstruction.makerSize, balances, invertCoef)
                     is NewLimitOrderFeeInstruction -> processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType, feeInstruction.makerSize, balances, invertCoef)
@@ -64,9 +66,10 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             } else {
                 processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.sizeType, feeInstruction.size, balances, invertCoef)
             }
+            Fee(feeInstruction, feeTransfer)
         }
-        val totalFeeAmount = feeTransfers.sumByDouble {
-            if (it.asset == receiptOperation.assetId) it.volume else 0.0
+        val totalFeeAmount = fees.sumByDouble { fee ->
+            if (fee.transfer != null && fee.transfer.asset == receiptOperation.assetId) fee.transfer.volume else 0.0
         }
         if (receiptOperation.amount >= 0 && totalFeeAmount > 0 && totalFeeAmount >= receiptOperation.amount) {
             throw FeeException("Total fee amount should be less than operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
@@ -74,7 +77,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         externalBalances?.putAll(balances)
         operations.clear()
         operations.addAll(newOperations)
-        return feeTransfers
+        return fees
     }
 
     private fun processFee(feeInstruction: FeeInstruction,
@@ -169,7 +172,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             if (baseReceiptOperationAmount < 0) {
                 val newBalance = RoundingUtils.parseDouble(balance - absBaseAssetFeeAmount, feeAsset.accuracy).toDouble()
                 if (newBalance < Math.abs(baseReceiptOperationAmount)) {
-                    throw FeeException("Not enough funds for fee (balance: $balance, withdrawalAmount: ${baseReceiptOperationAmount}, feeAmount: $absBaseAssetFeeAmount)")
+                    throw FeeException("Not enough funds for fee (balance: $balance, withdrawalAmount: $baseReceiptOperationAmount, feeAmount: $absBaseAssetFeeAmount)")
                 } else {
                     clientBalances[feeAsset.assetId] = newBalance
                 }

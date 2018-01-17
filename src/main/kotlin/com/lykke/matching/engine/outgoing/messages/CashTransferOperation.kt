@@ -2,6 +2,7 @@ package com.lykke.matching.engine.outgoing.messages
 
 import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
+import com.lykke.matching.engine.daos.fee.Fee
 import java.util.Date
 
 class CashTransferOperation(
@@ -14,5 +15,4 @@ class CashTransferOperation(
         var asset: String,
         val feeInstruction: FeeInstruction?,
         val feeTransfer: FeeTransfer?,
-        val feeInstructions: List<FeeInstruction>?,
-        val feeTransfers: List<FeeTransfer>?): JsonSerializable()
+        val fees: List<Fee>?): JsonSerializable()
