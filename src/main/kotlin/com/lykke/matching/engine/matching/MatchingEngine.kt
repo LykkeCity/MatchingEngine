@@ -168,11 +168,12 @@ class MatchingEngine(private val LOGGER: Logger,
                 limitOrderWrapper.lastMatchTime = now
 
                 allCashMovements.addAll(cashMovements)
+                val traderId = UUID.randomUUID().toString()
 
-                marketOrderTrades.add(TradeInfo(order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), asset.assetId,
+                marketOrderTrades.add(TradeInfo(traderId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), asset.assetId,
                         limitOrder.clientId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
                         limitOrder.price, limitOrder.id, limitOrder.externalId, now, order.fee, singleFeeTransfer(order.fee, takerFees), takerFees))
-                limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
+                limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(traderId, limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
                         order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), limitOrder.fee, singleFeeTransfer(limitOrder.fee, makerFees), makerFees))))
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price

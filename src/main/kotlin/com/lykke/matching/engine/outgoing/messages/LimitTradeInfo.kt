@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.fee.Fee
 import java.util.Date
 
 class LimitTradeInfo(
+        val tradeId: String,
         val clientId: String,
         val asset: String,
         val volume: String,
