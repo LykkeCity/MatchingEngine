@@ -16,6 +16,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
 

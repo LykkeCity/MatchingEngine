@@ -193,7 +193,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, matchingResult.marketOrderTrades.map { it ->
-                      LimitTradeInfo(it.marketClientId, it.marketAsset, it.marketVolume, it.price, it.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees)
+                      LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, it.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees)
                     }.toMutableList()))
 
                     if (matchingResult.limitOrdersReport != null) {
