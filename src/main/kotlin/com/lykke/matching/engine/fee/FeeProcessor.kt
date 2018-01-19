@@ -169,16 +169,9 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, receiptOperation.clientId, feeAsset.assetId, receiptOperation.dateTime, -feeAmount, isFee = true))
         } else {
             val baseReceiptOperationAmount = receiptOperationWrapper.baseReceiptOperation.amount
-            if (baseReceiptOperationAmount < 0) {
-                val newBalance = RoundingUtils.parseDouble(balance - absBaseAssetFeeAmount, feeAsset.accuracy).toDouble()
-                if (newBalance < Math.abs(baseReceiptOperationAmount)) {
-                    throw FeeException("Not enough funds for fee (balance: $balance, withdrawalAmount: $baseReceiptOperationAmount, feeAmount: $absBaseAssetFeeAmount)")
-                } else {
-                    clientBalances[feeAsset.assetId] = newBalance
-                }
-            }
+            val newReceiptAmount = if (baseReceiptOperationAmount > 0) receiptOperation.amount - absBaseAssetFeeAmount else receiptOperation.amount
             operations.remove(receiptOperation)
-            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId, receiptOperation.assetId, receiptOperation.dateTime, RoundingUtils.parseDouble(receiptOperation.amount - absBaseAssetFeeAmount, operationAsset.accuracy).toDouble())
+            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId, receiptOperation.assetId, receiptOperation.dateTime, RoundingUtils.parseDouble(newReceiptAmount, operationAsset.accuracy).toDouble())
             operations.add(newReceiptOperation)
             receiptOperationWrapper.currentReceiptOperation = newReceiptOperation
         }
