@@ -15,7 +15,6 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
-import com.microsoft.azure.storage.table.TableQuery.QueryComparisons.EQUAL
 import java.util.HashMap
 
 
@@ -107,10 +106,10 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
 
         try {
             val partitionQuery = TableQuery.from(AzureAssetPair::class.java)
-                    .where(TableQuery.generateFilterCondition("PartitionKey", EQUAL, ASSET_PAIR))
+                    .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ASSET_PAIR))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy)
+                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy, asset.minVolume, asset.minInvertedVolume)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
@@ -125,7 +124,7 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, dictsConfig: String) :
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy)
+                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, assetPair.minVolume, assetPair.minInvertedVolume)
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset: $assetId", e)

@@ -19,6 +19,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
+import com.lykke.matching.engine.order.OrderStatus.TooSmallVolume
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -32,6 +33,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertTrue
 
 class MarketOrderServiceTest {
     var testLimitDatabaseAccessor = TestFileOrderDatabaseAccessor()
@@ -160,6 +162,29 @@ class MarketOrderServiceTest {
         assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
+    }
+
+    @Test
+    fun testSmallVolume() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
+        initServices()
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(volume = 0.09)))
+        assertEquals(1, rabbitSwapQueue.size)
+        var marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(TooSmallVolume.name, marketOrderReport.order.status)
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(volume = -0.19, straight = false)))
+        assertEquals(1, rabbitSwapQueue.size)
+        marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(TooSmallVolume.name, marketOrderReport.order.status)
+
+        service.processMessage(buildMarketOrderWrapper(buildMarketOrder(volume = 0.2, straight = false)))
+        assertEquals(1, rabbitSwapQueue.size)
+        marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertTrue(TooSmallVolume.name != marketOrderReport.order.status)
     }
 
     @Test
