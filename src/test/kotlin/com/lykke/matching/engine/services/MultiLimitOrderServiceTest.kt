@@ -92,7 +92,7 @@ class MultiLimitOrderServiceTest {
     fun testSmallVolume() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
 
         service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
                 volumes = listOf(

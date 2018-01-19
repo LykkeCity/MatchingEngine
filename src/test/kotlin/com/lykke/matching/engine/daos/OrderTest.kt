@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 class OrderTest {
 
-    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    private val testWalletDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
 
     @Before
