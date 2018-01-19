@@ -158,7 +158,7 @@ class FeeProcessorTest {
     @Test
     fun testAbsoluteFeeCashout() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -179,7 +179,7 @@ class FeeProcessorTest {
     @Test
     fun testPercentFeeCashout() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
 
         val operations = LinkedList<WalletOperation>()
