@@ -480,6 +480,7 @@ class LimitOrderServiceTest {
         assertEquals(1, trustedLimitOrdersQueue.size)
         val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
+        assertEquals(122.52, testDatabaseAccessor.getOrders("EURUSD", true).first().reservedLimitVolume)
         assertEquals(1.0, result.orders[0].order.remainingVolume)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 

@@ -203,12 +203,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     walletOperations.addAll(matchingResult.cashMovements)
 
                     if (order.status == OrderStatus.Processing.name) {
+                        order.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price , assetsHolder.getAsset(limitAsset).accuracy, false) else order.getAbsRemainingVolume()
                         orderBook.addOrder(order)
                         limitOrderService.addOrder(order)
                         limitOrderService.setOrderBook(order.assetPairId, order.isBuySide(), orderBook.getOrderBook(order.isBuySide()))
                         limitOrderService.updateOrderBook(order.assetPairId, order.isBuySide())
 
-                        order.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price , assetsHolder.getAsset(limitAsset).accuracy, false) else order.getAbsRemainingVolume()
                         val newReservedBalance =  RoundingUtils.parseDouble(order.reservedLimitVolume!! - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                         walletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, limitAsset, matchingResult.timestamp, 0.0, newReservedBalance))
                         limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), matchingResult.timestamp))
