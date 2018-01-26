@@ -279,8 +279,8 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOutInvalidFee() {
-        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 3.0, 0.0))
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 3.0, 0.0))
+        initService()
 
         // Negative fee size
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
@@ -291,12 +291,12 @@ class CashOperationServiceTest {
 
         // Fee amount is more than operation amount
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -0.9,
-                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.91, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")))
+                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.9, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")))
 
         // Multiple fee amount is more than operation amount
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
                 fees = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.5, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!,
-                        buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.51, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!)))
+                        buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.5, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!)))
 
         assertEquals(3.0, balancesHolder.getBalance("Client1", "Asset5"), DELTA)
         assertEquals(0.0, balancesHolder.getBalance("Client3", "Asset5"), DELTA)
