@@ -118,6 +118,11 @@ class FeeProcessorTest {
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.01, targetClientId = "Client3")
         assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations) }
         assertEquals(originalOperations, operations)
+
+        // Negative fee size
+        feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.01, targetClientId = "Client3")
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertEquals(originalOperations, operations)
     }
 
     @Test
@@ -139,6 +144,11 @@ class FeeProcessorTest {
 
         // test empty order book for asset pair to convert to fee asset
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("EUR"))
+        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertEquals(originalOperations, operations)
+
+        // Negative fee size
+        feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
         assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
         assertEquals(originalOperations, operations)
     }

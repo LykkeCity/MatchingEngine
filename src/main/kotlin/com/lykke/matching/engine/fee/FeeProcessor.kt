@@ -71,8 +71,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val totalFeeAmount = fees.sumByDouble { fee ->
             if (fee.transfer != null && fee.transfer.asset == receiptOperation.assetId) fee.transfer.volume else 0.0
         }
-        if (receiptOperation.amount >= 0 && totalFeeAmount > 0 && totalFeeAmount >= receiptOperation.amount) {
-            throw FeeException("Total fee amount should be less than operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
+        if (totalFeeAmount > 0 && totalFeeAmount >= Math.abs(receiptOperation.amount)) {
+            throw FeeException("Total fee amount should be less than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
         }
         externalBalances?.putAll(balances)
         operations.clear()
@@ -90,24 +90,21 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         if (feeInstruction.type == FeeType.NO_FEE) {
             return null
         }
-        if (feeSizeType == null || feeSize == null || feeInstruction.targetClientId == null) {
-            throw FeeException("Invalid fee instruction (size type: $feeSizeType, size: $feeSize, targetClientId: ${feeInstruction.targetClientId }")
+        if (feeSizeType == null || feeSize == null || feeSize < 0.0 || feeInstruction.targetClientId == null) {
+            throw FeeException("Invalid fee instruction (size type: $feeSizeType, size: $feeSize, targetClientId: ${feeInstruction.targetClientId })")
         }
         val receiptOperation = receiptOperationWrapper.baseReceiptOperation
         val operationAsset = assetsHolder.getAsset(receiptOperation.assetId)
 
-        val baseAssetFeeAmount = RoundingUtils.round(when (feeSizeType) {
-            FeeSizeType.PERCENTAGE -> receiptOperation.amount * feeSize
+        val absBaseAssetFeeAmount = RoundingUtils.round(when (feeSizeType) {
+        // In case of cash out receipt operation has a negative amount, but fee amount should be positive
+            FeeSizeType.PERCENTAGE -> Math.abs(receiptOperation.amount) * feeSize
             FeeSizeType.ABSOLUTE -> feeSize
         }, operationAsset.accuracy, true)
 
-        if (receiptOperation.amount >= 0) {
-            if (baseAssetFeeAmount <= 0.0 || baseAssetFeeAmount >= receiptOperation.amount) {
-                throw FeeException("Base asset fee amount ($baseAssetFeeAmount) should be in (0, ${receiptOperation.amount})")
-            }
+        if (absBaseAssetFeeAmount == 0.0 || absBaseAssetFeeAmount >= Math.abs(receiptOperation.amount)) {
+            throw FeeException("Base asset fee amount ($absBaseAssetFeeAmount) should be in (0, ${Math.abs(receiptOperation.amount)})")
         }
-        // in case of cash out receipt operation has a negative amount, but fee amount should be positive
-        val absBaseAssetFeeAmount = Math.abs(baseAssetFeeAmount)
 
         return when (feeInstruction.type) {
             FeeType.CLIENT_FEE -> processClientFee(feeInstruction, receiptOperationWrapper, operations, absBaseAssetFeeAmount, operationAsset, invertCoef, balances)

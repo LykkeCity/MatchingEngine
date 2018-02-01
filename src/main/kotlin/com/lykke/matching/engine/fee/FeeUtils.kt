@@ -2,8 +2,10 @@ package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import java.util.LinkedList
 
 fun listOfFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?): List<FeeInstruction> {
@@ -27,6 +29,13 @@ fun checkFee(feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstru
 }
 
 private fun checkFee(feeInstruction: FeeInstruction, assetPair: AssetPair): Boolean {
+    feeInstruction.size?.let { if (it < 0) return false }
+    if (feeInstruction is LimitOrderFeeInstruction) {
+        feeInstruction.makerSize?.let { if (it < 0) return false }
+    }
+    if (feeInstruction is NewLimitOrderFeeInstruction) {
+        feeInstruction.makerSize?.let { if (it < 0) return false }
+    }
     if (feeInstruction is NewFeeInstruction) {
         feeInstruction.assetIds.forEach { assetId ->
             if (assetPair.baseAssetId != assetId && assetPair.quotingAssetId != assetId) {
