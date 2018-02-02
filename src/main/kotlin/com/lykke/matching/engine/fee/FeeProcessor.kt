@@ -71,8 +71,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val totalFeeAmount = fees.sumByDouble { fee ->
             if (fee.transfer != null && fee.transfer.asset == receiptOperation.assetId) fee.transfer.volume else 0.0
         }
-        if (totalFeeAmount > 0 && totalFeeAmount >= Math.abs(receiptOperation.amount)) {
-            throw FeeException("Total fee amount should be less than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
+        if (totalFeeAmount > 0 && totalFeeAmount > Math.abs(receiptOperation.amount)) {
+            throw FeeException("Total fee amount should be not more than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
         }
         externalBalances?.putAll(balances)
         operations.clear()
@@ -102,8 +102,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             FeeSizeType.ABSOLUTE -> feeSize
         }, operationAsset.accuracy, true)
 
-        if (absBaseAssetFeeAmount == 0.0 || absBaseAssetFeeAmount >= Math.abs(receiptOperation.amount)) {
-            throw FeeException("Base asset fee amount ($absBaseAssetFeeAmount) should be in (0, ${Math.abs(receiptOperation.amount)})")
+        if (absBaseAssetFeeAmount > Math.abs(receiptOperation.amount)) {
+            throw FeeException("Base asset fee amount ($absBaseAssetFeeAmount) should be in [0, ${Math.abs(receiptOperation.amount)}]")
         }
 
         return when (feeInstruction.type) {

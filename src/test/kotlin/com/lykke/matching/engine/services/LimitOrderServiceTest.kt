@@ -2,6 +2,9 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.FeeSizeType
+import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -946,11 +949,11 @@ class LimitOrderServiceTest {
         val genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         val service = SingleLimitOrderService(genericService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
 
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client1")))
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 4999.0, volume = 0.01, clientId = "Client3")))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client1", fee = LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.01, FeeSizeType.PERCENTAGE, 0.01, null, "targetFeeClient"))))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 4999.0, volume = 0.01, clientId = "Client3", fee = LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.01, FeeSizeType.PERCENTAGE, 0.01, null, "targetFeeClient"))))
 
         trustedLimitOrdersQueue.clear()
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 4998.0, volume = -0.01000199)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 4998.0, volume = -0.01000199, fee = LimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, 0.01, FeeSizeType.PERCENTAGE, 0.01, null, "targetFeeClient"))))
         val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(3, result.orders.size)
 
