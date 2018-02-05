@@ -19,18 +19,8 @@ public class RoundingUtils {
 
     @NotNull
     public static Double round(Double value, int accuracy, boolean roundUp) {
-        return new BigDecimal(value).setScale(accuracy + 4, ROUND_HALF_UP).setScale(accuracy, roundUp ? ROUND_UP : ROUND_DOWN).doubleValue();
-    }
-
-    /**
-     * Returns round up result if base result is zero
-     */
-    public static double roundNoZero(Double value, int accuracy, boolean roundUp) {
-        double result = new BigDecimal(value).setScale(accuracy + 4, ROUND_HALF_UP).setScale(accuracy, roundUp ? ROUND_UP : ROUND_DOWN).doubleValue();
-        if (result == 0.0) {
-            result = new BigDecimal(value).setScale(accuracy + 4, ROUND_HALF_UP).setScale(accuracy, ROUND_UP).doubleValue();
-        }
-        return result;
+        return new BigDecimal(value.toString()).setScale(Math.min(16, accuracy + 10), ROUND_HALF_UP)
+                .setScale(accuracy, roundUp ? ROUND_UP : ROUND_DOWN).doubleValue();
     }
 
     public static String roundForPrint(Double value) {

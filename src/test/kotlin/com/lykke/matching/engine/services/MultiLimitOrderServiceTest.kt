@@ -325,11 +325,11 @@ class MultiLimitOrderServiceTest {
 
         assertEquals(0, orderBook.getOrderBook(true).size)
 
-        assertEquals(0.02, testWalletDatabaseAccessor.getBalance("Client5", "USD"))
+        assertEquals(0.03, testWalletDatabaseAccessor.getBalance("Client5", "USD"))
         assertEquals(1000.69031943, testWalletDatabaseAccessor.getBalance("Client5", "TIME"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client5", "USD"))
 
-        assertEquals(1018.58, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(1018.57, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
         assertEquals(999.30968057, testWalletDatabaseAccessor.getBalance("Client2", "TIME"))
         assertEquals(25.30968057, testWalletDatabaseAccessor.getReservedBalance("Client2", "TIME"))
 
