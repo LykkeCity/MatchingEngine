@@ -234,8 +234,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val startPersistTime = System.nanoTime()
         balancesHolder.processWalletOperations(messageUid, MessageType.MULTI_LIMIT_ORDER.name, walletOperations)
         lkkTradesQueue.put(trades)
-        limitOrderService.addOrders(ordersToAdd)
         limitOrderService.cancelLimitOrders(ordersToCancel)
+        limitOrderService.addOrders(ordersToAdd)
         limitOrderService.setOrderBook(assetPairId, orderBook)
         if (buySide || cancelBuySide) {
             limitOrderService.updateOrderBook(assetPairId, true)
