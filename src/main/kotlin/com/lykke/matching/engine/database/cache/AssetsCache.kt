@@ -7,7 +7,7 @@ import kotlin.concurrent.fixedRateTimer
 
 class AssetsCache(
         private val databaseAccessor: BackOfficeDatabaseAccessor,
-        updateInterval: Long) : DataCache() {
+        updateInterval: Long? = null) : DataCache() {
 
     companion object {
         val LOGGER = Logger.getLogger(AssetsCache::class.java)
@@ -29,8 +29,10 @@ class AssetsCache(
     init {
         this.assetsMap = databaseAccessor.loadAssets()
         LOGGER.info("Loaded ${assetsMap.size} assets")
-        fixedRateTimer(name = "Assets Cache Updater", initialDelay = updateInterval, period = updateInterval) {
-            update()
+        updateInterval?.let {
+            fixedRateTimer(name = "Assets Cache Updater", initialDelay = it, period = it) {
+                update()
+            }
         }
     }
 }

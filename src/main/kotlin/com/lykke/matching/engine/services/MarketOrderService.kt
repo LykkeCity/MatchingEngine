@@ -143,7 +143,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 val clientLimitOrdersReport = LimitOrdersReport()
 
                 if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                    val result = genericLimitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList(), order.externalId, MessageType.MARKET_ORDER))
+                    val result = genericLimitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList()))
                     walletOperations.addAll(result.walletOperation)
                     if (result.trustedClientLimitOrderWithTrades.isNotEmpty()) {
                         trustedClientLimitOrderReportQueue.put(LimitOrdersReport(result.trustedClientLimitOrderWithTrades.toMutableList()))

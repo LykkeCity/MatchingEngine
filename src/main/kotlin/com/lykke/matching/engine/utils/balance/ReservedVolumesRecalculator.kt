@@ -50,8 +50,8 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
     }
 
     fun recalculate() {
-        val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor, 60000))
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(walletDatabaseAccessor, 60000))
+        val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
+        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(walletDatabaseAccessor))
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), trustedClients)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()

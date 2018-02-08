@@ -62,6 +62,7 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
+import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.AppVersion
 import com.lykke.utils.keepalive.http.DefaultIsAliveResponseGetter
 import com.lykke.utils.keepalive.http.KeepAliveStarter
@@ -171,6 +172,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
+
+        if (config.me.cancelMinVolumeOrders) {
+            MinVolumeOrderCanceller(assetsPairsHolder, balanceHolder, genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue).cancel()
+        }
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
         this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)

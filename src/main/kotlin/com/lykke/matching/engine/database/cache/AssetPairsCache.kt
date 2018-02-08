@@ -7,7 +7,7 @@ import kotlin.concurrent.fixedRateTimer
 
 class AssetPairsCache(
         private val databaseAccessor: WalletDatabaseAccessor,
-        updateInterval: Long) : DataCache() {
+        updateInterval: Long? = null) : DataCache() {
 
     companion object {
         private val LOGGER = Logger.getLogger(AssetPairsCache::class.java)
@@ -52,8 +52,10 @@ class AssetPairsCache(
         this.assetPairsById = assetPairsById
         this.assetPairsByPair = assetPairsByPair
         LOGGER.info("Loaded ${assetPairsById.size} assets pairs")
-        fixedRateTimer(name = "Asset Pairs Cache Updater", initialDelay = updateInterval, period = updateInterval) {
-            update()
+        updateInterval?.let {
+            fixedRateTimer(name = "Asset Pairs Cache Updater", initialDelay = it, period = it) {
+                update()
+            }
         }
     }
 }

@@ -172,7 +172,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     val walletOperations = LinkedList<WalletOperation>()
 
                     if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                        val result = limitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList(), order.externalId, MessageType.LIMIT_ORDER))
+                        val result = limitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList()))
                         walletOperations.addAll(result.walletOperation)
                         trustedClientLimitOrdersReport.orders.addAll(result.trustedClientLimitOrderWithTrades)
                         clientLimitOrdersReport.orders.addAll(result.clientLimitOrderWithTrades)
