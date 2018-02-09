@@ -32,6 +32,7 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFee
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildNewLimitOrderFee
 import org.junit.Before
 import org.junit.Test
@@ -632,6 +633,33 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.0, balanceUpdate.balances.first().newReserved)
     }
 
+    @Test
+    fun testCancelPreviousOrderWithSameUid() {
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-9.0, 0.4875)), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList()))
+
+        trustedLimitOrdersQueue.clear()
+        limitOrdersQueue.clear()
+        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-10.0, 0.4880)), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList()))
+
+
+        assertEquals(-10.0, testDatabaseAccessor.getOrders("EURUSD", false).first().volume)
+        assertEquals(OrderStatus.InOrderBook.name, testDatabaseAccessor.getOrders("EURUSD", false).first().status)
+
+        assertEquals(1, limitOrdersQueue.size)
+        val result = limitOrdersQueue.first() as LimitOrdersReport
+
+        assertEquals(2, result.orders.size)
+
+        val newOrder = result.orders.first { it.order.volume == -10.0 }.order
+        assertEquals(OrderStatus.InOrderBook.name, newOrder.status)
+        assertEquals(0.488, newOrder.price)
+
+        val oldOrder = result.orders.first { it.order.volume == -9.0 }.order
+        assertEquals(OrderStatus.Cancelled.name, oldOrder.status)
+        assertEquals(-9.0, oldOrder.volume)
+        assertEquals(0.4875, oldOrder.price)
+    }
+
     private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
     private fun initSingleLimitOrderService() = SingleLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
     private fun initService() = MultiLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
@@ -657,42 +685,4 @@ class MultiLimitOrderServiceTest {
         return orderBuilder.build()
     }
 
-    private fun buildMultiLimitOrderWrapper(pair: String,
-                                            clientId: String,
-                                            volumes: List<VolumePrice>,
-                                            ordersFee: List<LimitOrderFeeInstruction>,
-                                            ordersFees: List<List<NewLimitOrderFeeInstruction>>,
-                                            cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId, volumes, ordersFee, ordersFees, cancel).toByteArray(), null)
-    }
-
-    private fun buildMultiLimitOrder(assetPairId: String,
-                                     clientId: String,
-                                     volumes: List<VolumePrice>,
-                                     ordersFee: List<LimitOrderFeeInstruction>,
-                                     ordersFees: List<List<NewLimitOrderFeeInstruction>>,
-                                     cancel: Boolean): ProtocolMessages.MultiLimitOrder {
-        val multiOrderBuilder = ProtocolMessages.MultiLimitOrder.newBuilder()
-                .setUid(UUID.randomUUID().toString())
-                .setTimestamp(Date().time)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEachIndexed { index, volume ->
-            val orderBuilder = ProtocolMessages.MultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume)
-                    .setPrice(volume.price)
-                    .setUid(UUID.randomUUID().toString())
-            if (ordersFee.size > index) {
-                orderBuilder.fee = buildLimitOrderFee(ordersFee[index])
-            }
-            if (ordersFees.size > index) {
-                ordersFees[index].forEach {
-                    orderBuilder.addFees(buildNewLimitOrderFee(it))
-                }
-            }
-            multiOrderBuilder.addOrders(orderBuilder.build())
-        }
-        return multiOrderBuilder.build()
-    }
 }

@@ -150,8 +150,9 @@ class MessageBuilder {
                                                 volumes: List<VolumePrice>,
                                                 ordersFee: List<LimitOrderFeeInstruction>,
                                                 ordersFees: List<List<NewLimitOrderFeeInstruction>>,
+                                                ordersUid: List<String> = emptyList(),
                                                 cancel: Boolean = false): MessageWrapper {
-            return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId, volumes, ordersFee, ordersFees, cancel).toByteArray(), null)
+            return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId, volumes, ordersFee, ordersFees, ordersUid, cancel).toByteArray(), null)
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,
@@ -159,6 +160,7 @@ class MessageBuilder {
                                          volumes: List<VolumePrice>,
                                          ordersFee: List<LimitOrderFeeInstruction>,
                                          ordersFees: List<List<NewLimitOrderFeeInstruction>>,
+                                         ordersUid: List<String>,
                                          cancel: Boolean): ProtocolMessages.MultiLimitOrder {
             val multiOrderBuilder = ProtocolMessages.MultiLimitOrder.newBuilder()
                     .setUid(UUID.randomUUID().toString())
@@ -170,7 +172,6 @@ class MessageBuilder {
                 val orderBuilder = ProtocolMessages.MultiLimitOrder.Order.newBuilder()
                         .setVolume(volume.volume)
                         .setPrice(volume.price)
-                        .setUid(UUID.randomUUID().toString())
                 if (ordersFee.size > index) {
                     orderBuilder.fee = buildLimitOrderFee(ordersFee[index])
                 }
@@ -178,6 +179,11 @@ class MessageBuilder {
                     ordersFees[index].forEach {
                         orderBuilder.addFees(buildNewLimitOrderFee(it))
                     }
+                }
+                if (ordersUid.size > index) {
+                    orderBuilder.uid = ordersUid[index]
+                } else {
+                    orderBuilder.uid = UUID.randomUUID().toString()
                 }
                 multiOrderBuilder.addOrders(orderBuilder.build())
             }
