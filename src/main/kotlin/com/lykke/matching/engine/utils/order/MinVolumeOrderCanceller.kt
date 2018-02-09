@@ -40,11 +40,15 @@ class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
         val ordersToCancel = HashMap<String, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
         var totalCount = 0
         val checkAndAddToCancel: (order: NewLimitOrder) -> Unit = { order ->
-            val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-            if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
-                teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
-                ordersToCancel.getOrPut(order.assetPairId) { HashMap() }.getOrPut(order.isBuySide()) { LinkedList() }.add(order)
-                totalCount++
+            try {
+                val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+                if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
+                    teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
+                    ordersToCancel.getOrPut(order.assetPairId) { HashMap() }.getOrPut(order.isBuySide()) { LinkedList() }.add(order)
+                    totalCount++
+                }
+            } catch (e: Exception) {
+                teeLog("Unable to check order (${order.externalId}): ${e.message}. Skipped.")
             }
         }
 
