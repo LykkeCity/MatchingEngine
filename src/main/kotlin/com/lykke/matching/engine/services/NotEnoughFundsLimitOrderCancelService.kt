@@ -5,16 +5,13 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
 
 data class NotEnoughFundsLimitOrderCancelParams(
-        val orders: List<NewLimitOrder>,
-        val messageUid: String,
-        val messageType: MessageType
+        val orders: List<NewLimitOrder>
 )
 
 data class NotEnoughFundsLimitOrderCancelResult(

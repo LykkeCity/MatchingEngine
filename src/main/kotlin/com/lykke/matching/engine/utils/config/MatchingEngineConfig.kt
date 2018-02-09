@@ -20,6 +20,7 @@ data class MatchingEngineConfig(
         val whiteList: String?,
         val migrate: Boolean,
         val correctReservedVolumes: Boolean,
+        val cancelMinVolumeOrders: Boolean,
         val orderBookPath: String,
         val queueSizeLimit: Int,
         val name: String,
