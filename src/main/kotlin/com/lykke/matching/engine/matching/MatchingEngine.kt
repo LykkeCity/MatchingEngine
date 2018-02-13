@@ -1,11 +1,13 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.NewOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.greaterThan
@@ -46,24 +48,26 @@ class MatchingEngine(private val LOGGER: Logger,
         var totalLimitPrice = 0.0
         var totalVolume = 0.0
         val limitReservedBalances = HashMap<String, Double>() // limit reserved balances for trades funds control
-        val limitBalances = HashMap<String, MutableMap<String, Double>>() // clientId -> assetId -> balance; limit available balances for funds for fee control
+        val availableBalances = HashMap<String, MutableMap<String, Double>>() // clientId -> assetId -> balance; available balances for market balance control and fee funds control
         val now = Date()
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val isBuy = order.isBuySide()
-        var marketBalance = availableBalance
         val lkkTrades = LinkedList<LkkTrade>()
         val completedLimitOrders = LinkedList<NewLimitOrder>()
         var uncompletedLimitOrder: NewLimitOrder? = null
         val allCashMovements = LinkedList<WalletOperation>()
         val asset = assetsHolder.getAsset(if (isBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
         val limitAsset = assetsHolder.getAsset(if (isBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
+
+        setMarketBalance(availableBalances, order, asset, availableBalance)
+
         val marketOrderTrades = LinkedList<TradeInfo>()
 
         val limitOrdersReport = LimitOrdersReport()
         var totalLimitVolume = 0.0
 
         if (checkOrderBook(order, workingOrderBook)) {
-            while (marketBalance >= 0 && workingOrderBook.size > 0 && remainingVolume.greaterThan(0.0) && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
+            while (getMarketBalance(availableBalances, order, asset) >= 0 && workingOrderBook.size > 0 && remainingVolume.greaterThan(0.0) && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrder = workingOrderBook.poll()
                 if (order.clientId == limitOrder.clientId) {
                     skipLimitOrders.add(limitOrder)
@@ -110,7 +114,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 val cashMovements = mutableListOf(baseAssetOperation, quotingAssetOperation, limitBaseAssetOperation, limitQuotingAssetOperation)
 
                 val makerFees = try {
-                    feeProcessor.processMakerFee(listOfFee(limitOrder.fee, limitOrder.fees), if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation, cashMovements, if (isBuy) 1 / limitOrder.price else limitOrder.price, limitBalances)
+                    feeProcessor.processMakerFee(listOfFee(limitOrder.fee, limitOrder.fees), if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
                 } catch (e: FeeException) {
                     LOGGER.info("Added order (id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrder)
@@ -118,10 +122,14 @@ class MatchingEngine(private val LOGGER: Logger,
                 }
 
                 val takerFees = try {
-                    feeProcessor.processFee(listOfFee(order.fee, order.fees), if (isBuy) baseAssetOperation else quotingAssetOperation, cashMovements, if (isBuy) limitOrder.price else 1 / limitOrder.price)
+                    feeProcessor.processFee(listOfFee(order.fee, order.fees), if (isBuy) baseAssetOperation else quotingAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                } catch (e: NotEnoughFundsFeeException) {
+                    order.status = OrderStatus.NotEnoughFunds.name
+                    LOGGER.info("Not enough funds for fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
+                    return MatchingResult(order, now, cancelledLimitOrders)
                 } catch (e: FeeException) {
                     order.status = OrderStatus.InvalidFee.name
-                    LOGGER.info("Invalid fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: $marketBalance : ${e.message}")
+                    LOGGER.info("Invalid fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
                     return MatchingResult(order, now, cancelledLimitOrders)
                 }
                 if (takerFees.isNotEmpty()) {
@@ -160,9 +168,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     uncompletedLimitOrder = limitOrder
                 }
 
-                val assetFeeAmount = RoundingUtils.parseDouble(takerFees.sumByDouble { if (it.transfer != null && asset.assetId == it.transfer.asset) it.transfer.volume else 0.0 }, asset.accuracy).toDouble()
-                marketBalance = RoundingUtils.parseDouble(marketBalance - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume) - assetFeeAmount, asset.accuracy).toDouble()
-
+                setMarketBalance(availableBalances, order, asset, RoundingUtils.parseDouble(getMarketBalance(availableBalances, order, asset) - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)/* - assetFeeAmount*/, asset.accuracy).toDouble())
 
                 remainingVolume = if (isFullyMatched) 0.0 else RoundingUtils.round(remainingVolume - getVolume(Math.abs(marketRoundedVolume), order.isStraight(), limitOrder.price), assetsHolder.getAsset(if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId).accuracy, order.isOrigBuySide())
                 limitOrderWrapper.lastMatchTime = now
@@ -195,6 +201,7 @@ class MatchingEngine(private val LOGGER: Logger,
         }
 
         val reservedBalance = if (order.calculateReservedVolume() > 0.0)  RoundingUtils.round(order.calculateReservedVolume(), asset.accuracy, true) else availableBalance
+        val marketBalance = getMarketBalance(availableBalances, order, asset)
         if (marketBalance < 0 || reservedBalance < RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)) {
             order.status = OrderStatus.NotEnoughFunds.name
             LOGGER.info("Not enough funds for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: $marketBalance : $reservedBalance < ${RoundingUtils.round( if(isBuy) totalLimitPrice else totalVolume, asset.accuracy, true)}")
@@ -232,5 +239,13 @@ class MatchingEngine(private val LOGGER: Logger,
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         return balancesHolder.getAvailableBalance(order.clientId, asset)
+    }
+
+    private fun getMarketBalance(availableBalances: MutableMap<String, MutableMap<String, Double>>, order: NewOrder, asset: Asset): Double {
+        return availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId]!!
+    }
+
+    private fun setMarketBalance(availableBalances: MutableMap<String, MutableMap<String, Double>>, order: NewOrder, asset: Asset, value: Double) {
+        availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId] = value
     }
 }

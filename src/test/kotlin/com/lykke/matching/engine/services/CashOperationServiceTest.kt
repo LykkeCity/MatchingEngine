@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -266,8 +265,9 @@ class CashOperationServiceTest {
     @Test
     fun testCashOutFee() {
         testDatabaseAccessor.addAssetPair(AssetPair("AssetPair", "Asset5", "Asset4", 2))
-        testFileOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = 1.0, price = 2.0))
-        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
+        testFileOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = -1.0, price = 2.1))
+        testFileOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = 1.0, price = 1.9))
+        testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.21, 0.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))
         initFeeProcessor()
         val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
@@ -275,7 +275,7 @@ class CashOperationServiceTest {
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
 
         assertEquals(0.01, balancesHolder.getBalance("Client1", "Asset4"), DELTA)
-        assertEquals(0.05, balancesHolder.getBalance("Client3", "Asset4"), DELTA)
+        assertEquals(0.2, balancesHolder.getBalance("Client3", "Asset4"), DELTA)
         assertEquals(10.0, balancesHolder.getBalance("Client1", "Asset5"), DELTA)
     }
 
