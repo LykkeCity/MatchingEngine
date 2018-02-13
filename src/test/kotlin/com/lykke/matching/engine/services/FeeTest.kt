@@ -73,8 +73,8 @@ class FeeTest {
         balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         matchingEngine = MatchingEngine(Logger.getLogger(FeeTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
-        singleLimitOrderService = SingleLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
-        multiLimitOrderService = MultiLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
+        singleLimitOrderService = SingleLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
+        multiLimitOrderService = MultiLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
     }
 

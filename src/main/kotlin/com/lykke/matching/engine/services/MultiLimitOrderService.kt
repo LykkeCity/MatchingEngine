@@ -37,7 +37,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                              assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
-                             private val negativeSpreadAssets: Set<String>,
                              private val balancesHolder: BalancesHolder,
                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
 
