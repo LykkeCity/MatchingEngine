@@ -40,7 +40,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                               private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
-                              private val negativeSpreadAssets: Set<String>,
                               private val balancesHolder: BalancesHolder,
                               private val disabledAssetsCache: DisabledAssetsCache,
                               private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {

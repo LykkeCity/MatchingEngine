@@ -66,7 +66,7 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust1() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, trustedClients, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -88,7 +88,7 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust2() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, trustedClients, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -110,7 +110,7 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust3() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, trustedClients, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -132,7 +132,7 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust4() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, trustedClients, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -154,7 +154,7 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust5() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, trustedClients, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -176,7 +176,7 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust6() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, trustedClients, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
