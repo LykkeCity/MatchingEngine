@@ -39,8 +39,10 @@ abstract class AbstractTest {
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val notificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
-    protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
+    protected val assetsCache = AssetsCache(testBackOfficeDatabaseAccessor)
+    protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
+    protected val assetsHolder = AssetsHolder(assetsCache)
+    protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
     protected lateinit var balancesHolder: BalancesHolder
 
     protected val trustedClients = mutableListOf<String>()
@@ -52,6 +54,8 @@ abstract class AbstractTest {
     protected lateinit var marketOrderService: MarketOrderService
 
     protected open fun initServices() {
+        assetsCache.update()
+        assetPairsCache.update()
         balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, notificationQueue, balanceUpdateQueue, trustedClients.toSet())
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)

@@ -100,7 +100,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        if (!checkFee(order.fee, order.fees, assetPair)) {
+        if (!checkFee(order.fee, order.fees)) {
             order.status = InvalidFee.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
