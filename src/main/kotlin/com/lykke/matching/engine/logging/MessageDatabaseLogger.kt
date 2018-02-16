@@ -9,6 +9,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import java.util.Date
 import java.util.UUID
 
@@ -22,8 +23,9 @@ class MessageDatabaseLogger(dbAccessor: MessageLogDatabaseAccessor<Message>): Da
         is LimitOrdersReport -> Message(UUID.randomUUID().toString(), Date(), message.toJson())
         is MarketOrderWithTrades ->
             Message(message.order.id, Date(), message.toJson())
+        is ReservedCashOperation -> Message(message.id, message.dateTime, message.toJson())
         else -> {
-            throw IllegalArgumentException("Unknown message type: ${this::class.java.name}")
+            throw IllegalArgumentException("Unknown message type: ${message::class.java.name}")
         }
     }
 }
