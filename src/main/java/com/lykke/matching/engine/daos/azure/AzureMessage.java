@@ -19,21 +19,30 @@ public class AzureMessage extends TableServiceEntity {
     private String msgPart4;
     private String msgPart5;
     private String msgPart6;
+    private String messageBlobName;
 
     public AzureMessage() {
     }
 
-    public AzureMessage(String id, Date timestamp, String[] parts) {
+    private AzureMessage(String id, Date timestamp) {
         super(generatePartitionKey(), String.format("%s_%s", DATE_FORMAT_ROW_KEY.format(timestamp), id));
         messageId = id;
         messageTimestamp = timestamp;
+    }
+
+    public AzureMessage(String id, Date timestamp, String[] parts) {
+        this(id, timestamp);
         message = parts.length > 0 ? parts[0] : null;
         msgPart2 = parts.length > 1 ? parts[1] : null;
         msgPart3 = parts.length > 2 ? parts[2] : null;
         msgPart4 = parts.length > 3 ? parts[3] : null;
         msgPart5 = parts.length > 4 ? parts[4] : null;
         msgPart6 = parts.length > 5 ? parts[5] : null;
+    }
 
+    public AzureMessage(String id, Date timestamp, String blobName) {
+        this(id, timestamp);
+        messageBlobName = blobName;
     }
 
     private synchronized static String generatePartitionKey() {
@@ -110,6 +119,14 @@ public class AzureMessage extends TableServiceEntity {
         this.messageTimestamp = messageTimestamp;
     }
 
+    public String getMessageBlobName() {
+        return messageBlobName;
+    }
+
+    public void setMessageBlobName(String messageBlobName) {
+        this.messageBlobName = messageBlobName;
+    }
+
     @Override
     public String toString() {
         return "AzureMessage(" +
@@ -122,6 +139,7 @@ public class AzureMessage extends TableServiceEntity {
                 ", msgPart4=" + msgPart4 +
                 ", msgPart5=" + msgPart5 +
                 ", msgPart6=" + msgPart6 +
+                ", messageBlobName=" + messageBlobName +
                 ')';
     }
 }

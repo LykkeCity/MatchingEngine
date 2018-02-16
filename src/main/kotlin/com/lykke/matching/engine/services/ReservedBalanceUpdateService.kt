@@ -51,7 +51,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedBalanceUpdate
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(status.type).build())
     }
 }
