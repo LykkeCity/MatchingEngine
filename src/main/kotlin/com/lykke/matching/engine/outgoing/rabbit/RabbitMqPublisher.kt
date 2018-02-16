@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit
 
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
+import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
@@ -72,7 +73,7 @@ class RabbitMqPublisher(
                 messageDatabaseLogger?.let {
                     if (!isLogged) {
                         MESSAGES_LOGGER.info("$exchangeName : $stringValue")
-                        it.log(item)
+                        it.log(MessageWrapper(item, stringValue))
                         isLogged = true
                     }
                 }
