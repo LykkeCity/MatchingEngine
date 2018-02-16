@@ -72,7 +72,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
     }
 
