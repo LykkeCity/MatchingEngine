@@ -101,7 +101,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                         wallet.setReservedBalance(it.asset, newBalance.volume)
                         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
                     }
-                } else if (oldBalance > 0) {
+                } else if (oldBalance != 0.0) {
                     val orderIds = if (newBalance != null) newBalance.orderIds.joinToString(",") else null
                     val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: 0.0)
                     corrections.add(correction)
