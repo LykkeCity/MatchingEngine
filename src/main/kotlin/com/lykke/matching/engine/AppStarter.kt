@@ -1,7 +1,9 @@
 package com.lykke.matching.engine
 
+import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.utils.AppInitializer
@@ -23,6 +25,7 @@ fun main(args: Array<String>) {
     AppInitializer.init()
 
     val config = HttpConfigParser.initConfig(args[0])
+    val properties = ApplicationProperties(AzureConfigDatabaseAccessor(config.me.db.configConnString, config.me.db.configTableName), config.me.configUpdateInterval)
 
     try {
         AliveStatusProcessorFactory
