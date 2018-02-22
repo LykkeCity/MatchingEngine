@@ -26,6 +26,7 @@ fun main(args: Array<String>) {
 
     val config = HttpConfigParser.initConfig(args[0])
     val properties = ApplicationProperties(AzureConfigDatabaseAccessor(config.me.db.configConnString, config.me.db.configTableName), config.me.configUpdateInterval)
+    AppContext.init(properties)
 
     try {
         AliveStatusProcessorFactory
@@ -57,7 +58,7 @@ internal class ShutdownHook(private val config: Config) : Thread() {
 
     override fun run() {
         LOGGER.info("Stopping application")
-
+        AppContext.destroy()
         MetricsLogger.logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Stopped :")
     }
 }
