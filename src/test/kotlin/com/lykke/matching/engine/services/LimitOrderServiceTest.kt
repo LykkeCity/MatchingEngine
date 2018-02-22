@@ -313,16 +313,16 @@ class LimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrderEURUSD() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
 
         val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
-        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", price = 325.7152, volume = 0.046053)))
+        service.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 325.7152, volume = 0.046053)))
 
         assertEquals(1, trustedLimitOrdersQueue.size)
         val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
-        assertEquals(15.01, testWalletDatabaseAccessor.getReservedBalance("Client3", "USD"))
+        assertEquals(15.01, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
     }
 
     @Test

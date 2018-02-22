@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -53,7 +54,15 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             }
         }
 
-        balancesHolder.processWalletOperations(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, listOf(operation))
+        try {
+            balancesHolder.confirmWalletOperations(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, balancesHolder.preProcessWalletOperations(listOf(operation)))
+        } catch (e: BalanceException) {
+            LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message).build())
+            return
+        }
+
         rabbitCashInOutQueue.put(ReservedCashOperation(message.id, operation.clientId, operation.dateTime, operation.reservedAmount.round(accuracy), operation.assetId))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(MessageStatus.OK.type).build())

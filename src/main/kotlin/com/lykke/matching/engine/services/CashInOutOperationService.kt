@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.checkFee
@@ -31,8 +32,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
     companion object {
         private val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
@@ -70,7 +69,13 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
             return
         }
 
-        balancesHolder.processWalletOperations(message.id, MessageType.CASH_IN_OUT_OPERATION.name, operations)
+        try {
+            balancesHolder.confirmWalletOperations(message.id, MessageType.CASH_IN_OUT_OPERATION.name, balancesHolder.preProcessWalletOperations(operations))
+        }  catch (e: BalanceException) {
+            writeErrorResponse(messageWrapper, message, operationId, MessageStatus.LOW_BALANCE, e.message)
+            return
+        }
+
         rabbitCashInOutQueue.put(CashOperation(
                 message.id,
                 operation.clientId,
@@ -101,10 +106,18 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
     }
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashInOutOperation, operationId: String, errorMessage: String = "invalid fee for client") {
+        writeErrorResponse(messageWrapper, message, operationId, MessageStatus.INVALID_FEE, errorMessage)
+    }
+
+    private fun writeErrorResponse(messageWrapper: MessageWrapper,
+                                   message: ProtocolMessages.CashInOutOperation,
+                                   operationId: String,
+                                   status: MessageStatus,
+                                   errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
                 .setMatchingEngineId(operationId)
-                .setStatus(MessageStatus.INVALID_FEE.type)
+                .setStatus(status.type)
                 .setStatusReason(errorMessage)
                 .build())
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")

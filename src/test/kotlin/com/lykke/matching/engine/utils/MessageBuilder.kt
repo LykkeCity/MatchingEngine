@@ -234,5 +234,22 @@ class MessageBuilder {
             return if (type == null) listOf()
             else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, listOf()))
         }
+
+        fun buildTransferWrapper(fromClientId: String,
+                                 toClientId: String,
+                                 assetId: String,
+                                 amount: Double,
+                                 overdraftLimit: Double,
+                                 bussinesId: String = UUID.randomUUID().toString()
+        ): MessageWrapper {
+            return MessageWrapper("Test", MessageType.CASH_TRANSFER_OPERATION.type, ProtocolMessages.CashTransferOperation.newBuilder()
+                    .setId(bussinesId)
+                    .setFromClientId(fromClientId)
+                    .setToClientId(toClientId)
+                    .setAssetId(assetId)
+                    .setVolume(amount)
+                    .setOverdraftLimit(overdraftLimit)
+                    .setTimestamp(Date().time).build().toByteArray(), null)
+        }
     }
 }

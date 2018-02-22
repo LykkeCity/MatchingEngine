@@ -2,6 +2,7 @@ package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
@@ -9,7 +10,6 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.NotEnoughFundsLimitOrderCancelParams
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -63,15 +63,28 @@ class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
         val walletOperations = LinkedList<WalletOperation>()
         val clientsLimitOrdersReport = LimitOrdersReport()
         val trustedClientsLimitOrdersReport = LimitOrdersReport()
+
+        ordersToCancel.forEach { _, sideOrders ->
+            sideOrders.forEach { _, orders ->
+                val cancelResult = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(orders)
+                walletOperations.addAll(cancelResult.walletOperations)
+                trustedClientsLimitOrdersReport.orders.addAll(cancelResult.trustedClientLimitOrderWithTrades)
+                clientsLimitOrdersReport.orders.addAll(cancelResult.clientLimitOrderWithTrades)
+            }
+        }
+
+        val preProcessResult = try {
+            balancesHolder.preProcessWalletOperations(walletOperations)
+        } catch (e: BalanceException) {
+            teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
+            return
+        }
+
         ordersToCancel.forEach { assetPairId, sideOrders ->
             sideOrders.forEach { isBuy, orders ->
                 val orderBook = genericLimitOrderService.getOrderBook(assetPairId).copy()
                 orders.forEach { order -> orderBook.removeOrder(order) }
                 genericLimitOrderService.setOrderBook(assetPairId, orderBook)
-                val cancelResult = genericLimitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(orders))
-                walletOperations.addAll(cancelResult.walletOperation)
-                trustedClientsLimitOrdersReport.orders.addAll(cancelResult.trustedClientLimitOrderWithTrades)
-                clientsLimitOrdersReport.orders.addAll(cancelResult.clientLimitOrderWithTrades)
                 genericLimitOrderService.updateOrderBook(assetPairId, isBuy)
 
                 val rabbitOrderBook = OrderBook(assetPairId, isBuy, now, genericLimitOrderService.getOrderBook(assetPairId).copy().getOrderBook(isBuy))
@@ -88,7 +101,7 @@ class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
         }
 
         teeLog("Starting balances updating (wallet operations count: ${walletOperations.size})")
-        balancesHolder.processWalletOperations(UUID.randomUUID().toString(), MessageType.LIMIT_ORDER.name, walletOperations)
+        balancesHolder.confirmWalletOperations(UUID.randomUUID().toString(), MessageType.LIMIT_ORDER.name, preProcessResult)
 
         teeLog("Min volume orders cancellation is finished")
     }

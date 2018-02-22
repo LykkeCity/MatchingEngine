@@ -239,6 +239,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyOneToOne2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 89.1))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.19, volume = -89.1, reservedVolume = 89.1))
         initService()
 
@@ -271,6 +272,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellOneToOne2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 110.24))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.21, volume = 91.1, reservedVolume = 110.24))
         initService()
 
@@ -455,7 +457,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
             assertNotNull(it.order.lastMatchTime)
             assertTrue { it.order.lastMatchTime!! > now }
         }
-        assertTrue { matchingResult.order == limitOrder }
+        assertEquals(matchingResult.order.externalId, limitOrder.externalId)
         assertNotNull(limitOrder.lastMatchTime)
         assertTrue { limitOrder.lastMatchTime!! > now }
         assertEquals(-0.09, matchingResult.uncompletedLimitOrder!!.remainingVolume, DELTA)
