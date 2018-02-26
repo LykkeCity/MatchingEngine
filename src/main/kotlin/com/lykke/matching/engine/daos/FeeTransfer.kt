@@ -8,5 +8,6 @@ data class FeeTransfer(
         val toClientId: String,
         val dateTime: Date,
         val volume: Double,
-        var asset: String
+        val asset: String,
+        val feeCoef: Double?
 )
