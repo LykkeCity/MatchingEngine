@@ -230,9 +230,10 @@ class MessageBuilder {
                                            makerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
                                            makerSize: Double? = null,
                                            sourceClientId: String? = null,
-                                           targetClientId: String? = null): List<NewFeeInstruction> {
+                                           targetClientId: String? = null,
+                                           makerFeeModificator: Double? = null): List<NewFeeInstruction> {
             return if (type == null) listOf()
-            else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, listOf()))
+            else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, listOf(), makerFeeModificator))
         }
     }
 }

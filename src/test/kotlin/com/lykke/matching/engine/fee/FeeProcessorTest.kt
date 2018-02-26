@@ -91,10 +91,6 @@ class FeeProcessorTest {
         assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
         assertEquals(originalOperations, operations)
 
-//        feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.0, targetClientId = "Client3")
-//        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
-//        assertEquals(originalOperations, operations)
-
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 1.01, targetClientId = "Client3")
         assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
         assertEquals(originalOperations, operations)
@@ -117,6 +113,18 @@ class FeeProcessorTest {
 
         feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.01, targetClientId = "Client3")
         assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations) }
+        assertEquals(originalOperations, operations)
+
+        feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = 0.0)
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, 0.01) }
+        assertEquals(originalOperations, operations)
+
+        feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = -10.0)
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, 0.01) }
+        assertEquals(originalOperations, operations)
+
+        feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = 50.0)
+        assertFails { feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, -0.01) }
         assertEquals(originalOperations, operations)
 
         // Negative fee size
@@ -164,7 +172,7 @@ class FeeProcessorTest {
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -0.5))
         val receiptOperation = operations[0]
 
-        var feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
+        val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
 
         val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
         assertEquals(1, fees.size)
@@ -185,7 +193,7 @@ class FeeProcessorTest {
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -0.5))
         val receiptOperation = operations[0]
 
-        var feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")
+        val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")
 
         val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
         assertEquals(1, fees.size)
@@ -636,4 +644,35 @@ class FeeProcessorTest {
 
     }
 
+    @Test
+    fun testMakerFeeModificator() {
+        val operations = LinkedList<WalletOperation>()
+        val now = Date()
+        operations.add(WalletOperation("1", null, "Client1", "USD", now, -10.1))
+        operations.add(WalletOperation("2", null, "Client2", "USD", now, 10.1))
+        val receiptOperation = operations[1]
+        val originalOperations = LinkedList(operations)
+
+        val feeInstructions = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, takerSize = 0.01, makerSize = 0.02, targetClientId = "Client3", makerFeeModificator = 50.0)
+        val fees = feeProcessor.processMakerFee(feeInstructions, receiptOperation, operations, 0.01)
+
+        assertEquals(1, fees.size)
+        val fee = fees.first()
+        assertEquals("USD", fee.transfer!!.asset)
+        assertEquals("Client2", fee.transfer!!.fromClientId)
+        assertEquals("Client3", fee.transfer!!.toClientId)
+        assertNull(fee.transfer!!.externalId)
+        assertEquals(0.393469340287, fee.transfer!!.feeCoef) // 1 - exp(-0.01*50)
+        assertEquals(now, fee.transfer!!.dateTime)
+        assertEquals(0.08, fee.transfer!!.volume)
+
+        assertEquals(3, operations.size)
+        assertEquals(originalOperations[0], operations[0])
+        assertFalse { operations[0].isFee }
+        assertEquals(10.02, operations[1].amount)
+        assertFalse { operations[1].isFee }
+        assertEquals(0.08, operations[2].amount)
+        assertEquals("Client3", operations[2].clientId)
+        assertTrue { operations[2].isFee }
+    }
 }
