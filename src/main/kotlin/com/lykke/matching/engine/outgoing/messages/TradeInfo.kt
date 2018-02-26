@@ -19,5 +19,7 @@ class TradeInfo(
         val timestamp: Date,
         val feeInstruction: FeeInstruction?,
         val feeTransfer: FeeTransfer?,
-        val fees: List<Fee>?
+        val fees: List<Fee>,
+        val absoluteSpread: Double?,
+        val relativeSpread: Double?
 )
