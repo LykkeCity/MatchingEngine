@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.checkFee
@@ -67,6 +68,9 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
         } catch (e: FeeException) {
             writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
             return
+        } catch (e: BalanceException) {
+            writeErrorResponse(messageWrapper, message, operationId, LOW_BALANCE, e.message)
+            return
         }
         cashOperationsDatabaseAccessor.insertTransferOperation(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
@@ -90,7 +94,8 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, operations)
+        val preProcessResult = balancesHolder.preProcessWalletOperations(operations, validate = false)
+        balancesHolder.confirmWalletOperations(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, preProcessResult)
 
         return fees
     }
@@ -108,10 +113,18 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
     }
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashTransferOperation, operationId: String, errorMessage: String = "invalid fee for client") {
+        writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, errorMessage)
+    }
+
+    private fun writeErrorResponse(messageWrapper: MessageWrapper,
+                                   message: ProtocolMessages.CashTransferOperation,
+                                   operationId: String,
+                                   status: MessageStatus,
+                                   errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
                 .setMatchingEngineId(operationId)
-                .setStatus(INVALID_FEE.type)
+                .setStatus(status.type)
                 .setStatusReason(errorMessage)
                 .build())
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")

@@ -20,6 +20,7 @@ class ReservedVolumesRecalculatorTest {
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val orderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
+    private val trustedClients = setOf("trustedClient", "trustedClient2")
 
     @Before
     fun setUp() {
@@ -31,6 +32,9 @@ class ReservedVolumesRecalculatorTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient", "BTC", balance = 10.0, reservedBalance = 2.0))
+        // negative reserved balance
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient2", "BTC", balance = 1.0, reservedBalance = -0.001))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", balance = 0.0, reservedBalance = -0.001))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", balance = 10.0, reservedBalance = 1.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", balance = 10.0, reservedBalance = 2.0))
@@ -47,18 +51,20 @@ class ReservedVolumesRecalculatorTest {
     }
 
     @Test
-    fun testRecalculateTrusted() {
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, setOf("trustedClient"))
+    fun testRecalculate() {
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, trustedClients)
         recalculator.recalculate()
 
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient2", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client3", "BTC"))
         assertEquals(0.5, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(0.7, testWalletDatabaseAccessor.getReservedBalance("Client1", "EUR"))
         assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        assertEquals(4, reservedVolumesDatabaseAccessor.corrections.size)
+        assertEquals(6, reservedVolumesDatabaseAccessor.corrections.size)
         assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == 0.7 }.orderIds)
     }
 }

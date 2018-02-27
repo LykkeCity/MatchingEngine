@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -57,7 +58,14 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
             return
         }
 
-        processSwapOperation(operation)
+        try {
+            processSwapOperation(operation)
+        } catch (e: BalanceException) {
+            LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message).build())
+            return
+        }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
@@ -85,7 +93,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
                 operation.dateTime, -operation.volume2))
 
-        balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, operations)
+        balancesHolder.confirmWalletOperations(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, balancesHolder.preProcessWalletOperations(operations))
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

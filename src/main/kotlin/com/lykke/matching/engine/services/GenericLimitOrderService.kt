@@ -34,7 +34,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
-    private val notEnoughFundsLimitOrderCancelService: NotEnoughFundsLimitOrderCancelService = NotEnoughFundsLimitOrderCancelService(this, assetsPairsHolder, balancesHolder, trustedClients)
+    private val walletOperationsCalculator: WalletOperationsCalculator = WalletOperationsCalculator(assetsPairsHolder, balancesHolder, trustedClients)
     val initialOrdersCount: Int
 
     init {
@@ -160,7 +160,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return result
     }
 
-    fun cancelNotEnoughFundsOrder(params: NotEnoughFundsLimitOrderCancelParams): NotEnoughFundsLimitOrderCancelResult {
-        return notEnoughFundsLimitOrderCancelService.cancelOrder(params)
+    fun calculateWalletOperationsForCancelledOrders(orders: List<NewLimitOrder>): CancelledOrdersOperationsResult {
+        return walletOperationsCalculator.calculateForCancelledOrders(orders)
     }
 }

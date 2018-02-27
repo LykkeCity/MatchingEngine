@@ -12,5 +12,7 @@ data class DbConfig(
     val reservedVolumesConnString: String,
     val accountsTableName: String?,
     /** Azure table name for duplication of wallets data from file db */
-    val newAccountsTableName: String?
+    val newAccountsTableName: String?,
+    val configConnString: String,
+    val configTableName: String
 )

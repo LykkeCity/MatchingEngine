@@ -1,10 +1,11 @@
 package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.updater.Copyable
 import java.io.Serializable
 import java.util.Date
 
-class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, var price: Double,
+class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, val price: Double,
                     status: String, createdAt: Date, registered: Date, var remainingVolume: Double, var lastMatchTime: Date?,
                     reservedLimitVolume: Double? = null, fee: LimitOrderFeeInstruction? = null, fees: List<NewLimitOrderFeeInstruction>? = null)
     : NewOrder(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees), Serializable {
@@ -43,5 +44,17 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
 
     override fun updateRemainingVolume(volume: Double) {
         this.remainingVolume = volume
+    }
+
+    override fun copy(): NewLimitOrder {
+        return NewLimitOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered,
+                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction })
+    }
+
+    override fun applyToOrigin(origin: Copyable) {
+        super.applyToOrigin(origin)
+        origin as NewLimitOrder
+        origin.remainingVolume = remainingVolume
+        origin.lastMatchTime = lastMatchTime
     }
 }

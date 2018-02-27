@@ -19,7 +19,6 @@ data class MatchingEngineConfig(
         val candleSaverInterval: Long,
         val hoursCandleSaverInterval: Long,
         val queueSizeLoggerInterval: Long,
-        val negativeSpreadAssets: String,
         val whiteList: String?,
         val migrate: Boolean,
         val correctReservedVolumes: Boolean,
@@ -31,5 +30,6 @@ data class MatchingEngineConfig(
         val performanceStatsInterval: Long,
         val keepAlive: KeepAliveConfig,
         val walletsStorage: WalletsStorage,
-        val walletsMigration: Boolean
+        val walletsMigration: Boolean,
+        val configUpdateInterval: Long
 )

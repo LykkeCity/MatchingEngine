@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.holders
 
+import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -13,7 +14,6 @@ import org.apache.log4j.Logger
 import java.util.Date
 import java.util.HashMap
 import java.util.HashSet
-import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
@@ -81,51 +81,70 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         return 0.0
     }
 
-    fun processWalletOperations(id: String, type: String, operations: List<WalletOperation>) {
+    fun preProcessWalletOperations(operations: List<WalletOperation>, previousResult: PreProcessWalletOperationsResult? = null, validate: Boolean = true): PreProcessWalletOperationsResult {
         if (operations.isEmpty()) {
-            return
+            return previousResult ?: PreProcessWalletOperationsResult(validate)
         }
-        val now = Date()
-        val updates = HashMap<String, ClientBalanceUpdate>()
-        val walletsToAdd = LinkedList<Wallet>()
-        val clients = HashSet<String>()
+        val now = previousResult?.timestamp ?: Date()
+        val updates = previousResult?.updates?.toMutableMap() ?: HashMap()
+        val clients = previousResult?.clients?.toMutableSet() ?: HashSet()
+        val balances = previousResult?.balances?.toMutableMap() ?: HashMap()
+        val wallets = previousResult?.wallets?.toMutableMap() ?: HashMap()
         operations.forEach { operation ->
-            val client = balances.getOrPut(operation.clientId) { HashMap() }
-            val balance = client[operation.assetId]?.balance ?: 0.0
-            val reservedBalance = client[operation.assetId]?.reserved ?: 0.0
+            val client = balances.getOrPut(operation.clientId) {
+                this.balances.getOrPut(operation.clientId) { HashMap() }
+                        .mapValues { CopyWrapper(it.value) }
+                        .toMutableMap()
+            }
+            val assetBalanceWrapper = client[operation.assetId] ?: CopyWrapper(AssetBalance(operation.assetId, now, 0.0, 0.0), true)
+            val assetBalanceCopy = assetBalanceWrapper.copy
+
+            val balance = assetBalanceCopy.balance
+            val reservedBalance = assetBalanceCopy.reserved
             val asset = assetsHolder.getAsset(operation.assetId)
 
-            val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
-            val newReservedBalance = if (!trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
+            assetBalanceCopy.balance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
+            assetBalanceCopy.reserved = if (!trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
 
-            client.put(operation.assetId, AssetBalance(operation.assetId, now, newBalance, newReservedBalance))
+            client[operation.assetId] = assetBalanceWrapper
 
-            val wallet = wallets.getOrPut(operation.clientId) { Wallet(operation.clientId) }
-            wallet.setBalance(operation.assetId, now, newBalance)
-            wallet.setReservedBalance(operation.assetId, now, newReservedBalance)
-
-            if (!walletsToAdd.contains(wallet)) {
-                walletsToAdd.add(wallet)
+            val walletWrapper = wallets.getOrPut(operation.clientId) {
+                CopyWrapper(this.wallets.getOrPut(operation.clientId) {
+                    Wallet(operation.clientId)
+                })
             }
+            val walletCopy = walletWrapper.copy
+            walletCopy.setBalance(operation.assetId, now, assetBalanceCopy.balance)
+            walletCopy.setReservedBalance(operation.assetId, now, assetBalanceCopy.reserved)
+
             clients.add(operation.clientId)
 
-            val update = updates.getOrPut("${operation.clientId}_${operation.assetId}") {ClientBalanceUpdate(operation.clientId, operation.assetId, balance, newBalance, reservedBalance, newReservedBalance)}
-            update.newBalance = newBalance
-            update.newReserved = newReservedBalance
+            val update = updates.getOrPut("${operation.clientId}_${operation.assetId}") { ClientBalanceUpdate(operation.clientId, operation.assetId, balance, assetBalanceCopy.balance, reservedBalance, assetBalanceCopy.reserved) }
+            update.newBalance = assetBalanceCopy.balance
+            update.newReserved = assetBalanceCopy.reserved
         }
 
-        walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
+        return PreProcessWalletOperationsResult(balances, wallets, clients, updates, now, validate)
+    }
 
-        clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
+    fun confirmWalletOperations(id: String, type: String, preProcessResult: PreProcessWalletOperationsResult) {
+        if (preProcessResult.empty) {
+            return
+        }
 
-        sendBalanceUpdate(BalanceUpdate(id, type, now, updates.values.toList()))
+        val updatedWallets = preProcessResult.wallets!!.mapValues { it.value.applyToOrigin() }
+        wallets.putAll(updatedWallets)
+        balances.putAll(preProcessResult.balances!!.mapValues { it.value.mapValues { it.value.applyToOrigin() }.toMutableMap() })
+        walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets.values.toList())
+        preProcessResult.clients!!.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
+        sendBalanceUpdate(BalanceUpdate(id, type, preProcessResult.timestamp!!, preProcessResult.updates!!.values.toList()))
     }
 
     fun updateBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
         val client = balances.getOrPut(clientId) { HashMap() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
-            client.put(assetId, AssetBalance(assetId, timestamp, balance))
+            client[assetId] = AssetBalance(assetId, timestamp, balance)
         } else {
             oldBalance.balance = balance
         }
@@ -138,11 +157,14 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, timestamp: Date, balance: Double) {
+    fun updateReservedBalance(clientId: String, assetId: String, timestamp: Date, balance: Double, skipForTrustedClient: Boolean = true) {
+        if (skipForTrustedClient && trustedClients.contains(clientId)) {
+            return
+        }
         val client = balances.getOrPut(clientId) { HashMap() }
         val oldBalance = client[assetId]
         if (oldBalance == null) {
-            client.put(assetId, AssetBalance(assetId, timestamp, balance, balance))
+            client[assetId] = AssetBalance(assetId, timestamp, balance, balance)
         } else {
             oldBalance.reserved = balance
         }
