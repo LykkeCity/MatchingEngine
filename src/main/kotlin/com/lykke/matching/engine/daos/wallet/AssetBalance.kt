@@ -6,6 +6,7 @@ import com.lykke.matching.engine.updater.Copyable
 class AssetBalance private constructor(val asset: String,
                                        var balance: Double,
                                        var reserved: Double,
+                                       @Transient
                                        private val isCopy: Boolean) : Copyable {
 
     constructor(asset: String,
@@ -13,7 +14,9 @@ class AssetBalance private constructor(val asset: String,
                 reserved: Double = 0.0): this(asset, balance, reserved, false)
 
     // Origin values are needed to new values validation
+    @Transient
     val originBalance: Double? = if (isCopy) balance else null
+    @Transient
     val originReserved: Double? = if (isCopy) reserved else null
 
     override fun copy(): AssetBalance {
