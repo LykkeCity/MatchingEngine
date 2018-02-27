@@ -2,13 +2,15 @@ package com.lykke.matching.engine.daos.wallet
 
 import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.updater.Copyable
+import java.io.Serializable
 import java.util.Date
 
 class AssetBalance private constructor(val asset: String,
                                        var timestamp: Date,
                                        var balance: Double,
                                        var reserved: Double,
-                                       private val isCopy: Boolean) : Copyable {
+                                       @Transient
+                                       private val isCopy: Boolean) : Serializable, Copyable {
 
     constructor(asset: String,
                 timestamp: Date,
@@ -16,7 +18,9 @@ class AssetBalance private constructor(val asset: String,
                 reserved: Double = 0.0): this(asset, timestamp, balance, reserved, false)
 
     // Origin values are needed to new values validation
+    @Transient
     val originBalance: Double? = if (isCopy) balance else null
+    @Transient
     val originReserved: Double? = if (isCopy) reserved else null
 
     override fun copy(): AssetBalance {
