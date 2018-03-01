@@ -43,10 +43,10 @@ import kotlin.test.assertTrue
 
 class LimitOrderServiceTest {
 
-    private var testDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    private val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     private val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     private val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -66,7 +66,6 @@ class LimitOrderServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAccessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))

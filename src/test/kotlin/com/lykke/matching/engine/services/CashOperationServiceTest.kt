@@ -38,8 +38,8 @@ import java.util.concurrent.LinkedBlockingQueue
 
 class CashOperationServiceTest {
 
-    private var testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     private val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val transactionQueue = LinkedBlockingQueue<JsonSerializable>()

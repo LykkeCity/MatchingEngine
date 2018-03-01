@@ -31,11 +31,11 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashTransferOperationService( private val balancesHolder: BalancesHolder,
-                                    private val assetsHolder: AssetsHolder,
-                                    private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
-                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
-                                    private val feeProcessor: FeeProcessor): AbstractService {
+class CashTransferOperationService(private val balancesHolder: BalancesHolder,
+                                   private val assetsHolder: AssetsHolder,
+                                   private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
+                                   private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                   private val feeProcessor: FeeProcessor): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
