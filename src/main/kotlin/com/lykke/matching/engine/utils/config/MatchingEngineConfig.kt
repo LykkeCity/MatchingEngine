@@ -2,6 +2,7 @@ package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
 import com.lykke.utils.alivestatus.config.AliveStatusConfig
+import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
 import com.lykke.utils.keepalive.http.KeepAliveConfig
 
 data class MatchingEngineConfig(
@@ -28,5 +29,6 @@ data class MatchingEngineConfig(
         val processedMessagesPath: String,
         val processedMessagesInterval: Long,
         val performanceStatsInterval: Long,
-        val keepAlive: KeepAliveConfig
+        val keepAlive: KeepAliveConfig,
+        val logFilesCleaner: LogFilesCleanerConfig
 )
