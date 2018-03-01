@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.config
 import com.google.gson.annotations.SerializedName
 import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.utils.alivestatus.config.AliveStatusConfig
+import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
 import com.lykke.utils.keepalive.http.KeepAliveConfig
 
 data class MatchingEngineConfig(
@@ -31,5 +32,6 @@ data class MatchingEngineConfig(
         val keepAlive: KeepAliveConfig,
         val walletsStorage: WalletsStorage,
         val walletsMigration: Boolean,
-        val configUpdateInterval: Long
+        val configUpdateInterval: Long,
+        val logFilesCleaner: LogFilesCleanerConfig
 )

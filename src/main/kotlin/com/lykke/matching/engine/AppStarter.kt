@@ -6,6 +6,7 @@ import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
 import com.lykke.matching.engine.utils.config.ApplicationProperties
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
+import com.lykke.matching.engine.utils.logging.startLogsCleaner
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
 import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.AppInitializer
@@ -55,6 +56,8 @@ fun main(args: Array<String>) {
     correctReservedVolumesIfNeed(config)
 
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
+
+    startLogsCleaner(config)
 
     SocketServer(config) { appInitialData ->
         MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
