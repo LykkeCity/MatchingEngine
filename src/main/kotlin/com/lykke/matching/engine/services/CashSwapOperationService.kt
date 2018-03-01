@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -23,7 +23,7 @@ import java.util.concurrent.BlockingQueue
 
 class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                            private val assetsHolder: AssetsHolder,
-                           private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                           private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                            private val notificationQueue: BlockingQueue<JsonSerializable>): AbstractService {
 
     companion object {
@@ -60,7 +60,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         }
 
         processSwapOperation(operation)
-        walletDatabaseAccessor.insertSwapOperation(operation)
+        cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))

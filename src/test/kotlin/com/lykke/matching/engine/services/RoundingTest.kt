@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -30,9 +31,10 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertNotNull
 
 class RoundingTest {
-    var testLimitDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val testLimitDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -44,7 +46,7 @@ class RoundingTest {
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
     val trustedClients =  emptySet<String>()
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
@@ -65,12 +67,12 @@ class RoundingTest {
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2))
     }
 
     @After

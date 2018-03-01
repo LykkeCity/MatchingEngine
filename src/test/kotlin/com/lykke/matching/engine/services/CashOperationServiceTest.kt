@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -38,12 +39,13 @@ import java.util.concurrent.LinkedBlockingQueue
 class CashOperationServiceTest {
 
     private val testDatabaseAccessor = TestWalletDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val transactionQueue = LinkedBlockingQueue<JsonSerializable>()
     private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    private val assetsPairsCache = AssetPairsCache(testDatabaseAccessor, 60000)
+    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor, 60000)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private val balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
     private val testFileOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
@@ -265,7 +267,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOutFee() {
-        testDatabaseAccessor.addAssetPair(AssetPair("AssetPair", "Asset5", "Asset4", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("AssetPair", "Asset5", "Asset4", 2))
         testFileOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = 1.0, price = 2.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))

@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -37,6 +38,7 @@ import kotlin.test.assertEquals
 class FeeTest {
     private var testDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -47,7 +49,7 @@ class FeeTest {
     private val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     private val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
+    private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
     private val trustedClients = setOf<String>()
     private val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
     private lateinit var balancesHolder: BalancesHolder
@@ -61,10 +63,10 @@ class FeeTest {
     fun setUp() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         initServices()
     }

@@ -9,6 +9,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -38,9 +39,10 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 
 class MultiLimitOrderServiceTest {
-    var testDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
     val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -51,7 +53,7 @@ class MultiLimitOrderServiceTest {
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
     val trustedClients = setOf("Client1", "Client5")
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
     var genericLimitService = initLimitService()
@@ -59,7 +61,6 @@ class MultiLimitOrderServiceTest {
 
     @Before
     fun setUp() {
-        testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAccessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
@@ -68,11 +69,11 @@ class MultiLimitOrderServiceTest {
         testBackOfficeDatabaseAccessor.addAsset(Asset("TIME", 8))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
@@ -87,7 +88,7 @@ class MultiLimitOrderServiceTest {
     fun testSmallVolume() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
 
         service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
                 volumes = listOf(

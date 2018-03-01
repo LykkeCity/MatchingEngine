@@ -3,6 +3,7 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
@@ -24,6 +25,7 @@ abstract class AbstractTest {
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
@@ -38,7 +40,7 @@ abstract class AbstractTest {
     protected val notificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
     protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
+    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
     protected lateinit var balancesHolder: BalancesHolder
 
     protected val trustedClients = mutableListOf<String>()

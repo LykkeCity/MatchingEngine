@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.checkFee
@@ -30,11 +30,11 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashTransferOperationService( private val balancesHolder: BalancesHolder,
-                                    private val assetsHolder: AssetsHolder,
-                                    private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
-                                    private val feeProcessor: FeeProcessor): AbstractService {
+class CashTransferOperationService(private val balancesHolder: BalancesHolder,
+                                   private val assetsHolder: AssetsHolder,
+                                   private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
+                                   private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                   private val feeProcessor: FeeProcessor): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
@@ -68,7 +68,7 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
             writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
             return
         }
-        walletDatabaseAccessor.insertTransferOperation(operation)
+        cashOperationsDatabaseAccessor.insertTransferOperation(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
