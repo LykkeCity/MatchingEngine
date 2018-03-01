@@ -2,6 +2,7 @@ package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
@@ -16,7 +17,8 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
+class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                              private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               private val genericLimitOrderService: GenericLimitOrderService,
                               private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
@@ -38,11 +40,22 @@ class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
 
         val now = Date()
         val ordersToCancel = HashMap<String, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
+        val ordersToRemove = HashMap<String, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
         var totalCount = 0
         val checkAndAddToCancel: (order: NewLimitOrder) -> Unit = { order ->
             try {
-                val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-                if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
+                val assetPair = try {
+                    assetsPairsHolder.getAssetPair(order.assetPairId)
+                } catch (e: Exception) {
+                    dictionariesDatabaseAccessor.loadAssetPair(order.assetPairId, true)
+                }
+
+                if (assetPair == null) {
+                    // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)
+                    teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")
+                    ordersToRemove.getOrPut(order.assetPairId) { HashMap() }.getOrPut(order.isBuySide()) { LinkedList() }.add(order)
+                    totalCount++
+                } else if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
                     teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
                     ordersToCancel.getOrPut(order.assetPairId) { HashMap() }.getOrPut(order.isBuySide()) { LinkedList() }.add(order)
                     totalCount++
@@ -63,6 +76,18 @@ class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
         val walletOperations = LinkedList<WalletOperation>()
         val clientsLimitOrdersReport = LimitOrdersReport()
         val trustedClientsLimitOrdersReport = LimitOrdersReport()
+        ordersToRemove.forEach { assetPairId, sideOrders ->
+            sideOrders.forEach { isBuy, orders ->
+                val orderBook = genericLimitOrderService.getOrderBook(assetPairId).copy()
+                orders.forEach { order -> orderBook.removeOrder(order) }
+                genericLimitOrderService.setOrderBook(assetPairId, orderBook)
+                genericLimitOrderService.updateOrderBook(assetPairId, isBuy)
+
+                val rabbitOrderBook = OrderBook(assetPairId, isBuy, now, genericLimitOrderService.getOrderBook(assetPairId).copy().getOrderBook(isBuy))
+                orderBookQueue.put(rabbitOrderBook)
+                rabbitOrderBookQueue.put(rabbitOrderBook)
+            }
+        }
         ordersToCancel.forEach { assetPairId, sideOrders ->
             sideOrders.forEach { isBuy, orders ->
                 val orderBook = genericLimitOrderService.getOrderBook(assetPairId).copy()
