@@ -73,9 +73,6 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             balances.putAll(it.mapValues { HashMap<String, Double>(it.value) })
         }
         val newOperations = LinkedList(operations)
-        if (isMakerFee && feeCoefCalculator !is MakerFeeCoefCalculator) {
-            throw FeeException("Fee coef calculator should be instance of MakerFeeCoefCalculator")
-        }
         val fees = feeInstructions.map { feeInstruction ->
             val feeTransfer = if (isMakerFee) {
                 feeCoefCalculator as MakerFeeCoefCalculator

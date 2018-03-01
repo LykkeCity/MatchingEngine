@@ -44,7 +44,7 @@ class NewLimitOrderFeeInstruction(
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null,
                     fee.assetIdList.toList(),
-                    if (fee.hasMakerFeeModificator()) fee.makerFeeModificator else null)
+                    if (fee.hasMakerFeeModificator() && fee.makerFeeModificator != 0.0) fee.makerFeeModificator else null)
         }
     }
 
