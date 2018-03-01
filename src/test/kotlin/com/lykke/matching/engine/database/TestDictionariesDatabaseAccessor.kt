@@ -11,8 +11,8 @@ class TestDictionariesDatabaseAccessor : DictionariesDatabaseAccessor {
         return assetPairs
     }
 
-    override fun loadAssetPair(assetId: String): AssetPair {
-        return assetPairs[assetId]!!
+    override fun loadAssetPair(assetId: String, throwException: Boolean): AssetPair? {
+        return assetPairs[assetId]
     }
 
     fun addAssetPair(pair: AssetPair) {

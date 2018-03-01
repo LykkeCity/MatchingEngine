@@ -4,17 +4,21 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 class MinVolumeOrderCancellerTest : AbstractTest() {
+
+    private lateinit var canceller: MinVolumeOrderCanceller
 
     @Before
     fun setUp() {
@@ -46,11 +50,13 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         initServices()
     }
 
+    override fun initServices() {
+        super.initServices()
+        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
+    }
 
     @Test
     fun testCancel() {
-        val canceller = MinVolumeOrderCanceller(assetsPairsHolder, balancesHolder, genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
-
         // BTCEUR
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCEUR", price = 9000.0, volume = -1.0)))
 
@@ -143,6 +149,33 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         assertEquals(4, rabbitOrderBookQueue.size)
         assertEquals(4, orderBookQueue.size)
+    }
+
+    @Test
+    fun testCancelOrdersWithRemovedAssetPair() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCEUR", price = 10000.0, volume = -1.0)))
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient", listOf(VolumePrice(-1.0, price = 10000.0)), emptyList(), emptyList()))
+
+        assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
+        assertEquals(1.0, balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(2, testOrderDatabaseAccessor.getOrders("BTCEUR", false).size)
+        assertEquals(2, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)
+
+        testDictionariesDatabaseAccessor.clear() // remove asset pair BTCEUR
+        initServices()
+        canceller.cancel()
+
+        assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCEUR", false).size)
+        assertEquals(0, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)
+        assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(1.0, balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "BTC"))
+        assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
+
+        // recalculate reserved volumes to reset locked reservedAmount
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(), trustedClients.toSet())
+        recalculator.recalculate()
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }
 
 }
