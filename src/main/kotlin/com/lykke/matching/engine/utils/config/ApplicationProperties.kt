@@ -12,6 +12,7 @@ class ApplicationProperties(private val configDatabaseAccessor: ConfigDatabaseAc
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(ApplicationProperties::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
+        private const val PROP_NAME_REJECT_INVALID_PRICE = "REJECT_INVALID_PRICE"
     }
 
     private var properties: Map<String, String> = emptyMap()
@@ -30,9 +31,15 @@ class ApplicationProperties(private val configDatabaseAccessor: ConfigDatabaseAc
         }
     }
 
-    private fun getBoolean(name: String): Boolean {
+    val rejectInvalidPrice: Boolean
+        get() = getBoolean(PROP_NAME_REJECT_INVALID_PRICE, false)
+
+    private fun getBoolean(name: String, defaultValue: Boolean? = null): Boolean {
         val value = properties[name]
         try {
+            if (value == null && defaultValue != null) {
+                return defaultValue
+            }
             return value!!.toBoolean()
         } catch (e: Exception) {
             val message = "Incorrect boolean property value (name=$name, value=$value)"

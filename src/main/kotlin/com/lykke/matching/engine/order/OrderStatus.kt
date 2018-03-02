@@ -23,4 +23,6 @@ enum class OrderStatus {
     ,InvalidFee
     //Too small volume
     ,TooSmallVolume
+    //Invalid price
+    ,InvalidPrice
 }

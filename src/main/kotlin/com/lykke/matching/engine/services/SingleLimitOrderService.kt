@@ -123,6 +123,13 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         val orderInfo = "Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)}"
 
+        if (order.price <= 0.0) {
+            LOGGER.info("$orderInfo price is invalid")
+            order.status = OrderStatus.InvalidPrice.name
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_PRICE, now, isCancelOrders)
+            return
+        }
+
         if (!order.checkVolume(assetsPairsHolder))  {
             LOGGER.info("$orderInfo volume is too small")
             order.status = OrderStatus.TooSmallVolume.name
