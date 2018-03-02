@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -102,10 +103,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
             message.ordersList.forEach { currentOrder ->
                 val uid = UUID.randomUUID().toString()
+                val feeInstruction = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null
+                val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
                 orders.add(NewLimitOrder(uid, currentOrder.uid, message.assetPairId, message.clientId, currentOrder.volume,
                         currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
-                        fee = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null,
-                        fees = NewLimitOrderFeeInstruction.create(currentOrder.feesList)))
+                        fee = feeInstruction,
+                        fees = listOfLimitOrderFee(feeInstruction, feeInstructions)))
 
                 if (cancelAllPreviousLimitOrders) {
                     if (currentOrder.volume > 0) {
