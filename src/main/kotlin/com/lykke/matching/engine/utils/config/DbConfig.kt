@@ -9,7 +9,5 @@ data class DbConfig(
     val messageLogConnString: String,
     val matchingEngineConnString: String,
     val monitoringConnString: String,
-    val reservedVolumesConnString: String,
-    val configConnString: String,
-    val configTableName: String
+    val reservedVolumesConnString: String
 )

@@ -28,6 +28,5 @@ data class MatchingEngineConfig(
         val processedMessagesPath: String,
         val processedMessagesInterval: Long,
         val performanceStatsInterval: Long,
-        val keepAlive: KeepAliveConfig,
-        val configUpdateInterval: Long
+        val keepAlive: KeepAliveConfig
 )

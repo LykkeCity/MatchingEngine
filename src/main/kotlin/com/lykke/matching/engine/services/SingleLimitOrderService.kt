@@ -132,6 +132,13 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
+        if (order.price <= 0.0) {
+            LOGGER.info("$orderInfo price is invalid")
+            order.status = OrderStatus.InvalidPrice.name
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_PRICE, now, isCancelOrders)
+            return
+        }
+
         if (!order.checkVolume(assetsPairsHolder))  {
             LOGGER.info("$orderInfo volume is too small")
             order.status = OrderStatus.TooSmallVolume.name

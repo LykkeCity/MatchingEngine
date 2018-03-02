@@ -15,6 +15,7 @@ enum class MessageStatus(val type: Int){
     LEAD_TO_NEGATIVE_SPREAD(417),
     TOO_SMALL_VOLUME(418),
     INVALID_FEE(419),
+    INVALID_PRICE(420),
     DUPLICATE(430),
     RUNTIME(500)
 }

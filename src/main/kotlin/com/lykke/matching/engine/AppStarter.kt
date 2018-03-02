@@ -25,7 +25,7 @@ fun main(args: Array<String>) {
     AppInitializer.init()
 
     val config = HttpConfigParser.initConfig(args[0])
-    val properties = ApplicationProperties(AzureConfigDatabaseAccessor(config.me.db.configConnString, config.me.db.configTableName), config.me.configUpdateInterval)
+    val properties = ApplicationProperties(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
     AppContext.init(properties)
 
     try {
