@@ -9,10 +9,12 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -48,6 +50,7 @@ class FeeTest {
     private val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
     private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
+    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor(), 60000)
     private val trustedClients = setOf<String>()
     private val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
     private lateinit var balancesHolder: BalancesHolder
@@ -73,9 +76,9 @@ class FeeTest {
         balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         matchingEngine = MatchingEngine(Logger.getLogger(FeeTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
-        singleLimitOrderService = SingleLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
+        singleLimitOrderService = SingleLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, disabledAssetsCache, lkkTradesQueue)
         multiLimitOrderService = MultiLimitOrderService(genericService, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, emptySet(), balancesHolder, lkkTradesQueue)
-        marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
+        marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericService, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, trustedClientsLimitOrdersQueue, clientLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.checkFee
@@ -30,11 +31,12 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashTransferOperationService( private val balancesHolder: BalancesHolder,
-                                    private val assetsHolder: AssetsHolder,
-                                    private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
-                                    private val feeProcessor: FeeProcessor): AbstractService {
+class CashTransferOperationService(private val balancesHolder: BalancesHolder,
+                                   private val assetsHolder: AssetsHolder,
+                                   private val disabledAssetsCache: DisabledAssetsCache,
+                                   private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                   private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                   private val feeProcessor: FeeProcessor): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
@@ -51,6 +53,13 @@ class CashTransferOperationService( private val balancesHolder: BalancesHolder,
             return
         }
         val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
+
+        if (disabledAssetsCache.isDisabled(message.assetId)) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
+            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
+            return
+        }
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)

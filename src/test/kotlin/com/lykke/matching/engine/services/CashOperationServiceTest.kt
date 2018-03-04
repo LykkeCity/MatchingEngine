@@ -5,13 +5,14 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -46,6 +47,7 @@ class CashOperationServiceTest {
     private val assetsPairsCache = AssetPairsCache(testDatabaseAccessor, 60000)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private val balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
+    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor(), 60000)
     private val testFileOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private lateinit var genericLimitOrderService: GenericLimitOrderService
     private val DELTA = 1e-15
@@ -74,7 +76,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashIn() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -103,7 +105,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testSmallCashIn() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", 0.01))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -130,7 +132,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOut() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -159,7 +161,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testCashOutNegative() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         var balance = testDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
@@ -202,7 +204,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewAsset() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client1", "Asset4", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client1", "Asset4")
 
@@ -212,7 +214,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testAddNewWallet() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client3", "Asset2", 100.0))
         val balance = testDatabaseAccessor.getBalance("Client3", "Asset2")
 
@@ -234,7 +236,7 @@ class CashOperationServiceTest {
 
     @Test
     fun testRounding() {
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         val updateService = BalanceUpdateService(balancesHolder)
 
         updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 29.99))
@@ -250,7 +252,7 @@ class CashOperationServiceTest {
     @Test
     fun testRoundingWithReserved() {
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 1.00418803, 0.00418803))
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
 
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0))
 
@@ -270,7 +272,7 @@ class CashOperationServiceTest {
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))
         initFeeProcessor()
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
 
@@ -282,7 +284,7 @@ class CashOperationServiceTest {
     @Test
     fun testCashOutInvalidFee() {
         testDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 3.0, 0.0))
-        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        val service = CashInOutOperationService(testDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
 
         // Negative fee size
         service.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
