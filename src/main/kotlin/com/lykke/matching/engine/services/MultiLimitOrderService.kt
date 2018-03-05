@@ -151,7 +151,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         var preProcessResult: PreProcessWalletOperationsResult? = null
 
         orders.forEach { order ->
-            if (!order.checkVolume(assetPair)) {
+            if (order.price <= 0) {
+                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
+            } else if (!order.checkVolume(assetPair)) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             } else if (orderBook.leadToNegativeSpreadForClient(order)) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")

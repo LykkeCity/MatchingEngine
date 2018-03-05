@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestCashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -22,6 +23,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
+import com.lykke.matching.engine.utils.config.ApplicationProperties
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -32,6 +34,8 @@ abstract class AbstractTest {
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
+    protected val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
+    protected val applicationProperties = ApplicationProperties(testConfigDatabaseAccessor)
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
