@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -29,6 +30,7 @@ abstract class AbstractTest {
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
     protected val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
     protected val applicationProperties = ApplicationProperties(testConfigDatabaseAccessor)
@@ -44,9 +46,9 @@ abstract class AbstractTest {
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val notificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
-    protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
-    protected val disabledAssetsCache = DisabledAssetsCache(testSettingsDatabaseAccessor, 60000)
+    protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
+    protected val disabledAssetsCache = DisabledAssetsCache(testSettingsDatabaseAccessor)
     protected lateinit var balancesHolder: BalancesHolder
 
     protected val trustedClients = mutableListOf<String>()

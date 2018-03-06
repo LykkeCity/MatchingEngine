@@ -25,7 +25,7 @@ class BalanceUpdateServiceTest {
 
     private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
+    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())

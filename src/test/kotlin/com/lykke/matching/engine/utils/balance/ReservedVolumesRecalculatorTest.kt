@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.balance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -15,6 +16,7 @@ import kotlin.test.assertEquals
 class ReservedVolumesRecalculatorTest {
 
     private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val orderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
@@ -24,10 +26,10 @@ class ReservedVolumesRecalculatorTest {
     fun setUp() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient", "BTC", balance = 10.0, reservedBalance = 2.0))
         // negative reserved balance
@@ -50,7 +52,7 @@ class ReservedVolumesRecalculatorTest {
 
     @Test
     fun testRecalculate() {
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, trustedClients)
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, trustedClients)
         recalculator.recalculate()
 
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))

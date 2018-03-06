@@ -11,6 +11,8 @@ import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
@@ -89,7 +91,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-  
+
     private val messagesQueue: BlockingQueue<MessageWrapper> = queue
     private val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
     private val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
@@ -149,7 +151,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString)
+        val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString)
+        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
@@ -157,7 +160,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
 
         val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.dictsConnString), 60000))
+        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString), 60000))
         val disabledAssetsCache = DisabledAssetsCache(AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
@@ -166,8 +169,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder, disabledAssetsCache)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, disabledAssetsCache, rabbitCashInOutQueue, feeProcessor)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, disabledAssetsCache, walletDatabaseAccessor, rabbitTransferQueue, feeProcessor)
-        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, walletDatabaseAccessor, rabbitCashSwapQueue)
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, disabledAssetsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
+        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, disabledAssetsCache, lkkTradesQueue)
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, disabledAssetsCache, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue)

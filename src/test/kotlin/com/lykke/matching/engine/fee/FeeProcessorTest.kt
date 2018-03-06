@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
@@ -36,12 +37,13 @@ import kotlin.test.assertTrue
 
 class FeeProcessorTest {
 
-    private var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    private var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    private val assetsPairsCache = AssetPairsCache(testWalletDatabaseAccessor, 60000)
+    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private lateinit var balancesHolder: BalancesHolder
     private lateinit var feeProcessor: FeeProcessor
@@ -128,7 +130,7 @@ class FeeProcessorTest {
     @Test
     fun testNoAbsoluteFee() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -156,7 +158,7 @@ class FeeProcessorTest {
     @Test
     fun testAbsoluteFeeCashout() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -164,7 +166,7 @@ class FeeProcessorTest {
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -0.5))
         val receiptOperation = operations[0]
 
-        var feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
+        val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
 
         val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
         assertEquals(1, fees.size)
@@ -177,7 +179,7 @@ class FeeProcessorTest {
     @Test
     fun testPercentFeeCashout() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -185,7 +187,7 @@ class FeeProcessorTest {
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -0.5))
         val receiptOperation = operations[0]
 
-        var feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")
+        val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")
 
         val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
         assertEquals(1, fees.size)
@@ -199,7 +201,7 @@ class FeeProcessorTest {
     fun testAnotherAssetFee() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.36, 0.0))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testOrderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, price = 1.2))
         initServices()
 

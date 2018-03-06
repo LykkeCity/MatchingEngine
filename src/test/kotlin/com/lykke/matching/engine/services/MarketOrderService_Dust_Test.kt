@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -33,9 +34,10 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 
 class MarketOrderService_Dust_Test {
-    var testLimitDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    var testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val testLimitDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -46,9 +48,9 @@ class MarketOrderService_Dust_Test {
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
-    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAccessor, 60000))
-    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor(), 60000)
+    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
+    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor())
     val trustedClients = emptySet<String>()
     val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
@@ -72,17 +74,17 @@ class MarketOrderService_Dust_Test {
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8))
 
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 6))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTC1USD", "BTC1", "USD", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTC1LKK", "BTC1", "LKK", 6))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("SLRBTC1", "SLR", "BTC1", 8))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 6))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTC1USD", "BTC1", "USD", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTC1LKK", "BTC1", "LKK", 6))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("SLRBTC1", "SLR", "BTC1", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
     }
 
     @After

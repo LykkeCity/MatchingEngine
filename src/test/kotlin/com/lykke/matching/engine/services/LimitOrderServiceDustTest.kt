@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
@@ -30,9 +31,10 @@ import kotlin.test.assertEquals
 
 class LimitOrderServiceDustTest {
 
-    var testDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
-    var testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -42,21 +44,20 @@ class LimitOrderServiceDustTest {
     val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
-    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testWalletDatabaseAcessor, 60000))
-    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor(), 60000)
+    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
+    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor())
     val trustedClients = setOf("Client3")
     val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
     @Before
     fun setUp() {
-        testDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testWalletDatabaseAcessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testWalletDatabaseAcessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))

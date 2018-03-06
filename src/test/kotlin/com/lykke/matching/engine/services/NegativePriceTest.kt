@@ -20,7 +20,7 @@ class NegativePriceTest : AbstractTest() {
     fun setUp() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testWalletDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client", "USD", 1.0, 0.0))
         initServices()
