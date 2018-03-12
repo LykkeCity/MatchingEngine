@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 class OrderTest {
 
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
+    private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
 
     @Before
     fun setUp() {

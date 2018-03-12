@@ -38,12 +38,12 @@ import kotlin.test.assertTrue
 class FeeProcessorTest {
 
     private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor, 60000)
+    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private lateinit var balancesHolder: BalancesHolder
     private lateinit var feeProcessor: FeeProcessor

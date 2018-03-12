@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -13,7 +14,8 @@ import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
 
-class CashOperationService(private val balancesHolder: BalancesHolder): AbstractService {
+class CashOperationService(private val balancesHolder: BalancesHolder,
+                           private val disabledAssetsCache: DisabledAssetsCache ): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -22,6 +24,12 @@ class CashOperationService(private val balancesHolder: BalancesHolder): Abstract
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
         LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+
+        if (message.amount < 0 && disabledAssetsCache.isDisabled(message.assetId)) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+            LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: disabled asset")
+            return
+        }
 
         if (message.amount < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)

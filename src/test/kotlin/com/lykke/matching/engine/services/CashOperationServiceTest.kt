@@ -9,10 +9,12 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -45,10 +47,11 @@ class CashOperationServiceTest {
     private val transactionQueue = LinkedBlockingQueue<JsonSerializable>()
     private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor, 60000)
+    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private lateinit var balancesHolder: BalancesHolder
+    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor())
     private val testFileOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private lateinit var genericLimitOrderService: GenericLimitOrderService
     private val DELTA = 1e-15
@@ -75,7 +78,7 @@ class CashOperationServiceTest {
         assetsPairsCache.update()
         genericLimitOrderService = GenericLimitOrderService(testFileOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), emptySet())
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
-        service = CashInOutOperationService(testCashOperationsDatabaseAccessor, assetsHolder, balancesHolder, transactionQueue, feeProcessor)
+        service = CashInOutOperationService(testCashOperationsDatabaseAccessor, assetsHolder, balancesHolder, disabledAssetsCache, transactionQueue, feeProcessor)
     }
 
     @Test

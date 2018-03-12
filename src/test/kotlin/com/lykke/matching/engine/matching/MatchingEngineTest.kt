@@ -37,13 +37,13 @@ abstract class MatchingEngineTest {
 
     protected val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+    protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     protected val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor, 60000))
-    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor, 60000))
+    protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
+    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
     protected val trustedClients = setOf<String>()
     protected lateinit var balancesHolder: BalancesHolder
     protected lateinit var genericService: GenericLimitOrderService

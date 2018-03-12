@@ -7,16 +7,18 @@ import java.util.LinkedList
 class TestCashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor {
 
     private val transferOperations = LinkedList<TransferOperation>()
+    private val swapOperations = LinkedList<SwapOperation>()
 
     override fun insertTransferOperation(operation: TransferOperation) {
         this.transferOperations.add(operation)
     }
 
     override fun insertSwapOperation(operation: SwapOperation) {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+        this.swapOperations.add(operation)
     }
 
     fun clear() {
         transferOperations.clear()
+        swapOperations.clear()
     }
 }

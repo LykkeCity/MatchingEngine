@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -17,6 +18,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.OrderStatus.DisabledAsset
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
@@ -42,6 +44,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          assetsHolder: AssetsHolder,
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
+                         private val disabledAssetsCache: DisabledAssetsCache,
                          private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
@@ -88,6 +91,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Unknown asset: ${order.assetPairId}")
             writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
+            return
+        }
+
+        if (disabledAssetsCache.isDisabled(assetPair.baseAssetId) || disabledAssetsCache.isDisabled(assetPair.quotingAssetId)) {
+            order.status = DisabledAsset.name
+            rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            LOGGER.info("Disabled asset ${orderInfo(order)}")
+            writeResponse(messageWrapper, order, MessageStatus.DISABLED_ASSET)
             return
         }
 

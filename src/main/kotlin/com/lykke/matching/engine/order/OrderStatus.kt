@@ -15,6 +15,8 @@ enum class OrderStatus {
     ,NoLiquidity
     //Unknown asset
     ,UnknownAsset
+    //Disabled asset
+    ,DisabledAsset
     //Cancelled
     ,Cancelled
     //Lead to negative spread

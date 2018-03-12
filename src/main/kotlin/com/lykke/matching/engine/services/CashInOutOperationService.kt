@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.exception.BalanceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -26,6 +27,7 @@ import java.util.concurrent.BlockingQueue
 class CashInOutOperationService(private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                 private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
+                                private val disabledAssetsCache: DisabledAssetsCache,
                                 private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
                                 private val feeProcessor: FeeProcessor) : AbstractService {
 
@@ -50,6 +52,13 @@ class CashInOutOperationService(private val cashOperationsDatabaseAccessor: Cash
         val operation = WalletOperation(operationId, message.id, message.clientId, message.assetId,
                 Date(message.timestamp), message.volume, 0.0)
         val operations = mutableListOf(operation)
+
+        if (message.volume < 0 && disabledAssetsCache.isDisabled(message.assetId)) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
+            LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
+            return
+        }
 
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)

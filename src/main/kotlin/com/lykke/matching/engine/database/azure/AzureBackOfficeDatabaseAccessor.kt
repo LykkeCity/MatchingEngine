@@ -13,8 +13,8 @@ import java.util.HashMap
 class AzureBackOfficeDatabaseAccessor(dictsConfig: String) : BackOfficeDatabaseAccessor {
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(AzureBackOfficeDatabaseAccessor::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(AzureBackOfficeDatabaseAccessor::class.java.name)
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     val assetsTable: CloudTable = getOrCreateTable(dictsConfig, "Dictionaries")
