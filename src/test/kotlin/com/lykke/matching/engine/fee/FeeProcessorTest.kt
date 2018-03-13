@@ -202,7 +202,8 @@ class FeeProcessorTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.36, 0.0))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        testOrderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, price = 1.2))
+        testOrderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, price = 1.3))
+        testOrderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0, price = 1.1))
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -214,7 +215,7 @@ class FeeProcessorTest {
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.3, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("EUR"))
         val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
         assertEquals(1, fees.size)
-        assertEquals(0.36, fees.first().transfer!!.volume)
+        assertEquals(0.25, fees.first().transfer!!.volume)
         assertEquals("EUR", fees.first().transfer!!.asset)
         assertEquals(4, operations.size)
     }
