@@ -117,6 +117,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).assetPairId = assetPairId
+
         val ordersToCancel = ArrayList<NewLimitOrder>()
 
         if (cancelAllPreviousLimitOrders) {
@@ -151,22 +154,31 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         var preProcessResult: PreProcessWalletOperationsResult? = null
 
         orders.forEach { order ->
+            val orderStatusBuilder = ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(order.externalId)
+                    .setMatchingEngineId(order.id).setStatus(MessageStatus.OK.type).setVolume(order.volume).setPrice(order.price)
+
             if (order.price <= 0) {
+                orderStatusBuilder.status = MessageStatus.INVALID_PRICE.type
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
             } else if (!order.checkVolume(assetPair)) {
+                orderStatusBuilder.status = MessageStatus.TOO_SMALL_VOLUME.type
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             } else if (orderBook.leadToNegativeSpreadForClient(order)) {
+                orderStatusBuilder.status = MessageStatus.LEAD_TO_NEGATIVE_SPREAD.type
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
+                        orderStatusBuilder.status = MessageStatus.NO_LIQUIDITY.type
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.NotEnoughFunds -> {
+                        orderStatusBuilder.status = MessageStatus.NOT_ENOUGH_FUNDS.type
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.InvalidFee -> {
+                        orderStatusBuilder.status = MessageStatus.INVALID_FEE.type
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.Matched,
@@ -248,6 +260,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
+
+            responseBuilder.addStatuses(orderStatusBuilder.build())
         }
 
         val startPersistTime = System.nanoTime()
@@ -281,12 +295,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (isOldTypeMessage) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageUid.toLong()).build())
         } else {
-            val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
-            responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).setAssetPairId(assetPairId)
-            orders.forEach {
-                responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                        .setMatchingEngineId(it.id).setStatus(MessageStatus.OK.type).setVolume(it.volume).setPrice(it.price).build())
-            }
             messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
         }
 
