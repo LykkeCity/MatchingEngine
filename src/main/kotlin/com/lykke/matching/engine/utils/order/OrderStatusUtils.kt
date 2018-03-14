@@ -11,12 +11,13 @@ class OrderStatusUtils {
         }
 
         fun toMessageStatus(orderStatus: OrderStatus): MessageStatus {
-            return getStrictMapping(orderStatus) ?: mappingByConvention(orderStatus)
+            return getStrictMapping(orderStatus) ?: mappingByConvention(orderStatus) ?: MessageStatus.OK
         }
 
-        private fun mappingByConvention(orderStatus: OrderStatus): MessageStatus {
+        private fun mappingByConvention(orderStatus: OrderStatus): MessageStatus? {
             val messageStatusName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, orderStatus.name)
-            return MessageStatus.valueOf(messageStatusName)
+
+            return MessageStatus.values().findLast { messageStatus -> messageStatus.name.equals(messageStatusName) }
         }
 
         private fun getStrictMapping(orderStatus: OrderStatus): MessageStatus? {

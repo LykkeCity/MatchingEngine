@@ -18,6 +18,13 @@ class OrderStatusTest {
         }
     }
 
+    @Test
+    fun testOrderStatusConvertToMessageStatusWithStrictMapping() {
+        val messageStatus = OrderStatusUtils.toMessageStatus(OrderStatus.ReservedVolumeGreaterThanBalance)
+
+        assertEquals(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, messageStatus)
+    }
+
     private fun orderStatusNameToMessageStatus (orderStatus: String): String {
         return CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, orderStatus)
     }
