@@ -56,12 +56,12 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         return 0.0
     }
 
-    fun getAvailableBalance(clientId: String, assetId: String): Double {
+    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: Double = 0.0): Double {
         val client = balances[clientId]
         if (client != null) {
             val balance = client[assetId]
             if (balance != null) {
-                return if (balance.reserved > 0.0) balance.balance - balance.reserved else balance.balance
+                return if (balance.reserved > reservedAdjustment) balance.balance - balance.reserved + reservedAdjustment else balance.balance
             }
         }
 

@@ -8,6 +8,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.LimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -26,14 +27,15 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               private val orderBookQueue: BlockingQueue<OrderBook>,
-                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService {
+                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                              limitOrderProcessorFactory: LimitOrderProcessorFactory? = null): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var messagesCount: Long = 0
+    private val limitOrderProcessor = limitOrderProcessorFactory?.create(LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val order: NewLimitOrder?
@@ -50,13 +52,20 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderCancel
             LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
-            order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId, true)
+            var isStopOrder = false
+            val limitOrder = genericLimitOrderService.cancelLimitOrder(message.limitOrderId, true)
+            if (limitOrder != null) {
+                order = limitOrder
+            } else {
+                order = genericLimitOrderService.cancelStopLimitOrder(message.limitOrderId, true)
+                isStopOrder = true
+            }
 
             if (order != null) {
                 val now = Date()
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-                val limitVolume = order.reservedLimitVolume ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
+                val limitVolume = order.reservedLimitVolume ?: if (isStopOrder) 0.0 else if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
 
                 val balance = balancesHolder.getBalance(order.clientId, limitAsset)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
@@ -69,9 +78,13 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 report.orders.add(LimitOrderWithTrades(order))
                 limitOrderReportQueue.put(report)
 
-                val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, genericLimitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
-                orderBookQueue.put(rabbitOrderBook)
-                rabbitOrderBookQueue.put(rabbitOrderBook)
+                if (!isStopOrder) {
+                    val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, genericLimitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
+                    orderBookQueue.put(rabbitOrderBook)
+                    rabbitOrderBookQueue.put(rabbitOrderBook)
+
+                    limitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+                }
             } else {
                 LOGGER.info("Unable to find order id: ${message.limitOrderId}")
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.LIMIT_ORDER_NOT_FOUND.type).build())
