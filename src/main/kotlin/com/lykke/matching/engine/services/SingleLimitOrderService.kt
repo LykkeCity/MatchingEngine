@@ -26,6 +26,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
@@ -113,7 +114,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (!checkFee(order.fee, order.fees, assetPair)) {
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} has invalid fee")
             order.status = OrderStatus.InvalidFee.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_FEE, now, isCancelOrders)
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)
 
             if (isCancelOrders) {
                 val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
@@ -128,57 +129,58 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (disabledAssetsCache.isDisabled(assetPair.baseAssetId) || disabledAssetsCache.isDisabled(assetPair.quotingAssetId))  {
             LOGGER.info("$orderInfo: disabled asset")
             order.status = OrderStatus.DisabledAsset.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.DISABLED_ASSET, now, isCancelOrders)
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)
             return
         }
 
         if (order.price <= 0.0) {
             LOGGER.info("$orderInfo price is invalid")
             order.status = OrderStatus.InvalidPrice.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_PRICE, now, isCancelOrders)
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)
             return
         }
 
         if (!order.checkVolume(assetsPairsHolder))  {
             LOGGER.info("$orderInfo volume is too small")
             order.status = OrderStatus.TooSmallVolume.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.TOO_SMALL_VOLUME, now, isCancelOrders)
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)
             return
         }
 
         if (balance - (reservedBalance - cancelVolume) < limitVolume) {
             LOGGER.info("$orderInfo not enough funds to reserve")
             order.status = OrderStatus.NotEnoughFunds.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, now, isCancelOrders)
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)
             return
         }
 
         if (orderBook.leadToNegativeSpreadForClient(order)) {
             LOGGER.info("$orderInfo lead to negative spread")
             order.status = OrderStatus.LeadToNegativeSpread.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.LEAD_TO_NEGATIVE_SPREAD, now, isCancelOrders)
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)
             return
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
             val limitOrder = matchingResult.order as NewLimitOrder
-            when (OrderStatus.valueOf(matchingResult.order.status)) {
+            val orderStatus = matchingResult.order.status
+            when (OrderStatus.valueOf(orderStatus)) {
                 OrderStatus.NoLiquidity -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
-                    writeResponse(messageWrapper, limitOrder, MessageStatus.NO_LIQUIDITY)
+                    writeResponse(messageWrapper, limitOrder, OrderStatusUtils.toMessageStatus(orderStatus))
                 }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
-                    writeResponse(messageWrapper, limitOrder, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")
+                    writeResponse(messageWrapper, limitOrder, OrderStatusUtils.toMessageStatus(orderStatus), "Reserved volume is higher than available balance")
                 }
                 OrderStatus.NotEnoughFunds -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
-                    writeResponse(messageWrapper, limitOrder, MessageStatus.NOT_ENOUGH_FUNDS)
+                    writeResponse(messageWrapper, limitOrder, OrderStatusUtils.toMessageStatus(orderStatus))
                 }
                 OrderStatus.InvalidFee -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
-                    writeResponse(messageWrapper, limitOrder, MessageStatus.INVALID_FEE)
+                    writeResponse(messageWrapper, limitOrder, OrderStatusUtils.toMessageStatus(orderStatus))
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing-> {

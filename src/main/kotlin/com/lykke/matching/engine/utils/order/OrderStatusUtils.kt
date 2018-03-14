@@ -5,6 +5,10 @@ import com.lykke.matching.engine.order.OrderStatus
 
 class OrderStatusUtils {
     companion object {
+        fun toMessageStatus(orderStatus: String): MessageStatus {
+            return toMessageStatus(OrderStatus.valueOf(orderStatus))
+        }
+
         fun toMessageStatus(orderStatus: OrderStatus): MessageStatus {
             return when (orderStatus) {
                 OrderStatus.InvalidFee -> MessageStatus.INVALID_FEE
