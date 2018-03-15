@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.utils.order
 
-import com.google.common.base.CaseFormat
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.order.OrderStatus
 
@@ -11,19 +10,16 @@ class OrderStatusUtils {
         }
 
         fun toMessageStatus(orderStatus: OrderStatus): MessageStatus {
-            return getStrictMapping(orderStatus) ?: mappingByConvention(orderStatus) ?: MessageStatus.OK
-        }
-
-        private fun mappingByConvention(orderStatus: OrderStatus): MessageStatus? {
-            val messageStatusName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, orderStatus.name)
-
-            return MessageStatus.values().findLast { messageStatus -> messageStatus.name.equals(messageStatusName) }
-        }
-
-        private fun getStrictMapping(orderStatus: OrderStatus): MessageStatus? {
             return when (orderStatus) {
+                OrderStatus.InvalidFee -> MessageStatus.INVALID_FEE
+                OrderStatus.DisabledAsset -> MessageStatus.DISABLED_ASSET
+                OrderStatus.InvalidPrice -> MessageStatus.INVALID_PRICE
+                OrderStatus.TooSmallVolume -> MessageStatus.TOO_SMALL_VOLUME
+                OrderStatus.LeadToNegativeSpread -> MessageStatus.LEAD_TO_NEGATIVE_SPREAD
+                OrderStatus.NoLiquidity -> MessageStatus.NO_LIQUIDITY
                 OrderStatus.ReservedVolumeGreaterThanBalance -> MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE
-                else -> null
+                OrderStatus.NotEnoughFunds -> MessageStatus.NOT_ENOUGH_FUNDS
+                else -> MessageStatus.OK
             }
         }
     }
