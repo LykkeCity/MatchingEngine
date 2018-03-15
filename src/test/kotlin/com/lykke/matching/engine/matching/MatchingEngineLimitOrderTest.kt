@@ -243,6 +243,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyOneToOne2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 89.1))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.19, volume = -89.1, reservedVolume = 89.1))
         initService()
 
@@ -265,16 +266,23 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         assertCashMovementsEquals(
                 listOf(
                         WalletOperation("", null, "Client1", "EUR", now, 89.1, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -106.03, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -106.03, 0.0)
+                ),
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
                         WalletOperation("", null, "Client2", "EUR", now, -89.1, -89.1),
                         WalletOperation("", null, "Client2", "USD", now, 106.03, 0.0)
                 ),
-                matchingResult.cashMovements
+                matchingResult.oppositeCashMovements
         )
     }
 
     @Test
     fun testMatchLimitOrderSellOneToOne2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 110.24))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.21, volume = 91.1, reservedVolume = 110.24))
         initService()
 
@@ -296,13 +304,19 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, 91.1, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -110.23, -110.23),
-                        WalletOperation("", null, "Client1", "USD", now, 0.0, -0.01),
                         WalletOperation("", null, "Client2", "EUR", now, -91.1, 0.0),
                         WalletOperation("", null, "Client2", "USD", now, 110.23, 0.0)
                 ),
-                matchingResult.cashMovements
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
+                        WalletOperation("", null, "Client1", "EUR", now, 91.1, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -110.23, -110.23),
+                        WalletOperation("", null, "Client1", "USD", now, 0.0, -0.01)
+                ),
+                matchingResult.oppositeCashMovements
         )
     }
 
@@ -459,7 +473,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
             assertNotNull(it.order.lastMatchTime)
             assertTrue { it.order.lastMatchTime!! > now }
         }
-        assertTrue { matchingResult.order == limitOrder }
+        assertEquals(matchingResult.order.externalId, limitOrder.externalId)
         assertNotNull(limitOrder.lastMatchTime)
         assertTrue { limitOrder.lastMatchTime!! > now }
         assertEquals(-0.09, matchingResult.uncompletedLimitOrder!!.remainingVolume, DELTA)

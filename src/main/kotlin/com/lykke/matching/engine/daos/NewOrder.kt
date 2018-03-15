@@ -7,20 +7,20 @@ import java.io.Serializable
 import java.util.Date
 
 abstract class NewOrder(
-        var id: String,
-        var externalId: String,
-        var assetPairId: String,
-        var clientId: String,
-        var volume: Double,
+        val id: String,
+        val externalId: String,
+        val assetPairId: String,
+        val clientId: String,
+        val volume: Double,
         var status: String,
-        var createdAt: Date,
-        var registered: Date,
+        val createdAt: Date,
+        val registered: Date,
         var reservedLimitVolume: Double?,
         @Version (1) // for compatibility with old serialized orders
-        var fee: FeeInstruction?,
+        val fee: FeeInstruction?,
         @Version (2)
         val fees: List<NewFeeInstruction>?
-) : Serializable {
+) : Serializable, Copyable {
 
     fun getAbsVolume(): Double {
         return Math.abs(volume)
@@ -46,5 +46,11 @@ abstract class NewOrder(
 
     fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
         return checkVolume(assetsPairsHolder.getAssetPair(assetPairId))
+    }
+
+    override fun applyToOrigin(origin: Copyable) {
+        origin as NewOrder
+        origin.status = status
+        origin.reservedLimitVolume = reservedLimitVolume
     }
 }

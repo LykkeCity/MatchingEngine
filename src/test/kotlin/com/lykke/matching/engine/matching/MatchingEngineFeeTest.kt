@@ -2,6 +2,7 @@ package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction
@@ -13,6 +14,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testSellLimitOrderFee() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 121.12))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.21111, volume = 100.0,
                 fee = buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -45,19 +47,26 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, 97.8888, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -121.11, -121.11),
                         WalletOperation("", null, "Client2", "EUR", now, -100.0, 0.0),
                         WalletOperation("", null, "Client2", "USD", now, 119.89, 0.0),
-                        WalletOperation("", null, "Client3", "USD", now, 1.22, 0.0, true),
+                        WalletOperation("", null, "Client3", "USD", now, 1.22, 0.0, true)
+                ),
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
+                        WalletOperation("", null, "Client1", "EUR", now, 97.8888, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -121.11, -121.11),
                         WalletOperation("", null, "Client4", "EUR", now, 2.1112, 0.0, true)
                 ),
-                matchingResult.cashMovements
+                matchingResult.oppositeCashMovements
         )
     }
 
     @Test
     fun testBuyLimitOrderFee() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -80,19 +89,26 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client2", "EUR", now, -100.0, -100.0),
-                        WalletOperation("", null, "Client2", "USD", now, 117.6, 0.0),
                         WalletOperation("", null, "Client1", "EUR", now, 99.0, 0.0),
                         WalletOperation("", null, "Client1", "USD", now, -120.0, 0.0),
-                        WalletOperation("", null, "Client4", "USD", now, 2.4, 0.0, true),
                         WalletOperation("", null, "Client3", "EUR", now, 1.0, 0.0, true)
                 ),
-                matchingResult.cashMovements
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
+                        WalletOperation("", null, "Client2", "EUR", now, -100.0, -100.0),
+                        WalletOperation("", null, "Client2", "USD", now, 117.6, 0.0),
+                        WalletOperation("", null, "Client4", "USD", now, 2.4, 0.0, true)
+                ),
+                matchingResult.oppositeCashMovements
         )
     }
 
     @Test
     fun testSellMarketOrderFee() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 120.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -115,19 +131,26 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, 98.0, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -120.0, -120.0),
                         WalletOperation("", null, "Client2", "EUR", now, -100.0, 0.0),
                         WalletOperation("", null, "Client2", "USD", now, 118.8, 0.0),
-                        WalletOperation("", null, "Client3", "USD", now, 1.2, 0.0, true),
+                        WalletOperation("", null, "Client3", "USD", now, 1.2, 0.0, true)
+                ),
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
+                        WalletOperation("", null, "Client1", "EUR", now, 98.0, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -120.0, -120.0),
                         WalletOperation("", null, "Client4", "EUR", now, 2.0, 0.0, true)
                 ),
-                matchingResult.cashMovements
+                matchingResult.oppositeCashMovements
         )
     }
 
     @Test
     fun testBuyMarketOrderFee() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -150,14 +173,20 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client2", "EUR", now, -100.0, -100.0),
-                        WalletOperation("", null, "Client2", "USD", now, 117.6, 0.0),
                         WalletOperation("", null, "Client1", "EUR", now, 99.0, 0.0),
                         WalletOperation("", null, "Client1", "USD", now, -120.0, 0.0),
-                        WalletOperation("", null, "Client4", "USD", now, 2.4, 0.0, true),
                         WalletOperation("", null, "Client3", "EUR", now, 1.0, 0.0, true)
                 ),
-                matchingResult.cashMovements
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
+                        WalletOperation("", null, "Client2", "EUR", now, -100.0, -100.0),
+                        WalletOperation("", null, "Client2", "USD", now, 117.6, 0.0),
+                        WalletOperation("", null, "Client4", "USD", now, 2.4, 0.0, true)
+                ),
+                matchingResult.oppositeCashMovements
         )
     }
 

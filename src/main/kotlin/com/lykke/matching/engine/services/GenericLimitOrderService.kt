@@ -28,14 +28,14 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                private val applicationSettingsCache: ApplicationSettingsCache) {
 
     companion object {
-        val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
+        private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
     }
 
     //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
     private val limitOrdersMap = HashMap<String, NewLimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
-    private val notEnoughFundsLimitOrderCancelService: NotEnoughFundsLimitOrderCancelService = NotEnoughFundsLimitOrderCancelService(this, assetsPairsHolder, balancesHolder, applicationSettingsCache)
+    private val walletOperationsCalculator: WalletOperationsCalculator = WalletOperationsCalculator(assetsPairsHolder, balancesHolder, applicationSettingsCache)
     val initialOrdersCount: Int
 
     init {
@@ -53,8 +53,8 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     }
 
     fun addOrder(order: NewLimitOrder) {
-        limitOrdersMap.put(order.externalId, order)
-        clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList<NewLimitOrder>() }.add(order)
+        limitOrdersMap[order.externalId] = order
+        clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
         quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
@@ -62,10 +62,6 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         orders.forEach { order ->
             addOrder(order)
         }
-    }
-
-    fun updateLimitOrder(order: NewLimitOrder) {
-        updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
     fun moveOrdersToDone(orders: List<NewLimitOrder>) {
@@ -161,7 +157,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return result
     }
 
-    fun cancelNotEnoughFundsOrder(params: NotEnoughFundsLimitOrderCancelParams): NotEnoughFundsLimitOrderCancelResult {
-        return notEnoughFundsLimitOrderCancelService.cancelOrder(params)
+    fun calculateWalletOperationsForCancelledOrders(orders: List<NewLimitOrder>): CancelledOrdersOperationsResult {
+        return walletOperationsCalculator.calculateForCancelledOrders(orders)
     }
 }
