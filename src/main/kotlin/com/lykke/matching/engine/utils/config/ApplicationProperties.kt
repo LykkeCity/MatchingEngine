@@ -26,6 +26,9 @@ class ApplicationProperties(private val configDatabaseAccessor: ConfigDatabaseAc
         configDatabaseAccessor.loadConfigs()?.let { settings = toSettings(it)}
     }
 
+    fun getSettings(): Settings {
+        return this.settings
+    }
 
     private fun toSettings(settingsMap: Map<String, Set<String>>): Settings {
         return Settings(settingsMap[DISABLED_ASSETS],settingsMap[TRUSTED_CLIENTS])
