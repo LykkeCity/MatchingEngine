@@ -1,17 +1,12 @@
 package com.lykke.matching.engine.utils.config
 
-import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
+import com.lykke.matching.engine.database.ConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.DataCache
-import com.lykke.utils.logging.MetricsLogger
-import com.lykke.utils.logging.ThrottlingLogger
 import kotlin.concurrent.fixedRateTimer
 
-class ApplicationProperties(private val configDatabaseAccessor: AzureConfigDatabaseAccessor,
+class ApplicationProperties(private val configDatabaseAccessor: ConfigDatabaseAccessor,
                             updateInterval: Long? = null) : DataCache() {
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(ApplicationProperties::class.java.name)
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
-
         private val DISABLED_ASSETS = "DisabledAssets"
         private val TRUSTED_CLIENTS = "TrustedClients"
     }
