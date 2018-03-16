@@ -44,15 +44,10 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         var totalCount = 0
         val checkAndAddToCancel: (order: NewLimitOrder) -> Unit = { order ->
             try {
-
                 val assetPair = try {
                     assetsPairsHolder.getAssetPair(order.assetPairId)
                 } catch (e: Exception) {
-                    try {
-                        dictionariesDatabaseAccessor.loadAssetPair(order.assetPairId, true)
-                    } catch (e: Exception) {
-                        throw e
-                    }
+                    dictionariesDatabaseAccessor.loadAssetPair(order.assetPairId, true)
                 }
 
                 if (assetPair == null) {
