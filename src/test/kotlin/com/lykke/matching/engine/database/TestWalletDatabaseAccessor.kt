@@ -10,11 +10,23 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     private val wallets = HashMap<String, Wallet>()
 
     override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
-        return balances
+        return balances.mapValues { clientBalanceEntry ->
+            clientBalanceEntry.value.mapValues { assetBalanceEntry ->
+                val assetBalance = assetBalanceEntry.value
+                AssetBalance(assetBalance.asset, assetBalance.balance, assetBalance.reserved)
+            }.toMutableMap()
+        }.toMap(HashMap())
     }
 
     override fun loadWallets(): HashMap<String, Wallet> {
-        return wallets
+        return wallets.mapValues { walletEntry ->
+            val wallet = walletEntry.value
+            Wallet(wallet.clientId, wallet.balances.map { assetBalanceEntry ->
+                val assetId = assetBalanceEntry.key
+                val assetBalance = assetBalanceEntry.value
+                AssetBalance(assetId, assetBalance.balance, assetBalance.reserved)
+            })
+        }.toMap(HashMap())
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {

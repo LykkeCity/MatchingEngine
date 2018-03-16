@@ -449,6 +449,7 @@ class FeeProcessorTest {
     @Test
     fun testMakerMultipleFee() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1000.0))
+        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -518,6 +519,7 @@ class FeeProcessorTest {
     @Test
     fun testExternalMultipleFeeNotEnoughFunds() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1.12))
+        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
