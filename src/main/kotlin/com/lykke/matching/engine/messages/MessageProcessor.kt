@@ -154,8 +154,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString), 60000))
 
         val applicationSettingsCache = ApplicationSettingsCache(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
-        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
-        this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
+        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, applicationSettingsCache)
+        this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder, applicationSettingsCache)

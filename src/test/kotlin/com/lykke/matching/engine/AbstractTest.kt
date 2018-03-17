@@ -31,8 +31,6 @@ abstract class AbstractTest {
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-    protected val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-    protected val applicationSettings = ApplicationSettingsCache(testConfigDatabaseAccessor)
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -52,8 +50,6 @@ abstract class AbstractTest {
     protected val applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
     protected lateinit var balancesHolder: BalancesHolder
 
-    protected val trustedClients = mutableListOf<String>()
-
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
@@ -63,8 +59,8 @@ abstract class AbstractTest {
     protected open fun initServices() {
         assetsCache.update()
         assetPairsCache.update()
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, notificationQueue, balanceUpdateQueue, trustedClients.toSet())
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, notificationQueue, balanceUpdateQueue, applicationSettingsCache)
+        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)

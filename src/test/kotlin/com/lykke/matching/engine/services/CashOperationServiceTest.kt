@@ -48,8 +48,8 @@ class CashOperationServiceTest {
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
-    private val balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
     private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
+    private val balancesHolder = BalancesHolder(testDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
     private val testFileOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private lateinit var genericLimitOrderService: GenericLimitOrderService
     private val DELTA = 1e-15
@@ -72,7 +72,8 @@ class CashOperationServiceTest {
 
     private fun initFeeProcessor() {
         assetsPairsCache.update()
-        genericLimitOrderService = GenericLimitOrderService(testFileOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), emptySet())
+        genericLimitOrderService = GenericLimitOrderService(testFileOrderDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 

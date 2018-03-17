@@ -45,6 +45,8 @@ class MultiLimitOrderServiceTest {
     val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    val configDatabaseAccessor = TestSettingsDatabaseAccessor()
+
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -52,18 +54,21 @@ class MultiLimitOrderServiceTest {
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
+    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
+    private val applicationSettingsCache = ApplicationSettingsCache(configDatabaseAccessor)
     val trustedClients = setOf("Client1", "Client5")
-    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
+    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
     var genericLimitService = initLimitService()
     var service = initService()
 
     @Before
     fun setUp() {
+        configDatabaseAccessor.addTrustedClient("Client1")
+        configDatabaseAccessor.addTrustedClient("Client5")
+
         testWalletDatabaseAccessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
@@ -660,7 +665,7 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.4875, oldOrder.price)
     }
 
-    private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+    private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
     private fun initSingleLimitOrderService() = SingleLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
     private fun initService() = MultiLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
 

@@ -51,10 +51,10 @@ class MarketOrderService_Dust_Test {
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
     private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
-    val trustedClients = emptySet<String>()
-    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
-    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
+
+    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
     var service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
     val DELTA = 1e-9
 
@@ -92,7 +92,7 @@ class MarketOrderService_Dust_Test {
     }
 
     fun initServices() {
-        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
     }
 

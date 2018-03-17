@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -24,7 +25,7 @@ class NotEnoughFundsLimitOrderCancelService(
         private val genericLimitOrderService: GenericLimitOrderService,
         private val assetsPairsHolder: AssetsPairsHolder,
         private val balancesHolder: BalancesHolder,
-        private val trustedClients: Set<String>
+        private val applicationSettingsCache: ApplicationSettingsCache
 ) {
 
     fun cancelOrder(params: NotEnoughFundsLimitOrderCancelParams): NotEnoughFundsLimitOrderCancelResult {
@@ -37,7 +38,7 @@ class NotEnoughFundsLimitOrderCancelService(
         val limitOrderWithTrades = LinkedList<LimitOrderWithTrades>()
 
         orders.forEach { order ->
-            val isTrustedClientOrder = trustedClients.contains(order.clientId)
+            val isTrustedClientOrder = applicationSettingsCache.trustedClients.contains(order.clientId)
 
             if (!isTrustedClientOrder) {
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)

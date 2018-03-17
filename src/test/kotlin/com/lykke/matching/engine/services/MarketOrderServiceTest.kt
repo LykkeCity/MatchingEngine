@@ -56,11 +56,15 @@ class MarketOrderServiceTest {
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
     private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
-    val trustedClients = emptySet<String>()
-    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
 
-    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
-    var service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
+    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder,
+            LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
+
+    var limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder,
+            balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
+    var service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder,
+            assetsPairsHolder, balancesHolder, applicationSettingsCache, limitOrdersQueue,
+            trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
 
     val DELTA = 1e-9
 
@@ -96,8 +100,11 @@ class MarketOrderServiceTest {
     }
 
     fun initServices() {
-        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
-        service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
+        limitOrderService = GenericLimitOrderService(testLimitDatabaseAccessor, assetsHolder, assetsPairsHolder,
+                balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
+        service = MarketOrderService(testBackOfficeDatabaseAccessor, limitOrderService, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, limitOrdersQueue,
+                trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
     }
 
     @Test
