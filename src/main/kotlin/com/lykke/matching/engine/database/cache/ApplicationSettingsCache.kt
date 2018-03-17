@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.database.ConfigDatabaseAccessor
-import com.lykke.matching.engine.utils.config.Settings
 import kotlin.concurrent.fixedRateTimer
 
 class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabaseAccessor,
@@ -20,17 +19,16 @@ class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabas
         }
     }
 
-    private var settings: Settings = Settings()
+    private lateinit var settings: Map<String, Set<String>>
 
     override fun update() {
-        configDatabaseAccessor.loadConfigs()?.let { settings = toSettings(it)}
+        configDatabaseAccessor.loadConfigs()?.let { settings = it}
     }
 
-    fun getSettings(): Settings {
-        return this.settings
-    }
+    val trustedClients: Set<String>
+    get() = this.settings[TRUSTED_CLIENTS]?.toMutableSet() ?: HashSet()
 
-    private fun toSettings(settingsMap: Map<String, Set<String>>): Settings {
-        return Settings(settingsMap[DISABLED_ASSETS], settingsMap[TRUSTED_CLIENTS])
+    fun isAssetDisabled(asset: String): Boolean {
+        return this.settings[DISABLED_ASSETS]?.contains(asset) ?: false
     }
 }
