@@ -22,7 +22,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
-import com.lykke.matching.engine.utils.config.ApplicationProperties
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractTest {
@@ -33,7 +33,7 @@ abstract class AbstractTest {
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
     protected val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-    protected val applicationProperties = ApplicationProperties(testConfigDatabaseAccessor)
+    protected val applicationSettings = ApplicationSettingsCache(testConfigDatabaseAccessor)
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()

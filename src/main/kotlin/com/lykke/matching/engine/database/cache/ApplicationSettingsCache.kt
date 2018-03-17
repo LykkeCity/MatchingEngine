@@ -1,11 +1,11 @@
-package com.lykke.matching.engine.utils.config
+package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.database.ConfigDatabaseAccessor
-import com.lykke.matching.engine.database.cache.DataCache
+import com.lykke.matching.engine.utils.config.Settings
 import kotlin.concurrent.fixedRateTimer
 
-class ApplicationProperties(private val configDatabaseAccessor: ConfigDatabaseAccessor,
-                            updateInterval: Long? = null) : DataCache() {
+class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabaseAccessor,
+                               updateInterval: Long? = null) : DataCache() {
     companion object {
         private val DISABLED_ASSETS = "DisabledAssets"
         private val TRUSTED_CLIENTS = "TrustedClients"
@@ -31,6 +31,6 @@ class ApplicationProperties(private val configDatabaseAccessor: ConfigDatabaseAc
     }
 
     private fun toSettings(settingsMap: Map<String, Set<String>>): Settings {
-        return Settings(settingsMap[DISABLED_ASSETS],settingsMap[TRUSTED_CLIENTS])
+        return Settings(settingsMap[DISABLED_ASSETS], settingsMap[TRUSTED_CLIENTS])
     }
 }
