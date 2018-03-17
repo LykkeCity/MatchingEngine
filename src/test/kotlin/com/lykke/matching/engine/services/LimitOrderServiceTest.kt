@@ -88,7 +88,6 @@ class LimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
 
         configDatabaseAccessor.addTrustedClient("Client3")
-        print("")
     }
 
     @Test
