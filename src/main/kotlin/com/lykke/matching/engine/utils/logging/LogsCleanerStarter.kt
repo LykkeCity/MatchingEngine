@@ -5,21 +5,28 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.files.clean.LogFilesCleaner
 import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
+import org.springframework.stereotype.Component
+import javax.annotation.PostConstruct
 
-fun startLogsCleaner(config: Config) {
-    try {
-        val logFilesCleanerConfig = config.me.logFilesCleaner
-        val logFilesCleanerConfigWithDefaults = LogFilesCleanerConfig(logFilesCleanerConfig.enabled,
-                logFilesCleanerConfig.directory,
-                logFilesCleanerConfig.period,
-                logFilesCleanerConfig.connectionString ?: config.me.db.messageLogConnString,
-                logFilesCleanerConfig.blobContainerName,
-                logFilesCleanerConfig.uploadDaysThreshold,
-                logFilesCleanerConfig.archiveDaysThreshold)
+@Component
+open class LogsCleanerStarter {
 
-        LogFilesCleaner.start(logFilesCleanerConfigWithDefaults)
-    } catch (e: Exception) {
-        AppInitializer.teeLog("Unable to start log files cleaner: ${e.message}")
-        LOGGER.error(null, e)
+    @PostConstruct
+    fun startLogsCleaner(config: Config) {
+        try {
+            val logFilesCleanerConfig = config.me.logFilesCleaner
+            val logFilesCleanerConfigWithDefaults = LogFilesCleanerConfig(logFilesCleanerConfig.enabled,
+                    logFilesCleanerConfig.directory,
+                    logFilesCleanerConfig.period,
+                    logFilesCleanerConfig.connectionString ?: config.me.db.messageLogConnString,
+                    logFilesCleanerConfig.blobContainerName,
+                    logFilesCleanerConfig.uploadDaysThreshold,
+                    logFilesCleanerConfig.archiveDaysThreshold)
+
+            LogFilesCleaner.start(logFilesCleanerConfigWithDefaults)
+        } catch (e: Exception) {
+            AppInitializer.teeLog("Unable to start log files cleaner: ${e.message}")
+            LOGGER.error(null, e)
+        }
     }
 }

@@ -12,11 +12,13 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.1'
         classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
     }
 }
 
 apply plugin: "idea"
 apply plugin: "kotlin"
+apply plugin: "kotlin-spring"
 apply plugin: "application"
 apply plugin: "com.google.protobuf"
 apply plugin: 'org.springframework.boot'
@@ -44,8 +46,8 @@ dependencies {
     compile 'de.ruedigermoeller:fst:2.52'
 
     compile('org.springframework.boot:spring-boot-starter')
-    testCompile('org.springframework.boot:spring-boot-starter-test')
 
+    testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile  'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }

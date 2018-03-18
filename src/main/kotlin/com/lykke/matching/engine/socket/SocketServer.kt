@@ -6,6 +6,8 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.net.ServerSocket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
@@ -13,7 +15,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 
-class SocketServer(private val config: Config, private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+@Component
+class SocketServer(private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+
+    @Autowired
+    private lateinit var config: Config
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
@@ -68,10 +74,7 @@ class SocketServer(private val config: Config, private val initializationComplet
     }
 
     private fun getWhiteList() : List<String>? {
-        if (config.me.whiteList != null) {
-            return config.me.whiteList.split(";")
-        }
-        return null
+        return config.me.whiteList?.split(";") ?: null
     }
 
     private fun connect(handler: ClientHandler) {
