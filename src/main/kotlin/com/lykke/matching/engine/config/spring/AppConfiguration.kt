@@ -4,7 +4,9 @@ import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
+import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
 import com.lykke.utils.logging.MetricsLogger
+import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,8 +27,18 @@ class AppConfiguration {
         }
     }
 
+    @Bean
+    fun azureStatusProcessor(): Runnable {
+        return AliveStatusProcessorFactory
+                .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
+                        appName = "MatchingEngine",
+                        config = config.me.aliveStatus)
+    }
+
     @PostConstruct
     fun init() {
         AppInitializer.init()
+        MetricsLogger.init("ME", config.slackNotifications)
+        ThrottlingLogger.init(config.throttlingLogger)
     }
 }

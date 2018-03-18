@@ -20,6 +20,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Component
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
@@ -44,6 +45,8 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                                   private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                   private val trustedClients: Set<String>) {
+
+
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
 
