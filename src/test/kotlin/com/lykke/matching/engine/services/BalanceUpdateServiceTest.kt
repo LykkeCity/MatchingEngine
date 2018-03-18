@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -28,7 +30,10 @@ class BalanceUpdateServiceTest {
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
+    private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
+
+    private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue,
+            balanceUpdateQueue, applicationSettingsCache)
 
     @Before
     fun setUp() {
