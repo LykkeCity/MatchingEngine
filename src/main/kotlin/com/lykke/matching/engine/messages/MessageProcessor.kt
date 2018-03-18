@@ -130,7 +130,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
-    private val historyTicksService: HistoryTicksService
+    private var historyTicksService: HistoryTicksService? = null
 
     private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
@@ -140,10 +140,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val processedMessagesCache: ProcessedMessagesCache
     private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
 
-    private val bestPriceBuilder: Timer
-    private val candlesBuilder: Timer
-    private val hoursCandlesBuilder: Timer
-    private val historyTicksBuilder: Timer
+    private var bestPriceBuilder: Timer? = null
+    private var candlesBuilder: Timer? = null
+    private var hoursCandlesBuilder: Timer? = null
+    private var historyTicksBuilder: Timer? = null
 
     private val performanceStatsHolder = PerformanceStatsHolder()
 
@@ -153,6 +153,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
+        val isDevProfile = applicationContext.environment.acceptsProfiles("dev")
+
         val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor()
         this.walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
 
@@ -188,8 +190,12 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         }
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
-        this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
-        historyTicksService.init()
+
+        if (!isDevProfile) {
+            this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
+            historyTicksService?.init()
+        }
+
         this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
         balanceUpdateHandler.start()
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
@@ -207,72 +213,76 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue)
 
+        val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineCashOperations")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.reservedCashOperations, rabbitReservedCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineReservedCashOperations")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineReservedCashOperations")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineTransfers")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineSwapOperations")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineSwapOperations")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineBalanceUpdates")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineBalanceUpdates")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineMarketOrders")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders")))
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitClientLimitOrdersQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "MatchingEngineLimitOrders")))
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders")))
 
-        this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
-            limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
-        }
-
-        val time = LocalDateTime.now()
-        this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano/1000000) + 1000 * (63 - time.second)).toLong(), period = config.me.candleSaverInterval) {
-            tradesInfoService.saveCandles()
-        }
-
-        this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
-            tradesInfoService.saveHourCandles()
-        }
-
-        this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
-            historyTicksService.buildTicks()
-        }
-
-        val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
-        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
-            queueSizeLogger.log()
-        }
-
-        val healthService = MonitoringStatsCollector()
-        val monitoringDatabaseAccessor = AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString)
-        fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
-            val result = healthService.collectMonitoringResult()
-            if (result != null) {
-                MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
-                        "RAM: ${result.freeMemory}/${result.totalMemory}, " +
-                        "heap: ${result.freeHeap}/${result.totalHeap}/${result.maxHeap}, " +
-                        "swap: ${result.freeSwap}/${result.totalSwap}, " +
-                        "threads: ${result.threadsCount}")
-
-                monitoringDatabaseAccessor.saveMonitoringResult(result)
+        if(!isDevProfile) {
+            this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
+                limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
             }
-        }
 
-        val performanceStatsLogger = PerformanceStatsLogger(monitoringDatabaseAccessor)
-        fixedRateTimer(name = "PerformanceStatsLogger", initialDelay = config.me.performanceStatsInterval, period = config.me.performanceStatsInterval) {
-            performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
-        }
+            val time = LocalDateTime.now()
+            this.candlesBuilder = fixedRateTimer(name = "CandleBuilder", initialDelay = ((1000 - time.nano / 1000000) + 1000 * (63 - time.second)).toLong(), period = config.me.candleSaverInterval) {
+                tradesInfoService.saveCandles()
+            }
 
-        KeepAliveStarter.start(config.me.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
+            this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
+                tradesInfoService.saveHourCandles()
+            }
+
+            this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
+                historyTicksService?.buildTicks()
+            }
+
+            val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
+            fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
+                queueSizeLogger.log()
+            }
+
+            val healthService = MonitoringStatsCollector()
+            val monitoringDatabaseAccessor = AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString)
+            fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
+                val result = healthService.collectMonitoringResult()
+                if (result != null) {
+                    MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
+                            "RAM: ${result.freeMemory}/${result.totalMemory}, " +
+                            "heap: ${result.freeHeap}/${result.totalHeap}/${result.maxHeap}, " +
+                            "swap: ${result.freeSwap}/${result.totalSwap}, " +
+                            "threads: ${result.threadsCount}")
+
+                    monitoringDatabaseAccessor.saveMonitoringResult(result)
+                }
+            }
+
+            val performanceStatsLogger = PerformanceStatsLogger(monitoringDatabaseAccessor)
+            fixedRateTimer(name = "PerformanceStatsLogger", initialDelay = config.me.performanceStatsInterval, period = config.me.performanceStatsInterval) {
+                performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
+            }
+
+            KeepAliveStarter.start(config.me.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
+
+        }
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
