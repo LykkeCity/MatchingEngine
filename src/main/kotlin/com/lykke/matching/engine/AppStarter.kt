@@ -7,6 +7,9 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.core.env.SimpleCommandLinePropertySource
+
+
 
 val LOGGER = Logger.getLogger("AppStarter")
 
@@ -28,7 +31,15 @@ open class AppStarter {
             return
         }
 
-        SpringApplication.run(AppStarter::class.java, *args)
+        val commandLineArguments = SimpleCommandLinePropertySource(*args)
+
+
+        val context = SpringApplication.run(AppStarter::class.java, *args)
+
+        context
+                .environment
+                .propertySources
+                .addFirst(commandLineArguments)
 
         try {
             azureStatusProcessor.run()
