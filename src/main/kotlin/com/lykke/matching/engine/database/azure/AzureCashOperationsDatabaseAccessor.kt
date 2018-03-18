@@ -8,7 +8,10 @@ import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.TableOperation
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
+@Component
 class AzureCashOperationsDatabaseAccessor(balancesConfig: String) : CashOperationsDatabaseAccessor {
 
     companion object {
@@ -16,7 +19,12 @@ class AzureCashOperationsDatabaseAccessor(balancesConfig: String) : CashOperatio
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val transferOperationsTable = getOrCreateTable(balancesConfig, "SwapOperationsCash")
+    @Value("\${azure.cache.operation.table}")
+    private lateinit var tableName: String
+
+
+
+    private val transferOperationsTable = getOrCreateTable(balancesConfig, tableName)
 
     override fun insertTransferOperation(operation: TransferOperation) {
         try {

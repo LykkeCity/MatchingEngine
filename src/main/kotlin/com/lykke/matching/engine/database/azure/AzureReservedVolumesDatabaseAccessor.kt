@@ -6,8 +6,11 @@ import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.util.Date
 
+@Component
 class AzureReservedVolumesDatabaseAccessor(connectionString: String) : ReservedVolumesDatabaseAccessor {
 
     companion object {
@@ -15,7 +18,11 @@ class AzureReservedVolumesDatabaseAccessor(connectionString: String) : ReservedV
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val reservedVolumesTable: CloudTable = getOrCreateTable(connectionString, "ReservedVolumesCorrection")
+    @Value("\${azure.reserved.volumes.table}")
+    private lateinit var tableName: String
+
+
+    private val reservedVolumesTable: CloudTable = getOrCreateTable(connectionString, tableName)
 
     override fun addCorrectionsInfo(corrections: List<ReservedVolumeCorrection>) {
         try {

@@ -8,9 +8,12 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableQuery
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.util.HashMap
 
 
+@Component
 class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccessor {
 
     companion object {
@@ -18,7 +21,10 @@ class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccess
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val accountTable: CloudTable = getOrCreateTable(balancesConfig, "Accounts")
+    @Value("\${azure.wallet.table}")
+    private lateinit var tableName: String
+
+    private val accountTable: CloudTable = getOrCreateTable(balancesConfig, tableName)
 
     private val PARTITION_KEY = "PartitionKey"
     private val CLIENT_BALANCE = "ClientBalance"
