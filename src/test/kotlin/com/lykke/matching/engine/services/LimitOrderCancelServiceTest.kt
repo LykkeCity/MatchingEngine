@@ -3,11 +3,8 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -27,22 +24,22 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertNull
 
 class LimitOrderCancelServiceTest {
-    val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
-    val testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
-    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-    val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
-    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    private val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    private val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
+    private val testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
+    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    private val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
+    private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
+    private val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+    private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
+    private val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
+    private val orderBookQueue = LinkedBlockingQueue<OrderBook>()
+    private val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    val trustedClients = emptySet<String>()
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, trustedClients)
+    private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
+    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor))
+    private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
+    private val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
 
     @Before
     fun setUp() {
@@ -64,7 +61,7 @@ class LimitOrderCancelServiceTest {
     @Test
     fun testCancel() {
         val genericService = GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
-                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         val service = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
       
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))

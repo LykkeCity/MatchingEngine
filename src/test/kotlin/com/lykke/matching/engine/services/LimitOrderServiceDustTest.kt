@@ -12,7 +12,7 @@ import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -35,6 +35,8 @@ class LimitOrderServiceDustTest {
     val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
     val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    val configDatabaseAccessor = TestSettingsDatabaseAccessor()
+
     val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -42,13 +44,13 @@ class LimitOrderServiceDustTest {
     val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
+    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    private val disabledAssetsCache = DisabledAssetsCache(TestSettingsDatabaseAccessor())
-    val trustedClients = setOf("Client3")
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
+    private val applicationSettingsCache = ApplicationSettingsCache(configDatabaseAccessor)
+    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder,
+            LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
 
     @Before
     fun setUp() {
@@ -63,11 +65,17 @@ class LimitOrderServiceDustTest {
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 1000.0))
         testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+
+        configDatabaseAccessor.addTrustedClient("Client3")
     }
 
     @Test
     fun testAddAndMatchLimitOrderWithDust1() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache),
+                limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
+
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -89,7 +97,10 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust2() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache),
+                limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -111,7 +122,11 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust3() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache),
+                limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
+
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -133,7 +148,11 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust4() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache),
+                limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
+
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -155,7 +174,11 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust5() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache),
+                limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
+
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
@@ -177,7 +200,11 @@ class LimitOrderServiceDustTest {
 
     @Test
     fun testAddAndMatchLimitOrderWithDust6() {
-        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients), limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, disabledAssetsCache, lkkTradesQueue)
+        val service = SingleLimitOrderService(GenericLimitOrderService(testDatabaseAccessor, assetsHolder,
+                assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache),
+                limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
+
         service.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
         assertEquals(1, trustedLimitOrdersQueue.size)
         var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
