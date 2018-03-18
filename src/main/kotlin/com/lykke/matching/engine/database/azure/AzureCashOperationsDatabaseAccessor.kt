@@ -5,14 +5,16 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletSwapOperation
 import com.lykke.matching.engine.daos.azure.AzureWalletTransferOperation
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.TableOperation
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
-class AzureCashOperationsDatabaseAccessor(balancesConfig: String) : CashOperationsDatabaseAccessor {
+class AzureCashOperationsDatabaseAccessor : CashOperationsDatabaseAccessor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureCashOperationsDatabaseAccessor::class.java.name)
@@ -22,9 +24,10 @@ class AzureCashOperationsDatabaseAccessor(balancesConfig: String) : CashOperatio
     @Value("\${azure.cache.operation.table}")
     private lateinit var tableName: String
 
+    @Autowired
+    private lateinit var config: Config
 
-
-    private val transferOperationsTable = getOrCreateTable(balancesConfig, tableName)
+    private val transferOperationsTable = getOrCreateTable(config.me.db.balancesInfoConnString, tableName)
 
     override fun insertTransferOperation(operation: TransferOperation) {
         try {

@@ -73,6 +73,7 @@ import com.lykke.utils.keepalive.http.KeepAliveStarter
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
+import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -84,7 +85,8 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : Thread(MessageProcessor::class.java.name) {
+class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, applicationContext: ApplicationContext)
+    : Thread(MessageProcessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
@@ -151,10 +153,11 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
-        val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString)
-        this.walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
+        val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor()
+        this.walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
+
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
-        this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString)
+        this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
         this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)

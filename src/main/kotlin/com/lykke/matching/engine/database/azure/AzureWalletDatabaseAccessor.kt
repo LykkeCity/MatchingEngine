@@ -4,17 +4,19 @@ import com.lykke.matching.engine.daos.azure.wallet.AzureWallet
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableQuery
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.HashMap
 
 
 @Component
-class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccessor {
+class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
@@ -24,7 +26,10 @@ class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccess
     @Value("\${azure.wallet.table}")
     private lateinit var tableName: String
 
-    private val accountTable: CloudTable = getOrCreateTable(balancesConfig, tableName)
+    @Autowired
+    private lateinit var config: Config
+
+    private val accountTable: CloudTable = getOrCreateTable(config.me.db.balancesInfoConnString, tableName)
 
     private val PARTITION_KEY = "PartitionKey"
     private val CLIENT_BALANCE = "ClientBalance"

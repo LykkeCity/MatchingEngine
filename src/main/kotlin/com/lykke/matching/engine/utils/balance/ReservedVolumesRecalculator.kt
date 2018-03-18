@@ -20,24 +20,26 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
 
-fun correctReservedVolumesIfNeed(config: Config) {
+fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext) {
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
+    val walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
     val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
     val filePath = config.me.orderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
-    val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
+    val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor()
     ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, config.me.trustedClients).recalculate()
 }
+
 
 class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                   private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,

@@ -7,6 +7,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.core.env.SimpleCommandLinePropertySource
 
@@ -24,6 +25,9 @@ open class AppStarter {
     @Autowired
     lateinit var azureStatusProcessor: Runnable
 
+    @Autowired
+    lateinit var applicationContext: ApplicationContext
+
     fun main(args: Array<String>) {
         if (args.isEmpty()) {
             LOGGER.error("Not enough args. Usage: httpConfigString")
@@ -39,7 +43,7 @@ open class AppStarter {
             return
         }
 
-        correctReservedVolumesIfNeed(config)
+        correctReservedVolumesIfNeed(config, applicationContext)
         socketServer.run()
     }
 
