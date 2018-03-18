@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.config.impl
+package com.lykke.matching.engine.config
 
 import com.google.gson.FieldNamingPolicy.UPPER_CAMEL_CASE
 import com.google.gson.GsonBuilder
