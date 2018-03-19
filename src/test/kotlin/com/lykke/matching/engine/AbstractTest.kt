@@ -77,6 +77,7 @@ abstract class AbstractTest {
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
 
     protected open fun initServices() {
+        clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
 
@@ -95,4 +96,16 @@ abstract class AbstractTest {
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, clientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
     }
 
+    protected fun clearMessageQueues() {
+        quotesNotificationQueue.clear()
+        tradesInfoQueue.clear()
+        balanceUpdateQueue.clear()
+        orderBookQueue.clear()
+        rabbitOrderBookQueue.clear()
+        trustedClientsLimitOrdersQueue.clear()
+        clientsLimitOrdersQueue.clear()
+        lkkTradesQueue.clear()
+        rabbitSwapQueue.clear()
+        notificationQueue.clear()
+    }
 }
