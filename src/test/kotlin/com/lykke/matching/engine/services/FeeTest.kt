@@ -202,6 +202,8 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 750.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.0503))
 
+        initServices()
+
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                     uid = "order$i", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01,
@@ -295,6 +297,8 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
 
+        initServices()
+
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                     clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01
@@ -323,6 +327,8 @@ class FeeTest: AbstractTest() {
     fun testMarketNotEnoughFundsForFee2() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
+
+        initServices()
 
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -353,6 +359,8 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
 
+        initServices()
+
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                     clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01
@@ -381,6 +389,8 @@ class FeeTest: AbstractTest() {
     fun testNotEnoughFundsForFeeOppositeAsset() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 151.5))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.01521))
+
+        initServices()
 
         val feeSizes = arrayListOf(0.01, 0.1, 0.01)
         feeSizes.forEachIndexed { index, feeSize ->

@@ -20,8 +20,10 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.ArrayList
@@ -53,6 +55,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -117,6 +120,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
+
+
         val ordersToCancel = ArrayList<NewLimitOrder>()
 
         if (cancelAllPreviousLimitOrders) {
@@ -152,22 +157,28 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         orders.forEach { order ->
             if (order.price <= 0) {
+                order.status = OrderStatus.InvalidPrice.name
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
             } else if (!order.checkVolume(assetPair)) {
+                order.status = OrderStatus.TooSmallVolume.name
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             } else if (orderBook.leadToNegativeSpreadForClient(order)) {
+                order.status = OrderStatus.LeadToNegativeSpread.name
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 val limitOrder = matchingResult.order as NewLimitOrder
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
+                        order.status = OrderStatus.NoLiquidity.name
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
                     OrderStatus.NotEnoughFunds -> {
+                        order.status = OrderStatus.NotEnoughFunds.name
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
                     OrderStatus.InvalidFee -> {
+                        order.status = OrderStatus.InvalidFee.name
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
                     }
                     OrderStatus.Matched,
@@ -185,9 +196,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                        if (matchingResult.uncompletedLimitOrder != null) {
-                            matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
-                        }
+                        orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                         orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
@@ -213,8 +222,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                         walletOperations.addAll(matchingResult.cashMovements)
                         if (matchingResult.order.status == OrderStatus.Processing.name) {
-                            ordersToAdd.add(order)
-                            orderBook.addOrder(order)
+                            if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
+                                LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(order.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+                                order.status = OrderStatus.Cancelled.name
+                            } else {
+                                ordersToAdd.add(order)
+                                orderBook.addOrder(order)
+                            }
                         }
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
 
@@ -230,6 +244,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
+
+
         }
 
         val startPersistTime = System.nanoTime()
@@ -263,13 +279,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (isOldTypeMessage) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageUid.toLong()).build())
         } else {
-            val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
-            responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).setAssetPairId(assetPairId)
-            orders.forEach {
-                responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                        .setMatchingEngineId(it.id).setStatus(MessageStatus.OK.type).setVolume(it.volume).setPrice(it.price).build())
-            }
-            messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
+            val response = buildResponse(messageUid, assetPairId, orders)
+            messageWrapper.writeMultiLimitOrderResponse(response)
         }
 
         val endTime = System.nanoTime()
@@ -294,6 +305,20 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
+    }
+
+    private fun buildResponse(messageUid: String,
+                              assetPairId: String,
+                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse {
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).assetPairId = assetPairId
+
+        orders.forEach {
+            responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
+                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
+                    .setVolume(it.volume).setPrice(it.price).build())
+        }
+        return responseBuilder.build()
     }
 
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {

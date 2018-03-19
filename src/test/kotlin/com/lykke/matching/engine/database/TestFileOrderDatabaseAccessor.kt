@@ -52,6 +52,6 @@ class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
                 order.lastMatchTime,
                 order.reservedLimitVolume,
                 order.fee as? LimitOrderFeeInstruction,
-                order.fees as? List<NewLimitOrderFeeInstruction>)
+                order.fees?.map { it as NewLimitOrderFeeInstruction })
     }
 }

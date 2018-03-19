@@ -30,8 +30,10 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
@@ -63,6 +65,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
+
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -91,7 +95,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = UnknownAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Unknown asset: ${order.assetPairId}")
-            writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
             return
         }
 
@@ -99,7 +103,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = DisabledAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Disabled asset ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.DISABLED_ASSET)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             return
         }
 
@@ -107,7 +111,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = TooSmallVolume.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Too small volume for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.TOO_SMALL_VOLUME)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             return
         }
 
@@ -115,7 +119,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = InvalidFee.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
             return
         }
 
@@ -124,28 +128,29 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = NoLiquidity.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("No liquidity, no orders in order book, for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             return
         }
 
         val matchingResult = matchingEngine.match(order, orderBook)
         val marketOrder = matchingResult.order as MarketOrder
-        when (OrderStatus.valueOf(matchingResult.order.status)) {
+        val orderStatus = matchingResult.order.status
+        when (OrderStatus.valueOf(orderStatus)) {
             NoLiquidity -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, MessageStatus.NO_LIQUIDITY)
+                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus))
             }
             ReservedVolumeGreaterThanBalance -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")
+                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, MessageStatus.NOT_ENOUGH_FUNDS)
+                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus))
             }
-            OrderStatus.InvalidFee -> {
+            InvalidFee -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, MessageStatus.INVALID_FEE)
+                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus))
             }
             Matched -> {
                 genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
@@ -164,9 +169,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
                 matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                if (matchingResult.uncompletedLimitOrder != null) {
-                    matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
-                }
+                orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                 genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                 genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
