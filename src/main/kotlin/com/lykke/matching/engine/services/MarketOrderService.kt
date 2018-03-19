@@ -30,6 +30,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.order.OrderStatusUtils
@@ -64,6 +65,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
+
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -166,9 +169,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
                 matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                if (matchingResult.uncompletedLimitOrder != null) {
-                    matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
-                }
+                orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                 genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                 genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
