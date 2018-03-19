@@ -1,44 +1,30 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.LinkedBlockingQueue
 
-class BalanceUpdateServiceTest {
+class BalanceUpdateServiceTest: AbstractTest() {
 
     companion object {
-        private val DELTA = 1e-15
+        private const val DELTA = 1e-15
     }
-
-    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
-    private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-    private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, emptySet())
 
     @Before
     fun setUp() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
+        initServices()
     }
 
     @Test
     fun testUpdateBalance() {
-        val updateService = BalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
+        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "Client1", "Asset1", 999.0, 1000.0, 0.0, 0.0)
     }
@@ -46,9 +32,9 @@ class BalanceUpdateServiceTest {
     @Test
     fun testUpdateBalanceWithAnotherAssetBalance() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        initServices()
 
-        val updateService = BalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
+        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "Client1", "Asset1", 999.0, 1000.0, 0.0, 0.0)
         assertUpdateResult("Client1", "Asset2", 2000.0, 500.0)
@@ -56,8 +42,7 @@ class BalanceUpdateServiceTest {
 
     @Test
     fun testUpdateBalanceOfNewClient() {
-        val updateService = BalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildBalanceUpdateWrapper("ClientNew", "Asset1", 999.0))
+        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("ClientNew", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "ClientNew", "Asset1", 999.0, 0.0, 0.0, 0.0)
     }
@@ -65,17 +50,16 @@ class BalanceUpdateServiceTest {
     @Test
     fun testUpdateBalanceLowerThanResolved() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0, 1000.0))
+        initServices()
 
-        val updateService = BalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
+        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertUnsuccessfulUpdate("Client1", "Asset1", 1000.0, 1000.0)
     }
 
     @Test
     fun testUpdateReservedBalance() {
-        val updateService = ReservedBalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
+        reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.RESERVED_BALANCE_UPDATE, "Client1", "Asset1", 1000.0, 1000.0, 999.0, 0.0)
     }
@@ -83,9 +67,9 @@ class BalanceUpdateServiceTest {
     @Test
     fun testUpdateReservedBalanceWithAnotherAssetBalance() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        initServices()
 
-        val updateService = ReservedBalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
+        reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.RESERVED_BALANCE_UPDATE, "Client1", "Asset1", 1000.0, 1000.0, 999.0, 0.0)
         assertUpdateResult("Client1", "Asset2", 2000.0, 500.0)
@@ -93,16 +77,14 @@ class BalanceUpdateServiceTest {
 
     @Test
     fun testUpdateReservedBalanceOfNewClient() {
-        val updateService = ReservedBalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildReservedBalanceUpdateWrapper("ClientNew", "Asset1", 999.0))
+        reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("ClientNew", "Asset1", 999.0))
 
         assertUnsuccessfulUpdate("ClientNew", "Asset1", 0.0, 0.0)
     }
 
     @Test
     fun testUpdateReservedBalanceHigherThanBalance() {
-        val updateService = ReservedBalanceUpdateService(balancesHolder)
-        updateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 1001.0))
+        reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 1001.0))
 
         assertUnsuccessfulUpdate("Client1", "Asset1", 1000.0, 0.0)
     }
