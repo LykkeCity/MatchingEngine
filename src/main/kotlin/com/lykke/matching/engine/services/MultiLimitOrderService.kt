@@ -20,6 +20,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -53,6 +54,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -185,9 +187,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                        if (matchingResult.uncompletedLimitOrder != null) {
-                            matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
-                        }
+                        orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                         orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
@@ -213,8 +213,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                         walletOperations.addAll(matchingResult.cashMovements)
                         if (matchingResult.order.status == OrderStatus.Processing.name) {
-                            ordersToAdd.add(order)
-                            orderBook.addOrder(order)
+                            if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
+                                LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(order.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+                                order.status = OrderStatus.Cancelled.name
+                            } else {
+                                ordersToAdd.add(order)
+                                orderBook.addOrder(order)
+                            }
                         }
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
 
