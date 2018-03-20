@@ -173,7 +173,13 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(), trustedClients.toSet())
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor,
+                testDictionariesDatabaseAccessor,
+                testBackOfficeDatabaseAccessor,
+                testOrderDatabaseAccessor,
+                TestReservedVolumesDatabaseAccessor(),
+                applicationSettingsCache)
+
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

@@ -1,35 +1,19 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -37,39 +21,14 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 
-class MultiLimitOrderServiceTest {
-    val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    val configDatabaseAccessor = TestSettingsDatabaseAccessor()
-
-    val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
-    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
-    val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    val trustedLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-
-    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
-    val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
-    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    private val applicationSettingsCache = ApplicationSettingsCache(configDatabaseAccessor)
-    val trustedClients = setOf("Client1", "Client5")
-    val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
-    var genericLimitService = initLimitService()
-    var service = initService()
+class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Before
     fun setUp() {
-        configDatabaseAccessor.addTrustedClient("Client1")
-        configDatabaseAccessor.addTrustedClient("Client5")
-
-        testWalletDatabaseAccessor.clear()
+        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        testSettingsDatabaseAccessor.addTrustedClient("Client5")
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
@@ -88,8 +47,7 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
 
-        genericLimitService = initLimitService()
-        service = initService()
+        initServices()
     }
 
     @Test
@@ -98,7 +56,9 @@ class MultiLimitOrderServiceTest {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
 
-        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+        initServices()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
                 volumes = listOf(
                         VolumePrice(0.1, 2.0),
                         VolumePrice(0.1, 1.5),
@@ -111,8 +71,8 @@ class MultiLimitOrderServiceTest {
                 ordersFee = listOf(),
                 ordersFees = listOf()
         ))
-        assertEquals(1, limitOrdersQueue.size)
-        val limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        val limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(5, limitOrders.orders.size)
         assertEquals(2.0, limitOrders.orders[0].order.price)
         assertEquals(1.5, limitOrders.orders[1].order.price)
@@ -123,13 +83,13 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testAddLimitOrder() {
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
 
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        assertEquals(1, limitOrdersQueue.size)
-        val limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        val limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, limitOrders.orders.size)
         assertEquals(1.2, limitOrders.orders[0].order.price)
         assertEquals(1.3, limitOrders.orders[1].order.price)
@@ -137,22 +97,22 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testAdd2LimitOrder() {
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
 
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        assertEquals(1, limitOrdersQueue.size)
-        var limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        var limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, limitOrders.orders.size)
         assertEquals(1.2, limitOrders.orders[0].order.price)
         assertEquals(1.3, limitOrders.orders[1].order.price)
 
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.4), VolumePrice(100.0, 1.5))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.4), VolumePrice(100.0, 1.5))))
 
-        assertEquals(1, limitOrdersQueue.size)
-        limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, limitOrders.orders.size)
         assertEquals(1.4, limitOrders.orders[0].order.price)
         assertEquals(1.5, limitOrders.orders[1].order.price)
@@ -160,31 +120,31 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testAddAndCancelLimitOrder() {
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.2), VolumePrice(100.0, 1.3))))
 
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        assertEquals(1, limitOrdersQueue.size)
-        var limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        var limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, limitOrders.orders.size)
         assertEquals(1.2, limitOrders.orders[0].order.price)
         assertEquals(1.3, limitOrders.orders[1].order.price)
 
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.4), VolumePrice(100.0, 1.5))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.4), VolumePrice(100.0, 1.5))))
 
-        assertEquals(1, limitOrdersQueue.size)
-        limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, limitOrders.orders.size)
         assertEquals(1.4, limitOrders.orders[0].order.price)
         assertEquals(1.5, limitOrders.orders[1].order.price)
 
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 2.0), VolumePrice(100.0, 2.1)), cancel = true))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 2.0), VolumePrice(100.0, 2.1)), cancel = true))
 
-        assertEquals(1, limitOrdersQueue.size)
-        limitOrders = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(6, limitOrders.orders.size)
         assertEquals(1.2, limitOrders.orders[0].order.price)
         assertEquals(1.3, limitOrders.orders[1].order.price)
@@ -196,16 +156,14 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testAddAndMatchLimitOrder() {
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.3), VolumePrice(100.0, 1.2))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(100.0, 1.3), VolumePrice(100.0, 1.2))))
 
-        assertEquals(1, limitOrdersQueue.size)
-        limitOrdersQueue.poll()
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        trustedClientsLimitOrdersQueue.clear()
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
 
-        val singleOrderService = initSingleLimitOrderService()
-        singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
-
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(-50.0, result.orders[0].order.remainingVolume)
@@ -220,10 +178,10 @@ class MultiLimitOrderServiceTest {
         assertEquals(900.0, testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
         assertEquals(50.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(10.0, 1.3), VolumePrice(100.0, 1.26), VolumePrice(100.0, 1.2)), cancel = true))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(10.0, 1.3), VolumePrice(100.0, 1.26), VolumePrice(100.0, 1.2)), cancel = true))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(3, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
@@ -246,16 +204,15 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testAddAndMatchLimitOrder2() {
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-100.0, 1.2), VolumePrice(-100.0, 1.3))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-100.0, 1.2), VolumePrice(-100.0, 1.3))))
 
-        assertEquals(1, limitOrdersQueue.size)
-        limitOrdersQueue.poll()
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        trustedClientsLimitOrdersQueue.poll()
 
-        val singleOrderService = initSingleLimitOrderService()
-        singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(50.0, result.orders[0].order.remainingVolume)
@@ -270,10 +227,10 @@ class MultiLimitOrderServiceTest {
         assertEquals(1100.0, testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
         assertEquals(62.5, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-10.0, 1.2), VolumePrice(-10.0, 1.24), VolumePrice(-10.0, 1.29), VolumePrice(-10.0, 1.3)), cancel = true))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-10.0, 1.2), VolumePrice(-10.0, 1.24), VolumePrice(-10.0, 1.29), VolumePrice(-10.0, 1.3)), cancel = true))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(3, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
@@ -287,7 +244,7 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.0, result.orders[2].order.remainingVolume)
         assertEquals(1.24, result.orders[2].order.price)
 
-        assertEquals(1.25, genericLimitService.getOrderBook("EURUSD").getBidPrice())
+        assertEquals(1.25, genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
 
         assertEquals(1145.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(880.0, testWalletDatabaseAccessor.getBalance("Client1", "EUR"))
@@ -304,25 +261,26 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "TIME", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "TIME", 1000.0))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes = listOf(VolumePrice(-100.0, 26.955076))))
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes = listOf(VolumePrice(0.69031943, 26.915076))))
+        initServices()
 
-        assertEquals(2, limitOrdersQueue.size)
-        limitOrdersQueue.poll()
-        limitOrdersQueue.poll()
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes = listOf(VolumePrice(-100.0, 26.955076))))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes = listOf(VolumePrice(0.69031943, 26.915076))))
 
-        val singleOrderService = initSingleLimitOrderService()
-        singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
+        assertEquals(2, trustedClientsLimitOrdersQueue.size)
+        trustedClientsLimitOrdersQueue.poll()
+        trustedClientsLimitOrdersQueue.poll()
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
+
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(-25.30968057, result.orders[0].order.remainingVolume)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(26.915076, result.orders[1].order.price)
 
-        var orderBook = genericLimitService.getOrderBook("TIMEUSD")
+        var orderBook = genericLimitOrderService.getOrderBook("TIMEUSD")
         assertEquals(2, orderBook.getOrderBook(false).size)
         var bestAskOrder = orderBook.getOrderBook(false).peek()
         assertEquals(26.88023, bestAskOrder.price)
@@ -339,11 +297,11 @@ class MultiLimitOrderServiceTest {
         assertEquals(999.30968057, testWalletDatabaseAccessor.getBalance("Client2", "TIME"))
         assertEquals(25.30968057, testWalletDatabaseAccessor.getReservedBalance("Client2", "TIME"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes = listOf(VolumePrice(10.0, 26.915076), VolumePrice(10.0, 26.875076)), cancel = true))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes = listOf(VolumePrice(10.0, 26.915076), VolumePrice(10.0, 26.875076)), cancel = true))
 
-        assertEquals(0, trustedLimitOrdersQueue.size)
+        assertEquals(0, clientsLimitOrdersQueue.size)
 
-        orderBook = genericLimitService.getOrderBook("TIMEUSD")
+        orderBook = genericLimitOrderService.getOrderBook("TIMEUSD")
         assertEquals(2, orderBook.getOrderBook(false).size)
         bestAskOrder = orderBook.getOrderBook(false).peek()
         assertEquals(26.88023, bestAskOrder.price)
@@ -358,27 +316,28 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "BTC", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
 
-        val singleOrderService = initSingleLimitOrderService()
-        singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
+        initServices()
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
+
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
         assertEquals(0.19259621, result.orders[0].order.remainingVolume)
         assertEquals(699.01, result.orders[0].order.reservedLimitVolume!!)
         assertEquals(699.01, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.00574996, 3628.707)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.00574996, 3628.707)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(0.18684625, result.orders[1].order.remainingVolume)
         assertEquals(678.15, result.orders[1].order.reservedLimitVolume!!)
         assertEquals(678.15, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.01431186, 3624.794), VolumePrice(-0.02956591, 3626.591)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.01431186, 3624.794), VolumePrice(-0.02956591, 3626.591)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(0.14296848, result.orders[1].order.remainingVolume)
@@ -386,16 +345,16 @@ class MultiLimitOrderServiceTest {
         assertEquals(518.91, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
         assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.04996673, 3625.855)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.04996673, 3625.855)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(0.09300175, result.orders[1].order.remainingVolume)
         assertEquals(337.57, result.orders[1].order.reservedLimitVolume!!)
         assertEquals(337.57, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.00628173, 3622.865), VolumePrice(-0.01280207, 3625.489), VolumePrice(-0.02201331, 3627.41), VolumePrice(-0.02628901, 3629.139)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.00628173, 3622.865), VolumePrice(-0.01280207, 3625.489), VolumePrice(-0.02201331, 3627.41), VolumePrice(-0.02628901, 3629.139)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(0.02561563, result.orders[1].order.remainingVolume)
@@ -405,23 +364,23 @@ class MultiLimitOrderServiceTest {
         assertEquals(OrderStatus.Matched.name, result.orders[3].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[4].order.status)
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.01708411, 3626.11)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.01708411, 3626.11)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(0.00853152, result.orders[1].order.remainingVolume)
         assertEquals(31.02, result.orders[1].order.reservedLimitVolume!!)
         assertEquals(31.02, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.00959341, 3625.302)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes = listOf(VolumePrice(-0.00959341, 3625.302)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
         assertEquals(0.0, result.orders[1].order.remainingVolume)
         assertEquals(0.0, result.orders[1].order.reservedLimitVolume!!)
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
-        val orderBook = genericLimitService.getOrderBook("BTCEUR")
+        val orderBook = genericLimitOrderService.getOrderBook("BTCEUR")
         assertEquals(1, orderBook.getOrderBook(false).size)
         val bestAskOrder = orderBook.getOrderBook(false).peek()
         assertEquals(3625.302, bestAskOrder.price)
@@ -436,17 +395,18 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 1000.0))
 
-        val singleLimitOrderService = initSingleLimitOrderService()
+        initServices()
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
         assertEquals(0.26170853, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
         assertEquals(0.26170853, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.00643271, 4390.84), VolumePrice(0.01359005, 4387.87), VolumePrice(0.02033985, 4384.811)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.00643271, 4390.84), VolumePrice(0.01359005, 4387.87), VolumePrice(0.02033985, 4384.811)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(-0.22034592, result.orders[1].order.remainingVolume)
@@ -455,15 +415,15 @@ class MultiLimitOrderServiceTest {
         assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[3].order.status)
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.01691068, 4387.21)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.01691068, 4387.21)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(-0.20343524, result.orders[1].order.remainingVolume)
         assertEquals(0.20343524, result.orders[1].order.reservedLimitVolume!!)
         assertEquals(0.20443524, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
 
-        val cancelService = LimitOrderCancelService(genericLimitService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
+        val cancelService = LimitOrderCancelService(genericLimitOrderService, trustedClientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
         cancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
         assertEquals(0.001, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
     }
@@ -473,17 +433,18 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 100.0))
 
-        val singleLimitOrderService = initSingleLimitOrderService()
+        initServices()
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        var result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
         assertEquals(0.26170853, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
         assertEquals(0.26170853, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.00643271, 4390.84), VolumePrice(0.01359005, 4387.87), VolumePrice(0.02033985, 4384.811)), cancel = true))
-        result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes = listOf(VolumePrice(0.00643271, 4390.84), VolumePrice(0.01359005, 4387.87), VolumePrice(0.02033985, 4384.811)), cancel = true))
+        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(-0.24068577, result.orders[1].order.remainingVolume)
@@ -491,7 +452,7 @@ class MultiLimitOrderServiceTest {
         assertEquals(0.24168577, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
         assertEquals(OrderStatus.Matched.name, result.orders[2].order.status)
 
-        assertEquals(0.0, genericLimitService.getOrderBook("BTCCHF").getBidPrice())
+        assertEquals(0.0, genericLimitOrderService.getOrderBook("BTCCHF").getBidPrice())
         assertEquals(12.2, testWalletDatabaseAccessor.getBalance("Client3", "CHF"))
     }
 
@@ -503,19 +464,18 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "EUR", 700.04, reservedBalance = 700.04))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "BTC", 2.0))
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
-        genericLimitService = initLimitService()
-        service = initService()
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
+        initServices()
 
-        service.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, volumes = listOf(VolumePrice(-0.4435, 4721.403)), cancel = true))
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, volumes = listOf(VolumePrice(-0.4435, 4721.403)), cancel = true))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
         assertEquals(0.0, testWalletDatabaseAccessor.getBalance(client, "EUR"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance(client, "EUR"))
-        assertEquals(0, genericLimitService.getOrderBook("BTCEUR").getOrderBook(true).size)
+        assertEquals(0, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(true).size)
     }
 
     @Test
@@ -528,13 +488,11 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "USD", 200.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "EUR", 0.0))
 
-        genericLimitService = initLimitService()
-        service = initService()
-        val singleLimitOrderService = initSingleLimitOrderService()
+        initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = -50.0)))
 
-        service.processMessage(buildMultiLimitOrderWrapper(
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
                 pair = "EURUSD",
                 clientId = marketMaker,
                 volumes = listOf(VolumePrice(60.0, 1.2), VolumePrice(60.0, 1.1)),
@@ -558,13 +516,11 @@ class MultiLimitOrderServiceTest {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "USD", 6.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 2.0))
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 1.0))
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 1.0))
 
-        genericLimitService = initLimitService()
-        val singleOrderService = initSingleLimitOrderService()
-        service = initService()
+        initServices()
 
-        service.processMessage(buildMultiLimitOrderWrapper(
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
                 clientId = marketMaker, pair = "EURUSD",
                 volumes = listOf(
                         VolumePrice(2.0, 1.20),
@@ -576,22 +532,22 @@ class MultiLimitOrderServiceTest {
                 ),
                 cancel = true, ordersFee = listOf(), ordersFees = listOf()))
 
-        singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
 
-        trustedLimitOrdersQueue.clear()
-        limitOrdersQueue.clear()
+        clientsLimitOrdersQueue.clear()
+        trustedClientsLimitOrdersQueue.clear()
         balanceUpdateQueue.clear()
-        singleOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.13, volume = -100.0)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.13, volume = -100.0)))
 
-        assertEquals(1, testDatabaseAccessor.getOrders("EURUSD", true).size)
-        assertEquals(1.1, genericLimitService.getOrderBook("EURUSD").getBidPrice())
+        assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
+        assertEquals(1.1, genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        val trustedResult = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        val trustedResult = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, trustedResult.orders.filter { it.order.clientId == marketMaker }.size)
 
-        assertEquals(1, limitOrdersQueue.size)
-        val result = limitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        val result = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.filter { it.order.clientId == marketMaker }.size)
 
         assertEquals(1, balanceUpdateQueue.size)
@@ -606,25 +562,24 @@ class MultiLimitOrderServiceTest {
 
         val order = buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
         order.reservedLimitVolume = 1.19
-        testDatabaseAccessor.addLimitOrder(order)
+        testOrderDatabaseAccessor.addLimitOrder(order)
 
-        genericLimitService = initLimitService()
-        service = initService()
+        initServices()
 
-        service.processMessage(buildMultiLimitOrderWrapper(clientId = marketMaker, pair = "EURUSD", volumes = listOf(VolumePrice(-2.0, 1.1)), cancel = false, ordersFee = listOf(), ordersFees = listOf()))
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = marketMaker, pair = "EURUSD", volumes = listOf(VolumePrice(-2.0, 1.1)), cancel = false, ordersFee = listOf(), ordersFees = listOf()))
 
-        assertEquals(0, testDatabaseAccessor.getOrders("EURUSD", true).size)
-        assertEquals(1, testDatabaseAccessor.getOrders("EURUSD", false).size)
+        assertEquals(0, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
+        assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
         assertEquals(2, rabbitOrderBookQueue.size)
 
-        val orderSell = testDatabaseAccessor.getOrders("EURUSD", false).first()
+        val orderSell = testOrderDatabaseAccessor.getOrders("EURUSD", false).first()
         assertEquals(-2.0, orderSell.remainingVolume)
 
         assertEquals(1000.0, testWalletDatabaseAccessor.getBalance(client, "USD"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance(client, "USD"))
 
-        assertEquals(1, trustedLimitOrdersQueue.size)
-        val result = trustedLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
 
         val clientOrderReport = result.orders.filter { it.order.clientId == client }
         assertEquals(1, clientOrderReport.size)
@@ -640,18 +595,18 @@ class MultiLimitOrderServiceTest {
 
     @Test
     fun testCancelPreviousOrderWithSameUid() {
-        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-9.0, 0.4875)), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList()))
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-9.0, 0.4875)), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList()))
 
-        trustedLimitOrdersQueue.clear()
-        limitOrdersQueue.clear()
-        service.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-10.0, 0.4880)), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList()))
+        clientsLimitOrdersQueue.clear()
+        trustedClientsLimitOrdersQueue.clear()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(-10.0, 0.4880)), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList()))
 
 
-        assertEquals(-10.0, testDatabaseAccessor.getOrders("EURUSD", false).first().volume)
-        assertEquals(OrderStatus.InOrderBook.name, testDatabaseAccessor.getOrders("EURUSD", false).first().status)
+        assertEquals(-10.0, testOrderDatabaseAccessor.getOrders("EURUSD", false).first().volume)
+        assertEquals(OrderStatus.InOrderBook.name, testOrderDatabaseAccessor.getOrders("EURUSD", false).first().status)
 
-        assertEquals(1, limitOrdersQueue.size)
-        val result = limitOrdersQueue.first() as LimitOrdersReport
+        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        val result = trustedClientsLimitOrdersQueue.first() as LimitOrdersReport
 
         assertEquals(2, result.orders.size)
 
@@ -664,10 +619,6 @@ class MultiLimitOrderServiceTest {
         assertEquals(-9.0, oldOrder.volume)
         assertEquals(0.4875, oldOrder.price)
     }
-
-    private fun initLimitService() = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
-    private fun initSingleLimitOrderService() = SingleLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
-    private fun initService() = MultiLimitOrderService(genericLimitService, limitOrdersQueue, trustedLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
         return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
