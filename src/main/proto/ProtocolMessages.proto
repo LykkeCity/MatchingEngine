@@ -271,4 +271,5 @@ message LimitOrderFee {
     optional int32 makerSizeType = 6;
     optional int32 takerSizeType = 7;
     repeated string assetId = 8;
+    optional double makerFeeModificator = 9;
 }

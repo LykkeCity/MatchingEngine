@@ -33,6 +33,7 @@ private fun checkFee(feeInstruction: FeeInstruction): Boolean {
     }
     if (feeInstruction is NewLimitOrderFeeInstruction) {
         feeInstruction.makerSize?.let { if (it < 0) return false }
+        feeInstruction.makerFeeModificator?.let { if (it <= 0) return false }
     }
     return true
 }
