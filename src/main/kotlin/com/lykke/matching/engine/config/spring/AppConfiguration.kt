@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration
 import javax.annotation.PostConstruct
 
 @Configuration
-class AppConfiguration {
+open class AppConfiguration {
 
     @Autowired
     private lateinit var config: Config
