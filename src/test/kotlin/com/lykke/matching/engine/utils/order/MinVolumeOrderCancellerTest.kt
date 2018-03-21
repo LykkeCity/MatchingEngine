@@ -23,6 +23,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
     @Before
     fun setUp() {
         testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+        applicationSettingsCache.update()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))

@@ -24,6 +24,7 @@ class ReservedVolumesRecalculatorTest {
     fun setUp() {
         configDatabaseAccessor.addTrustedClient("trustedClient")
         configDatabaseAccessor.addTrustedClient("trustedClient2")
+        applicationSettingsCache.update()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
