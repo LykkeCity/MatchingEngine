@@ -23,8 +23,9 @@ class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabas
         configDatabaseAccessor.loadConfigs()?.let { settings = it }
     }
 
-    val trustedClients: Set<String>
-    get() = this.settings.trustedClients
+    fun isTrustedClient(client: String): Boolean {
+        return this.settings.trustedClients.contains(client)
+    }
 
     fun isAssetDisabled(asset: String): Boolean {
         return this.settings.disabledAssets.contains(asset)

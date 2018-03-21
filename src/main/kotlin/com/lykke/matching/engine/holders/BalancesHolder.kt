@@ -94,7 +94,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
             val asset = assetsHolder.getAsset(operation.assetId)
 
             val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
-            val newReservedBalance = if (!applicationSettingsCache.trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
+            val newReservedBalance = if (!applicationSettingsCache.isTrustedClient(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
 
             client.put(operation.assetId, AssetBalance(operation.assetId, newBalance, newReservedBalance))
 
