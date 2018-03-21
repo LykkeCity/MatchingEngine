@@ -38,7 +38,7 @@ class NotEnoughFundsLimitOrderCancelService(
         val limitOrderWithTrades = LinkedList<LimitOrderWithTrades>()
 
         orders.forEach { order ->
-            val isTrustedClientOrder = applicationSettingsCache.trustedClients.contains(order.clientId)
+            val isTrustedClientOrder = applicationSettingsCache.isTrustedClient(order.clientId)
 
             if (!isTrustedClientOrder) {
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)

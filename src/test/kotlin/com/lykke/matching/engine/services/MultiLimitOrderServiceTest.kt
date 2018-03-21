@@ -69,6 +69,7 @@ class MultiLimitOrderServiceTest {
         configDatabaseAccessor.addTrustedClient("Client1")
         configDatabaseAccessor.addTrustedClient("Client5")
 
+        applicationSettingsCache.update()
         testWalletDatabaseAccessor.clear()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))

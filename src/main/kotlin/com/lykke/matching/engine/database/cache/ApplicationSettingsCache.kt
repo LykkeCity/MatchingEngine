@@ -1,14 +1,12 @@
 package com.lykke.matching.engine.database.cache
 
+import com.lykke.matching.engine.daos.Settings
 import com.lykke.matching.engine.database.ConfigDatabaseAccessor
 import kotlin.concurrent.fixedRateTimer
 
 class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabaseAccessor,
                                updateInterval: Long? = null) : DataCache() {
-    companion object {
-        private val DISABLED_ASSETS = "DisabledAssets"
-        private val TRUSTED_CLIENTS = "TrustedClients"
-    }
+
 
     init {
         update()
@@ -19,16 +17,17 @@ class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabas
         }
     }
 
-    private lateinit var settings: Map<String, Set<String>>
+    private var settings: Settings = Settings()
 
     override fun update() {
-        configDatabaseAccessor.loadConfigs()?.let { settings = it}
+        configDatabaseAccessor.loadConfigs()?.let { settings = it }
     }
 
-    val trustedClients: Set<String>
-    get() = this.settings[TRUSTED_CLIENTS]?.toMutableSet() ?: HashSet()
+    fun isTrustedClient(client: String): Boolean {
+        return this.settings.trustedClients.contains(client)
+    }
 
     fun isAssetDisabled(asset: String): Boolean {
-        return this.settings[DISABLED_ASSETS]?.contains(asset) ?: false
+        return this.settings.disabledAssets.contains(asset)
     }
 }

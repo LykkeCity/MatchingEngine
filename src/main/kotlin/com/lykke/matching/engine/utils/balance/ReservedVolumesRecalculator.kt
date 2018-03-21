@@ -63,7 +63,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
         orders.forEach { order ->
-            if (!applicationSettingsCache.trustedClients.contains(order.clientId)) {
+            if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
                 LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val asset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
