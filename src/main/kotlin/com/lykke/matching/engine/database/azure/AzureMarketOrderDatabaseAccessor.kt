@@ -9,18 +9,15 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
-class AzureMarketOrderDatabaseAccessor : MarketOrderDatabaseAccessor {
+@Component
+class AzureMarketOrderDatabaseAccessor  @Autowired constructor(val config: Config,
+                                                               @Value("\${azure.market.order.table}")val tableName: String): MarketOrderDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    @Value("\${azure.market.order.table}")
-    private lateinit var tableName: String
-
-    @Autowired
-    private lateinit var config: Config
 
     private val lkkTradesTable: CloudTable = getOrCreateTable(config.me.db.hTradesConnString, tableName)
 

@@ -5,14 +5,18 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.files.clean.LogFilesCleaner
 import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 
 @Component
-open class LogsCleanerStarter {
+open class LogsCleaner {
+
+    @Autowired
+    private lateinit var config: Config
 
     @PostConstruct
-    fun startLogsCleaner(config: Config) {
+    fun startLogsCleaner() {
         try {
             val logFilesCleanerConfig = config.me.logFilesCleaner
             val logFilesCleanerConfigWithDefaults = LogFilesCleanerConfig(logFilesCleanerConfig.enabled,

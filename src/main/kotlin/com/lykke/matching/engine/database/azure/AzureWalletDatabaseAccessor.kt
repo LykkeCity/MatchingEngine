@@ -18,7 +18,6 @@ import java.util.HashMap
 @Component
 class AzureWalletDatabaseAccessor @Autowired constructor(val config: Config,
                                                          @Value("\${azure.wallet.table}")val tableName: String) : WalletDatabaseAccessor {
-
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()

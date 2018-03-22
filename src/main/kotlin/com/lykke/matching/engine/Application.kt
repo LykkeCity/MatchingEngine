@@ -32,5 +32,4 @@ class Application {
         correctReservedVolumesIfNeed(config, applicationContext)
         socketServer.run()
     }
-
 }
