@@ -37,6 +37,7 @@ dependencies {
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile 'log4j:log4j:1.2.17'
     compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'
     compile 'com.microsoft.azure:azure-storage:4.0.0'

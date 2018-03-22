@@ -155,7 +155,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     init {
         val isDevProfile = applicationContext.environment.acceptsProfiles("dev")
 
-        val cashOperationsDatabaseAccessor = AzureCashOperationsDatabaseAccessor()
+        val cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
         this.walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
 
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)

@@ -19,7 +19,7 @@ open class AppConfiguration {
     private lateinit var config: Config
 
     @Bean
-    fun socketServer(): Runnable {
+    open fun socketServer(): Runnable {
         return SocketServer { appInitialData ->
             MetricsLogger.getLogger().logWarning("""Spot.${config.me.name} ${AppVersion.VERSION}
                 |: Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount}
@@ -28,7 +28,7 @@ open class AppConfiguration {
     }
 
     @Bean
-    fun azureStatusProcessor(): Runnable {
+    open fun azureStatusProcessor(): Runnable {
         return AliveStatusProcessorFactory
                 .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
                         appName = "MatchingEngine",
@@ -36,7 +36,7 @@ open class AppConfiguration {
     }
 
     @PostConstruct
-    fun init() {
+    open fun init() {
         AppInitializer.init()
         MetricsLogger.init("ME", config.slackNotifications)
         ThrottlingLogger.init(config.throttlingLogger)

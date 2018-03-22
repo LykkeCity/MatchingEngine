@@ -16,18 +16,13 @@ import java.util.HashMap
 
 
 @Component
-class AzureWalletDatabaseAccessor : WalletDatabaseAccessor {
+class AzureWalletDatabaseAccessor @Autowired constructor(val config: Config,
+                                                         @Value("\${azure.wallet.table}")val tableName: String) : WalletDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    @Value("\${azure.wallet.table}")
-    private lateinit var tableName: String
-
-    @Autowired
-    private lateinit var config: Config
 
     private val accountTable: CloudTable = getOrCreateTable(config.me.db.balancesInfoConnString, tableName)
 

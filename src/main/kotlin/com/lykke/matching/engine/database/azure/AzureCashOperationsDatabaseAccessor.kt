@@ -14,18 +14,12 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
-class AzureCashOperationsDatabaseAccessor : CashOperationsDatabaseAccessor {
-
+class AzureCashOperationsDatabaseAccessor @Autowired constructor(val config: Config,
+                                                                 @Value("\${azure.cache.operation.table}")val tableName: String) : CashOperationsDatabaseAccessor {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureCashOperationsDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    @Value("\${azure.cache.operation.table}")
-    private lateinit var tableName: String
-
-    @Autowired
-    private lateinit var config: Config
 
     private val transferOperationsTable = getOrCreateTable(config.me.db.balancesInfoConnString, tableName)
 

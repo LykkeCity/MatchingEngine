@@ -8,6 +8,7 @@ import com.sun.xml.internal.fastinfoset.util.StringArray
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Profile
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 import java.io.BufferedReader
@@ -20,6 +21,7 @@ import javax.naming.ConfigurationException
 val LOGGER = Logger.getLogger("HttpConfigParser")
 
 @Component
+@Profile("default")
 class HttpConfigParser :  FactoryBean<Config> {
 
     @Autowired

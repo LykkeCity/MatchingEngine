@@ -36,7 +36,7 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
     val filePath = config.me.orderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
-    val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor()
+    val reservedVolumesDatabaseAccessor = applicationContext.getBean(AzureReservedVolumesDatabaseAccessor::class.java)
     ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, config.me.trustedClients).recalculate()
 }
 

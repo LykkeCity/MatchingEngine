@@ -13,18 +13,13 @@ import org.springframework.stereotype.Component
 import java.util.Date
 
 @Component
-class AzureReservedVolumesDatabaseAccessor : ReservedVolumesDatabaseAccessor {
+class AzureReservedVolumesDatabaseAccessor @Autowired constructor(val config: Config,
+                                                                  @Value("\${azure.reserved.volumes.table}")val tableName: String): ReservedVolumesDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureReservedVolumesDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    @Value("\${azure.reserved.volumes.table}")
-    private lateinit var tableName: String
-
-    @Autowired
-    private lateinit var config: Config
 
     private val reservedVolumesTable: CloudTable = getOrCreateTable(config.me.db.reservedVolumesConnString, tableName)
 
