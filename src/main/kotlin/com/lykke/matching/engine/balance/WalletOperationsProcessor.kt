@@ -38,27 +38,16 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
         operations.forEach { operation ->
             val key = key(operation)
-            val transactionChangedBalance = transactionChangedAssetBalances.getOrPut(key) {
-                val changedAssetBalance = changedAssetBalances.getOrPut(key(operation)) {
-                    val wallet = balancesHolder.wallets.getOrPut(operation.clientId) {
-                        Wallet(operation.clientId)
-                    }
-                    val assetBalance = wallet.balances.getOrPut(operation.assetId) {
-                        AssetBalance(operation.assetId)
-                    }
-                    ChangedAssetBalance(wallet, assetBalance)
-                }
-                TransactionChangedAssetBalance(changedAssetBalance)
+            val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
+                TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
-
-            transactionChangedBalance.balance = RoundingUtils.parseDouble(transactionChangedBalance.balance + operation.amount, asset.accuracy).toDouble()
-
-            transactionChangedBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
-                RoundingUtils.parseDouble(transactionChangedBalance.reserved + operation.reservedAmount, asset.accuracy).toDouble()
+            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount, asset.accuracy).toDouble()
+            changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
+                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy).toDouble()
             else
-                transactionChangedBalance.reserved
+                changedAssetBalance.reserved
         }
 
         if (validate) {
@@ -96,10 +85,20 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         if (changedAssetBalances.isEmpty()) {
             return
         }
-        val updatedWallets = changedAssetBalances.values.map { it.apply() }
-        walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets)
+        val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
+        walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets.toList())
         clientIds.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
         balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
+    }
+
+    private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
+        val wallet = balancesHolder.wallets.getOrPut(operation.clientId) {
+            Wallet(operation.clientId)
+        }
+        val assetBalance = wallet.balances.getOrPut(operation.assetId) {
+            AssetBalance(operation.assetId)
+        }
+        return ChangedAssetBalance(wallet, assetBalance)
     }
 }
 
