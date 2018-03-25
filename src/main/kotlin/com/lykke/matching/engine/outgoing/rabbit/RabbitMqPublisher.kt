@@ -54,7 +54,6 @@ class RabbitMqPublisher(
             LOGGER.error("Unable to connect to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName: ${e.message}", e)
             return false
         }
-        return true
     }
 
     override fun run() {

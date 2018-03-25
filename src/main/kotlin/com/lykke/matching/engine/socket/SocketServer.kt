@@ -38,6 +38,7 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
         val messageProcessor = MessageProcessor(config, messagesQueue, applicationContext)
+
         messageProcessor.start()
 
         initializationCompleteCallback(messageProcessor.appInitialData)
@@ -78,7 +79,7 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
     }
 
     private fun getWhiteList() : List<String>? {
-        return config.me.whiteList?.split(";") ?: null
+        return config.me.whiteList?.split(";")
     }
 
     private fun connect(handler: ClientHandler) {
