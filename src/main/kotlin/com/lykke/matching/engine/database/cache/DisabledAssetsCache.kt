@@ -2,11 +2,15 @@ package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import kotlin.concurrent.fixedRateTimer
 
-class DisabledAssetsCache(
+@Component
+class DisabledAssetsCache @Autowired constructor (
         private val databaseAccessor: SettingsDatabaseAccessor,
-        updateInterval: Long? = null) : DataCache() {
+        @Value("\${cache.default.update.interval}") updateInterval: Long) : DataCache() {
 
     companion object {
         val LOGGER = Logger.getLogger(DisabledAssetsCache::class.java)
@@ -25,7 +29,7 @@ class DisabledAssetsCache(
     init {
         this.disabledPairs = databaseAccessor.loadDisabledPairs()
         LOGGER.info("Loaded ${disabledPairs.size} disabled assets")
-        updateInterval?.let {
+        updateInterval.let {
             fixedRateTimer(name = "Disabled Assets Cache Updater", initialDelay = it, period = it) {
                 update()
             }

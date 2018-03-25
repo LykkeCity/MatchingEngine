@@ -7,22 +7,21 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Service
 import java.util.Date
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
-import java.util.concurrent.BlockingQueue
 
-class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                     private val assetsHolder: AssetsHolder,
-                     private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
-                     private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
-                     private val trustedClients: Set<String>
-                     ) {
-
+@Service
+class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                             private val assetsHolder: AssetsHolder,
+                                             private val applicationEventPublisher: ApplicationEventPublisher,
+                                             private val trustedClients: Set<String>) {
     companion object {
         val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
@@ -114,7 +113,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         walletDatabaseAccessor.insertOrUpdateWallets(walletsToAdd)
 
-        clients.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
+        clients.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it))}
 
         sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
     }
@@ -133,7 +132,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
-        notificationQueue.put(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
 
     fun updateReservedBalance(clientId: String, assetId: String, balance: Double) {
@@ -150,11 +149,12 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
-        notificationQueue.put(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
         LOGGER.info(balanceUpdate.toString())
-        balanceUpdateQueue.put(balanceUpdate)
+
+        applicationEventPublisher.publishEvent(balanceUpdate)
     }
 }

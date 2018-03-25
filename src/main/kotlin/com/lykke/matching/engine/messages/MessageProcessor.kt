@@ -96,7 +96,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = queue
     private val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
-    private val balanceNotificationQueue: BlockingQueue<BalanceUpdateNotification> = LinkedBlockingQueue<BalanceUpdateNotification>()
     private val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
     private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
     private val balanceUpdatesQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -133,7 +132,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val tradesInfoService: TradesInfoService
     private var historyTicksService: HistoryTicksService? = null
 
-    private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
@@ -167,8 +165,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor, 60000))
         val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor, 60000))
-        val disabledAssetsCache = DisabledAssetsCache(AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
-        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, config.me.trustedClients)
+        val disabledAssetsCache = applicationContext.getBean(DisabledAssetsCache::class.java)
+
+         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceUpdatesQueue, config.me.trustedClients)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
@@ -196,8 +195,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             historyTicksService?.init()
         }
 
-        this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
-        balanceUpdateHandler.start()
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
         quotesUpdateHandler.start()
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)

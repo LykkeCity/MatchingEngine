@@ -3,9 +3,12 @@ package com.lykke.matching.engine.database.cache
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import kotlin.concurrent.fixedRateTimer
 
-class AssetsCache(
+@Component
+class AssetsCache @Autowired constructor(
         private val databaseAccessor: BackOfficeDatabaseAccessor,
         updateInterval: Long? = null) : DataCache() {
 
