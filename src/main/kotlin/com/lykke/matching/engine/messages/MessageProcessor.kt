@@ -117,6 +117,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
+    private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
 
     private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
@@ -138,7 +139,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val servicesMap: Map<MessageType, AbstractService>
     private val notDeduplicateMessageTypes = setOf(MessageType.MULTI_LIMIT_ORDER, MessageType.OLD_MULTI_LIMIT_ORDER, MessageType.MULTI_LIMIT_ORDER_CANCEL)
     private val processedMessagesCache: ProcessedMessagesCache
-    private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
 
     private var bestPriceBuilder: Timer? = null
     private var candlesBuilder: Timer? = null
@@ -158,13 +158,13 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
         this.walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
 
-        this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
+        this.limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
-        this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
-        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
-        this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
+        this.backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
+        this.historyTicksDatabaseAccessor = applicationContext.getBean(AzureHistoryTicksDatabaseAccessor::class.java)
+        this.orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
 
-        val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
+        val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor, 60000))
         val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor, 60000))
         val disabledAssetsCache = DisabledAssetsCache(AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
@@ -203,7 +203,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        processedMessagesDatabaseAccessor = FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
+        processedMessagesDatabaseAccessor = applicationContext.getBean(FileProcessedMessagesDatabaseAccessor::class.java)
         processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
         servicesMap = initServicesMap()
 

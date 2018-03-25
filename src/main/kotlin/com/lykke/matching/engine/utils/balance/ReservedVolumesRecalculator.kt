@@ -21,7 +21,6 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
-import org.springframework.stereotype.Component
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
@@ -32,10 +31,10 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
     }
     val walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
-    val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
+    val backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
     val filePath = config.me.orderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
-    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
+    val orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
     val reservedVolumesDatabaseAccessor = applicationContext.getBean(AzureReservedVolumesDatabaseAccessor::class.java)
     ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, config.me.trustedClients).recalculate()
 }

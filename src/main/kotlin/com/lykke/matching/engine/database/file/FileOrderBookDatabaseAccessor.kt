@@ -2,9 +2,12 @@ package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -14,8 +17,8 @@ import java.util.ArrayList
 import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
-
-class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDatabaseAccessor {
+@Component
+class FileOrderBookDatabaseAccessor @Autowired constructor (private val config: Config): OrderBookDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
@@ -27,7 +30,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
     override fun loadLimitOrders(): List<NewLimitOrder> {
         val result = ArrayList<NewLimitOrder>()
         try {
-            val dir = File(ordersDir)
+            val dir = File(config.me.orderBookPath)
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
                     if (!file.isDirectory && !file.name.startsWith("_prev_")) {
@@ -36,7 +39,7 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
                         } catch (e: Exception) {
                             LOGGER.error("Unable to read order book file ${file.name}. Trying to load previous one", e)
                             try {
-                                result.addAll(loadFile(File("$ordersDir/_prev_${file.name}")))
+                                result.addAll(loadFile(File("$config.me.orderBookPath/_prev_${file.name}")))
                             } catch (e: Exception) {
                                 LOGGER.error("Unable to read previous order book file ${file.name}.", e)
                             }
@@ -80,12 +83,12 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
 
     fun saveFile(fileName: String, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
         try {
-            val file = File("$ordersDir/$fileName")
+            val file = File("$config.me.orderBookPath/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asByteArray(orderBook.toList())
-            Files.write(FileSystems.getDefault().getPath("$ordersDir/$fileName"), bytes, StandardOpenOption.CREATE)
+            Files.write(FileSystems.getDefault().getPath("$config.me.orderBookPath/$fileName"), bytes, StandardOpenOption.CREATE)
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
@@ -93,8 +96,8 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
 
     private fun archiveAndDeleteFile(fileName: String) {
         try {
-            val newFile = FileSystems.getDefault().getPath("$ordersDir/_prev_$fileName")
-            val oldFile = FileSystems.getDefault().getPath("$ordersDir/$fileName")
+            val newFile = FileSystems.getDefault().getPath("$config.me.orderBookPath/_prev_$fileName")
+            val oldFile = FileSystems.getDefault().getPath("$config.me.orderBookPath/$fileName")
             Files.move(oldFile, newFile, StandardCopyOption.REPLACE_EXISTING)
         } catch(e: Exception) {
             LOGGER.error("Unable to archive and delete, name: $fileName", e)
