@@ -8,6 +8,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -21,7 +22,7 @@ import java.util.LinkedList
 class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                              private val assetsHolder: AssetsHolder,
                                              private val applicationEventPublisher: ApplicationEventPublisher,
-                                             private val trustedClients: Set<String>) {
+                                             private val config: Config) {
     companion object {
         val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
@@ -93,7 +94,7 @@ class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor:
             val asset = assetsHolder.getAsset(operation.assetId)
 
             val newBalance = RoundingUtils.parseDouble(balance + operation.amount, asset.accuracy).toDouble()
-            val newReservedBalance = if (!trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
+            val newReservedBalance = if (!config.me.trustedClients.contains(operation.clientId)) RoundingUtils.parseDouble(reservedBalance + operation.reservedAmount, asset.accuracy).toDouble() else reservedBalance
 
             client.put(operation.assetId, AssetBalance(operation.assetId, newBalance, newReservedBalance))
 

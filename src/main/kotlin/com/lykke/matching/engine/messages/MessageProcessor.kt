@@ -18,7 +18,6 @@ import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -33,7 +32,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.outgoing.database.LkkTradeSaveService
@@ -98,7 +96,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
     private val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
     private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
-    private val balanceUpdatesQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
 
     private val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -109,6 +106,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
+    private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val walletDatabaseAccessor: WalletDatabaseAccessor
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -162,12 +160,14 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.historyTicksDatabaseAccessor = applicationContext.getBean(AzureHistoryTicksDatabaseAccessor::class.java)
         this.orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
 
+        balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
+
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor, 60000))
         val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor, 60000))
         val disabledAssetsCache = applicationContext.getBean(DisabledAssetsCache::class.java)
 
-         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceUpdatesQueue, config.me.trustedClients)
+         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
@@ -224,9 +224,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineSwapOperations")), rabbitMqService)
-
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdatesQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineBalanceUpdates")), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders")), rabbitMqService)

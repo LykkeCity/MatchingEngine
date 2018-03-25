@@ -36,7 +36,13 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
     val reservedVolumesDatabaseAccessor = applicationContext.getBean(AzureReservedVolumesDatabaseAccessor::class.java)
-    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, config.me.trustedClients).recalculate()
+    ReservedVolumesRecalculator(walletDatabaseAccessor,
+            dictionariesDatabaseAccessor,
+            backOfficeDatabaseAccessor,
+            orderBookDatabaseAccessor,
+            reservedVolumesDatabaseAccessor,
+            config.me.trustedClients,
+            applicationContext).recalculate()
 }
 
 
@@ -45,7 +51,8 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                                   private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                                   private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
-                                  private val trustedClients: Set<String>) {
+                                  private val trustedClients: Set<String>,
+                                  private val applicationContext: ApplicationContext) {
 
 
     companion object {
@@ -60,7 +67,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
     fun recalculate() {
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
-        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), trustedClients)
+        val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
