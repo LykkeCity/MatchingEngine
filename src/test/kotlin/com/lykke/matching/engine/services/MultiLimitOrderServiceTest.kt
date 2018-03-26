@@ -24,11 +24,12 @@ import java.util.Date
 import kotlin.test.assertEquals
 
 class MultiLimitOrderServiceTest: AbstractTest() {
-    
+
     @Before
     fun setUp() {
-        trustedClients.add("Client1")
-        trustedClients.add("Client5")
+        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        testSettingsDatabaseAccessor.addTrustedClient("Client5")
+        applicationSettingsCache.update()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
@@ -55,7 +56,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
-        
+
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",

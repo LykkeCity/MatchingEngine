@@ -17,7 +17,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class MarketOrderService_Dust_Test: AbstractTest() {
-    
+
     companion object {
         private const val DELTA = 1e-9
     }

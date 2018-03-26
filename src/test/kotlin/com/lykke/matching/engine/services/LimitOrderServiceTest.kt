@@ -30,8 +30,9 @@ class LimitOrderServiceTest: AbstractTest() {
 
     @Before
     fun setUp() {
-        trustedClients.add("Client3")
-        
+        testSettingsDatabaseAccessor.addTrustedClient("Client3")
+        applicationSettingsCache.update()
+
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
@@ -47,7 +48,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-        
+
         initServices()
     }
 

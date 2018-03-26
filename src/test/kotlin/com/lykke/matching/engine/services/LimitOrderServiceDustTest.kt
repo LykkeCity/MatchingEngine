@@ -16,7 +16,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
 
     @Before
     fun setUp() {
-        trustedClients.add("Client3")
+        testSettingsDatabaseAccessor.addTrustedClient("Client3")
+        applicationSettingsCache.update()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
