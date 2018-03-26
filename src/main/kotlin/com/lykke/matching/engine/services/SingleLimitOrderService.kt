@@ -192,7 +192,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing-> {
-                    isMatched = true
                     val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
                     val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
                     val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
@@ -234,6 +233,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     }
 
                     if (preProcessResult) {
+                        isMatched = true
                         matchingResult.apply()
                         walletOperationsProcessor.apply(order.externalId, MessageType.LIMIT_ORDER.name)
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)

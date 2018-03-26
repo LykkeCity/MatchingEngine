@@ -129,7 +129,7 @@ message MarketOrder {
 
 message LimitOrderCancel {
     required string uid = 1;
-    required string limitOrderId = 2;
+    repeated string limitOrderId = 2;
 }
 
 message MultiLimitOrderCancel {
@@ -143,6 +143,13 @@ message MultiLimitOrderCancel {
 message OldLimitOrderCancel {
     required int64 uid = 1;
     required int64 limitOrderId = 2;
+}
+
+message LimitOrderMassCancel {
+    required string uid = 1;
+    required string clientId = 2;
+    optional string assetPairId = 3;
+    optional bool isBuy = 4;
 }
 
 message BalanceUpdate {

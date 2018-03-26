@@ -16,6 +16,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.BalanceUpdateService
@@ -24,12 +25,14 @@ import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.LimitOrderMassCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertEquals
 
 abstract class AbstractTest {
 
@@ -64,6 +67,7 @@ abstract class AbstractTest {
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
     protected lateinit var feeProcessor: FeeProcessor
+    protected lateinit var limitOrdersCancellerFactory: LimitOrdersCancellerFactory
 
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
@@ -74,6 +78,7 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateService: BalanceUpdateService
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
+    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
 
     protected open fun initServices() {
         clearMessageQueues()
@@ -85,6 +90,7 @@ abstract class AbstractTest {
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        limitOrdersCancellerFactory = LimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
         cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
         balanceUpdateService = BalanceUpdateService(balancesHolder)
@@ -94,7 +100,8 @@ abstract class AbstractTest {
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, lkkTradesQueue)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue)
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue)
-        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, clientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
+        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, limitOrdersCancellerFactory)
+        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, limitOrdersCancellerFactory)
     }
 
     protected fun clearMessageQueues() {
@@ -108,5 +115,25 @@ abstract class AbstractTest {
         lkkTradesQueue.clear()
         rabbitSwapQueue.clear()
         balanceNotificationQueue.clear()
+    }
+
+    protected fun assertOrderBookSize(assetPairId: String, isBuySide: Boolean, size: Int) {
+        assertEquals(size, testOrderDatabaseAccessor.getOrders(assetPairId, isBuySide).size)
+        assertEquals(size, genericLimitOrderService.getOrderBook(assetPairId).getOrderBook(isBuySide).size)
+
+        // check cache orders map size
+        val allClientIds = testWalletDatabaseAccessor.loadWallets().keys
+        assertEquals(size, allClientIds.sumBy { genericLimitOrderService.searchOrders(it, assetPairId, isBuySide).size })
+    }
+
+    protected fun assertBalance(clientId: String, assetId: String, balance: Double? = null, reserved: Double? = null) {
+        if (balance != null) {
+            assertEquals(balance, balancesHolder.getBalance(clientId, assetId))
+            assertEquals(balance, testWalletDatabaseAccessor.getBalance(clientId, assetId))
+        }
+        if (reserved != null) {
+            assertEquals(reserved, balancesHolder.getReservedBalance(clientId, assetId))
+            assertEquals(reserved, testWalletDatabaseAccessor.getReservedBalance(clientId, assetId))
+        }
     }
 }

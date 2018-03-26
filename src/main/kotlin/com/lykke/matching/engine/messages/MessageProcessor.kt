@@ -28,6 +28,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
+import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.LkkTradeSaveService
 import com.lykke.matching.engine.outgoing.http.RequestHandler
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -47,6 +48,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.HistoryTicksService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.LimitOrderMassCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedBalanceUpdateService
@@ -118,6 +120,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val multiLimitOrderService: MultiLimitOrderService
     private val marketOrderService: MarketOrderService
     private val limitOrderCancelService: LimitOrderCancelService
+    private val limitOrderMassCancelService: LimitOrderMassCancelService
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
@@ -162,33 +165,31 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdatesQueue, applicationSettingsCache)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        val limitOrdersCancellerFactory = LimitOrdersCancellerFactory(dictionariesDatabaseAccessor,
+                assetsPairsHolder,
+                balanceHolder,
+                genericLimitOrderService,
+                rabbitTrustedClientsLimitOrdersQueue,
+                rabbitClientLimitOrdersQueue,
+                orderBooksQueue,
+                rabbitOrderBooksQueue)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder, applicationSettingsCache)
         this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
-        this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue,
-                rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, applicationSettingsCache, lkkTradesQueue)
-
-        this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue,
-                rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue)
-
-        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder,
-                assetsPairsHolder, balanceHolder, applicationSettingsCache, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue,
-                orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue)
-
-        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, rabbitClientLimitOrdersQueue,
-                assetsHolder, assetsPairsHolder, balanceHolder, orderBooksQueue, rabbitOrderBooksQueue)
-
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue,
-                rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
+        this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, applicationSettingsCache, lkkTradesQueue)
+        this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue)
+        this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balanceHolder, applicationSettingsCache, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue)
+        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, limitOrdersCancellerFactory)
+        this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, limitOrdersCancellerFactory)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         if (config.me.cancelMinVolumeOrders) {
-            MinVolumeOrderCanceller(dictionariesDatabaseAccessor, assetsPairsHolder, balanceHolder, genericLimitOrderService,
-                    rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue).cancel()
+            MinVolumeOrderCanceller(dictionariesDatabaseAccessor, assetsPairsHolder,  genericLimitOrderService, limitOrdersCancellerFactory).cancel()
         }
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
@@ -365,6 +366,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         result[MessageType.OLD_MARKET_ORDER] = marketOrderService
         result[MessageType.LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
+        result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
         result[MessageType.OLD_BALANCE_UPDATE] = balanceUpdateService
         result[MessageType.BALANCE_UPDATE] = balanceUpdateService

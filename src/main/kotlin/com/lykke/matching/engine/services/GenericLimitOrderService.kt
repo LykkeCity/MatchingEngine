@@ -72,12 +72,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     }
 
     fun getAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean): List<NewLimitOrder> {
-        val ordersToRemove = LinkedList<NewLimitOrder>()
-        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide() == isBuy) {
-                ordersToRemove.add(limitOrder)
-            }
-        }
+        val ordersToRemove = searchOrders(clientId, assetPair, isBuy)
         clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
         return ordersToRemove
     }
@@ -107,6 +102,18 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
         if (result) {
             limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - volume, accuracy).toDouble()
+        }
+        return result
+    }
+
+    fun getOrder(uid: String) = limitOrdersMap[uid]
+
+    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<NewLimitOrder> {
+        val result = LinkedList<NewLimitOrder>()
+        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
+            if (limitOrder.assetPairId == (assetPair ?: limitOrder.assetPairId) && limitOrder.isBuySide() == (isBuy ?: limitOrder.isBuySide())) {
+                result.add(limitOrder)
+            }
         }
         return result
     }
