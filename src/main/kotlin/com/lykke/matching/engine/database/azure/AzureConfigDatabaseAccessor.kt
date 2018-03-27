@@ -12,7 +12,7 @@ class AzureConfigDatabaseAccessor(connectionString: String, configTableName: Str
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureConfigDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private const val SETTING_STATE_COLUMN_NAME = "Disabled"
+        private const val SETTING_STATE_COLUMN_NAME = "Enabled"
         private val DISABLED_ASSETS = "DisabledAssets"
         private val TRUSTED_CLIENTS = "TrustedClients"
     }

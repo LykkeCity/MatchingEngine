@@ -23,6 +23,6 @@ public class AzureAppProperty extends TableServiceEntity {
     }
 
     public String getName() {
-        return rowKey;
+        return partitionKey;
     }
 }

@@ -8,6 +8,8 @@ class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabas
                                updateInterval: Long? = null) : DataCache() {
 
 
+    private var settings: Settings = Settings()
+
     init {
         update()
         if (updateInterval != null) {
@@ -16,8 +18,6 @@ class ApplicationSettingsCache(private val configDatabaseAccessor: ConfigDatabas
             }
         }
     }
-
-    private var settings: Settings = Settings()
 
     override fun update() {
         configDatabaseAccessor.loadConfigs()?.let { settings = it }
