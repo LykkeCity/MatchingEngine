@@ -88,10 +88,10 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                            feeSize: Double?,
                            balances: MutableMap<String, MutableMap<String, Double>>,
                            convertPrices: Map<String, Double>): FeeTransfer? {
-        if (feeInstruction.type == FeeType.NO_FEE) {
+        if (feeInstruction.type == FeeType.NO_FEE || feeSize == null) {
             return null
         }
-        if (feeSizeType == null || feeSize == null || feeSize < 0.0 || feeInstruction.targetClientId == null) {
+        if (feeSizeType == null || feeSize < 0.0 || feeInstruction.targetClientId == null) {
             throw FeeException("Invalid fee instruction (size type: $feeSizeType, size: $feeSize, targetClientId: ${feeInstruction.targetClientId })")
         }
         val receiptOperation = receiptOperationWrapper.baseReceiptOperation
