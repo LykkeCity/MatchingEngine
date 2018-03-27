@@ -29,15 +29,21 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.utils.config.ApplicationProperties
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractTest {
+
+    @Autowired private
+    lateinit var disabledAssetsCache: DisabledAssetsCache
+
+    @Autowired
+    lateinit var balancesHolder: BalancesHolder
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
     protected val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
     protected val applicationProperties = ApplicationProperties(testConfigDatabaseAccessor)
 
@@ -58,8 +64,6 @@ abstract class AbstractTest {
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     protected val assetsHolder = AssetsHolder(assetsCache)
     protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
-    protected val disabledAssetsCache = DisabledAssetsCache(testSettingsDatabaseAccessor)
-    protected lateinit var balancesHolder: BalancesHolder
 
     protected val trustedClients = mutableListOf<String>()
 
@@ -80,7 +84,6 @@ abstract class AbstractTest {
         assetsCache.update()
         assetPairsCache.update()
 
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, trustedClients.toSet())
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)

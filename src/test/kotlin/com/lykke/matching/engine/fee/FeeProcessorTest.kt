@@ -25,6 +25,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderF
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import org.junit.Before
 import org.junit.Test
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.Date
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
@@ -41,13 +42,14 @@ class FeeProcessorTest {
     private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
-    private lateinit var balancesHolder: BalancesHolder
     private lateinit var feeProcessor: FeeProcessor
     private lateinit var genericLimitOrderService: GenericLimitOrderService
+
+    @Autowired
+    lateinit var balancesHolder: BalancesHolder
 
     @Before
     fun setUp() {
@@ -60,7 +62,6 @@ class FeeProcessorTest {
 
     private fun initServices() {
         assetsPairsCache.update()
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, emptySet())
         genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), emptySet())
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }

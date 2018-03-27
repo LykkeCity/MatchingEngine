@@ -26,6 +26,7 @@ import org.apache.log4j.Logger
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.Date
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
@@ -40,16 +41,18 @@ abstract class MatchingEngineTest {
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    protected val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
     protected val trustedClients = setOf<String>()
-    protected lateinit var balancesHolder: BalancesHolder
+
     protected lateinit var genericService: GenericLimitOrderService
     protected lateinit var matchingEngine: MatchingEngine
     protected val DELTA = 1e-9
     protected val now = Date()
+
+    @Autowired
+    protected lateinit var balancesHolder: BalancesHolder
 
     @Before
     fun setUp() {
@@ -175,7 +178,6 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }

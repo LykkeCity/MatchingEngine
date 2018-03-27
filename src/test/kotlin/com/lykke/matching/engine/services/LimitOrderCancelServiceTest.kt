@@ -23,6 +23,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertNull
 
@@ -42,7 +43,9 @@ class LimitOrderCancelServiceTest {
     val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor))
     val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
     val trustedClients = emptySet<String>()
-    val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, trustedClients)
+
+    @Autowired
+    lateinit var balancesHolder: BalancesHolder
 
     @Before
     fun setUp() {

@@ -16,7 +16,7 @@ class AssetsCache @Autowired constructor(
         val LOGGER = Logger.getLogger(AssetsCache::class.java)
     }
 
-    private var assetsMap: Map<String, Asset>
+    private var assetsMap: Map<String, Asset> = HashMap()
 
     fun getAsset(asset: String): Asset? {
         return assetsMap[asset] ?: databaseAccessor.loadAsset(asset)

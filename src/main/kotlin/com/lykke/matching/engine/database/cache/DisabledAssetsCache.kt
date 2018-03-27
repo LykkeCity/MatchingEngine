@@ -16,7 +16,7 @@ class DisabledAssetsCache @Autowired constructor (
         val LOGGER = Logger.getLogger(DisabledAssetsCache::class.java)
     }
 
-    private var disabledPairs: Set<String>
+    private var disabledPairs: Set<String> = HashSet()
 
     fun isDisabled(asset: String): Boolean {
         return disabledPairs.contains(asset)

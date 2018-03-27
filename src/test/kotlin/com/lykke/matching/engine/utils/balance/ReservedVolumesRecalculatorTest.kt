@@ -11,6 +11,8 @@ import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
 import org.junit.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
 import kotlin.test.assertEquals
 
 class ReservedVolumesRecalculatorTest {
@@ -21,6 +23,9 @@ class ReservedVolumesRecalculatorTest {
     private val orderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
     private val trustedClients = setOf("trustedClient", "trustedClient2")
+
+    @Autowired
+    lateinit var applicationContext: ApplicationContext
 
     @Before
     fun setUp() {
@@ -52,7 +57,9 @@ class ReservedVolumesRecalculatorTest {
 
     @Test
     fun testRecalculate() {
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, trustedClients)
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor,
+                testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
+                reservedVolumesDatabaseAccessor, trustedClients, applicationContext)
         recalculator.recalculate()
 
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
@@ -13,12 +14,24 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.ApplicationContext
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class)])
+@ActiveProfiles("dev")
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     private lateinit var canceller: MinVolumeOrderCanceller
+
+    @Autowired
+    lateinit var applicationContext: ApplicationContext
 
     @Before
     fun setUp() {
@@ -173,7 +186,10 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(), trustedClients.toSet())
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
+                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(),
+                trustedClients.toSet(), applicationContext)
+
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

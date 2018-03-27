@@ -2,8 +2,10 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
+import org.springframework.stereotype.Component
 import java.util.HashMap
 
+@Component
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
     private val balances = HashMap<String, MutableMap<String, AssetBalance>>()
