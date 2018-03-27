@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -28,6 +29,7 @@ import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBala
 import com.lykke.matching.engine.order.OrderStatus.TooSmallVolume
 import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -35,7 +37,6 @@ import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.order.OrderStatusUtils
-import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -56,9 +57,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
 
     companion object {
-        val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
-        val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
+        private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
     }
 
     private var messagesCount: Long = 0
@@ -138,64 +138,88 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
 
         val matchingResult = matchingEngine.match(order, orderBook)
-        val marketOrder = matchingResult.order as MarketOrder
         val orderStatus = matchingResult.order.status
         when (OrderStatus.valueOf(orderStatus)) {
             NoLiquidity -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus))
+                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus))
             }
             ReservedVolumeGreaterThanBalance -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus), "Reserved volume is higher than available balance")
+                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus))
+                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus))
             }
             InvalidFee -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder))
-                writeResponse(messageWrapper, marketOrder, OrderStatusUtils.toMessageStatus(orderStatus))
+                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus))
             }
             Matched -> {
-                genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
-
-                val walletOperations = LinkedList<WalletOperation>()
-                val clientLimitOrdersReport = LimitOrdersReport()
-
+                val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
+                val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
+                val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
                 if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                    val result = genericLimitOrderService.cancelNotEnoughFundsOrder(NotEnoughFundsLimitOrderCancelParams(matchingResult.cancelledLimitOrders.toList()))
-                    walletOperations.addAll(result.walletOperation)
-                    if (result.trustedClientLimitOrderWithTrades.isNotEmpty()) {
-                        trustedClientLimitOrderReportQueue.put(LimitOrdersReport(result.trustedClientLimitOrderWithTrades.toMutableList()))
+                    val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.toList())
+                    cancelledOrdersWalletOperations.addAll(result.walletOperations)
+                    cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
+                    cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
+                }
+                val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
+
+                val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
+                val preProcessResult = try {
+                    walletOperationsProcessor.preProcess(matchingResult.ownCashMovements).preProcess(matchingResult.oppositeCashMovements, true)
+                    try {
+                        walletOperationsProcessor.preProcess(cancelledOrdersWalletOperations)
+                    } catch (e: BalanceException) {
+                        LOGGER.error("${orderInfo(order)}: Unable to process cancelled orders wallet operations after matching: ${e.message}")
                     }
-                    clientLimitOrdersReport.orders.addAll(result.clientLimitOrderWithTrades)
+                    true
+                } catch (e: BalanceException) {
+                    order.status = OrderStatus.NotEnoughFunds.name
+                    rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                    LOGGER.error("${orderInfo(order)}: Unable to process wallet operations after matching: ${e.message}")
+                    writeResponse(messageWrapper, order, MessageStatus.LOW_BALANCE, e.message)
+                    false
                 }
 
-                matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+                val clientLimitOrdersReport = LimitOrdersReport()
+                val trustedClientLimitOrdersReport = LimitOrdersReport()
+                if (preProcessResult) {
+                    matchingResult.apply()
+                    walletOperationsProcessor.apply(order.externalId, MessageType.MARKET_ORDER.name)
+                    genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
+                    genericLimitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
+                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
 
-                orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
+                    trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
+                    clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
+
+                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
                 genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                 genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
-                lkkTradesQueue.put(matchingResult.lkkTrades)
+                    lkkTradesQueue.put(matchingResult.lkkTrades)
 
-                walletOperations.addAll(matchingResult.cashMovements)
-                balancesHolder.processWalletOperations(order.externalId, MessageType.MARKET_ORDER.name, walletOperations)
+                    rabbitSwapQueue.put(MarketOrderWithTrades(order, matchingResult.marketOrderTrades.toMutableList()))
 
-                rabbitSwapQueue.put(MarketOrderWithTrades(marketOrder, matchingResult.marketOrderTrades.toMutableList()))
+                    matchingResult.limitOrdersReport?.let {
+                        clientLimitOrdersReport.orders.addAll(it.orders)
+                    }
 
-                matchingResult.limitOrdersReport?.let {
-                    clientLimitOrdersReport.orders.addAll(it.orders)
+                    clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+                    if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
+                        trustedClientLimitOrderReportQueue.put(trustedClientLimitOrdersReport)
+                    }
+
+                    val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide()))
+                    orderBookQueue.put(newOrderBook)
+                    rabbitOrderBookQueue.put(newOrderBook)
+                    writeResponse(messageWrapper, order, MessageStatus.OK)
                 }
-
-                clientLimitOrderReportQueue.put(clientLimitOrdersReport)
-
-                val newOrderBook = OrderBook(marketOrder.assetPairId, !marketOrder.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(marketOrder.assetPairId).getCopyOfOrderBook(!marketOrder.isBuySide()))
-                orderBookQueue.put(newOrderBook)
-                rabbitOrderBookQueue.put(newOrderBook)
-                writeResponse(messageWrapper, order, MessageStatus.OK)
             }
             else -> {
             }
