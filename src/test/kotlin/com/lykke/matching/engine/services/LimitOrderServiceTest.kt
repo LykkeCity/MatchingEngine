@@ -32,7 +32,6 @@ class LimitOrderServiceTest: AbstractTest() {
     fun setUp() {
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
         applicationSettingsCache.update()
-
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
@@ -276,16 +275,16 @@ class LimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddLimitOrderEURUSD() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
 
         initServices()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", price = 325.7152, volume = 0.046053)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 325.7152, volume = 0.046053)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
-        assertEquals(15.01, testWalletDatabaseAccessor.getReservedBalance("Client3", "USD"))
+        assertEquals(15.01, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
     }
 
     @Test

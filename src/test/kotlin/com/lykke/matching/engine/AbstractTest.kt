@@ -3,6 +3,7 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
@@ -19,6 +20,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
+import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -36,6 +38,7 @@ abstract class AbstractTest {
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+    protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -49,6 +52,7 @@ abstract class AbstractTest {
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val reservedCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
+    protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
     protected val assetsCache = AssetsCache(testBackOfficeDatabaseAccessor)
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
@@ -63,6 +67,7 @@ abstract class AbstractTest {
 
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
+    protected lateinit var cashTransferOperationsService: CashTransferOperationService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
     protected lateinit var marketOrderService: MarketOrderService
@@ -80,6 +85,7 @@ abstract class AbstractTest {
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
         balanceUpdateService = BalanceUpdateService(balancesHolder)
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         cashInOutOperationService = CashInOutOperationService(testWalletDatabaseAccessor, assetsHolder, balancesHolder, applicationSettingsCache, cashInOutQueue, feeProcessor)
