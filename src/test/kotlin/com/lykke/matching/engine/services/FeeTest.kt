@@ -191,10 +191,10 @@ class FeeTest: AbstractTest() {
         assertEquals(0.005, balancesHolder.getBalance("Client1", "BTC"))
         assertEquals(21.19, balancesHolder.getBalance("Client1", "USD"))
         assertEquals(75.77, balancesHolder.getBalance("Client2", "USD"))
-        assertEquals(0.09484954, balancesHolder.getBalance("Client2", "BTC"))
+        assertEquals(0.09485, balancesHolder.getBalance("Client2", "BTC"))
         assertEquals(6.83, balancesHolder.getBalance("Client3", "USD"))
-        assertEquals(0.00025077, balancesHolder.getBalance("Client3", "BTC"))
-        assertEquals(0.09989969, balancesHolder.getBalance("Client4", "BTC"))
+        assertEquals(0.00025, balancesHolder.getBalance("Client3", "BTC"))
+        assertEquals(0.0999, balancesHolder.getBalance("Client4", "BTC"))
         assertEquals(6.21, balancesHolder.getBalance("Client4", "USD"))
     }
 
