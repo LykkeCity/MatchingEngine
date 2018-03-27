@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
@@ -27,13 +28,38 @@ fun checkFee(feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstru
 }
 
 private fun checkFee(feeInstruction: FeeInstruction): Boolean {
-    feeInstruction.size?.let { if (it < 0) return false }
+    if (feeInstruction.type == FeeType.NO_FEE) {
+        return true
+    }
+
+    if (feeInstruction.sizeType == null ||
+            feeInstruction.size != null && feeInstruction.size < 0 ||
+            feeInstruction.targetClientId == null ||
+            feeInstruction.type == FeeType.EXTERNAL_FEE && feeInstruction.sourceClientId == null) {
+        return false
+    }
+
+    var mandatorySize = true
     if (feeInstruction is LimitOrderFeeInstruction) {
-        feeInstruction.makerSize?.let { if (it < 0) return false }
+        if (feeInstruction.makerSize == null && feeInstruction.size == null ||
+                feeInstruction.makerSize != null && feeInstruction.makerSize < 0) {
+            return false
+        }
+        mandatorySize = false
     }
+
     if (feeInstruction is NewLimitOrderFeeInstruction) {
-        feeInstruction.makerSize?.let { if (it < 0) return false }
+        if (feeInstruction.makerSize == null && feeInstruction.size == null ||
+                feeInstruction.makerSize != null && feeInstruction.makerSize < 0) {
+            return false
+        }
         feeInstruction.makerFeeModificator?.let { if (it <= 0) return false }
+        mandatorySize = false
     }
+
+    if (mandatorySize && feeInstruction.size == null) {
+        return false
+    }
+
     return true
 }
