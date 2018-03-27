@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.messages.ProtocolMessages
 import java.io.Serializable
 
@@ -38,4 +39,6 @@ open class FeeInstruction(
                 (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
                 "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
+
+    open fun toNewFormat(): NewFeeInstruction = NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, emptyList())
 }

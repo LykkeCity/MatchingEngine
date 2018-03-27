@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.messages.ProtocolMessages
 
 class LimitOrderFeeInstruction(
@@ -48,5 +49,7 @@ class LimitOrderFeeInstruction(
                 (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
                 "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
+
+    override fun toNewFormat() = NewLimitOrderFeeInstruction(type, sizeType, size, makerSizeType, makerSize, sourceClientId, targetClientId , emptyList(), null)
 
 }

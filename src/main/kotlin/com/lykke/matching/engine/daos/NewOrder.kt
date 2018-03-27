@@ -19,7 +19,7 @@ abstract class NewOrder(
         @Version (1) // for compatibility with old serialized orders
         var fee: FeeInstruction?,
         @Version (2)
-        var fees: List<NewFeeInstruction>?
+        val fees: List<NewFeeInstruction>?
 ) : Serializable {
 
     fun getAbsVolume(): Double {

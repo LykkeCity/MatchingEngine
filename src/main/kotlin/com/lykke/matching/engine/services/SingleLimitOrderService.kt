@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -72,6 +73,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
+        val feeInstruction: LimitOrderFeeInstruction?
+        val feeInstructions: List<NewLimitOrderFeeInstruction>?
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             val oldMessage = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
             val uid = UUID.randomUUID().toString()
@@ -81,15 +84,18 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
+            feeInstruction = null
+            feeInstructions = null
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrder
             val uid = UUID.randomUUID().toString()
-            val fee = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null
-            val fees = NewLimitOrderFeeInstruction.create(message.feesList)
+            feeInstruction = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null
+            feeInstructions = NewLimitOrderFeeInstruction.create(message.feesList)
             order = NewLimitOrder(uid, message.uid, message.assetPairId, message.clientId, message.volume,
-                    message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null, fee = fee, fees = fees)
+                    message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null,
+                    fee = feeInstruction, fees = listOfLimitOrderFee(feeInstruction, feeInstructions))
 
-            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}, fee: $fee, fees: $fees")
+            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}, fee: $feeInstruction, fees: $feeInstructions")
 
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
@@ -114,7 +120,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        if (!checkFee(order.fee, order.fees)) {
+        if (!checkFee(feeInstruction, feeInstructions)) {
             LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} has invalid fee")
             order.status = OrderStatus.InvalidFee.name
             rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(order.status), now, isCancelOrders)

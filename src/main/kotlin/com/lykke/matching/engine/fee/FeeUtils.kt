@@ -8,9 +8,16 @@ import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import java.util.LinkedList
 
-fun listOfFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?): List<FeeInstruction> {
-    val result = LinkedList<FeeInstruction>()
-    fee?.let { result.add(it) }
+fun listOfFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?): List<NewFeeInstruction> {
+    val result = LinkedList<NewFeeInstruction>()
+    fee?.let { result.add(it.toNewFormat()) }
+    fees?.let { result.addAll(it) }
+    return result
+}
+
+fun listOfLimitOrderFee(fee: LimitOrderFeeInstruction?, fees: List<NewLimitOrderFeeInstruction>?): List<NewLimitOrderFeeInstruction> {
+    val result = LinkedList<NewLimitOrderFeeInstruction>()
+    fee?.let { result.add(it.toNewFormat()) }
     fees?.let { result.addAll(it) }
     return result
 }
