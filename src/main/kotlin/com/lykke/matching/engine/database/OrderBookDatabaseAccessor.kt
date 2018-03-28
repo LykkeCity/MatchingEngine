@@ -6,4 +6,6 @@ import java.util.concurrent.PriorityBlockingQueue
 interface OrderBookDatabaseAccessor {
     fun loadLimitOrders(): List<NewLimitOrder>
     fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: PriorityBlockingQueue<NewLimitOrder>)
+    fun loadStopLimitOrders(): List<NewLimitOrder>
+    fun updateStopOrderBook(assetPairId: String, isBuy: Boolean, orderBook: Collection<NewLimitOrder>)
 }

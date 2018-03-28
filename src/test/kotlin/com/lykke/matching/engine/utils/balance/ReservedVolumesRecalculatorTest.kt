@@ -2,7 +2,14 @@ package com.lykke.matching.engine.utils.balance
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
@@ -44,12 +51,16 @@ class ReservedVolumesRecalculatorTest {
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", balance = 10.0, reservedBalance = 0.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", balance = 10.0, reservedBalance = 1.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", balance = 990.0, reservedBalance = 1.0))
 
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "trustedClient", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.4))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.3))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 1.0))
+
+        orderBookDatabaseAccessor.addStopLimitOrder(buildLimitOrder(uid = "3", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 9000.0, lowerPrice = 9900.0, reservedVolume = 990.0))
+        orderBookDatabaseAccessor.addStopLimitOrder(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 10000.0, lowerPrice = 10900.0))
     }
 
     @Test
@@ -66,8 +77,10 @@ class ReservedVolumesRecalculatorTest {
         assertEquals(0.7, testWalletDatabaseAccessor.getReservedBalance("Client1", "EUR"))
         assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
+        assertEquals(2080.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
-        assertEquals(6, reservedVolumesDatabaseAccessor.corrections.size)
+        assertEquals(7, reservedVolumesDatabaseAccessor.corrections.size)
         assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == 0.7 }.orderIds)
+        assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == 2080.0 }.orderIds)
     }
 }

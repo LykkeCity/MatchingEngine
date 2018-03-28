@@ -15,7 +15,7 @@ import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
 
-class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDatabaseAccessor {
+class FileOrderBookDatabaseAccessor(private val ordersDir: String, private val stopOrdersDir: String): OrderBookDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
@@ -24,7 +24,16 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
 
     private var conf = FSTConfiguration.createDefaultConfiguration()
 
-    override fun loadLimitOrders(): List<NewLimitOrder> {
+    init {
+        val dir = File(stopOrdersDir)
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+    }
+
+    override fun loadLimitOrders(): List<NewLimitOrder> = loadLimitOrders(ordersDir)
+
+    private fun loadLimitOrders(ordersDir: String): List<NewLimitOrder> {
         val result = ArrayList<NewLimitOrder>()
         try {
             val dir = File(ordersDir)
@@ -70,28 +79,28 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
     override fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
         try {
             val fileName = "${asset}_$isBuy"
-            archiveAndDeleteFile(fileName)
-            saveFile(fileName, orderBook)
+            archiveAndDeleteFile(ordersDir, fileName)
+            saveFile(ordersDir, fileName, orderBook.toList())
         } catch(e: Exception) {
             LOGGER.error("Unable to save order book, size: ${orderBook.size}", e)
             METRICS_LOGGER.logError( "Unable to save order book, size: ${orderBook.size}", e)
         }
     }
 
-    fun saveFile(fileName: String, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
+    private fun saveFile(ordersDir: String, fileName: String, orderBook: List<NewLimitOrder>) {
         try {
             val file = File("$ordersDir/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
-            val bytes = conf.asByteArray(orderBook.toList())
+            val bytes = conf.asByteArray(orderBook)
             Files.write(FileSystems.getDefault().getPath("$ordersDir/$fileName"), bytes, StandardOpenOption.CREATE)
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
     }
 
-    private fun archiveAndDeleteFile(fileName: String) {
+    private fun archiveAndDeleteFile(ordersDir: String, fileName: String) {
         try {
             val newFile = FileSystems.getDefault().getPath("$ordersDir/_prev_$fileName")
             val oldFile = FileSystems.getDefault().getPath("$ordersDir/$fileName")
@@ -99,6 +108,24 @@ class FileOrderBookDatabaseAccessor(private val ordersDir: String): OrderBookDat
         } catch(e: Exception) {
             LOGGER.error("Unable to archive and delete, name: $fileName", e)
             METRICS_LOGGER.logError( "Unable to archive and delete, name: $fileName", e)
+        }
+    }
+
+    override fun loadStopLimitOrders(): List<NewLimitOrder> {
+        LOGGER.info("Start stop limit orders loading")
+        val result = loadLimitOrders(stopOrdersDir)
+        LOGGER.info("Loaded stop limit orders")
+        return result
+    }
+
+    override fun updateStopOrderBook(assetPairId: String, isBuy: Boolean, orderBook: Collection<NewLimitOrder>) {
+        try {
+            val fileName = "${assetPairId}_$isBuy"
+            archiveAndDeleteFile(stopOrdersDir, fileName)
+            saveFile(stopOrdersDir, fileName, orderBook.toList())
+        } catch(e: Exception) {
+            LOGGER.error("Unable to save stop order book, size: ${orderBook.size}", e)
+            METRICS_LOGGER.logError( "Unable to save stop order book, size: ${orderBook.size}", e)
         }
     }
 }
