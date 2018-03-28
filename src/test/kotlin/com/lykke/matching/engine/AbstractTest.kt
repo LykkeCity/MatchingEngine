@@ -2,12 +2,7 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.cache.DisabledAssetsCache
@@ -34,19 +29,29 @@ import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractTest {
 
-    @Autowired private
-    lateinit var disabledAssetsCache: DisabledAssetsCache
+    @Autowired
+    private lateinit var disabledAssetsCache: DisabledAssetsCache
 
     @Autowired
     lateinit var balancesHolder: BalancesHolder
 
+    @Autowired
+    protected lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
+
+    @Autowired
+    protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
+    @Autowired
+    private lateinit var assetsCache: AssetsCache
+
+    @Autowired
+    protected lateinit var assetsHolder: AssetsHolder
+
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+
     protected val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
     protected val applicationProperties = ApplicationProperties(testConfigDatabaseAccessor)
-
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     protected val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -57,12 +62,10 @@ abstract class AbstractTest {
     protected val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
+
     protected val reservedCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-
-    protected val assetsCache = AssetsCache(testBackOfficeDatabaseAccessor)
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
-    protected val assetsHolder = AssetsHolder(assetsCache)
     protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
     protected val trustedClients = mutableListOf<String>()

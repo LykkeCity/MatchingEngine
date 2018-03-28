@@ -5,6 +5,7 @@ import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.context.ApplicationEventPublisher
@@ -38,7 +39,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+    open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
         return TestBackOfficeDatabaseAccessor()
     }
 
@@ -48,12 +49,17 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testWalletDatabaseAccessor(): WalletDatabaseAccessor {
+    open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
         return TestWalletDatabaseAccessor()
     }
 
     @Bean
     open fun disabledAssetsCache(): DisabledAssetsCache {
         return DisabledAssetsCache(testSettingsDatabaseAccessor(), 60000)
+    }
+
+    @Bean
+    open fun balanceUpdateHandler(): BalanceUpdateHandlerTest {
+        return BalanceUpdateHandlerTest()
     }
 }
