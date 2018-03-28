@@ -27,10 +27,18 @@ class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor:
         val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
 
-    private val balances = walletDatabaseAccessor.loadBalances()
-    val wallets = walletDatabaseAccessor.loadWallets()
-    val initialClientsCount: Int = balances.size
-    val initialBalancesCount: Int = balances.values.sumBy { it.size }
+    private var balances = walletDatabaseAccessor.loadBalances()
+    var wallets = walletDatabaseAccessor.loadWallets()
+    var initialClientsCount: Int = balances.size
+    var initialBalancesCount: Int = balances.values.sumBy { it.size }
+
+    fun reload() {
+        balances = walletDatabaseAccessor.loadBalances()
+        wallets = walletDatabaseAccessor.loadWallets()
+        initialClientsCount = balances.size
+        initialBalancesCount = balances.values.sumBy { it.size }
+
+    }
 
     fun getBalance(clientId: String, assetId: String): Double {
         val client = balances[clientId]

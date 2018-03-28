@@ -24,14 +24,14 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
-import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MinVolumeOrderCancellerTest.Config::class)])
-@ActiveProfiles("dev")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     private lateinit var canceller: MinVolumeOrderCanceller
@@ -186,7 +186,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(1, clientsLimitOrdersQueue.size)
         assertEquals(5, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
 
-        assertEquals(1, balanceUpdateHandlerTest.getNumberOfNotifications())
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         assertEquals(4, rabbitOrderBookQueue.size)
         assertEquals(4, orderBookQueue.size)
