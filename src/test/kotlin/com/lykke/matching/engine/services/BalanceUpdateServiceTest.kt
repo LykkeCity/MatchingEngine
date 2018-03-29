@@ -58,7 +58,7 @@ class BalanceUpdateServiceTest: AbstractTest() {
     @Test
     fun testUpdateBalanceWithAnotherAssetBalance() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
-        balancesHolder.reload()
+        initServices()
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
@@ -76,7 +76,7 @@ class BalanceUpdateServiceTest: AbstractTest() {
     @Test
     fun testUpdateBalanceLowerThanResolved() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0, 1000.0))
-        balancesHolder.reload()
+        initServices()
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
@@ -93,7 +93,7 @@ class BalanceUpdateServiceTest: AbstractTest() {
     @Test
     fun testUpdateReservedBalanceWithAnotherAssetBalance() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
-        balancesHolder.reload()
+        initServices()
 
         reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 

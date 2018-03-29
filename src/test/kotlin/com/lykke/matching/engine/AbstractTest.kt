@@ -86,6 +86,7 @@ abstract class AbstractTest {
     protected open fun initServices() {
         assetsCache.update()
         assetPairsCache.update()
+        balancesHolder.reload()
 
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
 

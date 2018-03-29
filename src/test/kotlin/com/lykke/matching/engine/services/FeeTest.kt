@@ -86,7 +86,6 @@ class FeeTest: AbstractTest() {
                                 assetIds = listOf("BTC"))!!
                 )
         ))
-        balancesHolder.reload()
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -145,7 +144,6 @@ class FeeTest: AbstractTest() {
                                 assetIds = listOf("EUR"))!!
                 )
         ))
-        balancesHolder.reload()
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -197,7 +195,7 @@ class FeeTest: AbstractTest() {
                                 assetIds = listOf("USD"))!!
                 )
         ))
-        balancesHolder.reload()
+
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
@@ -234,7 +232,7 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 750.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.0503))
 
-        balancesHolder.reload()
+        initServices()
 
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -270,7 +268,7 @@ class FeeTest: AbstractTest() {
     fun testOrderBookNotEnoughFundsForMultipleFee() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 600.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.0403))
-        balancesHolder.reload()
+        initServices()
 
         for (i in 1..2) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -328,7 +326,7 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
 
-        balancesHolder.reload()
+        initServices()
 
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -359,7 +357,7 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
 
-        balancesHolder.reload()
+        initServices()
 
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -390,7 +388,7 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
 
-        balancesHolder.reload()
+        initServices()
 
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -421,7 +419,7 @@ class FeeTest: AbstractTest() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 151.5))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.01521))
 
-        balancesHolder.reload()
+        initServices()
 
         val feeSizes = arrayListOf(0.01, 0.1, 0.01)
         feeSizes.forEachIndexed { index, feeSize ->
@@ -488,7 +486,6 @@ class FeeTest: AbstractTest() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "BTCEUR", price = 11000.0, volume = -1.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "BTCEUR", price = 10000.0, volume = 1.0))
 
-        balancesHolder.reload()
         initServices()
 
         val feeSizes = arrayListOf(0.01, 0.1, 0.01)
