@@ -2,6 +2,7 @@ package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
+import com.lykke.matching.engine.config.TestConfigFactoryBean
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
@@ -18,6 +19,7 @@ import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -38,6 +40,9 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
     private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
+    @Autowired
+    private lateinit var config : com.lykke.matching.engine.utils.config.Config
 
     @TestConfiguration
     open class Config {
@@ -75,6 +80,15 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
             return testWalletDatabaseAccessor
         }
+
+        @Bean
+        @Primary
+        open fun testConfig(): FactoryBean<com.lykke.matching.engine.utils.config.Config> {
+            val testConfigFactoryBean = TestConfigFactoryBean()
+            testConfigFactoryBean.addTrustedClient("TrustedClient")
+
+            return testConfigFactoryBean
+        }
     }
 
     @Autowired
@@ -82,8 +96,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Before
     fun setUp() {
-        trustedClients.add("TrustedClient")
-
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 5))
@@ -216,7 +228,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         // recalculate reserved volumes to reset locked reservedAmount
         val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
                 testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(),
-                trustedClients.toSet(), applicationContext)
+                config.me.trustedClients.toSet(), applicationContext)
 
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))

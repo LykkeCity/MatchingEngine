@@ -24,8 +24,10 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.utils.config.ApplicationProperties
+import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
+
 
 abstract class AbstractTest {
 
@@ -47,6 +49,9 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var assetsHolder: AssetsHolder
 
+    @Autowired
+    private lateinit var config: Config
+
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
 
@@ -54,7 +59,6 @@ abstract class AbstractTest {
     protected val applicationProperties = ApplicationProperties(testConfigDatabaseAccessor)
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    protected val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     protected val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -67,8 +71,6 @@ abstract class AbstractTest {
     protected val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
-
-    protected val trustedClients = mutableListOf<String>()
 
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
@@ -88,7 +90,7 @@ abstract class AbstractTest {
         assetPairsCache.update()
         balancesHolder.reload()
 
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
+        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue,  config.me.trustedClients.toSet())
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
