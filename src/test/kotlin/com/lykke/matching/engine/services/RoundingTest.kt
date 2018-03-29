@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -13,27 +15,47 @@ import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertNotNull
 
-
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (RoundingTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class RoundingTest: AbstractTest() {
 
     companion object {
         private const val DELTA = 1e-9
     }
 
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0))
+            return testBackOfficeDatabaseAccessor
+        }
+    }
+
     @Before
     fun setUp() {
         testOrderDatabaseAccessor.clear()
-        testWalletDatabaseAccessor.clear()
         tradesInfoQueue.clear()
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 0))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))

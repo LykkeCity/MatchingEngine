@@ -7,11 +7,7 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -27,6 +23,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
 import java.util.Date
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
@@ -35,16 +34,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 abstract class MatchingEngineTest {
-
     protected val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    protected val trustedClients = setOf<String>()
 
     protected lateinit var genericService: GenericLimitOrderService
     protected lateinit var matchingEngine: MatchingEngine
@@ -54,19 +48,47 @@ abstract class MatchingEngineTest {
     @Autowired
     protected lateinit var balancesHolder: BalancesHolder
 
+    @Autowired
+    protected lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    protected lateinit var config: com.lykke.matching.engine.utils.config.Config
+
+    @Autowired
+    protected lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
+
+            return testWalletDatabaseAccessor
+        }
+    }
+
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
-
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
-
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
 
         initService()
     }
@@ -178,7 +200,9 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder,
+                balancesHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
+
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }
 
