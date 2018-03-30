@@ -44,7 +44,7 @@ fun main(args: Array<String>) {
 
     ThrottlingLogger.init(config.throttlingLogger)
 
-    correctReservedVolumesIfNeed(config)
+    correctReservedVolumesIfNeed(config, applicationSettingsCache)
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 
     startLogsCleaner(config)

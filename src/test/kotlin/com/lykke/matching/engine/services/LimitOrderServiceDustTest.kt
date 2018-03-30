@@ -16,7 +16,7 @@ class LimitOrderServiceDustTest : AbstractTest() {
 
     @Before
     fun setUp() {
-        configDatabaseAccessor.addTrustedClient("Client3")
+        testSettingsDatabaseAccessor.addTrustedClient("Client3")
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
@@ -149,10 +149,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(1000.0499727, testWalletDatabaseAcessor.getBalance("Client1", "BTC"))
-        assertEquals(840.09, testWalletDatabaseAcessor.getBalance("Client1", "USD"))
-        assertEquals(999.9500273, testWalletDatabaseAcessor.getBalance("Client2", "BTC"))
-        assertEquals(1159.91, testWalletDatabaseAcessor.getBalance("Client2", "USD"))
+        assertEquals(1000.0499727, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(840.09, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(999.9500273, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(1159.91, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
 }
