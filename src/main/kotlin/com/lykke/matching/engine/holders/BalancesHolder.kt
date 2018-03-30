@@ -6,16 +6,19 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+
 import org.apache.log4j.Logger
-import java.util.concurrent.BlockingQueue
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Service
 
-class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                     private val assetsHolder: AssetsHolder,
-                     private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
-                     private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
-                     private val applicationSettingsCache: ApplicationSettingsCache) {
 
+
+@Service
+class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                             private val assetsHolder: AssetsHolder,
+                                             private val applicationEventPublisher: ApplicationEventPublisher,
+                                             private val applicationSettingsCache: ApplicationSettingsCache) {
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
@@ -78,7 +81,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
-        notificationQueue.put(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
 
     fun updateReservedBalance(clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true) {
@@ -91,12 +94,13 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
 
-        notificationQueue.put(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
         LOGGER.info(balanceUpdate.toString())
-        balanceUpdateQueue.put(balanceUpdate)
+
+        applicationEventPublisher.publishEvent(balanceUpdate)
     }
 
     fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)

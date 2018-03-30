@@ -18,33 +18,37 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationContext
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.concurrent.LinkedBlockingQueue
 
-fun correctReservedVolumesIfNeed(config: Config) {
+fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext) {
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
+    val walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
-    val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
+    val backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
     val filePath = config.me.orderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
-    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
-    val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
-    val applicationSettingsCache = ApplicationSettingsCache(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
-    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor,
-            backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor,
-            applicationSettingsCache).recalculate()
+    val orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
+    val reservedVolumesDatabaseAccessor = applicationContext.getBean(AzureReservedVolumesDatabaseAccessor::class.java)
+    ReservedVolumesRecalculator(walletDatabaseAccessor,
+            dictionariesDatabaseAccessor,
+            backOfficeDatabaseAccessor,
+            orderBookDatabaseAccessor,
+            reservedVolumesDatabaseAccessor, applicationContext).recalculate()
 }
+
 
 class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                   private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                                   private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
-                                  private val applicationSettingsCache: ApplicationSettingsCache) {
+                                  private val applicationContext: ApplicationContext) {
+
+
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
 
@@ -57,7 +61,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
     fun recalculate() {
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
-        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
+        val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()

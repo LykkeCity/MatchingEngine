@@ -8,23 +8,27 @@ import com.lykke.matching.engine.daos.azure.AzureCandle
 import com.lykke.matching.engine.daos.azure.AzureHourCandle
 import com.lykke.matching.engine.daos.azure.AzureHourCandle.MICRO
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.util.ArrayList
 
-class AzureLimitOrderDatabaseAccessor(liquidityConfig: String) : LimitOrderDatabaseAccessor {
+@Component
+class AzureLimitOrderDatabaseAccessor  @Autowired constructor (val config: Config) : LimitOrderDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(LimitOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val bestPricesTable: CloudTable = getOrCreateTable(liquidityConfig, "MarketProfile")
-    private val candlesTable: CloudTable = getOrCreateTable(liquidityConfig, "FeedHistory")
-    private val hourCandlesTable: CloudTable = getOrCreateTable(liquidityConfig, "FeedHoursHistory")
+    private val bestPricesTable: CloudTable = getOrCreateTable(config.me.db.hLiquidityConnString, "MarketProfile")
+    private val candlesTable: CloudTable = getOrCreateTable(config.me.db.hLiquidityConnString, "FeedHistory")
+    private val hourCandlesTable: CloudTable = getOrCreateTable(config.me.db.hLiquidityConnString, "FeedHoursHistory")
 
     override fun updateBestPrices(prices: List<BestPrice>) {
         try {
