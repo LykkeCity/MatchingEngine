@@ -1,20 +1,18 @@
 package com.lykke.matching.engine.fee
 
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.matching.MatchingEngineTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -25,7 +23,14 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderF
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
@@ -35,33 +40,61 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (FeeProcessorTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FeeProcessorTest {
 
-    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private lateinit var feeProcessor: FeeProcessor
     private lateinit var genericLimitOrderService: GenericLimitOrderService
 
     @Autowired
+    private lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
     lateinit var balancesHolder: BalancesHolder
+
+    @Autowired
+    lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
+    @Autowired
+    lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+
+            return testWalletDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-
         initServices()
     }
 
     private fun initServices() {
         assetsPairsCache.update()
+        balancesHolder.reload()
         genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), emptySet())
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
@@ -642,3 +675,4 @@ class FeeProcessorTest {
     }
 
 }
+

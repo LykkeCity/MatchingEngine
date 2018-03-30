@@ -200,6 +200,7 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
+        balancesHolder.reload()
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder,
                 balancesHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
 
