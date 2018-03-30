@@ -51,7 +51,7 @@ class LimitOrderCancelServiceTest {
     private lateinit var assetsHolder: AssetsHolder
 
     @Autowired
-    private lateinit var config: com.lykke.matching.engine.utils.config.Config
+    private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @TestConfiguration
     open class Config {

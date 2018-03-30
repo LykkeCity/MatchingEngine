@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 
-
-
 @Service
 class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                              private val assetsHolder: AssetsHolder,
@@ -23,9 +21,16 @@ class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor:
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
 
-    val wallets = walletDatabaseAccessor.loadWallets()
-    val initialClientsCount: Int = wallets.size
-    val initialBalancesCount: Int = wallets.values.sumBy { it.balances.size }
+
+    var wallets = walletDatabaseAccessor.loadWallets()
+    var initialClientsCount: Int = wallets.size
+    var initialBalancesCount: Int = wallets.values.sumBy { it.balances.size }
+
+    fun reload() {
+        wallets = walletDatabaseAccessor.loadWallets()
+        initialClientsCount = wallets.size
+        initialBalancesCount = wallets.values.sumBy { it.balances.size }
+    }
 
     fun getBalance(clientId: String, assetId: String): Double {
         val wallet = wallets[clientId]
@@ -106,6 +111,6 @@ class BalancesHolder @Autowired constructor (private val walletDatabaseAccessor:
     fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
 
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
-        return WalletOperationsProcessor(this, walletDatabaseAccessor, notificationQueue, assetsHolder, validate, logger)
+        return WalletOperationsProcessor(this, walletDatabaseAccessor, applicationEventPublisher, assetsHolder, validate, logger)
     }
 }

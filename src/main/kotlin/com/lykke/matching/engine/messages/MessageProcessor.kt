@@ -159,7 +159,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
 
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor, 60000))
-        val applicationSettingsCache = ApplicationSettingsCache(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
+        val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
 
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)

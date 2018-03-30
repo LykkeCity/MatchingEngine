@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
@@ -17,10 +17,10 @@ open class TestApplicationContext {
 
     @Bean
     open fun balanceHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
-                      applicationEventPublisher: ApplicationEventPublisher, config: Config,
+                      applicationEventPublisher: ApplicationEventPublisher, applicationSettingsCache: ApplicationSettingsCache,
                       backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
         return BalancesHolder(walletDatabaseAccessor, assetHolder(backOfficeDatabaseAccessor),
-                applicationEventPublisher, config)
+                applicationEventPublisher, applicationSettingsCache)
     }
 
     @Bean
@@ -44,8 +44,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testSettingsDatabaseAccessor(): SettingsDatabaseAccessor {
-        return TestSettingsDatabaseAccessor()
+    open fun testConfigDatabaseAccessor(): ConfigDatabaseAccessor {
+        return TestConfigDatabaseAccessor()
     }
 
     @Bean
@@ -54,12 +54,12 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun disabledAssetsCache(): DisabledAssetsCache {
-        return DisabledAssetsCache(testSettingsDatabaseAccessor(), 60000)
+    open fun balanceUpdateHandler(): BalanceUpdateHandlerTest {
+        return BalanceUpdateHandlerTest()
     }
 
     @Bean
-    open fun balanceUpdateHandler(): BalanceUpdateHandlerTest {
-        return BalanceUpdateHandlerTest()
+    open fun applicationSettingsCache(configDatabaseAccessor: ConfigDatabaseAccessor): ApplicationSettingsCache {
+        return ApplicationSettingsCache(configDatabaseAccessor, 60000)
     }
 }

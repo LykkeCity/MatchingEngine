@@ -58,6 +58,9 @@ abstract class MatchingEngineTest {
     @Autowired
     protected lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
 
+    @Autowired
+    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
+
     @TestConfiguration
     open class Config {
         @Bean

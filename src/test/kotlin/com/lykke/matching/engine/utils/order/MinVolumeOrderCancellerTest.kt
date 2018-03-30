@@ -2,14 +2,10 @@ package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.config.TestConfigFactoryBean
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -19,7 +15,6 @@ import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -41,9 +36,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
     private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-    @Autowired
-    private lateinit var config : com.lykke.matching.engine.utils.config.Config
 
     @TestConfiguration
     open class Config {
@@ -84,11 +76,12 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): FactoryBean<com.lykke.matching.engine.utils.config.Config> {
-            val testConfigFactoryBean = TestConfigFactoryBean()
-            testConfigFactoryBean.addTrustedClient("TrustedClient")
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
 
-            return testConfigFactoryBean
+            testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+
+            return testSettingsDatabaseAccessor
         }
     }
 
@@ -247,8 +240,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
                 testDictionariesDatabaseAccessor,
                 testBackOfficeDatabaseAccessor,
                 testOrderDatabaseAccessor,
-                TestReservedVolumesDatabaseAccessor(),
-                applicationSettingsCache, applicationContext)
+                TestReservedVolumesDatabaseAccessor(), applicationContext)
 
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))

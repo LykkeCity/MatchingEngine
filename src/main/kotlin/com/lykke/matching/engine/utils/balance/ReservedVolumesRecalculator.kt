@@ -62,6 +62,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
+        val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()

@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.config.TestConfigFactoryBean
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
@@ -24,7 +23,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -75,12 +73,12 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): FactoryBean<com.lykke.matching.engine.utils.config.Config> {
-            val testConfigFactoryBean = TestConfigFactoryBean()
-            testConfigFactoryBean.addTrustedClient("Client1")
-            testConfigFactoryBean.addTrustedClient("Client5")
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
+            testSettingsDatabaseAccessor.addTrustedClient("Client1")
+            testSettingsDatabaseAccessor.addTrustedClient("Client5")
 
-            return testConfigFactoryBean
+            return testSettingsDatabaseAccessor
         }
     }
 

@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -60,6 +61,9 @@ class FeeProcessorTest {
     @Autowired
     lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
 
+    @Autowired
+    lateinit var applicationSettingsCache: ApplicationSettingsCache
+
     @TestConfiguration
     open class Config {
         @Bean
@@ -91,7 +95,7 @@ class FeeProcessorTest {
     private fun initServices() {
         assetsPairsCache.update()
         balancesHolder.reload()
-        genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), emptySet())
+        genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 

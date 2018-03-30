@@ -12,12 +12,13 @@ import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
+                                private val applicationEventPublisher: ApplicationEventPublisher,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
                                 private val logger: Logger?) {
@@ -87,7 +88,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
         walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets.toList())
-        clientIds.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
+        clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
         balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
     }
 

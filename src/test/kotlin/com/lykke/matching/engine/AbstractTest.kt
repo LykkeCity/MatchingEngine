@@ -6,11 +6,10 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -31,15 +30,10 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractTest {
-
-    @Autowired
-    private lateinit var disabledAssetsCache: DisabledAssetsCache
-
     @Autowired
     private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
@@ -59,16 +53,15 @@ abstract class AbstractTest {
     protected lateinit var assetsHolder: AssetsHolder
 
     @Autowired
-    private lateinit var config: Config
+    private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+    protected val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    protected val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     protected val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -77,12 +70,10 @@ abstract class AbstractTest {
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val reservedCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
-    protected val applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
 
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
@@ -96,13 +87,15 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateService: BalanceUpdateService
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
+    protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     protected open fun initServices() {
         assetsCache.update()
         assetPairsCache.update()
+        balancesHolder.reload()
+        applicationSettingsCache.update()
 
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, trustedClients.toSet())
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
+        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
