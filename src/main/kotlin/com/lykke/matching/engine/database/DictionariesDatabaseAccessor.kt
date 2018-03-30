@@ -5,5 +5,5 @@ import java.util.HashMap
 
 interface DictionariesDatabaseAccessor {
     fun loadAssetPairs(): HashMap<String, AssetPair>
-    fun loadAssetPair(assetId: String): AssetPair?
+    fun loadAssetPair(assetId: String, throwException: Boolean = false): AssetPair?
 }

@@ -38,7 +38,7 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
         return result
     }
 
-    override fun loadAssetPair(assetId: String): AssetPair? {
+    override fun loadAssetPair(assetId: String, throwException: Boolean): AssetPair? {
         try {
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
@@ -46,6 +46,9 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                 return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, assetPair.minVolume, assetPair.minInvertedVolume)
             }
         } catch(e: Exception) {
+            if (throwException) {
+                throw e
+            }
             LOGGER.error("Unable to load asset: $assetId", e)
             METRICS_LOGGER.logError( "Unable to load asset: $assetId", e)
         }
