@@ -4,7 +4,6 @@ import com.google.gson.FieldNamingPolicy.UPPER_CAMEL_CASE
 import com.google.gson.GsonBuilder
 import com.lykke.matching.engine.LOGGER
 import com.lykke.matching.engine.utils.config.Config
-import com.sun.xml.internal.fastinfoset.util.StringArray
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,7 +38,7 @@ class HttpConfigParser :  FactoryBean<Config> {
 
     @PostConstruct
     fun init() {
-        val commangLineArgs = enviroment.getProperty("nonOptionArgs", StringArray::class.java)
+        val commangLineArgs = enviroment.getProperty("nonOptionArgs", Array<String>::class.java)
 
         if (commangLineArgs == null) {
             LOGGER.error("Not enough args. Usage: httpConfigString")
