@@ -90,6 +90,7 @@ abstract class AbstractTest {
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     protected open fun initServices() {
+        clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
         balancesHolder.reload()
