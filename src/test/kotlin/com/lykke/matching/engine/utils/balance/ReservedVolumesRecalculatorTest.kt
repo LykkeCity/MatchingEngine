@@ -62,6 +62,17 @@ class ReservedVolumesRecalculatorTest {
 
             return testWalletDatabaseAccessor
         }
+
+        @Bean
+        @Primary
+        open fun testConfigDatabaseAccessor(): TestConfigDatabaseAccessor{
+            val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
+
+            testConfigDatabaseAccessor.addTrustedClient("trustedClient")
+            testConfigDatabaseAccessor.addTrustedClient("trustedClient2")
+
+            return testConfigDatabaseAccessor
+        }
     }
 
     @Autowired
