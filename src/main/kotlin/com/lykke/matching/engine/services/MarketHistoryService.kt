@@ -4,12 +4,15 @@ import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
-import java.util.Date
-import java.util.HashMap
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+import java.util.*
+import kotlin.concurrent.fixedRateTimer
 
-class HistoryTicksService(
+class MarketHistoryService(
         private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
-        private val genericLimitOrderService: GenericLimitOrderService) {
+        private val genericLimitOrderService: GenericLimitOrderService,
+        private val frequency: Long) {
 
     private val COUNT: Long = 4000
 
@@ -71,21 +74,32 @@ class HistoryTicksService(
         }
     }
 
-    fun buildTicks() {
-        performanceLogger.start()
-        val now = Date()
-        val ticks = genericLimitOrderService.buildMarketProfile()
-        for (tick in ticks) {
-            addTicks(now.time, tick.asset, tick.ask, tick.bid)
+    fun start(): Timer {
+
+        return fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = getInterval(Duration.ofHours(1))) {
+            recordCurrentMarketState()
         }
+    }
+
+    private fun recordCurrentMarketState() {
+        performanceLogger.start()
+        val startTimeOfBuildingMarketProfile = Date()
+        val bestPrices = genericLimitOrderService.buildMarketProfile()
+
+        bestPrices.forEach { recordMarketStateForAsset(startTimeOfBuildingMarketProfile.time, it.asset, it.ask, it.bid)}
+
+        persist(startTimeOfBuildingMarketProfile)
+    }
+
+    private fun persist(startTimeOfBuildingMarketProfile: Date) {
         performanceLogger.startPersist()
-        saveTicks(now.time)
+        saveTicks(startTimeOfBuildingMarketProfile.time)
         performanceLogger.endPersist()
         performanceLogger.end()
         performanceLogger.fixTime()
     }
 
-    private fun addTicks(now: Long, asset: String, ask: Double, bid: Double) {
+    private fun recordMarketStateForAsset(now: Long, asset: String, ask: Double, bid: Double) {
         addTick(oneHourTicks, asset, ONE_HOUR, ask, bid)
         if (oneDayLastUpdateTime + oneDayUpdateInterval < now ) {
             addTick(oneDayTicks, asset, ONE_DAY, ask, bid)
@@ -132,5 +146,9 @@ class HistoryTicksService(
             oneYearTicks.values.forEach { historyTicksDatabaseAccessor.saveHistoryTick(it) }
             oneYearLastUpdateTime = now
         }
+    }
+
+    private fun getInterval(duration: Duration): Long {
+        return duration.get(ChronoUnit.MILLIS) / frequency
     }
 }

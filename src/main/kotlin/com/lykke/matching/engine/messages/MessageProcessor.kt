@@ -52,7 +52,7 @@ import com.lykke.matching.engine.services.CashOperationService
 import com.lykke.matching.engine.services.CashSwapOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.HistoryTicksService
+import com.lykke.matching.engine.services.MarketHistoryService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
@@ -128,7 +128,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
-    private val historyTicksService: HistoryTicksService
+    private val marketHistoryService: MarketHistoryService
 
     private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
@@ -185,8 +185,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         }
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
-        this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
-        historyTicksService.init()
+        this.marketHistoryService = MarketHistoryService(historyTicksDatabaseAccessor, genericLimitOrderService, 4000)
         this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
         balanceUpdateHandler.start()
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
@@ -240,9 +239,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
             tradesInfoService.saveHourCandles()
         }
 
-        this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
-            historyTicksService.buildTicks()
-        }
+        this.historyTicksBuilder = marketHistoryService.start()
 
         val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {

@@ -10,6 +10,10 @@ class TickBlobHolder(val name: String, blob: CloudBlob?) {
     var askTicks = LinkedList<Double>()
     var bidTicks = LinkedList<Double>()
 
+    init {
+        parseBlob(blob)
+    }
+
     fun addTick(askPrice: Double, bidPrice: Double) {
         addTick(askPrice, askTicks)
         addTick(bidPrice, bidTicks)
@@ -23,19 +27,6 @@ class TickBlobHolder(val name: String, blob: CloudBlob?) {
         if (prices.size > 4000) {
             prices.removeFirst()
         }
-    }
-
-    fun parseBlob(blob: CloudBlob?): LinkedList<Double> {
-        val result = LinkedList<Double>()
-        val data = getBlobValue(blob)
-        if (data != null) {
-            for (price in data.split(";")) {
-                val prices = price.split(",")
-                askTicks.add(prices[0].toDouble())
-                bidTicks.add(prices[1].toDouble())
-            }
-        }
-        return result
     }
 
     fun getBlobValue(blob: CloudBlob?): String? {
@@ -55,7 +46,16 @@ class TickBlobHolder(val name: String, blob: CloudBlob?) {
         return joiner.toString()
     }
 
-    init {
-        parseBlob(blob)
+    private fun parseBlob(blob: CloudBlob?): LinkedList<Double> {
+        val result = LinkedList<Double>()
+        val data = getBlobValue(blob)
+        if (data != null) {
+            for (price in data.split(";")) {
+                val prices = price.split(",")
+                askTicks.add(prices[0].toDouble())
+                bidTicks.add(prices[1].toDouble())
+            }
+        }
+        return result
     }
 }
