@@ -12,4 +12,8 @@ class TestHistoryTicksDatabaseAccessor : HistoryTicksDatabaseAccessor{
     override fun saveHistoryTick(tick: TickBlobHolder) {
         ticks.add(tick)
     }
+
+    fun clear() {
+        ticks.clear()
+    }
 }

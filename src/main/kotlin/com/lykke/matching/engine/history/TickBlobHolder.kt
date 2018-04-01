@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.TickUpdateInterval
 import java.util.*
 
 
-class TickBlobHolder(val assetPair: String,
+data class TickBlobHolder(val assetPair: String,
                      val tickUpdateInterval: TickUpdateInterval,
                      val askTicks: LinkedList<Double>,
                      val bidTicks: LinkedList<Double>,

@@ -39,6 +39,7 @@ dependencies {
     compile 'de.ruedigermoeller:fst:2.52'
 
     testCompile  'junit:junit:4.11'
+    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.8.4'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
