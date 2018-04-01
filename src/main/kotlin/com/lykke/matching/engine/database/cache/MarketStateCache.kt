@@ -7,6 +7,7 @@ import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
 import java.util.*
 import java.util.function.Consumer
+import java.util.stream.Collectors
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -20,6 +21,11 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
     private val dirtyTicks = ArrayList<TickBlobHolder>()
 
+    init {
+        refresh()
+    }
+
+    @Synchronized
     fun addTick(assetPair: String, ask: Double, bid: Double, currentUpdateTime: Long) {
         val intervalToTickBlobHolder = assetPairToIntervalTickHolder.getOrPut(assetPair) { HashMap() }
 
@@ -52,7 +58,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     fun flush() {
         performanceLogger.startPersist()
 
-        dirtyTicks.forEach(Consumer {
+        getDirtyTicks().forEach(Consumer {
             historyTicksDatabaseAccessor.saveHistoryTick(it)
         })
 
@@ -60,19 +66,18 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
         dirtyTicks.clear()
     }
 
+    @Synchronized
+    private fun getDirtyTicks(): List<TickBlobHolder> {
+        return dirtyTicks.stream()
+                .map { TickBlobHolder(it) }
+                .collect(Collectors.toList())
+    }
+
     private fun getUpdateInterval(tickUpdateInterval: TickUpdateInterval): Long {
         return tickUpdateInterval.period / frequency
     }
 
-    private fun getAssetPair(blobName: String) {
-
-    }
-
-    private fun getPeriod(blobName: String) {
-
-    }
-
     private fun isTimeForAddNewTick(tickBlobHolder: TickBlobHolder, currentUpdateTime: Long): Boolean {
-        return getUpdateInterval(tickBlobHolder.tickUpdateInterval) +  tickBlobHolder.lastUpdate >= currentUpdateTime
+        return getUpdateInterval(tickBlobHolder.tickUpdateInterval) +  tickBlobHolder.lastUpdate <= currentUpdateTime
     }
 }

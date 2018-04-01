@@ -11,6 +11,14 @@ class TickBlobHolder(val assetPair: String,
                      val lastUpdate: Long,
                      val frequency: Long) {
 
+    constructor(tickBlobHolder: TickBlobHolder): this(assetPair =  tickBlobHolder.assetPair,
+            tickUpdateInterval = tickBlobHolder.tickUpdateInterval,
+            askTicks = tickBlobHolder.askTicks,
+            bidTicks = tickBlobHolder.bidTicks,
+            lastUpdate = tickBlobHolder.lastUpdate,
+            frequency = tickBlobHolder.frequency)
+
+
     companion object {
         val PRICE_PAIR_DELIMITER = ";"
     }

@@ -26,18 +26,6 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
 
     private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(historyTicksString, "history")
 
-    override fun loadHistoryTick(asset: String, period: String): CloudBlob? {
-        try {
-            val blobItem = historyBlobContainer.getBlockBlobReference("BA_${asset}_$period")
-            if (blobItem.exists()) {
-                return blobItem
-            }
-        } catch (e: Exception) {
-            LOGGER.error("Unable to load blobs", e)
-            METRICS_LOGGER.logError( "Unable to load blobs", e)
-        }
-        return null
-    }
 
     override fun loadHistoryTicks(): List<TickBlobHolder> {
          return loadHistoryBlobs()
