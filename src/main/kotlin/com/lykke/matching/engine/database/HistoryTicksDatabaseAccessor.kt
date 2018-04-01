@@ -5,6 +5,6 @@ import com.microsoft.azure.storage.blob.CloudBlob
 
 interface HistoryTicksDatabaseAccessor {
     fun loadHistoryTick(asset: String, period: String) : CloudBlob?
-    fun loadHistoryTicks() : List<CloudBlob>
+    fun loadHistoryTicks() : List<TickBlobHolder>
     fun saveHistoryTick(tick: TickBlobHolder)
 }

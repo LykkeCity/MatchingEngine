@@ -1,12 +1,78 @@
 package com.lykke.matching.engine.database.cache
 
+import com.lykke.matching.engine.daos.TickUpdateInterval
+import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
-import java.util.HashMap
+import com.lykke.utils.logging.PerformanceLogger
+import org.apache.log4j.Logger
+import java.util.*
+import java.util.function.Consumer
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
-class MarketStateCache {
-    private val oneHourMArketStates = HashMap<String, TickBlobHolder>()
-    private val oneDayMArketStates = HashMap<String, TickBlobHolder>()
-    private val threeDaysMArketStates = HashMap<String, TickBlobHolder>()
-    private val oneMonthMArketStates = HashMap<String, TickBlobHolder>()
-    private val oneYearMArketStates = HashMap<String, TickBlobHolder>()
+class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
+                       private val frequency: Long) {
+
+    companion object {
+        private val performanceLogger = PerformanceLogger(Logger.getLogger("marketStateCache"), 10, "buildTicks: ")
+    }
+
+    private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
+    private val dirtyTicks = ArrayList<TickBlobHolder>()
+
+    fun addTick(assetPair: String, ask: Double, bid: Double, currentUpdateTime: Long) {
+        val intervalToTickBlobHolder = assetPairToIntervalTickHolder.getOrPut(assetPair) { HashMap() }
+
+        intervalToTickBlobHolder.forEach({ interval, blobHolder ->
+            if(blobHolder == null) {
+                val tickBlobHolder = TickBlobHolder(assetPair = assetPair,
+                        tickUpdateInterval = interval,
+                        askTicks = LinkedList(Arrays.asList(ask)),
+                        bidTicks = LinkedList(Arrays.asList(bid)),
+                        lastUpdate = currentUpdateTime,
+                        frequency = frequency)
+                intervalToTickBlobHolder[interval] = tickBlobHolder
+                dirtyTicks.add(tickBlobHolder)
+            }
+            if(isTimeForAddNewTick(blobHolder, currentUpdateTime)) {
+                blobHolder.addPrice(ask, bid)
+                dirtyTicks.add(blobHolder)
+            }
+        })
+    }
+
+    fun refresh() {
+        val ticks = historyTicksDatabaseAccessor.loadHistoryTicks()
+        ticks.forEach {
+            val assetPairToTick = assetPairToIntervalTickHolder.getOrPut(it.assetPair) {HashMap()}
+            assetPairToTick!![it.tickUpdateInterval] = it
+        }
+    }
+
+    fun flush() {
+        performanceLogger.startPersist()
+
+        dirtyTicks.forEach(Consumer {
+            historyTicksDatabaseAccessor.saveHistoryTick(it)
+        })
+
+        performanceLogger.endPersist()
+        dirtyTicks.clear()
+    }
+
+    private fun getUpdateInterval(tickUpdateInterval: TickUpdateInterval): Long {
+        return tickUpdateInterval.period / frequency
+    }
+
+    private fun getAssetPair(blobName: String) {
+
+    }
+
+    private fun getPeriod(blobName: String) {
+
+    }
+
+    private fun isTimeForAddNewTick(tickBlobHolder: TickBlobHolder, currentUpdateTime: Long): Boolean {
+        return getUpdateInterval(tickBlobHolder.tickUpdateInterval) +  tickBlobHolder.lastUpdate >= currentUpdateTime
+    }
 }

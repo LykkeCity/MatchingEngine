@@ -52,7 +52,7 @@ import com.lykke.matching.engine.services.CashOperationService
 import com.lykke.matching.engine.services.CashSwapOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.MarketHistoryService
+import com.lykke.matching.engine.services.HistoryTicksService
 import com.lykke.matching.engine.services.LimitOrderCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
@@ -128,7 +128,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
-    private val marketHistoryService: MarketHistoryService
+    private val historyTicksService: HistoryTicksService
 
     private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
@@ -156,7 +156,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.limitOrderDatabaseAccessor = AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
         this.marketOrderDatabaseAccessor = AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString)
         this.backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
-        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
+        this.historyTicksDatabaseAccessor = AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString, 4000)
         this.orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
 
         val assetsHolder = AssetsHolder(AssetsCache(AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString), 60000))
@@ -185,7 +185,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         }
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
-        this.marketHistoryService = MarketHistoryService(historyTicksDatabaseAccessor, genericLimitOrderService, 4000)
+        this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService, 4000)
         this.balanceUpdateHandler = BalanceUpdateHandler(balanceNotificationQueue)
         balanceUpdateHandler.start()
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
@@ -239,7 +239,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
             tradesInfoService.saveHourCandles()
         }
 
-        this.historyTicksBuilder = marketHistoryService.start()
+        this.historyTicksBuilder = historyTicksService.start()
 
         val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
         fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
