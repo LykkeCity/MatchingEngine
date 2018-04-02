@@ -34,12 +34,14 @@ class TestMarketStateCache {
 
     @Test
     fun testAddDataToExistingTick() {
-        val chfUsdTick = getTick("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
-        val usdBtcTick = getTick("USDBTC", LinkedList(Arrays.asList(0.9)), LinkedList(Arrays.asList(0.8)))
+        //given
+        val chfUsdTick = getOneHourTickHolder("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
+        val usdBtcTick = getOneHourTickHolder("USDBTC", LinkedList(Arrays.asList(0.9)), LinkedList(Arrays.asList(0.8)))
         Mockito.`when`(historyDatabaseAccessor.loadHistoryTicks())
                 .thenReturn(Arrays.asList(chfUsdTick,
                         usdBtcTick))
 
+        //when
         marketStateCache.refresh()
 
         Thread.sleep(1000)
@@ -48,9 +50,37 @@ class TestMarketStateCache {
         marketStateCache.addTick("CHFUSD", 0.5, 0.7, currentUpdateTime)
         marketStateCache.flush()
 
+        //then
         val expectedTick = TickBlobHolder(chfUsdTick)
         expectedTick.addPrice(0.5, 0.7)
 
+        verify(historyDatabaseAccessor).saveHistoryTick(expectedTick)
+        verify(historyDatabaseAccessor, never()).saveHistoryTick(usdBtcTick)
+    }
+
+    @Test
+    fun testDataShouldNotBeAddedToTickThatIsNotTimeFor() {
+        //given
+        val chfUsdTick = getOneHourTickHolder("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
+        val usdBtcTick = getOneDayTickHolder("USDBTC", LinkedList(Arrays.asList(0.9)), LinkedList(Arrays.asList(0.8)))
+        Mockito.`when`(historyDatabaseAccessor.loadHistoryTicks())
+                .thenReturn(Arrays.asList(chfUsdTick,
+                        usdBtcTick))
+
+        //when
+        marketStateCache.refresh()
+
+        Thread.sleep(1000)
+
+        val currentUpdateTime = System.currentTimeMillis()
+        marketStateCache.addTick("CHFUSD", 0.5, 0.7, currentUpdateTime)
+        marketStateCache.addTick("USDBTC", 0.7, 0.4, currentUpdateTime)
+        marketStateCache.flush()
+
+        val expectedTick = TickBlobHolder(chfUsdTick)
+        expectedTick.addPrice(0.5, 0.7)
+
+        //then
         verify(historyDatabaseAccessor).saveHistoryTick(expectedTick)
         verify(historyDatabaseAccessor, never()).saveHistoryTick(usdBtcTick)
     }
@@ -62,17 +92,29 @@ class TestMarketStateCache {
 
     @Test
     fun testFlushChanges() {
+        //given
+        val chfUsdTick = getOneHourTickHolder("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
 
+        //when
+        marketStateCache.addTick(chfUsdTick.assetPair, chfUsdTick.askTicks.first, chfUsdTick.bidTicks.first)
+
+        //then
+        verify(historyDatabaseAccessor).saveHistoryTick(chfUsdTick)
     }
 
-    @Test
-    fun tickAddedOnTime() {
 
-    }
-
-    private fun getTick(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {
+    private fun getOneHourTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {
         return TickBlobHolder(assetPair = assetPair,
                 tickUpdateInterval = TickUpdateInterval.ONE_HOUR,
+                askTicks = ask,
+                bidTicks = bid,
+                lastUpdate = System.currentTimeMillis(),
+                frequency =  4000L)
+    }
+
+    private fun getOneDayTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {
+        return TickBlobHolder(assetPair = assetPair,
+                tickUpdateInterval = TickUpdateInterval.ONE_DAY,
                 askTicks = ask,
                 bidTicks = bid,
                 lastUpdate = System.currentTimeMillis(),

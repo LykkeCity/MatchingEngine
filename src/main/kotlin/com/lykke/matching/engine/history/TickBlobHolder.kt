@@ -18,6 +18,19 @@ data class TickBlobHolder(val assetPair: String,
             lastUpdate = tickBlobHolder.lastUpdate,
             frequency = tickBlobHolder.frequency)
 
+    constructor(assetPair: String,
+                tickUpdateInterval: TickUpdateInterval,
+                askTicks: Double,
+                bidTicks: Double,
+                lastUpdate: Long,
+                frequency: Long): this(assetPair =  assetPair,
+            tickUpdateInterval = tickUpdateInterval,
+            askTicks = LinkedList(),
+            bidTicks = LinkedList(),
+            lastUpdate = lastUpdate,
+            frequency = frequency) {
+        addPrice(askTicks, bidTicks)
+    }
 
     companion object {
         val PRICE_PAIR_DELIMITER = ";"
