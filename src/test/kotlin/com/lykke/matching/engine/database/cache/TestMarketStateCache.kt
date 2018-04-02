@@ -3,6 +3,7 @@ package com.lykke.matching.engine.database.cache
 import com.lykke.matching.engine.daos.TickUpdateInterval
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
+import com.nhaarman.mockito_kotlin.eq
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -10,7 +11,7 @@ import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.runners.MockitoJUnitRunner
+import org.mockito.junit.MockitoJUnitRunner
 import java.util.*
 
 @RunWith(MockitoJUnitRunner::class)
@@ -20,12 +21,6 @@ class TestMarketStateCache {
     private lateinit var historyDatabaseAccessor: HistoryTicksDatabaseAccessor
 
     private lateinit var marketStateCache: MarketStateCache
-
-//    private fun <T> any(): T {
-//        Mockito.any<T>()
-//        return uninitialized()
-//    }
-//    private fun <T> uninitialized(): T = null as T
 
     @Before
     fun init() {
@@ -87,21 +82,24 @@ class TestMarketStateCache {
 
     @Test
     fun testAddDataToNonExistingTick() {
-
-    }
-
-    @Test
-    fun testFlushChanges() {
         //given
-        val chfUsdTick = getOneHourTickHolder("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
+        val chfUsdTick = TickBlobHolder(assetPair = "CHFUSD",
+                tickUpdateInterval = TickUpdateInterval.ONE_HOUR,
+                askTicks = 0.1,
+                bidTicks = 0.2,
+                lastUpdate = System.currentTimeMillis(),
+                frequency =  4000L)
 
         //when
-        marketStateCache.addTick(chfUsdTick.assetPair, chfUsdTick.askTicks.first, chfUsdTick.bidTicks.first)
+        marketStateCache.addTick(chfUsdTick.assetPair,
+                chfUsdTick.askTicks.first,
+                chfUsdTick.bidTicks.first,
+                chfUsdTick.lastUpdate)
+        marketStateCache.flush()
 
         //then
-        verify(historyDatabaseAccessor).saveHistoryTick(chfUsdTick)
+        verify(historyDatabaseAccessor).saveHistoryTick(eq(chfUsdTick))
     }
-
 
     private fun getOneHourTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {
         return TickBlobHolder(assetPair = assetPair,
