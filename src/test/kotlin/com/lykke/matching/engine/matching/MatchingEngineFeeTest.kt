@@ -2,9 +2,10 @@ package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import org.junit.Test
 
@@ -17,6 +18,11 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.0211111,
                         targetClientId = "Client4"
+                ),
+                fees = buildLimitOrderFeeInstructions(
+                        type = FeeType.CLIENT_FEE,
+                        makerSize = 0.0211111,
+                        targetClientId = "Client4"
                 )
         ))
 
@@ -24,6 +30,11 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -200.0,
                 fee = buildLimitOrderFeeInstruction(
+                        type = FeeType.CLIENT_FEE,
+                        takerSize = 0.01,
+                        targetClientId = "Client3"
+                ),
+                fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         takerSize = 0.01,
                         targetClientId = "Client3"
@@ -48,7 +59,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     @Test
     fun testBuyLimitOrderFee() {
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
-                fee = buildLimitOrderFeeInstruction(
+                fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.02,
                         targetClientId = "Client4"
@@ -58,7 +69,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client1", price = 1.2, volume = 200.0,
-                fee = buildLimitOrderFeeInstruction(
+                fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         takerSize = 0.01,
                         targetClientId = "Client3"
@@ -83,7 +94,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     @Test
     fun testSellMarketOrderFee() {
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0,
-                fee = buildLimitOrderFeeInstruction(
+                fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.02,
                         targetClientId = "Client4"
@@ -93,7 +104,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
         initService()
 
         val limitOrder = buildMarketOrder(clientId = "Client2", volume = -100.0,
-                fee = buildFeeInstruction(
+                fees = buildFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         size = 0.01,
                         targetClientId = "Client3"
@@ -118,7 +129,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     @Test
     fun testBuyMarketOrderFee() {
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
-                fee = buildLimitOrderFeeInstruction(
+                fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.02,
                         targetClientId = "Client4"
@@ -128,7 +139,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
         initService()
 
         val limitOrder = buildMarketOrder(clientId = "Client1", volume = 100.0,
-                fee = buildFeeInstruction(
+                fees = buildFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         size = 0.01,
                         targetClientId = "Client3"

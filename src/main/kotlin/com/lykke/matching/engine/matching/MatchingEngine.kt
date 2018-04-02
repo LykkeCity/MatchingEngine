@@ -8,7 +8,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
-import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.greaterThan
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -114,7 +113,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 val cashMovements = mutableListOf(baseAssetOperation, quotingAssetOperation, limitBaseAssetOperation, limitQuotingAssetOperation)
 
                 val makerFees = try {
-                    feeProcessor.processMakerFee(listOfFee(limitOrder.fee, limitOrder.fees), if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                    feeProcessor.processMakerFee(limitOrder.fees ?: emptyList(), if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
                 } catch (e: FeeException) {
                     LOGGER.info("Added order (id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrder)
@@ -122,7 +121,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 }
 
                 val takerFees = try {
-                    feeProcessor.processFee(listOfFee(order.fee, order.fees), if (isBuy) baseAssetOperation else quotingAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                    feeProcessor.processFee(order.fees ?: emptyList(), if (isBuy) baseAssetOperation else quotingAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
                 } catch (e: NotEnoughFundsFeeException) {
                     order.status = OrderStatus.NotEnoughFunds.name
                     LOGGER.info("Not enough funds for fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
