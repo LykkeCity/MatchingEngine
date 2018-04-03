@@ -18,7 +18,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     }
 
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
-    private val dirtyTicks = LinkedList<TickBlobHolder>()
+    private val dirtyTicks = HashSet<TickBlobHolder>()
     init {
         refresh()
     }
@@ -56,6 +56,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     }
 
     fun flush() {
+        performanceLogger.start()
         performanceLogger.startPersist()
 
         val ticksToPersist = getTicksToPersist()
@@ -64,6 +65,8 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
         })
 
         performanceLogger.endPersist()
+        performanceLogger.end()
+        performanceLogger.fixTime()
     }
 
     @Synchronized

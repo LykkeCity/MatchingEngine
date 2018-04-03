@@ -54,7 +54,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
 
     private fun loadHistoryBlob(asset: String,tickUpdateInterval: TickUpdateInterval): CloudBlob? {
         try {
-            val blobItem = historyBlobContainer.getBlockBlobReference(BLOB_NAME_PATTERN.format(asset, tickUpdateInterval.prefix))
+            val blobItem = historyBlobContainer.getBlockBlobReference(getBlobName(asset, tickUpdateInterval))
             if (blobItem.exists()) {
                 return blobItem
             }
@@ -93,7 +93,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         if (data != null) {
             data.split(PRICE_PAIR_DELIMITER).forEach {
                 val prices = it.split(PRICE_DELIMITER)
-                bidTicks.add(prices[0].toDouble())
+                askTicks.add(prices[0].toDouble())
                 bidTicks.add(prices[1].toDouble())
             }
         }
