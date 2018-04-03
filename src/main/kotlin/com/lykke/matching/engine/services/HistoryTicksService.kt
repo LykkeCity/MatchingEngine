@@ -4,7 +4,6 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
 import java.time.Duration
-import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
@@ -17,11 +16,12 @@ class HistoryTicksService(
     private lateinit var historyTicksPersist: Timer
 
     fun start(): Timer {
-        historyTicksPersist = fixedRateTimer(name = "HistoryTicksPersist", initialDelay = 0, period = getInterval(Duration.ofHours(1))) {
+        val persistPeriod = getPeriod(Duration.ofDays(1))
+        historyTicksPersist = fixedRateTimer(name = "HistoryTicksPersist", initialDelay = persistPeriod, period = persistPeriod) {
             marketStateCache.flush()
         }
 
-        return fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = getInterval(Duration.ofHours(1))) {
+        return fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = getPeriod(Duration.ofHours(1))) {
             recordTicks()
         }
     }
@@ -38,7 +38,7 @@ class HistoryTicksService(
         performanceLogger.fixTime()
     }
 
-    private fun getInterval(duration: Duration): Long {
-        return duration.get(ChronoUnit.MILLIS) / frequency
+    private fun getPeriod(duration: Duration): Long {
+        return duration.toMillis() / frequency
     }
 }

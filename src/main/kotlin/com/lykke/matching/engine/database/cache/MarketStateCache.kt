@@ -77,7 +77,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     }
 
     private fun getUpdateInterval(tickUpdateInterval: TickUpdateInterval): Long {
-        return tickUpdateInterval.period / frequency
+        return tickUpdateInterval.interval / frequency
     }
 
     private fun isTimeForAddNewTick(tickBlobHolder: TickBlobHolder, currentUpdateTime: Long): Boolean {

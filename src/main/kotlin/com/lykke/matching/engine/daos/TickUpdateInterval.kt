@@ -2,7 +2,7 @@ package com.lykke.matching.engine.daos
 
 import java.time.Duration
 
-enum class TickUpdateInterval(val prefix: String, val period: Long){
+enum class TickUpdateInterval(val prefix: String, val interval: Long){
     ONE_HOUR("1H", Duration.ofHours(1).toMillis()),
     ONE_DAY("1D", Duration.ofDays(1).toMillis()),
     THREE_DAYS("3D", Duration.ofDays(3).toMillis()),
