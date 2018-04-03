@@ -85,8 +85,8 @@ class TestMarketStateCache {
         //given
         val chfUsdTick = TickBlobHolder(assetPair = "CHFUSD",
                 tickUpdateInterval = TickUpdateInterval.ONE_HOUR,
-                askTicks = 0.1,
-                bidTicks = 0.2,
+                ask = 0.1,
+                bid = 0.2,
                 lastUpdate = System.currentTimeMillis(),
                 frequency =  4000L)
 
@@ -99,6 +99,7 @@ class TestMarketStateCache {
 
         //then
         verify(historyDatabaseAccessor).saveHistoryTick(eq(chfUsdTick))
+        verify(historyDatabaseAccessor).loadHistoryTick(eq(chfUsdTick.assetPair), eq(chfUsdTick.tickUpdateInterval))
     }
 
     private fun getOneHourTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {

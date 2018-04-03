@@ -8,7 +8,6 @@ import org.apache.log4j.Logger
 import java.util.*
 import java.util.function.Consumer
 import java.util.stream.Collectors
-import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
@@ -20,7 +19,6 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
 
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
     private val dirtyTicks = LinkedList<TickBlobHolder>()
-
     init {
         refresh()
     }
@@ -32,13 +30,13 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
         TickUpdateInterval.values().forEach({ interval ->
             val blobHolder = intervalToTickBlobHolder[interval]
             if(blobHolder == null) {
-                val tickBlobHolder = TickBlobHolder(assetPair = assetPair,
+                val tickBlobHolder = historyTicksDatabaseAccessor.loadHistoryTick(assetPair, interval) ?: TickBlobHolder(assetPair = assetPair,
                         tickUpdateInterval = interval,
-                        askTicks = ask,
-                        bidTicks = bid,
                         lastUpdate = currentUpdateTime,
                         frequency = frequency)
                 intervalToTickBlobHolder[interval] = tickBlobHolder
+
+                tickBlobHolder.addPrice(ask, bid)
                 dirtyTicks.add(tickBlobHolder)
                 return@forEach
             }
@@ -60,7 +58,8 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     fun flush() {
         performanceLogger.startPersist()
 
-        getDirtyTicks().forEach(Consumer {
+        val ticksToPersist = getTicksToPersist()
+        ticksToPersist.forEach(Consumer {
             historyTicksDatabaseAccessor.saveHistoryTick(it)
         })
 
@@ -68,7 +67,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     }
 
     @Synchronized
-    private fun getDirtyTicks(): List<TickBlobHolder> {
+    private fun getTicksToPersist(): List<TickBlobHolder> {
         val ticks = dirtyTicks.stream()
                 .map { TickBlobHolder(it) }
                 .collect(Collectors.toList())

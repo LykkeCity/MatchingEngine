@@ -13,24 +13,32 @@ data class TickBlobHolder(val assetPair: String,
 
     constructor(tickBlobHolder: TickBlobHolder): this(assetPair =  tickBlobHolder.assetPair,
             tickUpdateInterval = tickBlobHolder.tickUpdateInterval,
-            askTicks = tickBlobHolder.askTicks,
-            bidTicks = tickBlobHolder.bidTicks,
+            askTicks = tickBlobHolder.askTicks.clone() as LinkedList<Double>,
+            bidTicks = tickBlobHolder.bidTicks.clone() as LinkedList<Double>,
             lastUpdate = tickBlobHolder.lastUpdate,
             frequency = tickBlobHolder.frequency)
 
     constructor(assetPair: String,
                 tickUpdateInterval: TickUpdateInterval,
-                askTicks: Double,
-                bidTicks: Double,
+                ask: Double,
+                bid: Double,
+                lastUpdate: Long,
+                frequency: Long): this(assetPair =  assetPair,
+            tickUpdateInterval = tickUpdateInterval,
+            lastUpdate = lastUpdate,
+            frequency = frequency) {
+        addPrice(ask, bid)
+    }
+
+    constructor(assetPair: String,
+                tickUpdateInterval: TickUpdateInterval,
                 lastUpdate: Long,
                 frequency: Long): this(assetPair =  assetPair,
             tickUpdateInterval = tickUpdateInterval,
             askTicks = LinkedList(),
             bidTicks = LinkedList(),
             lastUpdate = lastUpdate,
-            frequency = frequency) {
-        addPrice(askTicks, bidTicks)
-    }
+            frequency = frequency)
 
     companion object {
         val PRICE_PAIR_DELIMITER = ";"
