@@ -12,7 +12,6 @@ class HistoryTicksService(
         private val genericLimitOrderService: GenericLimitOrderService,
         private val frequency: Long) {
 
-    private val performanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 10, "buildTicks: ")
     private lateinit var historyTicksPersist: Timer
 
     fun start(): Timer {
@@ -27,15 +26,12 @@ class HistoryTicksService(
     }
 
     private fun recordTicks() {
-        performanceLogger.start()
         val startTimeOfBuildingMarketProfile = Date()
         val bestPrices = genericLimitOrderService.buildMarketProfile()
 
         bestPrices.forEach {
             marketStateCache.addTick(it.asset, it.ask, it.bid, startTimeOfBuildingMarketProfile.time)
         }
-        performanceLogger.end()
-        performanceLogger.fixTime()
     }
 
     private fun getPeriod(duration: Duration): Long {
