@@ -28,10 +28,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
 
 
     override fun loadHistoryTicks(): List<TickBlobHolder> {
-         return loadHistoryBlobs()
-                 .stream()
-                 .map(this::blobToTick)
-                 .collect(Collectors.toList())
+         return loadHistoryBlobs().mapNotNull(this::blobToTick)
      }
 
     override fun loadHistoryTick(asset: String, tickUpdateInterval: TickUpdateInterval): TickBlobHolder? {
@@ -79,11 +76,19 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         return result
     }
 
-    private fun blobToTick(blob: CloudBlob): TickBlobHolder {
+    private fun blobToTick(blob: CloudBlob): TickBlobHolder? {
         blob.downloadAttributes()
         val names = blob.name.split("_")
         val assetPair = names[1]
-        val interval = TickUpdateInterval.getByPrefix(names[2])
+
+        val interval = try {
+            TickUpdateInterval.getByPrefix(names[names.size - 1])
+        } catch (e: IllegalArgumentException) {
+            val message = "Unable to get tick interval"
+            LOGGER.error(message, e)
+            METRICS_LOGGER.logError( message, e)
+            return null
+        }
 
         val askTicks = LinkedList<Double>()
         val bidTicks = LinkedList<Double>()
