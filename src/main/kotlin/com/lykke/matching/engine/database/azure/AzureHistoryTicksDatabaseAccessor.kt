@@ -83,7 +83,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         blob.downloadAttributes()
         val names = blob.name.split("_")
         val assetPair = names[1]
-        val interval = TickUpdateInterval.valueOf(names[2])
+        val interval = TickUpdateInterval.getByPrefix(names[2])
 
         val askTicks = LinkedList<Double>()
         val bidTicks = LinkedList<Double>()
