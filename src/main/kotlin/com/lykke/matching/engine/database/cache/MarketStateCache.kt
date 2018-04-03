@@ -36,12 +36,12 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
                         frequency = frequency)
                 intervalToTickBlobHolder[interval] = tickBlobHolder
 
-                tickBlobHolder.addPrice(ask, bid)
+                tickBlobHolder.addPrice(ask, bid, currentUpdateTime)
                 dirtyTicks.add(tickBlobHolder)
                 return@forEach
             }
             if(isTimeForAddNewTick(blobHolder, currentUpdateTime)) {
-                blobHolder.addPrice(ask, bid)
+                blobHolder.addPrice(ask, bid, currentUpdateTime)
                 dirtyTicks.add(blobHolder)
             }
         })
