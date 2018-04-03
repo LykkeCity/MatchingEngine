@@ -8,7 +8,7 @@ data class TickBlobHolder(val assetPair: String,
                      val tickUpdateInterval: TickUpdateInterval,
                      val askTicks: LinkedList<Double>,
                      val bidTicks: LinkedList<Double>,
-                     val lastUpdate: Long,
+                     var lastUpdate: Long,
                      val frequency: Long) {
 
     constructor(tickBlobHolder: TickBlobHolder): this(assetPair =  tickBlobHolder.assetPair,
@@ -27,7 +27,7 @@ data class TickBlobHolder(val assetPair: String,
             tickUpdateInterval = tickUpdateInterval,
             lastUpdate = lastUpdate,
             frequency = frequency) {
-        addPrice(ask, bid)
+        addPrice(ask, bid, lastUpdate)
     }
 
     constructor(assetPair: String,
@@ -44,9 +44,10 @@ data class TickBlobHolder(val assetPair: String,
         val PRICE_PAIR_DELIMITER = ";"
     }
 
-    fun addPrice(askPrice: Double, bidPrice: Double) {
+    fun addPrice(askPrice: Double, bidPrice: Double, lastUpdateTime: Long) {
         addPrice(askPrice, askTicks)
         addPrice(bidPrice, bidTicks)
+        lastUpdate = lastUpdateTime
     }
 
     private fun addPrice(price: Double, prices: LinkedList<Double>) {

@@ -46,11 +46,11 @@ class TestMarketStateCache {
         marketStateCache.flush()
 
         //then
-        val expectedTick = TickBlobHolder(chfUsdTick)
-        expectedTick.addPrice(0.5, 0.7)
+        val expectedTick = getOneHourTickHolder("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
+         expectedTick.addPrice(0.5, 0.7, currentUpdateTime)
 
-        verify(historyDatabaseAccessor).saveHistoryTick(expectedTick)
-        verify(historyDatabaseAccessor, never()).saveHistoryTick(usdBtcTick)
+        verify(historyDatabaseAccessor).saveHistoryTick(eq(expectedTick))
+        verify(historyDatabaseAccessor, never()).saveHistoryTick(eq(usdBtcTick))
     }
 
     @Test
@@ -72,12 +72,12 @@ class TestMarketStateCache {
         marketStateCache.addTick("USDBTC", 0.7, 0.4, currentUpdateTime)
         marketStateCache.flush()
 
-        val expectedTick = TickBlobHolder(chfUsdTick)
-        expectedTick.addPrice(0.5, 0.7)
+        val expectedTick = getOneHourTickHolder("CHFUSD", LinkedList(Arrays.asList(0.3)), LinkedList(Arrays.asList(0.3)))
+        expectedTick.addPrice(0.5, 0.7, currentUpdateTime)
 
         //then
-        verify(historyDatabaseAccessor).saveHistoryTick(expectedTick)
-        verify(historyDatabaseAccessor, never()).saveHistoryTick(usdBtcTick)
+        verify(historyDatabaseAccessor).saveHistoryTick(eq(expectedTick))
+        verify(historyDatabaseAccessor, never()).saveHistoryTick(eq(usdBtcTick))
     }
 
     @Test
@@ -102,16 +102,16 @@ class TestMarketStateCache {
         verify(historyDatabaseAccessor).loadHistoryTick(eq(chfUsdTick.assetPair), eq(chfUsdTick.tickUpdateInterval))
     }
 
-    private fun getOneHourTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {
+    private fun getOneHourTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>, updateTime: Long = System.currentTimeMillis()): TickBlobHolder {
         return TickBlobHolder(assetPair = assetPair,
                 tickUpdateInterval = TickUpdateInterval.ONE_HOUR,
                 askTicks = ask,
                 bidTicks = bid,
-                lastUpdate = System.currentTimeMillis(),
+                lastUpdate = updateTime,
                 frequency =  4000L)
     }
 
-    private fun getOneDayTickHolder(assetPair: String, ask: LinkedList<Double>, bid: LinkedList<Double>): TickBlobHolder {
+    private fun getOneDayTickHolder(assetPair: String, ask: LinkedList<Double>, bid : LinkedList<Double>): TickBlobHolder {
         return TickBlobHolder(assetPair = assetPair,
                 tickUpdateInterval = TickUpdateInterval.ONE_DAY,
                 askTicks = ask,
