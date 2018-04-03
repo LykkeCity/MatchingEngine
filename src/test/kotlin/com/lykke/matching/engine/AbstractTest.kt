@@ -106,6 +106,6 @@ abstract class AbstractTest {
         clientsLimitOrdersQueue.clear()
         lkkTradesQueue.clear()
         rabbitSwapQueue.clear()
-        notificationQueue.clear()
+        balanceNotificationQueue.clear()
     }
 }
