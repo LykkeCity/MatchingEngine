@@ -164,6 +164,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
                     cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
                 }
+                val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
                 val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
                 val preProcessResult = try {
@@ -189,14 +190,12 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     walletOperationsProcessor.apply(order.externalId, MessageType.MARKET_ORDER.name)
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
                     genericLimitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
+                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
 
                     trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
 
                     matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-                // todo as dev
-                orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                     genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                     genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())

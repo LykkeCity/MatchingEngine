@@ -182,6 +182,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             cancelResult = limitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.toList())
                             cancelledOrdersWalletOperations.addAll(cancelResult.walletOperations)
                         }
+                        val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
                         val preProcessResult = try {
                             walletOperationsProcessor.preProcess(matchingResult.ownCashMovements).preProcess(matchingResult.oppositeCashMovements, true)
@@ -199,6 +200,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         if (preProcessResult) {
                             matchingResult.apply()
                             limitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
+                            orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
 
                             if (cancelResult != null) {
                                 trustedClientLimitOrdersReport.orders.addAll(cancelResult.trustedClientLimitOrderWithTrades)
@@ -211,9 +213,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             cancelSellSide = cancelSellSide || matchingResult.cancelledLimitOrders.any { !it.isBuySide() }
 
                             matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-                        //todo as dev
-                        orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                             orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 

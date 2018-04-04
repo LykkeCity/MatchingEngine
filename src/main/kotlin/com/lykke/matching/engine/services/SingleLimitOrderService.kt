@@ -202,12 +202,18 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
                         cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
                     }
+                    val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
                     val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
                     if (orderCopy.status == OrderStatus.Processing.name) {
-                        orderCopy.reservedLimitVolume = if (orderCopy.isBuySide()) RoundingUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price , limitAssetAccuracy, false) else orderCopy.getAbsRemainingVolume()
-                        val newReservedBalance =  RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!! - cancelVolume, limitAssetAccuracy).toDouble()
-                        ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset, matchingResult.timestamp, 0.0, newReservedBalance))
+                        if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
+                            LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${RoundingUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+                            orderCopy.status = OrderStatus.Cancelled.name
+                        } else {
+                            orderCopy.reservedLimitVolume = if (orderCopy.isBuySide()) RoundingUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAssetAccuracy, false) else orderCopy.getAbsRemainingVolume()
+                            val newReservedBalance = RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!! - cancelVolume, limitAssetAccuracy).toDouble()
+                            ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset, matchingResult.timestamp, 0.0, newReservedBalance))
+                        }
                     }
 
                     val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
@@ -232,14 +238,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         walletOperationsProcessor.apply(order.externalId, MessageType.LIMIT_ORDER.name)
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
                         limitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
+                        orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
 
                         trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
                         clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-                    // todo as dev
-                    orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                         limitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                         limitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
@@ -254,18 +258,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                             clientLimitOrdersReport.orders.addAll(matchingResult.limitOrdersReport.orders)
                         }
 
-                    //todo check as dev
                         if (order.status == OrderStatus.Processing.name) {
-                            if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
-                                LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(order.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
-                                order.status = OrderStatus.Cancelled.name
-                            } else {
-                                orderBook.addOrder(order)
-                                limitOrderService.addOrder(order)
-                                limitOrderService.setOrderBook(order.assetPairId, order.isBuySide(), orderBook.getOrderBook(order.isBuySide()))
-                                limitOrderService.updateOrderBook(order.assetPairId, order.isBuySide())
-                                limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), matchingResult.timestamp))
-                            }
+                            orderBook.addOrder(order)
+                            limitOrderService.addOrder(order)
+                            limitOrderService.setOrderBook(order.assetPairId, order.isBuySide(), orderBook.getOrderBook(order.isBuySide()))
+                            limitOrderService.updateOrderBook(order.assetPairId, order.isBuySide())
+                            limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), matchingResult.timestamp))
                         }
 
                         val newOrderBook = OrderBook(order.assetPairId, order.isBuySide(), order.lastMatchTime!!, limitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(order.isBuySide()))

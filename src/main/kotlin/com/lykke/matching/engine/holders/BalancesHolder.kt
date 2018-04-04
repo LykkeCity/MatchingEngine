@@ -14,8 +14,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                      private val assetsHolder: AssetsHolder,
                      private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
-                     private val applicationSettingsCache: ApplicationSettingsCache
-                     ) {
+                     private val applicationSettingsCache: ApplicationSettingsCache) {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -83,7 +82,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     }
 
     fun updateReservedBalance(clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true) {
-        if (skipForTrustedClient && trustedClients.contains(clientId)) {
+        if (skipForTrustedClient && applicationSettingsCache.isTrustedClient(clientId)) {
             return
         }
 
@@ -100,7 +99,7 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         balanceUpdateQueue.put(balanceUpdate)
     }
 
-    fun isTrustedClient(clientId: String) = trustedClients.contains(clientId)
+    fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
 
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
         return WalletOperationsProcessor(this, walletDatabaseAccessor, notificationQueue, assetsHolder, validate, logger)

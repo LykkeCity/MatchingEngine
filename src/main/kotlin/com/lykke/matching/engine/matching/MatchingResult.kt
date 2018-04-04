@@ -21,7 +21,8 @@ data class MatchingResult(
         private val matchedOrders: List<CopyWrapper<NewLimitOrder>> = LinkedList(),
         val skipLimitOrders: Set<NewLimitOrder> = HashSet(),
         val completedLimitOrders: List<NewLimitOrder> = LinkedList(),
-        val uncompletedLimitOrder: NewLimitOrder? = null,
+        /** Copy wrapper of uncompleted order */
+        private val uncompletedLimitOrderWrapper: CopyWrapper<NewLimitOrder>? = null,
         val lkkTrades: List<LkkTrade> = LinkedList(),
         val ownCashMovements: List<WalletOperation> = LinkedList(),
         val oppositeCashMovements: List<WalletOperation> = LinkedList(),
@@ -33,8 +34,11 @@ data class MatchingResult(
 ) {
 
     val order: NewOrder = orderCopyWrapper.copy
+    val uncompletedLimitOrderCopy: NewLimitOrder? = uncompletedLimitOrderWrapper?.copy
+    var uncompletedLimitOrder: NewLimitOrder? = null
 
     fun apply() {
+        uncompletedLimitOrder = uncompletedLimitOrderWrapper?.applyToOrigin()
         orderCopyWrapper.applyToOrigin()
         matchedOrders.forEach { it.applyToOrigin() }
     }

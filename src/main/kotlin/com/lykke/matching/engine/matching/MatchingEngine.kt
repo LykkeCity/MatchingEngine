@@ -61,7 +61,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val isBuy = order.isBuySide()
         val lkkTrades = LinkedList<LkkTrade>()
         val completedLimitOrders = LinkedList<NewLimitOrder>()
-        var uncompletedLimitOrder: NewLimitOrder? = null
+        var uncompletedLimitOrder: CopyWrapper<NewLimitOrder>? = null
         val allOwnCashMovements = LinkedList<WalletOperation>()
         val allOppositeCashMovements = LinkedList<WalletOperation>()
         val asset = assetsHolder.getAsset(if (isBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
@@ -186,7 +186,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     lkkTrades.add(LkkTrade(limitOrder.assetPairId, order.clientId, limitOrder.price, marketRoundedVolume, now))
                     limitOrderCopy.remainingVolume = newRemainingVolume
                     limitOrderCopy.status = OrderStatus.Processing.name
-                    uncompletedLimitOrder = limitOrder
+                    uncompletedLimitOrder = limitOrderCopyWrapper
                 }
 
                 setMarketBalance(availableBalances, order, asset, RoundingUtils.parseDouble(getMarketBalance(availableBalances, order, asset) - Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)/* - assetFeeAmount*/, asset.accuracy).toDouble())
