@@ -18,7 +18,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
     }
 
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
-    private val dirtyTicks = HashSet<TickBlobHolder>()
+
     init {
         refresh()
     }
@@ -37,12 +37,10 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
                 intervalToTickBlobHolder[interval] = tickBlobHolder
 
                 tickBlobHolder.addPrice(ask, bid, currentUpdateTime)
-                dirtyTicks.add(tickBlobHolder)
                 return@forEach
             }
             if(isTimeForAddNewTick(blobHolder, currentUpdateTime)) {
                 blobHolder.addPrice(ask, bid, currentUpdateTime)
-                dirtyTicks.add(blobHolder)
             }
         })
     }
@@ -71,12 +69,12 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
 
     @Synchronized
     private fun getTicksToPersist(): List<TickBlobHolder> {
-        val ticks = dirtyTicks.stream()
-                .map { TickBlobHolder(it) }
+        return assetPairToIntervalTickHolder
+                .entries
+                .stream()
+                .flatMap { entry -> entry.value.entries.stream() }
+                .map { entry -> TickBlobHolder(entry.value) }
                 .collect(Collectors.toList())
-
-        dirtyTicks.clear()
-        return ticks
     }
 
     private fun getUpdateInterval(tickUpdateInterval: TickUpdateInterval): Long {

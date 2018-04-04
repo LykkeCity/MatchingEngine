@@ -50,7 +50,6 @@ class TestMarketStateCache {
          expectedTick.addPrice(0.5, 0.7, currentUpdateTime)
 
         verify(historyDatabaseAccessor).saveHistoryTick(eq(expectedTick))
-        verify(historyDatabaseAccessor, never()).saveHistoryTick(eq(usdBtcTick))
     }
 
     @Test
@@ -77,7 +76,6 @@ class TestMarketStateCache {
 
         //then
         verify(historyDatabaseAccessor).saveHistoryTick(eq(expectedTick))
-        verify(historyDatabaseAccessor, never()).saveHistoryTick(eq(usdBtcTick))
     }
 
     @Test
