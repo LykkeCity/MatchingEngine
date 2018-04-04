@@ -6,7 +6,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -43,7 +43,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
-                              private val disabledAssetsCache: DisabledAssetsCache,
+                              private val applicationSettingsCache: ApplicationSettingsCache,
                               private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
 
     companion object {
@@ -134,7 +134,8 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         val orderInfo = "Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)}"
 
-        if (disabledAssetsCache.isDisabled(assetPair.baseAssetId) || disabledAssetsCache.isDisabled(assetPair.quotingAssetId))  {
+        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
+                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId))  {
             LOGGER.info("$orderInfo: disabled asset")
             order.status = OrderStatus.DisabledAsset.name
             rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.DISABLED_ASSET, now, isCancelOrders)

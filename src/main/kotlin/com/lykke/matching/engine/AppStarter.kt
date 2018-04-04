@@ -3,7 +3,7 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
-import com.lykke.matching.engine.utils.config.ApplicationProperties
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.logging.startLogsCleaner
@@ -26,8 +26,8 @@ fun main(args: Array<String>) {
     AppInitializer.init()
 
     val config = HttpConfigParser.initConfig(args[0])
-    val properties = ApplicationProperties(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
-    AppContext.init(properties)
+    val applicationSettingsCache = ApplicationSettingsCache(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
+    AppContext.init(applicationSettingsCache)
 
     try {
         AliveStatusProcessorFactory
@@ -44,7 +44,7 @@ fun main(args: Array<String>) {
 
     ThrottlingLogger.init(config.throttlingLogger)
 
-    correctReservedVolumesIfNeed(config)
+    correctReservedVolumesIfNeed(config, applicationSettingsCache)
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))
 
     startLogsCleaner(config)

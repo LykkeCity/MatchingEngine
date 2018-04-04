@@ -27,8 +27,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     
     @Before
     fun setUp() {
-        trustedClients.add("Client1")
-        trustedClients.add("Client5")
+        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        testSettingsDatabaseAccessor.addTrustedClient("Client5")
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
