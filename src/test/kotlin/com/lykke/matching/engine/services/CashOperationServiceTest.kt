@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
@@ -15,7 +14,6 @@ import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -222,17 +220,14 @@ class CashOperationServiceTest: AbstractTest() {
 
     @Test
     fun testCashOutFee() {
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("AssetPair", "Asset5", "Asset4", 2))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = -1.0, price = 2.1))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "AssetPair", volume = 1.0, price = 1.9))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.21, 0.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))
         initServices()
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
-                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.1, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
+                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.05, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
 
         assertEquals(0.01, balancesHolder.getBalance("Client1", "Asset4"), DELTA)
-        assertEquals(0.2, balancesHolder.getBalance("Client3", "Asset4"), DELTA)
+        assertEquals(0.05, balancesHolder.getBalance("Client3", "Asset4"), DELTA)
         assertEquals(10.0, balancesHolder.getBalance("Client1", "Asset5"), DELTA)
     }
 

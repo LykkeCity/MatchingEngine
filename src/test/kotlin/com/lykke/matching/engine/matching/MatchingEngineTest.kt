@@ -7,11 +7,8 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -44,7 +41,7 @@ abstract class MatchingEngineTest {
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    protected val trustedClients = setOf<String>()
+    protected val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
     protected lateinit var balancesHolder: BalancesHolder
     protected lateinit var genericService: GenericLimitOrderService
     protected lateinit var matchingEngine: MatchingEngine
@@ -175,8 +172,8 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, trustedClients)
-        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients)
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
+        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }
 

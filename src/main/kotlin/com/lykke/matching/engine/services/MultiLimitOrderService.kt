@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -20,6 +21,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -53,6 +55,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -102,10 +105,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
             message.ordersList.forEach { currentOrder ->
                 val uid = UUID.randomUUID().toString()
+                val feeInstruction = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null
+                val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
                 orders.add(NewLimitOrder(uid, currentOrder.uid, message.assetPairId, message.clientId, currentOrder.volume,
                         currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
-                        fee = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null,
-                        fees = NewLimitOrderFeeInstruction.create(currentOrder.feesList)))
+                        fee = feeInstruction,
+                        fees = listOfLimitOrderFee(feeInstruction, feeInstructions)))
 
                 if (cancelAllPreviousLimitOrders) {
                     if (currentOrder.volume > 0) {
@@ -185,9 +190,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                        if (matchingResult.uncompletedLimitOrder != null) {
-                            matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
-                        }
+                        orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                         orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
@@ -213,8 +216,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                         walletOperations.addAll(matchingResult.cashMovements)
                         if (matchingResult.order.status == OrderStatus.Processing.name) {
-                            ordersToAdd.add(order)
-                            orderBook.addOrder(order)
+                            if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
+                                LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(order.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+                                order.status = OrderStatus.Cancelled.name
+                            } else {
+                                ordersToAdd.add(order)
+                                orderBook.addOrder(order)
+                            }
                         }
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
 

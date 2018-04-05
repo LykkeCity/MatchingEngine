@@ -1,19 +1,19 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.utils.config.ApplicationProperties
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 
 object AppContext {
 
     private var initialized = false
 
-    private var properties: ApplicationProperties? = null
+    private var settingsCache: ApplicationSettingsCache? = null
 
-    fun init(properties: ApplicationProperties) {
+    fun init(settingsCache: ApplicationSettingsCache) {
         synchronized(this) {
             if (initialized) {
                 throw IllegalStateException("AppContext is already initialized")
             }
-            this.properties = properties
+            this.settingsCache = settingsCache
             initialized = true
         }
     }
@@ -23,10 +23,10 @@ object AppContext {
             if (!initialized) {
                 throw IllegalStateException("AppContext is not initialized")
             }
-            properties = null
+            settingsCache = null
             initialized = false
         }
     }
 
-    fun properties(): ApplicationProperties = properties!!
+    fun properties(): ApplicationSettingsCache = settingsCache!!
 }

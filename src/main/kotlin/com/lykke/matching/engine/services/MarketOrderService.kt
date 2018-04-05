@@ -6,8 +6,9 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -30,6 +31,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -44,7 +46,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          assetsHolder: AssetsHolder,
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
-                         private val disabledAssetsCache: DisabledAssetsCache,
+                         private val assetSettingsCache: ApplicationSettingsCache,
                          private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
@@ -63,26 +65,31 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
+
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
+        val feeInstruction: FeeInstruction?
+        val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
             LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
-
+            feeInstruction = null
+            feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
-            val fee = if (message.hasFee()) FeeInstruction.create(message.fee) else null
-            val fees = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $fee, fees: $fees")
+            feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
+            feeInstructions = NewFeeInstruction.create(message.feesList)
+            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, fee, fees)
+                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
         val assetPair = try {
@@ -95,7 +102,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        if (disabledAssetsCache.isDisabled(assetPair.baseAssetId) || disabledAssetsCache.isDisabled(assetPair.quotingAssetId)) {
+        if (assetSettingsCache.isAssetDisabled(assetPair.baseAssetId)
+                || assetSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
             order.status = DisabledAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Disabled asset ${orderInfo(order)}")
@@ -111,7 +119,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        if (!checkFee(order.fee, order.fees)) {
+        if (!checkFee(feeInstruction, feeInstructions)) {
             order.status = InvalidFee.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
@@ -164,9 +172,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
                 matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                if (matchingResult.uncompletedLimitOrder != null) {
-                    matchingResult.orderBook.put(matchingResult.uncompletedLimitOrder)
-                }
+                orderServiceHelper.processUncompletedOrder(matchingResult, assetPair, walletOperations)
 
                 genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
                 genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
