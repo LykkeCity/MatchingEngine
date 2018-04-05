@@ -202,7 +202,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         }
 
                         limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
-                            LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees)
+                            LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees, it.absoluteSpread, it.relativeSpread)
                         })
 
                         matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->

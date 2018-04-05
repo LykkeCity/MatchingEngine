@@ -31204,6 +31204,15 @@ public final class ProtocolMessages {
      */
     com.google.protobuf.ByteString
         getAssetIdBytes(int index);
+
+    /**
+     * <code>optional double makerFeeModificator = 9;</code>
+     */
+    boolean hasMakerFeeModificator();
+    /**
+     * <code>optional double makerFeeModificator = 9;</code>
+     */
+    double getMakerFeeModificator();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderFee}
@@ -31225,6 +31234,7 @@ public final class ProtocolMessages {
       makerSizeType_ = 0;
       takerSizeType_ = 0;
       assetId_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      makerFeeModificator_ = 0D;
     }
 
     @java.lang.Override
@@ -31298,6 +31308,11 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000080;
               }
               assetId_.add(bs);
+              break;
+            }
+            case 73: {
+              bitField0_ |= 0x00000080;
+              makerFeeModificator_ = input.readDouble();
               break;
             }
           }
@@ -31517,6 +31532,21 @@ public final class ProtocolMessages {
       return assetId_.getByteString(index);
     }
 
+    public static final int MAKERFEEMODIFICATOR_FIELD_NUMBER = 9;
+    private double makerFeeModificator_;
+    /**
+     * <code>optional double makerFeeModificator = 9;</code>
+     */
+    public boolean hasMakerFeeModificator() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional double makerFeeModificator = 9;</code>
+     */
+    public double getMakerFeeModificator() {
+      return makerFeeModificator_;
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -31556,6 +31586,9 @@ public final class ProtocolMessages {
       }
       for (int i = 0; i < assetId_.size(); i++) {
         output.writeBytes(8, assetId_.getByteString(i));
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeDouble(9, makerFeeModificator_);
       }
       unknownFields.writeTo(output);
     }
@@ -31602,6 +31635,10 @@ public final class ProtocolMessages {
         }
         size += dataSize;
         size += 1 * getAssetIdList().size();
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(9, makerFeeModificator_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -31731,6 +31768,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000040);
         assetId_ = com.google.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000080);
+        makerFeeModificator_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00000100);
         return this;
       }
 
@@ -31788,6 +31827,10 @@ public final class ProtocolMessages {
           bitField0_ = (bitField0_ & ~0x00000080);
         }
         result.assetId_ = assetId_;
+        if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        result.makerFeeModificator_ = makerFeeModificator_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -31838,6 +31881,9 @@ public final class ProtocolMessages {
             assetId_.addAll(other.assetId_);
           }
           onChanged();
+        }
+        if (other.hasMakerFeeModificator()) {
+          setMakerFeeModificator(other.getMakerFeeModificator());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -32275,6 +32321,38 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private double makerFeeModificator_ ;
+      /**
+       * <code>optional double makerFeeModificator = 9;</code>
+       */
+      public boolean hasMakerFeeModificator() {
+        return ((bitField0_ & 0x00000100) == 0x00000100);
+      }
+      /**
+       * <code>optional double makerFeeModificator = 9;</code>
+       */
+      public double getMakerFeeModificator() {
+        return makerFeeModificator_;
+      }
+      /**
+       * <code>optional double makerFeeModificator = 9;</code>
+       */
+      public Builder setMakerFeeModificator(double value) {
+        bitField0_ |= 0x00000100;
+        makerFeeModificator_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double makerFeeModificator = 9;</code>
+       */
+      public Builder clearMakerFeeModificator() {
+        bitField0_ = (bitField0_ & ~0x00000100);
+        makerFeeModificator_ = 0D;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.LimitOrderFee)
     }
 
@@ -32591,16 +32669,16 @@ public final class ProtocolMessages {
       "\t\022\026\n\016reservedVolume\030\005 \002(\001\"t\n\003Fee\022\014\n\004type" +
       "\030\001 \002(\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourceClientId\030\003" +
       " \001(\t\022\026\n\016targetClientId\030\004 \001(\t\022\020\n\010sizeType" +
-      "\030\005 \001(\005\022\017\n\007assetId\030\006 \003(\t\"\262\001\n\rLimitOrderFe",
+      "\030\005 \001(\005\022\017\n\007assetId\030\006 \003(\t\"\317\001\n\rLimitOrderFe",
       "e\022\014\n\004type\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\tta" +
       "kerSize\030\003 \001(\001\022\026\n\016sourceClientId\030\004 \001(\t\022\026\n" +
       "\016targetClientId\030\005 \001(\t\022\025\n\rmakerSizeType\030\006" +
       " \001(\005\022\025\n\rtakerSizeType\030\007 \001(\005\022\017\n\007assetId\030\010" +
-      " \003(\t*7\n\007FeeType\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FE" +
-      "E\020\001\022\020\n\014EXTERNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\n" +
-      "PERCENTAGE\020\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke." +
-      "matching.engine.messagesB\020ProtocolMessag" +
-      "es"
+      " \003(\t\022\033\n\023makerFeeModificator\030\t \001(\001*7\n\007Fee" +
+      "Type\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTE" +
+      "RNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020" +
+      "\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching.en" +
+      "gine.messagesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -32811,7 +32889,7 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_LimitOrderFee_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrderFee_descriptor,
-        new java.lang.String[] { "Type", "MakerSize", "TakerSize", "SourceClientId", "TargetClientId", "MakerSizeType", "TakerSizeType", "AssetId", });
+        new java.lang.String[] { "Type", "MakerSize", "TakerSize", "SourceClientId", "TargetClientId", "MakerSizeType", "TakerSizeType", "AssetId", "MakerFeeModificator", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
