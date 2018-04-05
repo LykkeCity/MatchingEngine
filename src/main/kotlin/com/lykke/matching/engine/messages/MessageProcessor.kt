@@ -12,6 +12,7 @@ import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
@@ -82,6 +83,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
         val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
+        val HISTORY_TICKS_UPDATE_FREQUENCY = 4000L
     }
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = queue
@@ -98,7 +100,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
-    private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val walletDatabaseAccessor: WalletDatabaseAccessor
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -122,6 +123,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val tradesInfoService: TradesInfoService
     private var historyTicksService: HistoryTicksService? = null
 
+    private val marketStateCache: MarketStateCache
+    private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
@@ -188,7 +191,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
 
         if (!isDevProfile) {
-            this.historyTicksService = HistoryTicksService(historyTicksDatabaseAccessor, genericLimitOrderService)
+            this.historyTicksService = HistoryTicksService(marketStateCache, genericLimitOrderService, HISTORY_TICKS_UPDATE_FREQUENCY)
             historyTicksService?.init()
         }
 
@@ -244,9 +247,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 tradesInfoService.saveHourCandles()
             }
 
-            this.historyTicksBuilder = fixedRateTimer(name = "HistoryTicksBuilder", initialDelay = 0, period = (60 * 60 * 1000) / 4000) {
-                historyTicksService?.buildTicks()
-            }
+        this.historyTicksBuilder = historyTicksService.start()
 
             val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
             fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
