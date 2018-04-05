@@ -240,7 +240,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
                 testDictionariesDatabaseAccessor,
                 testBackOfficeDatabaseAccessor,
                 testOrderDatabaseAccessor,
-                TestReservedVolumesDatabaseAccessor(), applicationContext)
+                TestReservedVolumesDatabaseAccessor(),
+                applicationSettingsCache)
 
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))

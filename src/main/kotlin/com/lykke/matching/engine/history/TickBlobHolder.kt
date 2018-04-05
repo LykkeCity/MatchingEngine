@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.TickUpdateInterval
 import java.util.*
 
 
-data class TickBlobHolder(val assetPair: String,
+class TickBlobHolder(val assetPair: String,
                      val tickUpdateInterval: TickUpdateInterval,
                      val askTicks: LinkedList<Double>,
                      val bidTicks: LinkedList<Double>,
@@ -60,6 +60,8 @@ data class TickBlobHolder(val assetPair: String,
         }
     }
 
+
+
     override fun toString(): String {
         val joiner = StringJoiner(PRICE_PAIR_DELIMITER)
 
@@ -69,5 +71,23 @@ data class TickBlobHolder(val assetPair: String,
             joiner.add("${askTicks[i]},${bidTicks[i]}")
         }
         return joiner.toString()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TickBlobHolder
+
+        if (assetPair != other.assetPair) return false
+        if (tickUpdateInterval != other.tickUpdateInterval) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = assetPair.hashCode()
+        result = 31 * result + tickUpdateInterval.hashCode()
+        return result
     }
 }

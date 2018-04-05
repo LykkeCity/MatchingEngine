@@ -15,6 +15,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
@@ -1105,5 +1106,35 @@ class LimitOrderServiceTest: AbstractTest() {
                 clientId = "Client2", assetId = "BTCUSD", volume = -100.0, straight = false
         )))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance(client, "BTC"))
+    }
+
+    @Test
+    fun testLimitOrderSellFullBalance() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK1Y", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2))
+
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKK1YLKK", "LKK1Y", "LKK", 4))
+
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK1Y", 5495.03))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "LKK", 10000.0))
+
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))
+
+        initServices()
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(
+                buildLimitOrder(
+                        clientId = "Client1",
+                        assetId = "LKK1YLKK",
+                        volume = -5495.03,
+                        price = 1.0082,
+                        fee = buildLimitOrderFeeInstruction(takerSize = 0.0009, targetClientId = "Client5")
+                )
+        ))
+
+        assertEquals(0.0, balancesHolder.getBalance("Client1", "LKK1Y"))
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(OrderStatus.Matched.name, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.first {it.order.clientId == "Client1"}.order.status)
     }
 }
