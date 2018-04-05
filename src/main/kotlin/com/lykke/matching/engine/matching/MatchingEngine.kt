@@ -35,6 +35,10 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val assetsPairsHolder: AssetsPairsHolder,
                      private val balancesHolder: BalancesHolder) {
 
+    companion object {
+        private const val RELATIVE_SPREAD_ACCURACY = 4
+    }
+
     private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
     fun match(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: Double? = null): MatchingResult {
@@ -112,8 +116,19 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 val cashMovements = mutableListOf(baseAssetOperation, quotingAssetOperation, limitBaseAssetOperation, limitQuotingAssetOperation)
 
+                val bestAsk = if (isBuy) limitOrder.price else genericLimitOrderService.getOrderBook(limitOrder.assetPairId).getAskPrice()
+                val bestBid = if (isBuy) genericLimitOrderService.getOrderBook(limitOrder.assetPairId).getBidPrice() else limitOrder.price
+                val validSpread = bestAsk > 0.0 && bestBid > 0.0
+                val absoluteSpread = if (validSpread) bestAsk - bestBid else null
+                val relativeSpread = if (validSpread) absoluteSpread!! / bestAsk else null
+
                 val makerFees = try {
-                    feeProcessor.processMakerFee(limitOrder.fees ?: emptyList(), if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation, cashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                    feeProcessor.processMakerFee(limitOrder.fees ?: emptyList(),
+                            if (isBuy) limitQuotingAssetOperation else limitBaseAssetOperation,
+                            cashMovements,
+                            relativeSpread,
+                            mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
+                            availableBalances)
                 } catch (e: FeeException) {
                     LOGGER.info("Added order (id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrder)
@@ -175,11 +190,14 @@ class MatchingEngine(private val LOGGER: Logger,
                 allCashMovements.addAll(cashMovements)
                 val traderId = UUID.randomUUID().toString()
 
+                val roundedAbsoluteSpread = if (absoluteSpread != null) RoundingUtils.parseDouble(absoluteSpread, assetPair.accuracy).toDouble() else null
+                val roundedRelativeSpread = if (relativeSpread != null) RoundingUtils.parseDouble(relativeSpread, RELATIVE_SPREAD_ACCURACY).toDouble() else null
+
                 marketOrderTrades.add(TradeInfo(traderId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), asset.assetId,
                         limitOrder.clientId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitAsset.assetId,
-                        limitOrder.price, limitOrder.id, limitOrder.externalId, now, order.fee, singleFeeTransfer(order.fee, takerFees), takerFees))
+                        limitOrder.price, limitOrder.id, limitOrder.externalId, now, order.fee, singleFeeTransfer(order.fee, takerFees), takerFees, roundedAbsoluteSpread, roundedRelativeSpread))
                 limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(traderId, limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
-                        order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), limitOrder.fee, singleFeeTransfer(limitOrder.fee, makerFees), makerFees))))
+                        order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), limitOrder.fee, singleFeeTransfer(limitOrder.fee, makerFees), makerFees, roundedAbsoluteSpread, roundedRelativeSpread))))
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price
                 totalLimitVolume += Math.abs(if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume)
