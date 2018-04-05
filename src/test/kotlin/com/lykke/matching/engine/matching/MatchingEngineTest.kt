@@ -61,6 +61,9 @@ abstract class MatchingEngineTest {
     @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
+    @Autowired
+    protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
     @TestConfiguration
     open class Config {
         @Bean

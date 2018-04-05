@@ -550,6 +550,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK1Y", 5495.03))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "LKK", 10000.0))
+        initService()
 
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))

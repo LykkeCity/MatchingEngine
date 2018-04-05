@@ -46,9 +46,9 @@ dependencies {
     compile 'com.rabbitmq:amqp-client:3.6.5'
     compile 'de.ruedigermoeller:fst:2.52'
 
-    compile('org.springframework.boot:spring-boot-starter')
+    compile("org.springframework.boot:spring-boot-starter:$spring_boot_version")
 
-    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile("org.springframework.boot:spring-boot-starter-test:$spring_boot_version")
     testCompile  'junit:junit:4.12'
     testCompile "com.nhaarman:mockito-kotlin:1.5.0"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
