@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.*
-import java.util.stream.Collectors
 
 @Component
-class AzureHistoryTicksDatabaseAccessor @Autowired constructor(config: Config, @Value("\${}") val frequency: Long) : HistoryTicksDatabaseAccessor {
+class AzureHistoryTicksDatabaseAccessor
+@Autowired constructor(config: Config, @Value("\${history.ticks.update}") val frequency: Long) : HistoryTicksDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureHistoryTicksDatabaseAccessor::class.java.name)

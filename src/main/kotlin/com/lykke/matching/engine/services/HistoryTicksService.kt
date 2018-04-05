@@ -1,18 +1,18 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.database.cache.MarketStateCache
-import com.lykke.utils.logging.PerformanceLogger
-import org.apache.log4j.Logger
+import org.springframework.context.ApplicationContext
 import java.time.Duration
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
-class HistoryTicksService(
-        private val marketStateCache: MarketStateCache,
-        private val genericLimitOrderService: GenericLimitOrderService,
-        private val frequency: Long) {
+class HistoryTicksService constructor (applicationContext: ApplicationContext,
+        private val genericLimitOrderService: GenericLimitOrderService) {
 
     private lateinit var historyTicksPersist: Timer
+
+    private var marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
+    private val frequency = applicationContext.environment.getProperty("history.ticks.update").toLong()
 
     fun start(): Timer {
         val persistPeriod = getPeriod(Duration.ofDays(1))

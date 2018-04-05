@@ -121,9 +121,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
-    private var historyTicksService: HistoryTicksService? = null
+    private lateinit var historyTicksService: HistoryTicksService
 
-    private val marketStateCache: MarketStateCache
+    private lateinit var marketStateCache: MarketStateCache
     private val balanceUpdateHandler: BalanceUpdateHandler
     private val quotesUpdateHandler: QuotesUpdateHandler
 
@@ -191,8 +191,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
 
         if (!isDevProfile) {
-            this.historyTicksService = HistoryTicksService(marketStateCache, genericLimitOrderService, HISTORY_TICKS_UPDATE_FREQUENCY)
-            historyTicksService?.init()
+            marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
+            this.historyTicksService = HistoryTicksService(applicationContext, genericLimitOrderService)
+            this.historyTicksBuilder = this.historyTicksService.start()
         }
 
         this.quotesUpdateHandler = QuotesUpdateHandler(quotesNotificationQueue)
@@ -246,8 +247,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
                 tradesInfoService.saveHourCandles()
             }
-
-        this.historyTicksBuilder = historyTicksService.start()
 
             val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
             fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
