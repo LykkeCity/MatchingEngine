@@ -50,6 +50,6 @@ class LimitOrderFeeInstruction(
                 "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
 
-    override fun toNewFormat() = NewLimitOrderFeeInstruction(type, sizeType, size, makerSizeType, makerSize, sourceClientId, targetClientId , emptyList())
+    override fun toNewFormat() = NewLimitOrderFeeInstruction(type, sizeType, size, makerSizeType, makerSize, sourceClientId, targetClientId , emptyList(), null)
 
 }

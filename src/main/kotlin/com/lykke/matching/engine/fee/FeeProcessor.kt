@@ -126,8 +126,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val absFeeAmount = RoundingUtils.round(when (feeSizeType) {
             FeeSizeType.PERCENTAGE -> {
                 // In case of cash out receipt operation has a negative amount, but fee amount should be positive
-                val absBaseAssetFeeAmount = Math.abs(receiptOperation.amount) * feeSize * (feeCoef ?: 1.0)
-                if (isAnotherAsset) absBaseAssetFeeAmount * computeInvertCoef(operationAsset.assetId, feeAsset.assetId, convertPrices) else absBaseAssetFeeAmount
+                val absBaseAssetFeeAmount = Math.abs(receiptOperation.amount) * feeSize
+                (if (isAnotherAsset) absBaseAssetFeeAmount * computeInvertCoef(operationAsset.assetId, feeAsset.assetId, convertPrices) else absBaseAssetFeeAmount) * (feeCoef ?: 1.0)
             }
             FeeSizeType.ABSOLUTE -> feeSize * (feeCoef ?: 1.0)
         }, feeAsset.accuracy, true)
