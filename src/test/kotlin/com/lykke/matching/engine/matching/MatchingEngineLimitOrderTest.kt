@@ -1,5 +1,8 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.config.TestApplicationContext
+import org.junit.runner.RunWith
+
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
@@ -11,9 +14,15 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
@@ -541,6 +550,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK1Y", 5495.03))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "LKK", 10000.0))
+        initService()
 
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))

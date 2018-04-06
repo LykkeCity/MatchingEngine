@@ -1,16 +1,15 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -20,26 +19,62 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertNull
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderCancelServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderCancelServiceTest {
-    private val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    private val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
-    private val testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
-    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    private val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-    private val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val orderBookQueue = LinkedBlockingQueue<OrderBook>()
-    private val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
+    val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+    val limitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
+    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
+    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor))
-    private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    private val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
+    val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
+
+    @Autowired
+    lateinit var balancesHolder: BalancesHolder
+
+    @Autowired
+    private lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    private lateinit var applicationSettingsCache: ApplicationSettingsCache
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+
+            return testWalletDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
@@ -49,13 +84,9 @@ class LimitOrderCancelServiceTest {
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = -300.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = -400.0))
 
-        testBackOfficeDatabaseAcessor.addAsset(Asset("USD", 2))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
-
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
     }
 
     @Test

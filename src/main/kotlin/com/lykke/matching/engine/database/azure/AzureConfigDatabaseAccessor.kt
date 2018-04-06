@@ -3,12 +3,18 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.Settings
 import com.lykke.matching.engine.daos.azure.config.AzureAppProperty
 import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableQuery
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
-class AzureConfigDatabaseAccessor(connectionString: String, configTableName: String = "MatchingEngineSettings") : ConfigDatabaseAccessor  {
+@Component
+class AzureConfigDatabaseAccessor
+@Autowired constructor (config: Config, @Value("\${azure.matching.engine.settings.table}") configTableName: String) : ConfigDatabaseAccessor  {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureConfigDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -17,7 +23,7 @@ class AzureConfigDatabaseAccessor(connectionString: String, configTableName: Str
         private val TRUSTED_CLIENTS = "TrustedClients"
     }
 
-    private val configTable: CloudTable = getOrCreateTable(connectionString, configTableName)
+    private val configTable: CloudTable = getOrCreateTable(config.me.db.matchingEngineConnString, configTableName)
 
     override fun loadConfigs(): Settings? {
         return try {

@@ -6,7 +6,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -29,20 +29,39 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractTest {
+    @Autowired
+    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
+    @Autowired
+    lateinit var balancesHolder: BalancesHolder
+
+    @Autowired
+    protected lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
+
+    @Autowired
+    protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
+    @Autowired
+    private lateinit var assetsCache: AssetsCache
+
+    @Autowired
+    protected lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+    protected val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    protected val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val orderBookQueue = LinkedBlockingQueue<OrderBook>()
     protected val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -51,15 +70,10 @@ abstract class AbstractTest {
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val reservedCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    protected val assetsCache = AssetsCache(testBackOfficeDatabaseAccessor)
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
-    protected val assetsHolder = AssetsHolder(assetsCache)
     protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
-    protected val applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
-    protected lateinit var balancesHolder: BalancesHolder
 
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
@@ -67,21 +81,21 @@ abstract class AbstractTest {
 
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
-    protected lateinit var cashTransferOperationsService: CashTransferOperationService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
     protected lateinit var marketOrderService: MarketOrderService
     protected lateinit var balanceUpdateService: BalanceUpdateService
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
+    protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     protected open fun initServices() {
         clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
+        balancesHolder.reload()
         applicationSettingsCache.update()
 
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
@@ -98,15 +112,14 @@ abstract class AbstractTest {
     }
 
     protected fun clearMessageQueues() {
+        balanceUpdateHandlerTest.clear()
         quotesNotificationQueue.clear()
         tradesInfoQueue.clear()
-        balanceUpdateQueue.clear()
         orderBookQueue.clear()
         rabbitOrderBookQueue.clear()
         trustedClientsLimitOrdersQueue.clear()
         clientsLimitOrdersQueue.clear()
         lkkTradesQueue.clear()
         rabbitSwapQueue.clear()
-        balanceNotificationQueue.clear()
     }
 }

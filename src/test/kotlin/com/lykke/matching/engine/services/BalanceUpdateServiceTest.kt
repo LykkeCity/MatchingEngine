@@ -1,25 +1,51 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (BalanceUpdateServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BalanceUpdateServiceTest: AbstractTest() {
+    @Autowired
+    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     companion object {
         private const val DELTA = 1e-15
     }
 
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
+
+            return testWalletDatabaseAccessor
+        }
+    }
+
     @Before
     fun setUp() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
         initServices()
     }
 
@@ -93,12 +119,12 @@ class BalanceUpdateServiceTest: AbstractTest() {
     private fun assertSuccessfulUpdate(messageType: MessageType, clientId: String, assetId: String, balance: Double, oldBalance: Double, reserved: Double, oldReserved: Double) {
         assertUpdateResult(clientId, assetId, balance, reserved)
 
-        assertEquals(1, balanceNotificationQueue.size)
-        val notification = balanceNotificationQueue.poll()
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
+        val notification = balanceUpdateHandlerTest.balanceUpdateQueueNotification.poll()
         assertEquals(clientId, notification.clientId)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll()
         assertEquals(messageType.name, balanceUpdate.type)
 
         assertEquals(1, balanceUpdate.balances.size)
@@ -111,8 +137,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: Double, reserved: Double) {
         assertUpdateResult(clientId, assetId, balance, reserved)
-        assertEquals(0, balanceNotificationQueue.size)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 
     private fun assertUpdateResult(clientId: String, assetId: String, balance: Double, reserved: Double) {

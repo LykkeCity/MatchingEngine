@@ -3,18 +3,23 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.azure.AzureLkkTrade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
-class AzureMarketOrderDatabaseAccessor(tradesConfig: String) : MarketOrderDatabaseAccessor {
-
+@Component
+class AzureMarketOrderDatabaseAccessor  @Autowired constructor(val config: Config,
+                                                               @Value("\${azure.market.order.table}")val tableName: String): MarketOrderDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val lkkTradesTable: CloudTable = getOrCreateTable(tradesConfig, "LkkTrades")
+    private val lkkTradesTable: CloudTable = getOrCreateTable(config.me.db.hTradesConnString, tableName)
 
     override fun addLkkTrades(trades: List<LkkTrade>) {
         try {

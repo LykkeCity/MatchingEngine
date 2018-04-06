@@ -3,16 +3,21 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.TickUpdateInterval
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.blob.CloudBlob
 import com.microsoft.azure.storage.blob.CloudBlobContainer
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.*
-import java.util.stream.Collectors
 
-class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
+@Component
+class AzureHistoryTicksDatabaseAccessor
+@Autowired constructor(config: Config, @Value("\${history.ticks.update}") val frequency: Long) : HistoryTicksDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureHistoryTicksDatabaseAccessor::class.java.name)
@@ -24,7 +29,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         val BLOB_NAME_PATTERN = "BA_%s_%s"
     }
 
-    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(historyTicksString, "history")
+    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(config.me.db.hLiquidityConnString, "history")
 
 
     override fun loadHistoryTicks(): List<TickBlobHolder> {
