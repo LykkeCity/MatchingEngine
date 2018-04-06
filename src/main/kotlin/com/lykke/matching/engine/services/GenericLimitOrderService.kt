@@ -113,11 +113,11 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
     fun cancelLimitOrder(uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
-      
+
         if (removeFromClientMap) {
             removeFromClientMap(uid)
         }
-      
+
         getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
         updateOrderBook(order.assetPairId, order.isBuySide())

@@ -99,10 +99,20 @@ message LimitOrder {
     required string clientId = 3;
     required string assetPairId = 4;
     required double volume = 5;
-    required double price = 6;
+    optional double price = 6;
     optional bool cancelAllPreviousLimitOrders = 7;
     optional LimitOrderFee fee = 8;
     repeated LimitOrderFee fees = 9;
+    optional int32 type = 10;
+    optional double lowerLimitPrice = 11;
+    optional double lowerPrice = 12;
+    optional double upperLimitPrice = 13;
+    optional double upperPrice = 14;
+}
+
+enum LimitOrderType {
+    LIMIT = 0;
+    STOP_LIMIT = 1;
 }
 
 message OldMarketOrder {

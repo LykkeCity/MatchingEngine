@@ -1,17 +1,20 @@
 package com.lykke.matching.engine.utils.balance
 
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -29,17 +32,20 @@ fun correctReservedVolumesIfNeed(config: Config, applicationSettingsCache: Appli
     val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
     val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
-    val filePath = config.me.orderBookPath
-    ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
-    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
+    val orderBookPath = config.me.orderBookPath
+    val stopOrderBookPath = config.me.stopOrderBookPath
+    ReservedVolumesRecalculator.teeLog("Starting order books analyze, limit orders: $orderBookPath, stop limit orders: $stopOrderBookPath")
+    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(orderBookPath)
+    val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
     val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
-    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationSettingsCache).recalculate()
+    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationSettingsCache).recalculate()
 }
 
 class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                   private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                                   private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+                                  private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                   private val applicationSettingsCache: ApplicationSettingsCache) {
     companion object {
@@ -57,19 +63,29 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
+        val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
+
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
-        orders.forEach { order ->
+
+        val handleOrder: (order: NewLimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
             if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
                 try {
-                    LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                    if (isStopOrder) {
+                        LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, lowerLimitPrice:${order.lowerLimitPrice}, lowerPrice:${order.lowerPrice}, upperLimitPrice:${order.upperLimitPrice}, upperPrice:${order.upperPrice}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                    } else {
+                        LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                    }
                     val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                     val asset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 
                     val reservedVolume = if (order.reservedLimitVolume != null) {
                         order.reservedLimitVolume!!
                     } else {
-                        val calculatedReservedVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsRemainingVolume() * order.price, asset.accuracy, false) else order.getAbsRemainingVolume()
+                        val calculatedReservedVolume = if (order.isBuySide())
+                            RoundingUtils.round(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
+                            else order.getAbsRemainingVolume() * order.price, asset.accuracy, false)
+                        else order.getAbsRemainingVolume()
                         LOGGER.info("Null reserved volume, recalculated: $calculatedReservedVolume")
                         calculatedReservedVolume
                     }
@@ -85,6 +101,10 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                 }
             }
         }
+
+        orders.forEach { handleOrder(it, false) }
+        stopOrders.forEach { handleOrder(it, true) }
+
         LOGGER.info("---------------------------------------------------------------------------------------------------")
 
         reservedBalances.forEach { client ->

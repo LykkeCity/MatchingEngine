@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -24,7 +25,8 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
                               private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                               private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                               private val orderBookQueue: BlockingQueue<OrderBook>,
-                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>) {
+                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null) {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
@@ -34,6 +36,8 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
             LOGGER.info(message)
         }
     }
+
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
 
     fun cancel() {
         teeLog("Starting order books analyze to cancel min volume orders")
@@ -75,6 +79,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
             orderBook.getOrderBook(false).forEach { order -> checkAndAddToCancel(order) }
         }
 
+        val assetPairIds = HashSet(ordersToCancel.keys)
 
         teeLog("Starting orders cancellation (orders count: $totalCount)")
         val walletOperations = LinkedList<WalletOperation>()
@@ -115,6 +120,13 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
 
         teeLog("Starting balances updating (wallet operations count: ${walletOperations.size})")
         walletOperationsProcessor.apply(UUID.randomUUID().toString(), MessageType.LIMIT_ORDER.name)
+
+        if (assetPairIds.isNotEmpty()) {
+            teeLog("Starting stop limit orders processing")
+            assetPairIds.forEach { assetPairId ->
+                genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPairId, now)
+            }
+        }
 
         teeLog("Min volume orders cancellation is finished")
     }
