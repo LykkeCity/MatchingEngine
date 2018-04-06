@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.LimitOrderProcessorFactory
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -19,14 +19,14 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                                    private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
                                    private val trustedLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                                    private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                                   limitOrderProcessorFactory: LimitOrderProcessorFactory? = null): AbstractService {
+                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val limitOrderProcessor = limitOrderProcessorFactory?.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrderCancel
@@ -73,7 +73,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
 
         if (ordersToCancel.isNotEmpty()) {
-            limitOrderProcessor?.checkAndProcessStopOrder(message.assetPairId, now)
+            genericLimitOrderProcessor?.checkAndProcessStopOrder(message.assetPairId, now)
         }
 
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
