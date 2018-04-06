@@ -171,6 +171,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
+            var isMatched = false
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()))
             val limitOrder = matchingResult.order as NewLimitOrder
             when (OrderStatus.valueOf(matchingResult.order.status)) {
@@ -192,6 +193,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing-> {
+                    isMatched = true
                     limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
 
                     val walletOperations = LinkedList<WalletOperation>()
@@ -252,7 +254,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                 else -> {
                 }
             }
-            LOGGER.info("$orderInfo matched")
+            LOGGER.info(if (isMatched) "$orderInfo matched" else "$orderInfo got status: ${order.status}")
         } else {
             order.reservedLimitVolume = limitVolume
 
