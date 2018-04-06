@@ -29,7 +29,6 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun setUp() {
         testSettingsDatabaseAccessor.addTrustedClient("Client1")
         testSettingsDatabaseAccessor.addTrustedClient("Client5")
-        applicationSettingsCache.update()
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))

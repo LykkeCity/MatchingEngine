@@ -84,6 +84,7 @@ abstract class AbstractTest {
         clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
+        applicationSettingsCache.update()
 
         balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)

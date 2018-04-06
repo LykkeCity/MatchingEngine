@@ -1,61 +1,93 @@
 package com.lykke.matching.engine.history
 
-import com.microsoft.azure.storage.blob.CloudBlob
-import java.io.ByteArrayOutputStream
-import java.util.LinkedList
-import java.util.StringJoiner
+import com.lykke.matching.engine.daos.TickUpdateInterval
+import java.util.*
 
 
-class TickBlobHolder(val name: String, blob: CloudBlob?) {
-    var askTicks = LinkedList<Double>()
-    var bidTicks = LinkedList<Double>()
+class TickBlobHolder(val assetPair: String,
+                     val tickUpdateInterval: TickUpdateInterval,
+                     val askTicks: LinkedList<Double>,
+                     val bidTicks: LinkedList<Double>,
+                     var lastUpdate: Long,
+                     val frequency: Long) {
 
-    fun addTick(askPrice: Double, bidPrice: Double) {
-        addTick(askPrice, askTicks)
-        addTick(bidPrice, bidTicks)
+    constructor(tickBlobHolder: TickBlobHolder): this(assetPair =  tickBlobHolder.assetPair,
+            tickUpdateInterval = tickBlobHolder.tickUpdateInterval,
+            askTicks = tickBlobHolder.askTicks.clone() as LinkedList<Double>,
+            bidTicks = tickBlobHolder.bidTicks.clone() as LinkedList<Double>,
+            lastUpdate = tickBlobHolder.lastUpdate,
+            frequency = tickBlobHolder.frequency)
+
+    constructor(assetPair: String,
+                tickUpdateInterval: TickUpdateInterval,
+                ask: Double,
+                bid: Double,
+                lastUpdate: Long,
+                frequency: Long): this(assetPair =  assetPair,
+            tickUpdateInterval = tickUpdateInterval,
+            lastUpdate = lastUpdate,
+            frequency = frequency) {
+        addPrice(ask, bid, lastUpdate)
     }
 
-    fun addTick(price: Double, prices: LinkedList<Double>) {
+    constructor(assetPair: String,
+                tickUpdateInterval: TickUpdateInterval,
+                lastUpdate: Long,
+                frequency: Long): this(assetPair =  assetPair,
+            tickUpdateInterval = tickUpdateInterval,
+            askTicks = LinkedList(),
+            bidTicks = LinkedList(),
+            lastUpdate = lastUpdate,
+            frequency = frequency)
+
+    companion object {
+        val PRICE_PAIR_DELIMITER = ";"
+    }
+
+    fun addPrice(askPrice: Double, bidPrice: Double, lastUpdateTime: Long) {
+        addPrice(askPrice, askTicks)
+        addPrice(bidPrice, bidTicks)
+        lastUpdate = lastUpdateTime
+    }
+
+    private fun addPrice(price: Double, prices: LinkedList<Double>) {
         prices.add(price)
-        while (prices.size < 4000) {
+        while (prices.size < frequency) {
             prices.add(price)
         }
-        if (prices.size > 4000) {
+        if (prices.size > frequency) {
             prices.removeFirst()
         }
     }
 
-    fun parseBlob(blob: CloudBlob?): LinkedList<Double> {
-        val result = LinkedList<Double>()
-        val data = getBlobValue(blob)
-        if (data != null) {
-            for (price in data.split(";")) {
-                val prices = price.split(",")
-                askTicks.add(prices[0].toDouble())
-                bidTicks.add(prices[1].toDouble())
-            }
-        }
-        return result
-    }
 
-    fun getBlobValue(blob: CloudBlob?): String? {
-        if (blob != null) {
-            val outputStream = ByteArrayOutputStream()
-            blob.download(outputStream)
-            return outputStream.toString()
-        }
-        return null
-    }
 
-    fun convertToString(): String {
-        val joiner = StringJoiner(";")
+    override fun toString(): String {
+        val joiner = StringJoiner(PRICE_PAIR_DELIMITER)
+
+        val askTicks = askTicks
+        val bidTicks = bidTicks
         for (i in 0..askTicks.size-1) {
             joiner.add("${askTicks[i]},${bidTicks[i]}")
         }
         return joiner.toString()
     }
 
-    init {
-        parseBlob(blob)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TickBlobHolder
+
+        if (assetPair != other.assetPair) return false
+        if (tickUpdateInterval != other.tickUpdateInterval) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = assetPair.hashCode()
+        result = 31 * result + tickUpdateInterval.hashCode()
+        return result
     }
 }

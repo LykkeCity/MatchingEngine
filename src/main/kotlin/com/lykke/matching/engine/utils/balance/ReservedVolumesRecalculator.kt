@@ -23,7 +23,7 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
 
-fun correctReservedVolumesIfNeed(config: Config) {
+fun correctReservedVolumesIfNeed(config: Config, applicationSettingsCache: ApplicationSettingsCache) {
     if (!config.me.correctReservedVolumes) {
         return
     }
@@ -35,10 +35,7 @@ fun correctReservedVolumesIfNeed(config: Config) {
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, limit orders: $orderBookPath, stop limit orders: $stopOrderBookPath")
     val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(orderBookPath, stopOrderBookPath)
     val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
-    val applicationSettingsCache = ApplicationSettingsCache(AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString), 60000)
-    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor,
-            backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor,
-            applicationSettingsCache).recalculate()
+    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationSettingsCache).recalculate()
 }
 
 class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletDatabaseAccessor,
