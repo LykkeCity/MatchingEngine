@@ -18,7 +18,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.LimitOrderProcessorFactory
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.DisabledAsset
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
@@ -56,7 +56,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
                          private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                         limitOrderProcessorFactory: LimitOrderProcessorFactory ?= null): AbstractService {
+                         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory ?= null): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -68,8 +68,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
-    private val limitOrderProcessor = limitOrderProcessorFactory?.create(LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -228,7 +228,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         }
 
-        limitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
 
         val endTime = System.nanoTime()
 
