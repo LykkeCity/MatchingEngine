@@ -35,7 +35,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun config(): FactoryBean<Config> {
-        return DevConfig()
+        return LocalConfig()
     }
 
     @Bean
