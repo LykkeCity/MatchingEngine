@@ -12,9 +12,9 @@ import java.util.concurrent.Executors
 
 @Service
 @Profile("dev")
-class RabbitMqServiceDev : RabbitMqService {
+class RabbitMqServiceToLogService : RabbitMqService {
     companion object{
-        private val LOGGER = Logger.getLogger(RabbitMqServiceDev::class.java)
+        private val LOGGER = Logger.getLogger(RabbitMqServiceToLogService::class.java)
     }
 
     override fun startPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger?) {

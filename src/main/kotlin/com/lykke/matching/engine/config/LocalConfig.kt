@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @Profile("dev")
-class DevConfig : FactoryBean<Config> {
+class LocalConfig : FactoryBean<Config> {
     override fun getObject(): Config {
         return ConfigInitializer.initConfig("local",  classOfT = Config::class.java)
     }
