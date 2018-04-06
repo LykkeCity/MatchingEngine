@@ -6,7 +6,7 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.LimitOrderProcessorFactory
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -26,7 +26,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
                               private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                               private val orderBookQueue: BlockingQueue<OrderBook>,
                               private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                              limitOrderProcessorFactory: LimitOrderProcessorFactory? = null) {
+                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null) {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
@@ -37,7 +37,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         }
     }
 
-    private val limitOrderProcessor = limitOrderProcessorFactory?.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
 
     fun cancel() {
         teeLog("Starting order books analyze to cancel min volume orders")
@@ -123,7 +123,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         if (assetPairIds.isNotEmpty()) {
             teeLog("Starting stop limit orders processing")
             assetPairIds.forEach { assetPairId ->
-                limitOrderProcessor?.checkAndProcessStopOrder(assetPairId, now)
+                genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPairId, now)
             }
         }
 

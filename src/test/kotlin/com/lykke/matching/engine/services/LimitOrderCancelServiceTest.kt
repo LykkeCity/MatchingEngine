@@ -62,7 +62,8 @@ class LimitOrderCancelServiceTest {
     fun testCancel() {
         val genericService = GenericLimitOrderService(testFileDatabaseAccessor, assetsHolder,
                 assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
-        val service = LimitOrderCancelService(genericService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
+        val genericStopLimitOrderService = GenericStopLimitOrderService(TestStopOrderBookDatabaseAccessor(), genericService)
+        val service = LimitOrderCancelService(genericService, genericStopLimitOrderService, limitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
       
         service.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
 

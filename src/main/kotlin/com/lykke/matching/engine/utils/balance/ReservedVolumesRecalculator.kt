@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
@@ -16,6 +17,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -36,15 +38,17 @@ fun correctReservedVolumesIfNeed(config: Config, applicationSettingsCache: Appli
     val orderBookPath = config.me.orderBookPath
     val stopOrderBookPath = config.me.stopOrderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, limit orders: $orderBookPath, stop limit orders: $stopOrderBookPath")
-    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(orderBookPath, stopOrderBookPath)
+    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(orderBookPath)
+    val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
     val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
-    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationSettingsCache).recalculate()
+    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationSettingsCache).recalculate()
 }
 
 class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                   private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                                   private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+                                  private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                   private val applicationSettingsCache: ApplicationSettingsCache) {
     companion object {
@@ -62,7 +66,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
-        val stopOrders = orderBookDatabaseAccessor.loadStopLimitOrders()
+        val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
 
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
@@ -70,7 +74,9 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
             if (!applicationSettingsCache.isTrustedClient(order.clientId)) {try {
                 if (isStopOrder) {
                     LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, lowerLimitPrice:${order.lowerLimitPrice}, lowerPrice:${order.lowerPrice}, upperLimitPrice:${order.upperLimitPrice}, upperPrice:${order.upperPrice}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
-                } else {LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")}
+                } else {
+                    LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                }
                 val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
                 val asset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 

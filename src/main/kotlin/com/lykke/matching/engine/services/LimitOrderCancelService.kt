@@ -8,7 +8,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.LimitOrderProcessorFactory
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -22,20 +22,21 @@ import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService,
+                              private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val limitOrderReportQueue: BlockingQueue<JsonSerializable>,
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               private val orderBookQueue: BlockingQueue<OrderBook>,
                               private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                              limitOrderProcessorFactory: LimitOrderProcessorFactory? = null): AbstractService {
+                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null): AbstractService {
 
     companion object {
         val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val limitOrderProcessor = limitOrderProcessorFactory?.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val order: NewLimitOrder?
@@ -57,7 +58,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             if (limitOrder != null) {
                 order = limitOrder
             } else {
-                order = genericLimitOrderService.cancelStopLimitOrder(message.limitOrderId, true)
+                order = genericStopLimitOrderService.cancelStopLimitOrder(message.limitOrderId, true)
                 isStopOrder = true
             }
 
@@ -83,7 +84,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                     orderBookQueue.put(rabbitOrderBook)
                     rabbitOrderBookQueue.put(rabbitOrderBook)
 
-                    limitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+                    genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
                 }
             } else {
                 LOGGER.info("Unable to find order id: ${message.limitOrderId}")
