@@ -14,8 +14,8 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.LimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
@@ -26,10 +26,11 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class SingleLimitOrderService(limitOrderProcessorFactory: LimitOrderProcessorFactory): AbstractService {
+class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
 
     @Deprecated("Use primary constructor")
     constructor(limitOrderService: GenericLimitOrderService,
+                stopLimitOrderService: GenericStopLimitOrderService,
                 trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                 clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                 orderBookQueue: BlockingQueue<OrderBook>,
@@ -39,7 +40,8 @@ class SingleLimitOrderService(limitOrderProcessorFactory: LimitOrderProcessorFac
                 balancesHolder: BalancesHolder,
                 applicationSettingsCache: ApplicationSettingsCache,
                 lkkTradesQueue: BlockingQueue<List<LkkTrade>>) :
-            this(LimitOrderProcessorFactory(limitOrderService,
+            this(GenericLimitOrderProcessorFactory(limitOrderService,
+                    stopLimitOrderService,
                     trustedClientLimitOrderReportQueue,
                     clientLimitOrderReportQueue,
                     orderBookQueue,
@@ -59,7 +61,7 @@ class SingleLimitOrderService(limitOrderProcessorFactory: LimitOrderProcessorFac
     private var logCount = 100
     private var totalTime: Double = 0.0
 
-    private val limitOrderProcessor = limitOrderProcessorFactory.create(LOGGER)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
@@ -89,10 +91,7 @@ class SingleLimitOrderService(limitOrderProcessorFactory: LimitOrderProcessorFac
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
 
-        when(order.type) {
-            LimitOrderType.LIMIT -> if (!limitOrderProcessor.processLimitOrder(messageWrapper, order, isCancelOrders, now)) return
-            LimitOrderType.STOP_LIMIT -> if (!limitOrderProcessor.processStopOrder(messageWrapper, order, isCancelOrders, now)) return
-        }
+        genericLimitOrderProcessor.processOrder(messageWrapper, order, isCancelOrders, now)
 
         val endTime = System.nanoTime()
 
