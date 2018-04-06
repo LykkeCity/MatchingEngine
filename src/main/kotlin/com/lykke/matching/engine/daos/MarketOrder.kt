@@ -5,7 +5,7 @@ import java.util.Date
 
 class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String, volume: Double,
                   var price: Double?, status: String, createdAt: Date, registered: Date,
-                  var matchedAt: Date?, var straight: Boolean, reservedLimitVolume: Double? = null, fee: FeeInstruction? = null, fees: List<NewFeeInstruction>? = null)
+                  var matchedAt: Date?, val straight: Boolean, reservedLimitVolume: Double? = null, fee: FeeInstruction? = null, fees: List<NewFeeInstruction>? = null)
     : NewOrder(id, uid, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees) {
 
     override fun isOrigBuySide(): Boolean {
@@ -38,5 +38,16 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
 
     override fun updateRemainingVolume(volume: Double) {
         //nothing to do
+    }
+
+    override fun copy(): MarketOrder {
+        return MarketOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered, matchedAt, straight, reservedLimitVolume, fee, fees)
+    }
+
+    override fun applyToOrigin(origin: Copyable) {
+        super.applyToOrigin(origin)
+        origin as MarketOrder
+        origin.price = price
+        origin.matchedAt = matchedAt
     }
 }

@@ -15,7 +15,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.RoundingUtils
-import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.concurrent.BlockingQueue
@@ -29,11 +28,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>): AbstractService {
 
     companion object {
-        val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val order: NewLimitOrder?
