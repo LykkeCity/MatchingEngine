@@ -107,6 +107,7 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing -> {
+                    isMatched = true
                     limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
 
                     val walletOperations = LinkedList<WalletOperation>()
