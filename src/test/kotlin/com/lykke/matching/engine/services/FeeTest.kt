@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (FeeTest.Config::class)])
@@ -220,10 +221,10 @@ class FeeTest: AbstractTest() {
         assertEquals(0.005, balancesHolder.getBalance("Client1", "BTC"))
         assertEquals(21.19, balancesHolder.getBalance("Client1", "USD"))
         assertEquals(75.77, balancesHolder.getBalance("Client2", "USD"))
-        assertEquals(0.09484954, balancesHolder.getBalance("Client2", "BTC"))
+        assertEquals(0.09485, balancesHolder.getBalance("Client2", "BTC"))
         assertEquals(6.83, balancesHolder.getBalance("Client3", "USD"))
-        assertEquals(0.00025077, balancesHolder.getBalance("Client3", "BTC"))
-        assertEquals(0.09989969, balancesHolder.getBalance("Client4", "BTC"))
+        assertEquals(0.00025, balancesHolder.getBalance("Client3", "BTC"))
+        assertEquals(0.0999, balancesHolder.getBalance("Client4", "BTC"))
         assertEquals(6.21, balancesHolder.getBalance("Client4", "USD"))
     }
 
@@ -536,6 +537,94 @@ class FeeTest: AbstractTest() {
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
     }
 
+    @Test
+    fun testMakerFeeModificator() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "BTC", balance = 0.1))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "USD", balance = 100.0))
+
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "AnotherClient", assetId = "BTCUSD", volume = -1.0, price = 10000.0))
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "AnotherClient", assetId = "BTCUSD", volume = -1.0, price = 11000.0))
+
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.01, price = 9700.0,
+                fees = listOf(buildLimitOrderFeeInstruction(
+                        type = FeeType.CLIENT_FEE,
+                        makerSizeType = FeeSizeType.PERCENTAGE,
+                        makerSize = 0.04,
+                        makerFeeModificator = 50.0,
+                        targetClientId = "TargetClient")!!)))
+
+        initServices()
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0,
+                fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, takerSize = 0.01, targetClientId = "TargetClient")!!))))
+
+        // 0.01 * 0.04 * (1 - exp(-(10000.0 - 9700.0)/10000.0 * 50.0))
+        assertEquals(0.00031075, balancesHolder.getBalance("TargetClient", "BTC"))
+
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, result.orders.size)
+
+        assertEquals(1, result.orders.filter { it.order.clientId == "Client1" }.size)
+        val takerResult = result.orders.first { it.order.clientId == "Client1" }
+        assertEquals(1, takerResult.trades.size)
+        assertEquals(300.0, takerResult.trades.first().absoluteSpread)
+        assertEquals(0.03, takerResult.trades.first().relativeSpread)
+
+        assertEquals(1, takerResult.trades.first().fees.size)
+        assertNull(takerResult.trades.first().fees.first().transfer!!.feeCoef)
+
+        assertEquals(1, result.orders.filter { it.order.clientId == "Client2" }.size)
+        val makerResult = result.orders.first { it.order.clientId == "Client2" }
+        assertEquals(1, makerResult.trades.size)
+        assertEquals(300.0, makerResult.trades.first().absoluteSpread)
+        assertEquals(0.03, makerResult.trades.first().relativeSpread)
+
+        assertEquals(1, makerResult.trades.first().fees.size)
+        assertEquals(0.776869839852, makerResult.trades.first().fees.first().transfer?.feeCoef)
+    }
+
+    @Test
+    fun testMakerFeeModificatorForEmptyOppositeOrderBookSide() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "BTC", balance = 0.1))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "USD", balance = 100.0))
+
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.01, price = 9700.0,
+                fees = listOf(buildLimitOrderFeeInstruction(
+                        type = FeeType.CLIENT_FEE,
+                        makerSizeType = FeeSizeType.PERCENTAGE,
+                        makerSize = 0.04,
+                        makerFeeModificator = 50.0,
+                        targetClientId = "TargetClient")!!)))
+
+        initServices()
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0,
+                fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, takerSize = 0.01, targetClientId = "TargetClient")!!))))
+
+        assertEquals(0.0004, balancesHolder.getBalance("TargetClient", "BTC"))
+
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, result.orders.size)
+
+        assertEquals(1, result.orders.filter { it.order.clientId == "Client1" }.size)
+        val takerResult = result.orders.first { it.order.clientId == "Client1" }
+        assertEquals(1, takerResult.trades.size)
+        assertNull(takerResult.trades.first().absoluteSpread)
+        assertNull(takerResult.trades.first().relativeSpread)
+
+        assertEquals(1, takerResult.trades.first().fees.size)
+        assertNull(takerResult.trades.first().fees.first().transfer!!.feeCoef)
+
+        assertEquals(1, result.orders.filter { it.order.clientId == "Client2" }.size)
+        val makerResult = result.orders.first { it.order.clientId == "Client2" }
+        assertEquals(1, makerResult.trades.size)
+        assertNull(makerResult.trades.first().absoluteSpread)
+        assertNull(makerResult.trades.first().relativeSpread)
+
+        assertEquals(1, makerResult.trades.first().fees.size)
+        assertNull(makerResult.trades.first().fees.first().transfer!!.feeCoef)
+    }
+
     private fun buildLimitOrderFeeInstruction(type: FeeType? = null,
                                               takerSizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,
                                               takerSize: Double? = null,
@@ -543,8 +632,9 @@ class FeeTest: AbstractTest() {
                                               makerSize: Double? = null,
                                               sourceClientId: String? = null,
                                               targetClientId: String? = null,
-                                              assetIds: List<String> = listOf()): NewLimitOrderFeeInstruction? {
+                                              assetIds: List<String> = listOf(),
+                                              makerFeeModificator: Double? = null): NewLimitOrderFeeInstruction? {
         return if (type == null) null
-        else return NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, assetIds)
+        else return NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, assetIds, makerFeeModificator)
     }
 }

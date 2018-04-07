@@ -1,12 +1,13 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.checkFee
@@ -33,7 +34,7 @@ import java.util.concurrent.BlockingQueue
 
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val assetsHolder: AssetsHolder,
-                                   private val disabledAssetsCache: DisabledAssetsCache,
+                                   private val applicationSettingsCache: ApplicationSettingsCache,
                                    private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
                                    private val feeProcessor: FeeProcessor): AbstractService {
@@ -54,7 +55,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
         val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
 
-        if (disabledAssetsCache.isDisabled(message.assetId)) {
+        if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.DISABLED_ASSET.type).build())
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
@@ -75,6 +76,9 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             processTransferOperation(operation)
         } catch (e: FeeException) {
             writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
+            return
+        } catch (e: BalanceException) {
+            writeErrorResponse(messageWrapper, message, operationId, LOW_BALANCE, e.message)
             return
         }
         cashOperationsDatabaseAccessor.insertTransferOperation(operation)
@@ -99,7 +103,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        balancesHolder.processWalletOperations(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, operations)
+        balancesHolder.createWalletProcessor(LOGGER, false).preProcess(operations).apply(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name)
 
         return fees
     }
@@ -117,10 +121,18 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     }
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashTransferOperation, operationId: String, errorMessage: String = "invalid fee for client") {
+        writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, errorMessage)
+    }
+
+    private fun writeErrorResponse(messageWrapper: MessageWrapper,
+                                   message: ProtocolMessages.CashTransferOperation,
+                                   operationId: String,
+                                   status: MessageStatus,
+                                   errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
                 .setMatchingEngineId(operationId)
-                .setStatus(INVALID_FEE.type)
+                .setStatus(status.type)
                 .setStatusReason(errorMessage)
                 .build())
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")

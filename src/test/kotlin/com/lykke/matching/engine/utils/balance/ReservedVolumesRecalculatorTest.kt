@@ -89,7 +89,7 @@ class ReservedVolumesRecalculatorTest {
     fun testRecalculate() {
         val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor,
                 testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
-                reservedVolumesDatabaseAccessor, trustedClients, applicationContext)
+                reservedVolumesDatabaseAccessor, applicationContext)
         recalculator.recalculate()
 
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))

@@ -7,16 +7,18 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.junit.After
@@ -123,6 +125,7 @@ abstract class MatchingEngineTest {
             limitOrdersReportSize: Int = 0,
             orderBookSize: Int = 0
     ) {
+        matchingResult.apply()
         assertTrue { matchingResult.order is MarketOrder }
         assertEquals(marketPrice, matchingResult.order.takePrice())
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize, cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
@@ -142,6 +145,7 @@ abstract class MatchingEngineTest {
             limitOrdersReportSize: Int = 0,
             orderBookSize: Int = 0
     ) {
+        matchingResult.apply()
         assertTrue { matchingResult.order is NewLimitOrder }
         val matchedOrder = matchingResult.order as NewLimitOrder
         assertEquals(remainingVolume, matchedOrder.remainingVolume, DELTA)
@@ -170,7 +174,7 @@ abstract class MatchingEngineTest {
         }
         assertEquals(lkkTradesSize, matchingResult.lkkTrades.size)
         assertEquals(cancelledSize, matchingResult.cancelledLimitOrders.size)
-        assertEquals(cashMovementsSize, matchingResult.cashMovements.size)
+        assertEquals(cashMovementsSize, matchingResult.ownCashMovements.size + matchingResult.oppositeCashMovements.size)
         assertEquals(marketOrderTradesSize, matchingResult.marketOrderTrades.size)
         assertEquals(completedLimitOrdersSize, matchingResult.completedLimitOrders.size)
         assertEquals(skipSize, matchingResult.skipLimitOrders.size)
@@ -201,9 +205,8 @@ abstract class MatchingEngineTest {
 
     protected fun initService() {
         balancesHolder.reload()
-        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder,
-                balancesHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
-
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
+        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }
 

@@ -307,6 +307,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderBuyOneToOne() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
         initService()
 
@@ -334,11 +335,17 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         assertCashMovementsEquals(
                 listOf(
                         WalletOperation("", null, "Client1", "EUR", now, 91.1, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -108.41, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -108.41, 0.0)
+                ),
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
                         WalletOperation("", null, "Client2", "EUR", now, -91.1, -91.1),
                         WalletOperation("", null, "Client2", "USD", now, 108.41, 0.0)
                 ),
-                matchingResult.cashMovements
+                matchingResult.oppositeCashMovements
         )
     }
 
@@ -526,7 +533,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         assertCompletedLimitOrders(matchingResult.completedLimitOrders, false)
         assertEquals("Client1", matchingResult.skipLimitOrders.first().clientId)
 
-        assertTrue { matchingResult.order == marketOrder }
+        assertEquals(matchingResult.order.externalId, marketOrder.externalId)
         assertNotNull(marketOrder.matchedAt)
         assertTrue { marketOrder.matchedAt!! > now }
         assertNotNull(matchingResult.uncompletedLimitOrder)

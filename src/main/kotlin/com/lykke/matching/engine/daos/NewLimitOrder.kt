@@ -44,4 +44,16 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
     override fun updateRemainingVolume(volume: Double) {
         this.remainingVolume = volume
     }
+
+    override fun copy(): NewLimitOrder {
+        return NewLimitOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered,
+                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction })
+    }
+
+    override fun applyToOrigin(origin: Copyable) {
+        super.applyToOrigin(origin)
+        origin as NewLimitOrder
+        origin.remainingVolume = remainingVolume
+        origin.lastMatchTime = lastMatchTime
+    }
 }

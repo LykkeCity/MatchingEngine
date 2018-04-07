@@ -32,6 +32,11 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
+        val clientIds = wallets.map { it.clientId }
+        if (clientIds.size != clientIds.toSet().size) {
+            throw Exception("Wallets list contains several wallets with the same client")
+        }
+
         wallets.forEach { wallet ->
             val client = balances.getOrPut(wallet.clientId,  { HashMap<String, AssetBalance>() })
             val updatedWallet = this.wallets.getOrPut(wallet.clientId) { Wallet(wallet.clientId) }

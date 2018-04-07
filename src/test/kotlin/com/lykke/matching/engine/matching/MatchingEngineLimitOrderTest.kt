@@ -1,11 +1,15 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -247,6 +251,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyOneToOne2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 89.1))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.19, volume = -89.1, reservedVolume = 89.1))
         initService()
 
@@ -269,16 +274,23 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         assertCashMovementsEquals(
                 listOf(
                         WalletOperation("", null, "Client1", "EUR", now, 89.1, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -106.03, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -106.03, 0.0)
+                ),
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
                         WalletOperation("", null, "Client2", "EUR", now, -89.1, -89.1),
                         WalletOperation("", null, "Client2", "USD", now, 106.03, 0.0)
                 ),
-                matchingResult.cashMovements
+                matchingResult.oppositeCashMovements
         )
     }
 
     @Test
     fun testMatchLimitOrderSellOneToOne2() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 110.24))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.21, volume = 91.1, reservedVolume = 110.24))
         initService()
 
@@ -300,13 +312,19 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, 91.1, 0.0),
-                        WalletOperation("", null, "Client1", "USD", now, -110.23, -110.23),
-                        WalletOperation("", null, "Client1", "USD", now, 0.0, -0.01),
                         WalletOperation("", null, "Client2", "EUR", now, -91.1, 0.0),
                         WalletOperation("", null, "Client2", "USD", now, 110.23, 0.0)
                 ),
-                matchingResult.cashMovements
+                matchingResult.ownCashMovements
+        )
+
+        assertCashMovementsEquals(
+                listOf(
+                        WalletOperation("", null, "Client1", "EUR", now, 91.1, 0.0),
+                        WalletOperation("", null, "Client1", "USD", now, -110.23, -110.23),
+                        WalletOperation("", null, "Client1", "USD", now, 0.0, -0.01)
+                ),
+                matchingResult.oppositeCashMovements
         )
     }
 
@@ -463,7 +481,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
             assertNotNull(it.order.lastMatchTime)
             assertTrue { it.order.lastMatchTime!! > now }
         }
-        assertTrue { matchingResult.order == limitOrder }
+        assertEquals(matchingResult.order.externalId, limitOrder.externalId)
         assertNotNull(limitOrder.lastMatchTime)
         assertTrue { limitOrder.lastMatchTime!! > now }
         assertEquals(-0.09, matchingResult.uncompletedLimitOrder!!.remainingVolume, DELTA)
@@ -521,5 +539,26 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
         assertNotNull(matchingResult.uncompletedLimitOrder)
         assertLkkTradesEquals(expectedLkkTrades, matchingResult.lkkTrades)
+    }
+
+    @Test
+    fun testMatchLimitOrderSellFullBalance() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK1Y", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKK1YLKK", "LKK1Y", "LKK", 4))
+
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK1Y", 5495.03))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "LKK", 10000.0))
+
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
+        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))
+
+        initService()
+
+        val matchingResult = matchingEngine.match(buildLimitOrder(clientId = "Client1", assetId = "LKK1YLKK", volume = -5495.03, price = 1.0082,
+                fees = buildLimitOrderFeeInstructions(type = FeeType.CLIENT_FEE, takerSize = 0.0009, targetClientId = "Client5")), getOrderBook("LKK1YLKK", true))
+
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.Matched, marketBalance = 0.0, remainingVolume = 0.0, skipSize = 0, cancelledSize = 0, lkkTradesSize = 4, cashMovementsSize = 10, marketOrderTradesSize = 2, completedLimitOrdersSize = 1,
+                limitOrdersReportSize = 2)
     }
 }
