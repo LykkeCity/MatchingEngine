@@ -3,25 +3,21 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.azure.AzureAsset
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.util.HashMap
 
-@Component
-class AzureBackOfficeDatabaseAccessor @Autowired constructor (config: Config) : BackOfficeDatabaseAccessor {
+class AzureBackOfficeDatabaseAccessor constructor (connectionString: String) : BackOfficeDatabaseAccessor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureBackOfficeDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val assetsTable: CloudTable = getOrCreateTable(config.me.db.dictsConnString, "Dictionaries")
+    val assetsTable: CloudTable = getOrCreateTable(connectionString, "Dictionaries")
 
     private val ASSET = "Asset"
 

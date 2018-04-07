@@ -2,25 +2,21 @@ package com.lykke.matching.engine.database.azure
 
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
-import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.blob.CloudBlob
 import com.microsoft.azure.storage.blob.CloudBlobContainer
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.util.LinkedList
 
-@Component
-class AzureHistoryTicksDatabaseAccessor @Autowired constructor(config: Config) : HistoryTicksDatabaseAccessor {
+class AzureHistoryTicksDatabaseAccessor constructor(connectionString: String) : HistoryTicksDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureHistoryTicksDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(config.me.db.hLiquidityConnString, "history")
+    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(connectionString, "history")
 
     override fun loadHistoryTick(asset: String, period: String): CloudBlob? {
         try {
