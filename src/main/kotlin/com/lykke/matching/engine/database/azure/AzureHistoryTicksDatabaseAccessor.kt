@@ -19,7 +19,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         val METRICS_LOGGER = MetricsLogger.getLogger()
         private const val PRICE_PAIR_DELIMITER = ";"
         private const val PRICE_DELIMITER = ","
-        private const val BLOB_REFERENCE_PREFIX  = "BA"
+        private const val BLOB_REFERENCE_PREFIX  = "BA_"
         private const val BLOB_NAME_PATTERN = "BA_%s_%s"
     }
 
