@@ -1,13 +1,11 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.cache.DisabledAssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.utils.config.Config
-import org.springframework.beans.factory.FactoryBean
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -17,10 +15,10 @@ open class TestApplicationContext {
 
     @Bean
     open fun balanceHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
-                      applicationEventPublisher: ApplicationEventPublisher, config: Config,
-                      backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
+                           applicationEventPublisher: ApplicationEventPublisher, applicationSettingsCache: ApplicationSettingsCache,
+                           backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
         return BalancesHolder(walletDatabaseAccessor, assetHolder(backOfficeDatabaseAccessor),
-                applicationEventPublisher, config)
+                applicationEventPublisher, applicationSettingsCache)
     }
 
     @Bean
@@ -34,18 +32,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun config(): FactoryBean<Config> {
-        return LocalConfig()
-    }
-
-    @Bean
     open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
         return TestBackOfficeDatabaseAccessor()
-    }
-
-    @Bean
-    open fun testSettingsDatabaseAccessor(): SettingsDatabaseAccessor {
-        return TestSettingsDatabaseAccessor()
     }
 
     @Bean
@@ -54,8 +42,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun disabledAssetsCache(): DisabledAssetsCache {
-        return DisabledAssetsCache(testSettingsDatabaseAccessor(), 60000)
+    open fun testConfigDatabaseAccessor(): ConfigDatabaseAccessor {
+        return TestConfigDatabaseAccessor()
+    }
+
+    @Bean
+    open fun applicationSettingsCache(configDatabaseAccessor: ConfigDatabaseAccessor): ApplicationSettingsCache {
+        return ApplicationSettingsCache(configDatabaseAccessor, 60000)
     }
 
     @Bean

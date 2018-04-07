@@ -5,23 +5,22 @@ import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.history.TickBlobHolder
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
-import java.util.*
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import kotlin.collections.HashMap
 
-class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
-                       private val frequency: Long) {
+@Component
+class MarketStateCache @Autowired constructor (private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
+                                                   @Value("\${application.settings.update.interval}") private val frequency: Long) {
 
     companion object {
         private val performanceLogger = PerformanceLogger(Logger.getLogger("marketStateCache"), 10, "buildTicks: ")
     }
 
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
-
-    init {
-        refresh()
-    }
 
     @Synchronized
     fun addTick(assetPair: String, ask: Double, bid: Double, currentUpdateTime: Long) {
@@ -49,7 +48,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
         val ticks = historyTicksDatabaseAccessor.loadHistoryTicks()
         ticks.forEach {
             val assetPairToTick = assetPairToIntervalTickHolder.getOrPut(it.assetPair) {HashMap()}
-            assetPairToTick!![it.tickUpdateInterval] = it
+            assetPairToTick[it.tickUpdateInterval] = it
         }
     }
 

@@ -19,9 +19,19 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
     }
 
-    val wallets = walletDatabaseAccessor.loadWallets()
-    val initialClientsCount: Int = wallets.size
-    val initialBalancesCount: Int = wallets.values.sumBy { it.balances.size }
+    var wallets = walletDatabaseAccessor.loadWallets()
+    var initialClientsCount: Int = wallets.size
+    var initialBalancesCount: Int = wallets.values.sumBy { it.balances.size }
+
+    init {
+        reload()
+    }
+
+    fun reload() {
+        wallets = walletDatabaseAccessor.loadWallets()
+        initialClientsCount = wallets.size
+        initialBalancesCount = wallets.values.sumBy { it.balances.size }
+    }
 
     fun getBalance(clientId: String, assetId: String): Double {
         val wallet = wallets[clientId]
@@ -102,6 +112,11 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
 
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
-        return WalletOperationsProcessor(this, walletDatabaseAccessor, notificationQueue, assetsHolder, validate, logger)
+        return WalletOperationsProcessor(this,
+                walletDatabaseAccessor,
+                applicationEventPublisher,
+                assetsHolder,
+                validate,
+                logger)
     }
 }

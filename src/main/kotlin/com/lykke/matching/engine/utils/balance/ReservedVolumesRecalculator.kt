@@ -7,10 +7,8 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
@@ -28,13 +26,13 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
+    val walletDatabaseAccessor = applicationContext.getBean(WalletDatabaseAccessor::class.java)
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
-    val backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
+    val backOfficeDatabaseAccessor =  applicationContext.getBean(BackOfficeDatabaseAccessor::class.java)
     val filePath = config.me.orderBookPath
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(filePath)
-    val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
+    val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)
     ReservedVolumesRecalculator(walletDatabaseAccessor,
             dictionariesDatabaseAccessor,
             backOfficeDatabaseAccessor,
@@ -65,6 +63,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
+        val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()

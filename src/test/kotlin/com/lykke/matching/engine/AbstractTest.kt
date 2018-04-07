@@ -3,13 +3,13 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -24,7 +24,6 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import java.util.concurrent.LinkedBlockingQueue
-import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 
 abstract class AbstractTest {
@@ -44,7 +43,7 @@ abstract class AbstractTest {
     protected lateinit var assetsHolder: AssetsHolder
 
     @Autowired
-    private lateinit var config: Config
+    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
@@ -62,7 +61,6 @@ abstract class AbstractTest {
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
 
     protected val reservedCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val balanceNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
     protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
     protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
@@ -90,7 +88,7 @@ abstract class AbstractTest {
         balancesHolder.reload()
         applicationSettingsCache.update()
 
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, trustedClients.toSet())
+        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
@@ -114,6 +112,5 @@ abstract class AbstractTest {
         clientsLimitOrdersQueue.clear()
         lkkTradesQueue.clear()
         rabbitSwapQueue.clear()
-        balanceNotificationQueue.clear()
     }
 }

@@ -19,6 +19,7 @@ import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
@@ -90,7 +91,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val LOGGER = ThrottlingLogger.getLogger(MessageProcessor::class.java.name)
         val MONITORING_LOGGER = ThrottlingLogger.getLogger("${MessageProcessor::class.java.name}.monitoring")
         val METRICS_LOGGER = MetricsLogger.getLogger()
-        val HISTORY_TICKS_UPDATE_FREQUENCY = 4000L
     }
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = queue
@@ -129,9 +129,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
-    private var historyTicksService: HistoryTicksService? = null
+    private val historyTicksService: HistoryTicksService
 
     private val marketStateCache: MarketStateCache
+    private val applicationSettingsCache: ApplicationSettingsCache
 
     private val quotesUpdateHandler: QuotesUpdateHandler
 
@@ -154,6 +155,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     init {
         val isDevProfile = applicationContext.environment.acceptsProfiles("dev")
 
+        this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
+
         val cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
         this.walletDatabaseAccessor = applicationContext.getBean(AzureWalletDatabaseAccessor::class.java)
 
@@ -169,7 +172,15 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor, 60000))
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
-        this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balanceHolder, tradesInfoQueue, quotesNotificationQueue, config.me.trustedClients)
+        this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
+
+        this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor,
+                assetsHolder,
+                assetsPairsHolder,
+                balanceHolder,
+                tradesInfoQueue,
+                quotesNotificationQueue, applicationSettingsCache)
+
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder, applicationSettingsCache)
@@ -202,9 +213,12 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
 
+        this.historyTicksService = HistoryTicksService(marketStateCache,
+                genericLimitOrderService,
+                applicationContext.environment.getProperty("application.settings.update.interval").toLong())
+
         if (!isDevProfile) {
-            this.marketStateCache = MarketStateCache(historyTicksDatabaseAccessor, HISTORY_TICKS_UPDATE_FREQUENCY)
-            this.historyTicksService = HistoryTicksService(marketStateCache, genericLimitOrderService, HISTORY_TICKS_UPDATE_FREQUENCY)
+            marketStateCache.refresh()
             this.historyTicksBuilder = historyTicksService.start()
         }
 

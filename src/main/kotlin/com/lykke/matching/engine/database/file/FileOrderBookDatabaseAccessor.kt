@@ -18,7 +18,7 @@ import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
 @Component
-class FileOrderBookDatabaseAccessor @Autowired constructor (private val config: Config): OrderBookDatabaseAccessor {
+class FileOrderBookDatabaseAccessor @Autowired constructor (private val filePath: String): OrderBookDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
@@ -30,7 +30,7 @@ class FileOrderBookDatabaseAccessor @Autowired constructor (private val config: 
     override fun loadLimitOrders(): List<NewLimitOrder> {
         val result = ArrayList<NewLimitOrder>()
         try {
-            val dir = File(config.me.orderBookPath)
+            val dir = File(filePath)
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
                     if (!file.isDirectory && !file.name.startsWith("_prev_")) {
@@ -39,7 +39,7 @@ class FileOrderBookDatabaseAccessor @Autowired constructor (private val config: 
                         } catch (e: Exception) {
                             LOGGER.error("Unable to read order book file ${file.name}. Trying to load previous one", e)
                             try {
-                                result.addAll(loadFile(File("$config.me.orderBookPath/_prev_${file.name}")))
+                                result.addAll(loadFile(File("$filePath/_prev_${file.name}")))
                             } catch (e: Exception) {
                                 LOGGER.error("Unable to read previous order book file ${file.name}.", e)
                             }
@@ -83,12 +83,12 @@ class FileOrderBookDatabaseAccessor @Autowired constructor (private val config: 
 
     fun saveFile(fileName: String, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
         try {
-            val file = File("$config.me.orderBookPath/$fileName")
+            val file = File("$filePath/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asByteArray(orderBook.toList())
-            Files.write(FileSystems.getDefault().getPath("$config.me.orderBookPath/$fileName"), bytes, StandardOpenOption.CREATE)
+            Files.write(FileSystems.getDefault().getPath("$filePath/$fileName"), bytes, StandardOpenOption.CREATE)
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
@@ -96,8 +96,8 @@ class FileOrderBookDatabaseAccessor @Autowired constructor (private val config: 
 
     private fun archiveAndDeleteFile(fileName: String) {
         try {
-            val newFile = FileSystems.getDefault().getPath("$config.me.orderBookPath/_prev_$fileName")
-            val oldFile = FileSystems.getDefault().getPath("$config.me.orderBookPath/$fileName")
+            val newFile = FileSystems.getDefault().getPath("$filePath/_prev_$fileName")
+            val oldFile = FileSystems.getDefault().getPath("$filePath/$fileName")
             Files.move(oldFile, newFile, StandardCopyOption.REPLACE_EXISTING)
         } catch(e: Exception) {
             LOGGER.error("Unable to archive and delete, name: $fileName", e)

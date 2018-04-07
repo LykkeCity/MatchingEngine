@@ -2,22 +2,19 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.config.TestConfigFactoryBean
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
-import com.lykke.matching.engine.utils.config.Config
-import com.lykke.matching.engine.utils.order.MinVolumeOrderCancellerTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.FactoryBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -59,11 +56,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): FactoryBean<com.lykke.matching.engine.utils.config.Config> {
-            val testConfigFactoryBean = TestConfigFactoryBean()
-            testConfigFactoryBean.addTrustedClient("Client3")
-
-            return testConfigFactoryBean
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
+            testSettingsDatabaseAccessor.addTrustedClient("Client3")
+            return testSettingsDatabaseAccessor
         }
     }
 

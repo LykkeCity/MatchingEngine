@@ -28,8 +28,6 @@ class ReservedVolumesRecalculatorTest {
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
 
 
-    private val trustedClients = setOf("trustedClient", "trustedClient2")
-
     @TestConfiguration
     open class Config {
         @Bean

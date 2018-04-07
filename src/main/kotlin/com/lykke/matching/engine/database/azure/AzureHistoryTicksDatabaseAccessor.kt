@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.LinkedList
 
-class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
+class AzureHistoryTicksDatabaseAccessor(connectionString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureHistoryTicksDatabaseAccessor::class.java.name)

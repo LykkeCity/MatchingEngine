@@ -26,15 +26,9 @@ open class AzureDatabaseAccessorConfig {
     }
 
     @Bean
-    open  fun azureHistoryTicksDatabaseAccessor()
+    open  fun azureHistoryTicksDatabaseAccessor(@Value("\${application.settings.update.interval}") interval: Long)
             : HistoryTicksDatabaseAccessor {
-       return AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString)
-    }
-
-    @Bean
-    open  fun AzureSettingsDatabaseAccessor()
-            : SettingsDatabaseAccessor {
-       return AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString)
+       return AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString, interval)
     }
 
     @Bean
@@ -60,6 +54,12 @@ open class AzureDatabaseAccessorConfig {
     open  fun azureWalletDatabaseAccessor(@Value("\${azure.wallet.table}") tableName: String)
             : WalletDatabaseAccessor {
        return AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
+    }
+
+    @Bean
+    open  fun AzureConfigDatabaseAccessor(@Value("\$azure.config.database.acessor.table") tableName: String)
+            : ConfigDatabaseAccessor {
+       return AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
     }
 
 

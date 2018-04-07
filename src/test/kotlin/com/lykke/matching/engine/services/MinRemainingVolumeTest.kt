@@ -1,9 +1,13 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -14,18 +18,58 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MinRemainingVolumeTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinRemainingVolumeTest : AbstractTest() {
+
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
+            testSettingsDatabaseAccessor.addTrustedClient("Client3")
+
+            return testSettingsDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+        @Bean
+        @Primary
+        open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 10000.0))
+
+            return testWalletDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
-        testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
-        testSettingsDatabaseAccessor.addTrustedClient("Client3")
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 10000.0))
+        applicationSettingsCache.update()
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 0.01))
         initServices()
     }

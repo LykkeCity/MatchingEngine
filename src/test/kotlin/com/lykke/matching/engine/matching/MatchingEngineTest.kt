@@ -7,11 +7,8 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -54,10 +51,13 @@ abstract class MatchingEngineTest {
     protected lateinit var assetsHolder: AssetsHolder
 
     @Autowired
-    protected lateinit var config: com.lykke.matching.engine.utils.config.Config
+    protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
     @Autowired
     protected lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
+
+    @Autowired
+    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @TestConfiguration
     open class Config {
@@ -205,7 +205,6 @@ abstract class MatchingEngineTest {
 
     protected fun initService() {
         balancesHolder.reload()
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }
