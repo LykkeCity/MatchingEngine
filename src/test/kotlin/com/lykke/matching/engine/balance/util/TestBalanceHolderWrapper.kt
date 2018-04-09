@@ -16,8 +16,8 @@ class TestBalanceHolderWrapper {
         balanceUpdateHandlerTest.clear()
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, reservedBalance: Double) {
-        balancesHolder.updateReservedBalance(clientId, assetId, reservedBalance)
+    fun updateReservedBalance(clientId: String, assetId: String, reservedBalance: Double, skip: Boolean = false) {
+        balancesHolder.updateReservedBalance(clientId, assetId, reservedBalance, skip)
         balanceUpdateHandlerTest.clear()
     }
 }
