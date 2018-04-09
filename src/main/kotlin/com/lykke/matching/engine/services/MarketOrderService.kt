@@ -150,7 +150,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
                 writeResponse(messageWrapper, order, MessageStatus.NOT_ENOUGH_FUNDS)
             }
-            OrderStatus.InvalidFee -> {
+            InvalidFee -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
                 writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE)
             }
