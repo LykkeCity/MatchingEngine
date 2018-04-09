@@ -143,7 +143,7 @@ class MessageBuilder {
                     .setAssetPairId(order.assetPairId)
                     .setVolume(order.volume)
                     .setCancelAllPreviousLimitOrders(cancel)
-                    .setType(order.type.externalId)
+                    .setType(order.type!!.externalId)
             if (order.type == LimitOrderType.LIMIT) {
                 builder.price = order.price
             }

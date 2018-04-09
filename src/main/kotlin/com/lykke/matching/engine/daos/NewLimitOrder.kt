@@ -10,7 +10,7 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
                     status: String, createdAt: Date, registered: Date, var remainingVolume: Double, var lastMatchTime: Date?,
                     reservedLimitVolume: Double? = null, fee: LimitOrderFeeInstruction? = null, fees: List<NewLimitOrderFeeInstruction>? = null,
                     @Version(3)
-                    val type: LimitOrderType,
+                    val type: LimitOrderType?,
                     @Version(3)
                     val lowerLimitPrice: Double?,
                     @Version(3)
