@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.fee
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
@@ -56,6 +57,9 @@ class FeeProcessorTest {
     lateinit var balancesHolder: BalancesHolder
 
     @Autowired
+    lateinit var  testBalanceHolderWrapper: TestBalanceHolderWrapper
+
+    @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
     @Autowired
@@ -74,27 +78,17 @@ class FeeProcessorTest {
 
             return testBackOfficeDatabaseAccessor
         }
-
-        @Bean
-        @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-
-            return testWalletDatabaseAccessor
-        }
     }
 
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
         initServices()
     }
 
     private fun initServices() {
         assetsPairsCache.update()
-        balancesHolder.reload()
         genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
@@ -108,7 +102,8 @@ class FeeProcessorTest {
 
     @Test
     fun testNoPercentageFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 10.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10.0)
+
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
@@ -188,7 +183,8 @@ class FeeProcessorTest {
 
     @Test
     fun testNoAbsoluteFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.09))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.09)
+
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
@@ -259,7 +255,7 @@ class FeeProcessorTest {
 
     @Test
     fun testAnotherAssetFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.6543, 0.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.6543)
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
         initServices()
 
@@ -371,7 +367,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalPercentageFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -405,7 +401,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalPercentageFeeNotEnoughFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 0.1))
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 0.1)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -505,7 +501,7 @@ class FeeProcessorTest {
 
     @Test
     fun testMakerMultipleFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 1000.0)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -575,7 +571,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalMultipleFeeNotEnoughFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1.12))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1.12)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -637,7 +633,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalMultipleFeeNotEnoughFundsAndMoreThanOperationVolume() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 10.12))
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 10.12)
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()

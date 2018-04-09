@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
@@ -13,7 +14,6 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -48,6 +48,9 @@ abstract class MatchingEngineTest {
     protected lateinit var balancesHolder: BalancesHolder
 
     @Autowired
+    protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+
+    @Autowired
     protected lateinit var assetsHolder: AssetsHolder
 
     @Autowired
@@ -73,21 +76,13 @@ abstract class MatchingEngineTest {
 
             return testBackOfficeDatabaseAccessor
         }
-
-        @Bean
-        @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
-
-            return testWalletDatabaseAccessor
-        }
     }
 
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
@@ -204,7 +199,6 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        balancesHolder.reload()
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }

@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -54,5 +55,10 @@ open class TestApplicationContext {
     @Bean
     open fun balanceUpdateHandler(): BalanceUpdateHandlerTest {
         return BalanceUpdateHandlerTest()
+    }
+
+    @Bean
+    open fun testBalanceHolderWrapper(): TestBalanceHolderWrapper {
+        return TestBalanceHolderWrapper()
     }
 }

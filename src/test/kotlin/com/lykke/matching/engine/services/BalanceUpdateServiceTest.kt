@@ -1,9 +1,8 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -14,37 +13,26 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (BalanceUpdateServiceTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BalanceUpdateServiceTest: AbstractTest() {
     @Autowired
     private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
+    @Autowired
+    private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+
     companion object {
         private const val DELTA = 1e-15
     }
 
-    @TestConfiguration
-    open class Config {
-        @Bean
-        @Primary
-        open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
-
-            return testWalletDatabaseAccessor
-        }
-    }
-
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
         initServices()
     }
 
@@ -57,7 +45,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Test
     fun testUpdateBalanceWithAnotherAssetBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset2", 2000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset2",  500.0)
         initServices()
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -75,7 +64,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Test
     fun testUpdateBalanceLowerThanResolved() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0, 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset1",  1000.0)
         initServices()
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -92,7 +82,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Test
     fun testUpdateReservedBalanceWithAnotherAssetBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset2", 2000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset2",  500.0)
         initServices()
 
         reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))

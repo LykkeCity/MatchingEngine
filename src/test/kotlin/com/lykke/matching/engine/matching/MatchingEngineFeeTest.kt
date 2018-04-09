@@ -22,7 +22,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testSellLimitOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 121.12))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "USD", 121.12)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.21111, volume = 100.0,
                 fee = buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -74,7 +75,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testBuyLimitOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -116,7 +118,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testSellMarketOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 120.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 120.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -158,7 +161,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testBuyMarketOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
