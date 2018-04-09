@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.utils.balance
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
@@ -43,26 +44,6 @@ class ReservedVolumesRecalculatorTest {
 
         @Bean
         @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient", "BTC", balance = 10.0, reservedBalance = 2.0))
-            // negative reserved balance
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient2", "BTC", balance = 1.0, reservedBalance = -0.001))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", balance = 0.0, reservedBalance = -0.001))
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", balance = 10.0, reservedBalance = 1.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", balance = 10.0, reservedBalance = 2.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", balance = 10.0, reservedBalance = 3.0))
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", balance = 10.0, reservedBalance = 0.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", balance = 10.0, reservedBalance = 1.0))
-
-            return testWalletDatabaseAccessor
-        }
-
-        @Bean
-        @Primary
         open fun testConfig(): TestConfigDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
             testSettingsDatabaseAccessor.addTrustedClient("trustedClient")
@@ -80,8 +61,12 @@ class ReservedVolumesRecalculatorTest {
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
+    @Autowired
+    lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+
     @Before
     fun setUp() {
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
@@ -90,6 +75,32 @@ class ReservedVolumesRecalculatorTest {
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.4))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.3))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 1.0))
+
+        testBalanceHolderWrapper.updateBalance("trustedClient", "BTC",  10.0)
+        testBalanceHolderWrapper.updateReservedBalance("trustedClient", "BTC", 2.0)
+        // negative reserved balance
+        testBalanceHolderWrapper.updateBalance("trustedClient2", "BTC",  1.0)
+        testBalanceHolderWrapper.updateReservedBalance("trustedClient2", "BTC", -0.001)
+
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC",  0.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC", -0.001)
+
+
+        testBalanceHolderWrapper.updateBalance("Client1", "USD",  10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1.0)
+
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC",  10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",   2.0)
+
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR",  10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "EUR", 3.0)
+
+
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR",  10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",  0.0)
+
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC",  10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC", 1.0)
     }
 
     @Test

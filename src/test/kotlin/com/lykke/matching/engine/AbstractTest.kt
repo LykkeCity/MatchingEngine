@@ -1,5 +1,6 @@
 package com.lykke.matching.engine
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
@@ -44,6 +45,9 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
+
+    @Autowired
+    protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()

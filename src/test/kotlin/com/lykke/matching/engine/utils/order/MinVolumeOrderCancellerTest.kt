@@ -54,29 +54,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         @Bean
         @Primary
-        open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "BTC", 2.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 3.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "BTC", 3.0))
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 100.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "EUR", 200.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 300.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "EUR", 300.0))
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "USD", 2000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 3000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "USD", 3000.0))
-
-            return testWalletDatabaseAccessor
-        }
-
-        @Bean
-        @Primary
         open fun testConfig(): TestConfigDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
             testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
@@ -89,6 +66,21 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "BTC", 2.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 3.0)
+        testBalanceHolderWrapper.updateBalance("ClientForPartiallyMatching", "BTC", 3.0)
+
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "EUR", 200.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 300.0)
+        testBalanceHolderWrapper.updateBalance("ClientForPartiallyMatching", "EUR", 300.0)
+
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "USD", 2000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 3000.0)
+        testBalanceHolderWrapper.updateBalance("ClientForPartiallyMatching", "USD", 3000.0)
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 5))
