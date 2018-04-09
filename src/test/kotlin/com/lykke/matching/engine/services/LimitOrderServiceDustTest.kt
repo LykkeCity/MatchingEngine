@@ -30,18 +30,6 @@ class LimitOrderServiceDustTest : AbstractTest() {
 
     @TestConfiguration
     open class Config {
-        @Bean
-        @Primary
-        open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-
-            return testWalletDatabaseAccessor
-        }
 
         @Bean
         @Primary
@@ -65,6 +53,11 @@ class LimitOrderServiceDustTest : AbstractTest() {
 
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         initServices()

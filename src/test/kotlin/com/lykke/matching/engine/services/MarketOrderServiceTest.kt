@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
@@ -100,11 +99,11 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testNotEnoughFundsClientOrder() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.6, volume = 1000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1500.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))
@@ -117,8 +116,8 @@ class MarketOrderServiceTest: AbstractTest() {
     fun testNotEnoughFundsClientMultiOrder() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.6, volume = 1000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 2000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 1500.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 2000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1500.0)))
@@ -131,8 +130,8 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testNoLiqudityToFullyFill() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 2000.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 2000.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -2000.0)))
@@ -144,8 +143,8 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testNotEnoughFundsMarketOrder() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 900.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 900.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
@@ -180,8 +179,9 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testMatchOneToOne() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0, reservedBalance = 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
         initServices()
 
         assertEquals(1500.0, testWalletDatabaseAccessor.getReservedBalance("Client3", "USD"), DELTA)
@@ -213,10 +213,10 @@ class MarketOrderServiceTest: AbstractTest() {
     fun testMatchOneToOneEURJPY() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 122.512, volume = 1000000.0, clientId = "Client3"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 122.524, volume = -1000000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "JPY", 5000000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 5000000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.1))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "JPY", 100.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "JPY", 5000000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 5000000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client4", "JPY", 100.0)
         initServices()
         
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))
@@ -243,7 +243,7 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testMatchOneToOneAfterNotEnoughFunds() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
         initServices()
         
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
@@ -275,9 +275,10 @@ class MarketOrderServiceTest: AbstractTest() {
     fun testMatchOneToMany() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 100.0, clientId = "Client3"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.4, volume = 1000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1560.0, reservedBalance = 1400.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 150.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1560.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1400.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 150.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
         initServices()
         
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
@@ -306,8 +307,8 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKEUR", price = 0.04412, volume = -20000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKEUR", price = 0.04421, volume = -20000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKEUR", price = 0.04431, volume = -20000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK", 6569074.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 7500.02))
+        testBalanceHolderWrapper.updateBalance("Client1", "LKK", 6569074.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 7500.02)
         initServices()
         
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKEUR", volume = 50000.0)))
@@ -329,8 +330,8 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 13611.625476, volume = 1.463935, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 13586.531910, volume = 1.463935, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 13561.438344, volume = 1.463935, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK", 100000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 12.67565686))
+        testBalanceHolderWrapper.updateBalance("Client1", "LKK", 100000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 12.67565686)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = 50000.0, straight = false)))
@@ -351,8 +352,8 @@ class MarketOrderServiceTest: AbstractTest() {
     fun testMatchOneToMany2016Nov10_3() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKGBP", price = 0.0385, volume = -20000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "LKKGBP", price = 0.03859, volume = -20000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK", 100000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "GBP", 982.78))
+        testBalanceHolderWrapper.updateBalance("Client1", "LKK", 100000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "GBP", 982.78)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "LKKGBP", volume = -982.78, straight = false)))
@@ -378,8 +379,8 @@ class MarketOrderServiceTest: AbstractTest() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "SLRBTC", price = 0.00008897, volume = -4000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "SLRBTC", price = 0.00008914, volume = -4000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "SLRBTC", price = 0.00008932, volume = -4000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "SLR", 100000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 31.95294))
+        testBalanceHolderWrapper.updateBalance("Client1", "SLR", 100000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 31.95294)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC", volume = 25000.0, straight = true)))
@@ -393,8 +394,8 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testMatchOneToMany2016Dec12_2() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 791.37, volume = 4000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "CHF", 100000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 0.00036983))
+        testBalanceHolderWrapper.updateBalance("Client1", "CHF", 100000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.00036983)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = -0.00036983, straight = true)))
@@ -408,8 +409,8 @@ class MarketOrderServiceTest: AbstractTest() {
     @Test
     fun testNotStraight() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = -500.0, assetId = "EURUSD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 750.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 750.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -750.0, straight = false)))
@@ -430,9 +431,9 @@ class MarketOrderServiceTest: AbstractTest() {
     fun testNotStraightMatchOneToMany() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.4, volume = -100.0, clientId = "Client3"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = -1000.0, clientId = "Client1"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 3000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 3000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 2000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 2000.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false)))
@@ -453,8 +454,8 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Test
     fun testMatch1() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 100028.39125545))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 182207.39))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 100028.39125545)
+        testBalanceHolderWrapper.updateBalance("Client3", "CHF", 182207.39)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4071.121, volume = -0.00662454, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 4077.641, volume = -0.01166889, clientId = "Client1"))
@@ -481,9 +482,10 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Test
     fun testMatchWithNotEnoughFundsOrder1() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 1.19))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1.19)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
 
         val order = buildLimitOrder(assetId = "EURUSD", price = 1.2, volume = 1.0, clientId = "Client1")
         order.reservedLimitVolume = 1.19
@@ -518,9 +520,10 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Test
     fun testMatchWithNotEnoughFundsOrder2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 1.19))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1.19)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.0, reservedVolume = 1.19))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 2.1))
@@ -535,9 +538,9 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Test
     fun testMatchWithNotEnoughFundsOrder3() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1.19))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1.19)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = 1.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 2.1))
