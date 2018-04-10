@@ -27,6 +27,8 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         }
     }
 
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
+
     fun cancel() {
         val operationId = UUID.randomUUID().toString()
         teeLog("Starting order books analyze to cancel min volume orders ($operationId)")
