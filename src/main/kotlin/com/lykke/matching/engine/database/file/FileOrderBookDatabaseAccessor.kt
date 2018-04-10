@@ -17,8 +17,7 @@ import java.util.ArrayList
 import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
-@Component
-class FileOrderBookDatabaseAccessor @Autowired constructor (private val filePath: String): OrderBookDatabaseAccessor {
+class FileOrderBookDatabaseAccessor constructor (private val filePath: String): OrderBookDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileOrderBookDatabaseAccessor::class.java.name)
