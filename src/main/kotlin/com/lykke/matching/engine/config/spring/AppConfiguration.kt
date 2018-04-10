@@ -8,6 +8,7 @@ import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import javax.annotation.PostConstruct
@@ -28,10 +29,10 @@ open class AppConfiguration {
     }
 
     @Bean
-    open fun azureStatusProcessor(): Runnable {
+    open fun azureStatusProcessor(@Value("\${app.name}") appName: String): Runnable {
         return AliveStatusProcessorFactory
                 .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
-                        appName = "MatchingEngine",
+                        appName = appName,
                         config = config.me.aliveStatus)
     }
 
