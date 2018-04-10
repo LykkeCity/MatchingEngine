@@ -237,8 +237,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
                             matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-
-
                             orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
                             trades.addAll(matchingResult.lkkTrades)
@@ -261,17 +259,16 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                 trustedOrder.trades.addAll(orderReport.trades)
                             }
 
-
-                        if (matchingResult.order.status == OrderStatus.Processing.name) {
-                            if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
-                                LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(order.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
-                                order.status = OrderStatus.Cancelled.name
-                            } else {
-                                ordersToAdd.add(order)
-                                orderBook.addOrder(order)
+                            if (matchingResult.order.status == OrderStatus.Processing.name) {
+                                if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
+                                    LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(order.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+                                    order.status = OrderStatus.Cancelled.name
+                                } else {
+                                    ordersToAdd.add(order)
+                                    orderBook.addOrder(order)
+                                }
                             }
-                        }
-                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
+                            balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId] = matchingResult.marketBalance!!
 
                             sellSide = true
                             buySide = true

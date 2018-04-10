@@ -20,6 +20,7 @@ class MinRemainingVolumeTest : AbstractTest() {
 
     @Before
     fun setUp() {
+        testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))

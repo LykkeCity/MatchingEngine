@@ -19,6 +19,7 @@ class CopyWrapper<out T : Copyable>(value: T, isNew: Boolean = false) {
             copy = value
         } else {
             origin = value
+            @Suppress("unchecked_cast")
             copy = value.copy() as T
         }
     }

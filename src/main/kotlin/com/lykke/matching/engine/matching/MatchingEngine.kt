@@ -207,7 +207,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder, mutableListOf(LimitTradeInfo(traderId, limitOrder.clientId, limitAsset.assetId, Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy), limitOrder.price, now,
                         order.id, order.externalId, asset.assetId, order.clientId, Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy), limitOrder.fee, singleFeeTransfer(limitOrder.fee, makerFees), makerFees, roundedAbsoluteSpread, roundedRelativeSpread))))
                 totalVolume += BigDecimal.valueOf(volume)
-                totalLimitPrice += BigDecimal.valueOf(volume * limitOrder.price)
+                totalLimitPrice += BigDecimal.valueOf(volume) * BigDecimal.valueOf(limitOrder.price)
                 totalLimitVolume += BigDecimal.valueOf(Math.abs(if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume))
                 matchedOrders.add(limitOrderCopyWrapper)
             }

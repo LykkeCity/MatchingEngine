@@ -9,8 +9,7 @@ import com.microsoft.azure.storage.blob.CloudBlob
 import com.microsoft.azure.storage.blob.CloudBlobContainer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.*
-import java.util.stream.Collectors
+import java.util.LinkedList
 
 class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
 
@@ -18,10 +17,10 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         val LOGGER = ThrottlingLogger.getLogger(AzureHistoryTicksDatabaseAccessor::class.java.name)
 
         val METRICS_LOGGER = MetricsLogger.getLogger()
-        val PRICE_PAIR_DELIMITER = ";"
-        val PRICE_DELIMITER = ","
-        val BLOB_REFERENCE_PREFIX  = "BA"
-        val BLOB_NAME_PATTERN = "BA_%s_%s"
+        private const val PRICE_PAIR_DELIMITER = ";"
+        private const val PRICE_DELIMITER = ","
+        private const val BLOB_REFERENCE_PREFIX  = "BA_"
+        private const val BLOB_NAME_PATTERN = "BA_%s_%s"
     }
 
     private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(historyTicksString, "history")
@@ -68,7 +67,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
             // Loop over blobs within the container and output the URI to each of them.
             historyBlobContainer.listBlobs()
                     .filterIsInstance<CloudBlob>()
-                    .filterTo(result) { it.name.startsWith("BA_") }
+                    .filterTo(result) { it.name.startsWith(BLOB_REFERENCE_PREFIX) }
         } catch (e: Exception) {
             LOGGER.error("Unable to load blobs", e)
             METRICS_LOGGER.logError( "Unable to load blobs", e)
@@ -78,11 +77,11 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
 
     private fun blobToTick(blob: CloudBlob): TickBlobHolder? {
         blob.downloadAttributes()
-        val names = blob.name.split("_")
-        val assetPair = names[1]
+        val name = blob.name
+        val assetPair = name.removePrefix(BLOB_REFERENCE_PREFIX).substringBeforeLast("_")
 
         val interval = try {
-            TickUpdateInterval.getByPrefix(names[names.size - 1])
+            TickUpdateInterval.getByPrefix(name.substringAfterLast("_"))
         } catch (e: IllegalArgumentException) {
             val message = "Unable to get tick interval"
             LOGGER.error(message, e)

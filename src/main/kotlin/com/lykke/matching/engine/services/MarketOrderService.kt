@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
@@ -7,7 +8,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -202,8 +202,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
                     matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
-                genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
-                genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
+                    genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
+                    genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
