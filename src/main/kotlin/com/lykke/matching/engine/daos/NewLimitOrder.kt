@@ -59,7 +59,7 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
 
     override fun copy(): NewLimitOrder {
         return NewLimitOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered,
-                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction })
+                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice)
     }
 
     override fun applyToOrigin(origin: Copyable) {
