@@ -79,7 +79,6 @@ abstract class AbstractTest {
     protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
 
     protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
-    protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
@@ -114,12 +113,12 @@ abstract class AbstractTest {
         cashInOutOperationService = CashInOutOperationService(testWalletDatabaseAccessor, assetsHolder, balancesHolder, applicationSettingsCache, cashInOutQueue, feeProcessor)
         reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashInOutQueue)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
-        multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, limitOrdersCancellerFactory, limitOrdersProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue, genericLimitOrderProcessorFactory)
+        multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue, genericLimitOrderProcessorFactory)
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory)
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBookQueue, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, rabbitOrderBookQueue, genericLimitOrderProcessorFactory)
+        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, limitOrdersCancellerFactory)
+        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
     protected fun clearMessageQueues() {

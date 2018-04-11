@@ -26,6 +26,7 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -80,7 +81,7 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
-            rejectOrder(reservedBalance, totalPayBackReserved, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, e.messageStatus, now, isCancelOrders)
+            rejectOrder(reservedBalance, totalPayBackReserved, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(e.orderStatus), now, isCancelOrders)
             return
         }
 
@@ -236,7 +237,7 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
         validator.checkBalance(availableBalance, limitVolume)
 
         if (orderBook.leadToNegativeSpreadForClient(order)) {
-            throw OrderValidationException("${orderInfo(order)} lead to negative spread", OrderStatus.LeadToNegativeSpread, MessageStatus.LEAD_TO_NEGATIVE_SPREAD)
+            throw OrderValidationException("${orderInfo(order)} lead to negative spread", OrderStatus.LeadToNegativeSpread)
         }
     }
 

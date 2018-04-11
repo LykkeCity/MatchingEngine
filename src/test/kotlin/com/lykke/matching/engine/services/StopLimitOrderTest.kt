@@ -320,8 +320,11 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(10500.0, stopOrder.order.price)
     }
 
-    @Test
-    fun testProcessStopLimitOrderAfterMultiLimitOrder() {
+    private fun processStopLimitOrderAfterMultiLimitOrder(forTrustedClient: Boolean) {
+        if (forTrustedClient) {
+            testSettingsDatabaseAccessor.addTrustedClient("Client3")
+        }
+
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1.0))
         initServices()
@@ -341,6 +344,11 @@ class StopLimitOrderTest : AbstractTest() {
         clientsLimitOrdersQueue.clear()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3",
                 listOf(VolumePrice(-0.1, 11000.0), VolumePrice(-0.05, 8500.0)), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun testProcessStopLimitOrderAfterTrustedClientMultiLimitOrder() {
+        processStopLimitOrderAfterMultiLimitOrder(true)
 
         assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
         assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", true).size)
@@ -360,7 +368,31 @@ class StopLimitOrderTest : AbstractTest() {
     }
 
     @Test
-    fun testProcessStopLimitOrderAfterMultiLimitOrderCancellation() {
+    fun testProcessStopLimitOrderAfterClientMultiLimitOrder() {
+        processStopLimitOrderAfterMultiLimitOrder(false)
+
+        assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
+        assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", true).size)
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "USD"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+        assertEquals(215.0, balancesHolder.getBalance("Client1", "USD"))
+        assertEquals(215.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+
+        assertEquals(2, clientsLimitOrdersQueue.size)
+        val report = clientsLimitOrdersQueue.last() as LimitOrdersReport
+        assertEquals(3, report.orders.size)
+        assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
+
+        val stopOrder = report.orders.first { it.order.externalId == "order1" }
+        assertEquals(OrderStatus.Matched.name, stopOrder.order.status)
+        assertEquals(9000.0, stopOrder.order.price)
+    }
+
+    private fun processStopLimitOrderAfterMultiLimitOrderCancellation(forTrustedClient: Boolean) {
+        if (forTrustedClient) {
+            testSettingsDatabaseAccessor.addTrustedClient("Client2")
+        }
+
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 0.1))
         initServices()
@@ -379,6 +411,11 @@ class StopLimitOrderTest : AbstractTest() {
         val message = buildMultiLimitOrderCancelWrapper("Client2", "BTCUSD", false)
         multiLimitOrderCancelService.parseMessage(message)
         multiLimitOrderCancelService.processMessage(message)
+    }
+
+    @Test
+    fun `process stop limit order after trusted client multi limit orders cancellation`() {
+        processStopLimitOrderAfterMultiLimitOrderCancellation(true)
 
         assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
         assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", true).size)
@@ -389,6 +426,27 @@ class StopLimitOrderTest : AbstractTest() {
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, report.orders.size)
+        assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
+
+        val stopOrder = report.orders.first { it.order.externalId == "order1" }
+        assertEquals(OrderStatus.Matched.name, stopOrder.order.status)
+        assertEquals(10500.0, stopOrder.order.price)
+    }
+
+    @Test
+    fun `process stop limit order after client multi limit orders cancellation`() {
+        processStopLimitOrderAfterMultiLimitOrderCancellation(false)
+
+        assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
+        assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", true).size)
+        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "USD"))
+        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+        assertEquals(100.0, balancesHolder.getBalance("Client1", "USD"))
+        assertEquals(100.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+
+        assertEquals(2, clientsLimitOrdersQueue.size)
+        val report = clientsLimitOrdersQueue.last() as LimitOrdersReport
         assertEquals(2, report.orders.size)
         assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
 
@@ -499,6 +557,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessBothSideStopLimitOrders() {
+        testSettingsDatabaseAccessor.addTrustedClient("Client2")
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1050.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 850.0))

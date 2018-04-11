@@ -204,7 +204,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, rabbitTrustedClientsLimitOrdersQueue,
+        this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, rabbitTrustedClientsLimitOrdersQueue,
                 rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue, genericLimitOrderProcessorFactory)
 
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder,
@@ -215,8 +215,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue,
-                rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue, genericLimitOrderProcessorFactory)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         this.balanceUpdateService = BalanceUpdateService(balanceHolder)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 

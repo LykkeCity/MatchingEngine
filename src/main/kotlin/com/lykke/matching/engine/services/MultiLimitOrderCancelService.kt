@@ -4,13 +4,12 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
 import java.util.Date
 
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
-                                   private val limitOrdersCancellerFactory: LimitOrdersCancellerFactory): AbstractService {
+                                   private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -22,8 +21,8 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         val now = Date()
         val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
         if (ordersToCancel.isNotEmpty()) {
-            limitOrdersCancellerFactory.create(now)
-                    .preProcess(ordersToCancel)
+            genericLimitOrdersCancellerFactory.create(LOGGER, now)
+                    .preProcessLimitOrders(ordersToCancel)
                     .applyFull(message.uid, MessageType.MULTI_LIMIT_ORDER_CANCEL.name, false)
         }
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())

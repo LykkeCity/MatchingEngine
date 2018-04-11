@@ -18,6 +18,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.concurrent.BlockingQueue
@@ -60,7 +61,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
-            val messageStatus = e.messageStatus
+            val messageStatus = OrderStatusUtils.Companion.toMessageStatus(e.orderStatus)
             if (cancelVolume > 0) {
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)

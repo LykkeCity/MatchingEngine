@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
