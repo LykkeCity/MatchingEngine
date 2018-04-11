@@ -11,7 +11,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 
 @Service
-@Profile("dev")
+@Profile("local")
 class RabbitMqServiceToLogService : RabbitMqService {
     companion object{
         private val LOGGER = Logger.getLogger(RabbitMqServiceToLogService::class.java)

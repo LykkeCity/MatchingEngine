@@ -13,16 +13,7 @@ open class AppStarter
 
 fun main(args: Array<String>) {
     val context = SpringApplication.run(AppStarter::class.java, *args)
-
-    if (!context.environment.acceptsProfiles("dev")) {
-        if (args.isEmpty()) {
-            LOGGER.error("Not enough args. Usage: httpConfigString")
-            return
-        }
-    }
-
     addCommandLinePropertySource(args, context)
-
     context.getBean(Application::class.java).run()
 }
 

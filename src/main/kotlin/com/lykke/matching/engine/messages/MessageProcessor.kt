@@ -146,7 +146,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
-        val isDevProfile = applicationContext.environment.acceptsProfiles("dev")
+        val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
 
@@ -210,7 +210,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 genericLimitOrderService,
                 applicationContext.environment.getProperty("application.settings.update.interval").toLong())
 
-        if (!isDevProfile) {
+        if (!isLocalProfile) {
             marketStateCache.refresh()
             this.historyTicksBuilder = historyTicksService.start()
         }
@@ -254,7 +254,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitClientLimitOrdersQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)), rabbitMqService)
 
-        if(!isDevProfile) {
+        if(!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
                 limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
             }
