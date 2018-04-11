@@ -58,7 +58,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.bussinesId
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else  message.bussinesId
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
     }
