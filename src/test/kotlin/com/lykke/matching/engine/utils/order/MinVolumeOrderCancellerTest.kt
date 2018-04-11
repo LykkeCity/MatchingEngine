@@ -54,7 +54,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     override fun initServices() {
         super.initServices()
-        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, limitOrdersCancellerFactory)
+        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
     @Test

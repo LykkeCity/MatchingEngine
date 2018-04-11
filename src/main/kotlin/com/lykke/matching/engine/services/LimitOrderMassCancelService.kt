@@ -3,13 +3,14 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
 import java.util.Date
 
 class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
-                                  cancellerFactory: LimitOrdersCancellerFactory) :
-        AbstractLimitOrdersCancelService(genericLimitOrderService, cancellerFactory) {
+                                  genericStopLimitOrderService: GenericStopLimitOrderService,
+                                  cancellerFactory: GenericLimitOrdersCancellerFactory) :
+        AbstractLimitOrdersCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory) {
 
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
@@ -24,7 +25,7 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
 
         LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
 
-        return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy))
+        return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy), emptyList())
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
