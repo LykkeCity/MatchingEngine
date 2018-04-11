@@ -10,7 +10,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
                           private val applicationSettingsCache: ApplicationSettingsCache) {
 
     fun validateFee(order: NewLimitOrder) {
-        if (!checkFee(order.fee, order.fees)) {
+        if (order.fee != null && order.fees?.size ?: 0 > 1 || !checkFee(null, order.fees)) {
             throw OrderValidationException("has invalid fee", OrderStatus.InvalidFee)
         }
     }

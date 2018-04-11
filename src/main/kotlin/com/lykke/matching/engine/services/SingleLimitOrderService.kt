@@ -1,55 +1,23 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
-import java.util.concurrent.BlockingQueue
 
 class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
-
-    /*@Deprecated("Use primary constructor")
-    constructor(limitOrderService: GenericLimitOrderService,
-                stopLimitOrderService: GenericStopLimitOrderService,
-                trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                orderBookQueue: BlockingQueue<OrderBook>,
-                rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                assetsHolder: AssetsHolder,
-                assetsPairsHolder: AssetsPairsHolder,
-                balancesHolder: BalancesHolder,
-                applicationSettingsCache: ApplicationSettingsCache,
-                lkkTradesQueue: BlockingQueue<List<LkkTrade>>) :
-            this(GenericLimitOrderProcessorFactory(limitOrderService,
-                    stopLimitOrderService,
-                    trustedClientLimitOrderReportQueue,
-                    clientLimitOrderReportQueue,
-                    orderBookQueue,
-                    rabbitOrderBookQueue,
-                    assetsHolder,
-                    assetsPairsHolder,
-                    balancesHolder,
-                    applicationSettingsCache,
-                    lkkTradesQueue))*/
 
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -125,6 +93,8 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             LimitOrderType.LIMIT -> OrderStatus.InOrderBook
             LimitOrderType.STOP_LIMIT -> OrderStatus.Pending
         }
+        val feeInstruction = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null
+        val feeInstructions = NewLimitOrderFeeInstruction.create(message.feesList)
         return NewLimitOrder(UUID.randomUUID().toString(),
                 message.uid,
                 message.assetPairId,
@@ -136,8 +106,8 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 now,
                 message.volume,
                 null,
-                fee = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null,
-                fees = NewLimitOrderFeeInstruction.create(message.feesList),
+                fee = feeInstruction,
+                fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
                 type = type,
                 lowerLimitPrice = if (message.hasLowerLimitPrice()) message.lowerLimitPrice else null,
                 lowerPrice = if (message.hasLowerPrice()) message.lowerPrice else null,
