@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -17,6 +18,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -45,7 +47,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
-                             private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
+                             private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                             genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory?= null): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -59,6 +62,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -89,7 +93,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             message.ordersList.forEach { currentOrder ->
                 val uid = UUID.randomUUID().toString()
                 orders.add(NewLimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
-                        currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null))
+                        currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
+                        type = LimitOrderType.LIMIT,
+                        lowerLimitPrice = null,
+                        lowerPrice = null,
+                        upperLimitPrice = null,
+                        upperPrice = null))
 
                 if (cancelAllPreviousLimitOrders) {
                     if (currentOrder.volume > 0) {
@@ -120,7 +129,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 orders.add(NewLimitOrder(uid, currentOrder.uid, message.assetPairId, message.clientId, currentOrder.volume,
                         currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
                         fee = feeInstruction,
-                        fees = listOfLimitOrderFee(feeInstruction, feeInstructions)))
+                        fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
+                        type = LimitOrderType.LIMIT,
+                        lowerLimitPrice = null,
+                        lowerPrice = null,
+                        upperLimitPrice = null,
+                        upperPrice = null))
 
                 if (cancelAllPreviousLimitOrders) {
                     if (currentOrder.volume > 0) {
@@ -335,6 +349,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
+
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
     }
 
     private fun processClientOrders(message: ProtocolMessages.MultiLimitOrder) {

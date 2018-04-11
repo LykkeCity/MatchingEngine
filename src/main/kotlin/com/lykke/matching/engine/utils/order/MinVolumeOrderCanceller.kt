@@ -6,7 +6,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import java.util.Date
@@ -16,7 +16,7 @@ import java.util.UUID
 class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val genericLimitOrderService: GenericLimitOrderService,
-                              private val cancellerFactory: LimitOrdersCancellerFactory) {
+                              private val cancellerFactory: GenericLimitOrdersCancellerFactory) {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
@@ -65,9 +65,9 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
 
         teeLog("Starting orders cancellation (orders count: $totalCount)")
         try {
-            cancellerFactory.create(Date())
-                    .preProcess(ordersToCancel, ordersToRemove)
-                    .applyFull(operationId, MessageType.LIMIT_ORDER.name)
+            cancellerFactory.create(LOGGER, Date())
+                    .preProcessLimitOrders(ordersToCancel, ordersToRemove)
+                    .applyFull(operationId, MessageType.LIMIT_ORDER.name, true)
         } catch (e: BalanceException) {
             teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
             return

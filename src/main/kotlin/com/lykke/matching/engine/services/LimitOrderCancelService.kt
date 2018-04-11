@@ -5,14 +5,15 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.cancel.LimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
 
 class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
-                              cancellerFactory: LimitOrdersCancellerFactory) :
-        AbstractLimitOrdersCancelService(genericLimitOrderService, cancellerFactory) {
+                              genericStopLimitOrderService: GenericStopLimitOrderService,
+                              cancellerFactory: GenericLimitOrdersCancellerFactory) :
+        AbstractLimitOrdersCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory) {
 
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -40,23 +41,33 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
         }
 
         val orders = LinkedList<NewLimitOrder>()
+        val stopOrders = LinkedList<NewLimitOrder>()
         val notFoundOrderIds = LinkedList<String>()
         orderIds.forEach { orderId ->
-            val order = genericLimitOrderService.getOrder(orderId)
+            var isStopOrder = false
+            var order = genericLimitOrderService.getOrder(orderId)
+            if (order == null) {
+                order = genericStopLimitOrderService.getOrder(orderId)
+                isStopOrder = true
+            }
             if (order == null) {
                 notFoundOrderIds.add(orderId)
             } else {
-                orders.add(order)
+                if (isStopOrder) {
+                    stopOrders.add(order)
+                } else {
+                    orders.add(order)
+                }
             }
         }
 
-        if (orders.isEmpty()) {
+        if (orders.isEmpty() && stopOrders.isEmpty()) {
             LOGGER.info("Unable to find order ids: $notFoundOrderIds")
             writeResponse(messageWrapper, MessageStatus.LIMIT_ORDER_NOT_FOUND)
             return Orders.processed()
         }
 
-        return Orders.notProcessed(orders)
+        return Orders.notProcessed(orders, stopOrders)
     }
 
     private fun parseOldLimitOrderCancel(array: ByteArray): ProtocolMessages.OldLimitOrderCancel {

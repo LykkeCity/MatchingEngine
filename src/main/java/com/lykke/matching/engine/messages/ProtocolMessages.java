@@ -9,6 +9,90 @@ public final class ProtocolMessages {
       com.google.protobuf.ExtensionRegistry registry) {
   }
   /**
+   * Protobuf enum {@code com.lykke.matching.engine.messages.LimitOrderType}
+   */
+  public enum LimitOrderType
+      implements com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>LIMIT = 0;</code>
+     */
+    LIMIT(0, 0),
+    /**
+     * <code>STOP_LIMIT = 1;</code>
+     */
+    STOP_LIMIT(1, 1),
+    ;
+
+    /**
+     * <code>LIMIT = 0;</code>
+     */
+    public static final int LIMIT_VALUE = 0;
+    /**
+     * <code>STOP_LIMIT = 1;</code>
+     */
+    public static final int STOP_LIMIT_VALUE = 1;
+
+
+    public final int getNumber() {
+      return value;
+    }
+
+    public static LimitOrderType valueOf(int value) {
+      switch (value) {
+        case 0: return LIMIT;
+        case 1: return STOP_LIMIT;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<LimitOrderType>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<LimitOrderType>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<LimitOrderType>() {
+            public LimitOrderType findValueByNumber(int number) {
+              return LimitOrderType.valueOf(number);
+            }
+          };
+
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(0);
+    }
+
+    private static final LimitOrderType[] VALUES = values();
+
+    public static LimitOrderType valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int index;
+    private final int value;
+
+    private LimitOrderType(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:com.lykke.matching.engine.messages.LimitOrderType)
+  }
+
+  /**
    * Protobuf enum {@code com.lykke.matching.engine.messages.FeeType}
    */
   public enum FeeType
@@ -76,7 +160,7 @@ public final class ProtocolMessages {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(0);
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(1);
     }
 
     private static final FeeType[] VALUES = values();
@@ -160,7 +244,7 @@ public final class ProtocolMessages {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(1);
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(2);
     }
 
     private static final FeeSizeType[] VALUES = values();
@@ -11682,11 +11766,11 @@ public final class ProtocolMessages {
     double getVolume();
 
     /**
-     * <code>required double price = 6;</code>
+     * <code>optional double price = 6;</code>
      */
     boolean hasPrice();
     /**
-     * <code>required double price = 6;</code>
+     * <code>optional double price = 6;</code>
      */
     double getPrice();
 
@@ -11735,6 +11819,51 @@ public final class ProtocolMessages {
      */
     com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFeeOrBuilder getFeesOrBuilder(
         int index);
+
+    /**
+     * <code>optional int32 type = 10;</code>
+     */
+    boolean hasType();
+    /**
+     * <code>optional int32 type = 10;</code>
+     */
+    int getType();
+
+    /**
+     * <code>optional double lowerLimitPrice = 11;</code>
+     */
+    boolean hasLowerLimitPrice();
+    /**
+     * <code>optional double lowerLimitPrice = 11;</code>
+     */
+    double getLowerLimitPrice();
+
+    /**
+     * <code>optional double lowerPrice = 12;</code>
+     */
+    boolean hasLowerPrice();
+    /**
+     * <code>optional double lowerPrice = 12;</code>
+     */
+    double getLowerPrice();
+
+    /**
+     * <code>optional double upperLimitPrice = 13;</code>
+     */
+    boolean hasUpperLimitPrice();
+    /**
+     * <code>optional double upperLimitPrice = 13;</code>
+     */
+    double getUpperLimitPrice();
+
+    /**
+     * <code>optional double upperPrice = 14;</code>
+     */
+    boolean hasUpperPrice();
+    /**
+     * <code>optional double upperPrice = 14;</code>
+     */
+    double getUpperPrice();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrder}
@@ -11756,6 +11885,11 @@ public final class ProtocolMessages {
       price_ = 0D;
       cancelAllPreviousLimitOrders_ = false;
       fees_ = java.util.Collections.emptyList();
+      type_ = 0;
+      lowerLimitPrice_ = 0D;
+      lowerPrice_ = 0D;
+      upperLimitPrice_ = 0D;
+      upperPrice_ = 0D;
     }
 
     @java.lang.Override
@@ -11842,6 +11976,31 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000100;
               }
               fees_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.PARSER, extensionRegistry));
+              break;
+            }
+            case 80: {
+              bitField0_ |= 0x00000100;
+              type_ = input.readInt32();
+              break;
+            }
+            case 89: {
+              bitField0_ |= 0x00000200;
+              lowerLimitPrice_ = input.readDouble();
+              break;
+            }
+            case 97: {
+              bitField0_ |= 0x00000400;
+              lowerPrice_ = input.readDouble();
+              break;
+            }
+            case 105: {
+              bitField0_ |= 0x00000800;
+              upperLimitPrice_ = input.readDouble();
+              break;
+            }
+            case 113: {
+              bitField0_ |= 0x00001000;
+              upperPrice_ = input.readDouble();
               break;
             }
           }
@@ -12032,13 +12191,13 @@ public final class ProtocolMessages {
     public static final int PRICE_FIELD_NUMBER = 6;
     private double price_;
     /**
-     * <code>required double price = 6;</code>
+     * <code>optional double price = 6;</code>
      */
     public boolean hasPrice() {
       return ((bitField0_ & 0x00000020) == 0x00000020);
     }
     /**
-     * <code>required double price = 6;</code>
+     * <code>optional double price = 6;</code>
      */
     public double getPrice() {
       return price_;
@@ -12115,6 +12274,81 @@ public final class ProtocolMessages {
       return fees_.get(index);
     }
 
+    public static final int TYPE_FIELD_NUMBER = 10;
+    private int type_;
+    /**
+     * <code>optional int32 type = 10;</code>
+     */
+    public boolean hasType() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    /**
+     * <code>optional int32 type = 10;</code>
+     */
+    public int getType() {
+      return type_;
+    }
+
+    public static final int LOWERLIMITPRICE_FIELD_NUMBER = 11;
+    private double lowerLimitPrice_;
+    /**
+     * <code>optional double lowerLimitPrice = 11;</code>
+     */
+    public boolean hasLowerLimitPrice() {
+      return ((bitField0_ & 0x00000200) == 0x00000200);
+    }
+    /**
+     * <code>optional double lowerLimitPrice = 11;</code>
+     */
+    public double getLowerLimitPrice() {
+      return lowerLimitPrice_;
+    }
+
+    public static final int LOWERPRICE_FIELD_NUMBER = 12;
+    private double lowerPrice_;
+    /**
+     * <code>optional double lowerPrice = 12;</code>
+     */
+    public boolean hasLowerPrice() {
+      return ((bitField0_ & 0x00000400) == 0x00000400);
+    }
+    /**
+     * <code>optional double lowerPrice = 12;</code>
+     */
+    public double getLowerPrice() {
+      return lowerPrice_;
+    }
+
+    public static final int UPPERLIMITPRICE_FIELD_NUMBER = 13;
+    private double upperLimitPrice_;
+    /**
+     * <code>optional double upperLimitPrice = 13;</code>
+     */
+    public boolean hasUpperLimitPrice() {
+      return ((bitField0_ & 0x00000800) == 0x00000800);
+    }
+    /**
+     * <code>optional double upperLimitPrice = 13;</code>
+     */
+    public double getUpperLimitPrice() {
+      return upperLimitPrice_;
+    }
+
+    public static final int UPPERPRICE_FIELD_NUMBER = 14;
+    private double upperPrice_;
+    /**
+     * <code>optional double upperPrice = 14;</code>
+     */
+    public boolean hasUpperPrice() {
+      return ((bitField0_ & 0x00001000) == 0x00001000);
+    }
+    /**
+     * <code>optional double upperPrice = 14;</code>
+     */
+    public double getUpperPrice() {
+      return upperPrice_;
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -12138,10 +12372,6 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasVolume()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasPrice()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -12190,6 +12420,21 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         output.writeMessage(9, fees_.get(i));
       }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeInt32(10, type_);
+      }
+      if (((bitField0_ & 0x00000200) == 0x00000200)) {
+        output.writeDouble(11, lowerLimitPrice_);
+      }
+      if (((bitField0_ & 0x00000400) == 0x00000400)) {
+        output.writeDouble(12, lowerPrice_);
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        output.writeDouble(13, upperLimitPrice_);
+      }
+      if (((bitField0_ & 0x00001000) == 0x00001000)) {
+        output.writeDouble(14, upperPrice_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -12234,6 +12479,26 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(9, fees_.get(i));
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(10, type_);
+      }
+      if (((bitField0_ & 0x00000200) == 0x00000200)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(11, lowerLimitPrice_);
+      }
+      if (((bitField0_ & 0x00000400) == 0x00000400)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(12, lowerPrice_);
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(13, upperLimitPrice_);
+      }
+      if (((bitField0_ & 0x00001000) == 0x00001000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeDoubleSize(14, upperPrice_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -12375,6 +12640,16 @@ public final class ProtocolMessages {
         } else {
           feesBuilder_.clear();
         }
+        type_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000200);
+        lowerLimitPrice_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00000400);
+        lowerPrice_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00000800);
+        upperLimitPrice_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00001000);
+        upperPrice_ = 0D;
+        bitField0_ = (bitField0_ & ~0x00002000);
         return this;
       }
 
@@ -12444,6 +12719,26 @@ public final class ProtocolMessages {
         } else {
           result.fees_ = feesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+          to_bitField0_ |= 0x00000100;
+        }
+        result.type_ = type_;
+        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
+          to_bitField0_ |= 0x00000200;
+        }
+        result.lowerLimitPrice_ = lowerLimitPrice_;
+        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+          to_bitField0_ |= 0x00000400;
+        }
+        result.lowerPrice_ = lowerPrice_;
+        if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
+          to_bitField0_ |= 0x00000800;
+        }
+        result.upperLimitPrice_ = upperLimitPrice_;
+        if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
+          to_bitField0_ |= 0x00001000;
+        }
+        result.upperPrice_ = upperPrice_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -12516,6 +12811,21 @@ public final class ProtocolMessages {
             }
           }
         }
+        if (other.hasType()) {
+          setType(other.getType());
+        }
+        if (other.hasLowerLimitPrice()) {
+          setLowerLimitPrice(other.getLowerLimitPrice());
+        }
+        if (other.hasLowerPrice()) {
+          setLowerPrice(other.getLowerPrice());
+        }
+        if (other.hasUpperLimitPrice()) {
+          setUpperLimitPrice(other.getUpperLimitPrice());
+        }
+        if (other.hasUpperPrice()) {
+          setUpperPrice(other.getUpperPrice());
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -12535,9 +12845,6 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasVolume()) {
-          return false;
-        }
-        if (!hasPrice()) {
           return false;
         }
         if (hasFee()) {
@@ -12866,19 +13173,19 @@ public final class ProtocolMessages {
 
       private double price_ ;
       /**
-       * <code>required double price = 6;</code>
+       * <code>optional double price = 6;</code>
        */
       public boolean hasPrice() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>required double price = 6;</code>
+       * <code>optional double price = 6;</code>
        */
       public double getPrice() {
         return price_;
       }
       /**
-       * <code>required double price = 6;</code>
+       * <code>optional double price = 6;</code>
        */
       public Builder setPrice(double value) {
         bitField0_ |= 0x00000020;
@@ -12887,7 +13194,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>required double price = 6;</code>
+       * <code>optional double price = 6;</code>
        */
       public Builder clearPrice() {
         bitField0_ = (bitField0_ & ~0x00000020);
@@ -13284,6 +13591,166 @@ public final class ProtocolMessages {
           fees_ = null;
         }
         return feesBuilder_;
+      }
+
+      private int type_ ;
+      /**
+       * <code>optional int32 type = 10;</code>
+       */
+      public boolean hasType() {
+        return ((bitField0_ & 0x00000200) == 0x00000200);
+      }
+      /**
+       * <code>optional int32 type = 10;</code>
+       */
+      public int getType() {
+        return type_;
+      }
+      /**
+       * <code>optional int32 type = 10;</code>
+       */
+      public Builder setType(int value) {
+        bitField0_ |= 0x00000200;
+        type_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 type = 10;</code>
+       */
+      public Builder clearType() {
+        bitField0_ = (bitField0_ & ~0x00000200);
+        type_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private double lowerLimitPrice_ ;
+      /**
+       * <code>optional double lowerLimitPrice = 11;</code>
+       */
+      public boolean hasLowerLimitPrice() {
+        return ((bitField0_ & 0x00000400) == 0x00000400);
+      }
+      /**
+       * <code>optional double lowerLimitPrice = 11;</code>
+       */
+      public double getLowerLimitPrice() {
+        return lowerLimitPrice_;
+      }
+      /**
+       * <code>optional double lowerLimitPrice = 11;</code>
+       */
+      public Builder setLowerLimitPrice(double value) {
+        bitField0_ |= 0x00000400;
+        lowerLimitPrice_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double lowerLimitPrice = 11;</code>
+       */
+      public Builder clearLowerLimitPrice() {
+        bitField0_ = (bitField0_ & ~0x00000400);
+        lowerLimitPrice_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private double lowerPrice_ ;
+      /**
+       * <code>optional double lowerPrice = 12;</code>
+       */
+      public boolean hasLowerPrice() {
+        return ((bitField0_ & 0x00000800) == 0x00000800);
+      }
+      /**
+       * <code>optional double lowerPrice = 12;</code>
+       */
+      public double getLowerPrice() {
+        return lowerPrice_;
+      }
+      /**
+       * <code>optional double lowerPrice = 12;</code>
+       */
+      public Builder setLowerPrice(double value) {
+        bitField0_ |= 0x00000800;
+        lowerPrice_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double lowerPrice = 12;</code>
+       */
+      public Builder clearLowerPrice() {
+        bitField0_ = (bitField0_ & ~0x00000800);
+        lowerPrice_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private double upperLimitPrice_ ;
+      /**
+       * <code>optional double upperLimitPrice = 13;</code>
+       */
+      public boolean hasUpperLimitPrice() {
+        return ((bitField0_ & 0x00001000) == 0x00001000);
+      }
+      /**
+       * <code>optional double upperLimitPrice = 13;</code>
+       */
+      public double getUpperLimitPrice() {
+        return upperLimitPrice_;
+      }
+      /**
+       * <code>optional double upperLimitPrice = 13;</code>
+       */
+      public Builder setUpperLimitPrice(double value) {
+        bitField0_ |= 0x00001000;
+        upperLimitPrice_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double upperLimitPrice = 13;</code>
+       */
+      public Builder clearUpperLimitPrice() {
+        bitField0_ = (bitField0_ & ~0x00001000);
+        upperLimitPrice_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private double upperPrice_ ;
+      /**
+       * <code>optional double upperPrice = 14;</code>
+       */
+      public boolean hasUpperPrice() {
+        return ((bitField0_ & 0x00002000) == 0x00002000);
+      }
+      /**
+       * <code>optional double upperPrice = 14;</code>
+       */
+      public double getUpperPrice() {
+        return upperPrice_;
+      }
+      /**
+       * <code>optional double upperPrice = 14;</code>
+       */
+      public Builder setUpperPrice(double value) {
+        bitField0_ |= 0x00002000;
+        upperPrice_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional double upperPrice = 14;</code>
+       */
+      public Builder clearUpperPrice() {
+        bitField0_ = (bitField0_ & ~0x00002000);
+        upperPrice_ = 0D;
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.LimitOrder)
@@ -33509,81 +33976,84 @@ public final class ProtocolMessages {
       "er\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010cl" +
       "ientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006vol" +
       "ume\030\005 \002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPre" +
-      "viousLimitOrders\030\007 \001(\010\"\231\002\n\nLimitOrder\022\013\n" +
+      "viousLimitOrders\030\007 \001(\010\"\201\003\n\nLimitOrder\022\013\n" +
       "\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientI" +
       "d\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005",
-      " \002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPrevious" +
+      " \002(\001\022\r\n\005price\030\006 \001(\001\022$\n\034cancelAllPrevious" +
       "LimitOrders\030\007 \001(\010\022>\n\003fee\030\010 \001(\01321.com.lyk" +
       "ke.matching.engine.messages.LimitOrderFe" +
       "e\022?\n\004fees\030\t \003(\01321.com.lykke.matching.eng" +
-      "ine.messages.LimitOrderFee\"\226\001\n\016OldMarket" +
+      "ine.messages.LimitOrderFee\022\014\n\004type\030\n \001(\005" +
+      "\022\027\n\017lowerLimitPrice\030\013 \001(\001\022\022\n\nlowerPrice\030" +
+      "\014 \001(\001\022\027\n\017upperLimitPrice\030\r \001(\001\022\022\n\nupperP" +
+      "rice\030\016 \001(\001\"\226\001\n\016OldMarketOrder\022\013\n\003uid\030\001 \002" +
+      "(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022" +
+      "\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010",
+      "straight\030\006 \002(\010\022\033\n\023reservedLimitVolume\030\007 " +
+      "\001(\001\"\200\002\n\013MarketOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttime" +
+      "stamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPa" +
+      "irId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010straight\030\006" +
+      " \002(\010\022\033\n\023reservedLimitVolume\030\007 \001(\001\0224\n\003fee" +
+      "\030\010 \001(\0132\'.com.lykke.matching.engine.messa" +
+      "ges.Fee\0225\n\004fees\030\t \003(\0132\'.com.lykke.matchi" +
+      "ng.engine.messages.Fee\"5\n\020LimitOrderCanc" +
+      "el\022\013\n\003uid\030\001 \002(\t\022\024\n\014limitOrderId\030\002 \003(\t\"m\n" +
+      "\025MultiLimitOrderCancel\022\013\n\003uid\030\001 \002(\t\022\021\n\tt",
+      "imestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013asse" +
+      "tPairId\030\004 \002(\t\022\r\n\005isBuy\030\005 \002(\010\"8\n\023OldLimit" +
+      "OrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014limitOrderId" +
+      "\030\002 \002(\003\"Y\n\024LimitOrderMassCancel\022\013\n\003uid\030\001 " +
+      "\002(\t\022\020\n\010clientId\030\002 \002(\t\022\023\n\013assetPairId\030\003 \001" +
+      "(\t\022\r\n\005isBuy\030\004 \001(\010\"O\n\rBalanceUpdate\022\013\n\003ui" +
+      "d\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002" +
+      "(\t\022\016\n\006amount\030\004 \002(\001\"R\n\020OldBalanceUpdate\022\013" +
+      "\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId" +
+      "\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"\367\001\n\022OldMultiLimit",
       "Order\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n" +
-      "\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006" +
-      "volume\030\005 \002(\001\022\020\n\010straight\030\006 \002(\010\022\033\n\023reserv" +
-      "edLimitVolume\030\007 \001(\001\"\200\002\n\013MarketOrder\022\013\n\003u" +
-      "id\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030",
-      "\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002" +
-      "(\001\022\020\n\010straight\030\006 \002(\010\022\033\n\023reservedLimitVol" +
-      "ume\030\007 \001(\001\0224\n\003fee\030\010 \001(\0132\'.com.lykke.match" +
-      "ing.engine.messages.Fee\0225\n\004fees\030\t \003(\0132\'." +
-      "com.lykke.matching.engine.messages.Fee\"5" +
-      "\n\020LimitOrderCancel\022\013\n\003uid\030\001 \002(\t\022\024\n\014limit" +
-      "OrderId\030\002 \003(\t\"m\n\025MultiLimitOrderCancel\022\013" +
-      "\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010client" +
-      "Id\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\r\n\005isBuy\030\005" +
-      " \002(\010\"8\n\023OldLimitOrderCancel\022\013\n\003uid\030\001 \002(\003",
-      "\022\024\n\014limitOrderId\030\002 \002(\003\"Y\n\024LimitOrderMass" +
-      "Cancel\022\013\n\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\023\n" +
-      "\013assetPairId\030\003 \001(\t\022\r\n\005isBuy\030\004 \001(\010\"O\n\rBal" +
-      "anceUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(" +
-      "\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"R\n\020Ol" +
-      "dBalanceUpdate\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030" +
-      "\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\"\367" +
-      "\001\n\022OldMultiLimitOrder\022\013\n\003uid\030\001 \002(\003\022\021\n\tti" +
-      "mestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013asset" +
-      "PairId\030\004 \002(\t\022L\n\006orders\030\005 \003(\0132<.com.lykke",
-      ".matching.engine.messages.OldMultiLimitO" +
-      "rder.Order\022$\n\034cancelAllPreviousLimitOrde" +
-      "rs\030\006 \001(\010\032&\n\005Order\022\016\n\006volume\030\001 \002(\001\022\r\n\005pri" +
-      "ce\030\002 \002(\001\"\200\003\n\017MultiLimitOrder\022\013\n\003uid\030\001 \002(" +
-      "\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023" +
-      "\n\013assetPairId\030\004 \002(\t\022I\n\006orders\030\005 \003(\01329.co" +
-      "m.lykke.matching.engine.messages.MultiLi" +
-      "mitOrder.Order\022$\n\034cancelAllPreviousLimit" +
-      "Orders\030\006 \001(\010\032\264\001\n\005Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006v" +
-      "olume\030\002 \002(\001\022\r\n\005price\030\003 \002(\001\022>\n\003fee\030\004 \001(\0132",
-      "1.com.lykke.matching.engine.messages.Lim" +
-      "itOrderFee\022?\n\004fees\030\005 \003(\01321.com.lykke.mat" +
-      "ching.engine.messages.LimitOrderFee\"8\n\027W" +
-      "alletCredentialsReload\022\013\n\003uid\030\001 \002(\003\022\020\n\010c" +
-      "lientId\030\002 \001(\t\"\032\n\030SubscribeToBalanceUpdat" +
-      "e\"\'\n\023BalanceNotification\022\020\n\010clientId\030\001 \002" +
-      "(\t\"\031\n\027SubscribeToQuotesUpdate\">\n\014QuotesU" +
-      "pdate\022\017\n\007assetId\030\001 \002(\t\022\r\n\005price\030\002 \002(\001\022\016\n" +
-      "\006volume\030\003 \002(\001\"\313\001\n\021OrderBookSnapshot\022\r\n\005a" +
-      "sset\030\001 \002(\t\022\r\n\005isBuy\030\002 \002(\010\022\021\n\ttimestamp\030\003",
-      " \002(\003\022T\n\006levels\030\004 \003(\0132D.com.lykke.matchin" +
-      "g.engine.messages.OrderBookSnapshot.Orde" +
-      "rBookLevel\032/\n\016OrderBookLevel\022\r\n\005price\030\001 " +
-      "\002(\t\022\016\n\006volume\030\002 \002(\t\"_\n\025ReservedBalanceUp" +
-      "date\022\013\n\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007a" +
-      "ssetId\030\003 \002(\t\022\026\n\016reservedAmount\030\004 \002(\001\"v\n\032" +
-      "ReservedCashInOutOperation\022\n\n\002id\030\001 \002(\t\022\020" +
-      "\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002(\003\022\017\n\007a" +
-      "ssetId\030\004 \002(\t\022\026\n\016reservedVolume\030\005 \002(\001\"t\n\003" +
-      "Fee\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourc",
-      "eClientId\030\003 \001(\t\022\026\n\016targetClientId\030\004 \001(\t\022" +
-      "\020\n\010sizeType\030\005 \001(\005\022\017\n\007assetId\030\006 \003(\t\"\317\001\n\rL" +
-      "imitOrderFee\022\014\n\004type\030\001 \002(\005\022\021\n\tmakerSize\030" +
-      "\002 \001(\001\022\021\n\ttakerSize\030\003 \001(\001\022\026\n\016sourceClient" +
-      "Id\030\004 \001(\t\022\026\n\016targetClientId\030\005 \001(\t\022\025\n\rmake" +
-      "rSizeType\030\006 \001(\005\022\025\n\rtakerSizeType\030\007 \001(\005\022\017" +
-      "\n\007assetId\030\010 \003(\t\022\033\n\023makerFeeModificator\030\t" +
-      " \001(\001*7\n\007FeeType\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FE" +
-      "E\020\001\022\020\n\014EXTERNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\n" +
-      "PERCENTAGE\020\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.",
-      "matching.engine.messagesB\020ProtocolMessag" +
-      "es"
+      "\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022L\n\006" +
+      "orders\030\005 \003(\0132<.com.lykke.matching.engine" +
+      ".messages.OldMultiLimitOrder.Order\022$\n\034ca" +
+      "ncelAllPreviousLimitOrders\030\006 \001(\010\032&\n\005Orde" +
+      "r\022\016\n\006volume\030\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\200\003\n\017Mul" +
+      "tiLimitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002" +
+      " \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 " +
+      "\002(\t\022I\n\006orders\030\005 \003(\01329.com.lykke.matching" +
+      ".engine.messages.MultiLimitOrder.Order\022$",
+      "\n\034cancelAllPreviousLimitOrders\030\006 \001(\010\032\264\001\n" +
+      "\005Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006volume\030\002 \002(\001\022\r\n\005p" +
+      "rice\030\003 \002(\001\022>\n\003fee\030\004 \001(\01321.com.lykke.matc" +
+      "hing.engine.messages.LimitOrderFee\022?\n\004fe" +
+      "es\030\005 \003(\01321.com.lykke.matching.engine.mes" +
+      "sages.LimitOrderFee\"8\n\027WalletCredentials" +
+      "Reload\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \001(\t\"\032\n" +
+      "\030SubscribeToBalanceUpdate\"\'\n\023BalanceNoti" +
+      "fication\022\020\n\010clientId\030\001 \002(\t\"\031\n\027SubscribeT" +
+      "oQuotesUpdate\">\n\014QuotesUpdate\022\017\n\007assetId",
+      "\030\001 \002(\t\022\r\n\005price\030\002 \002(\001\022\016\n\006volume\030\003 \002(\001\"\313\001" +
+      "\n\021OrderBookSnapshot\022\r\n\005asset\030\001 \002(\t\022\r\n\005is" +
+      "Buy\030\002 \002(\010\022\021\n\ttimestamp\030\003 \002(\003\022T\n\006levels\030\004" +
+      " \003(\0132D.com.lykke.matching.engine.message" +
+      "s.OrderBookSnapshot.OrderBookLevel\032/\n\016Or" +
+      "derBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006volume\030\002 " +
+      "\002(\t\"_\n\025ReservedBalanceUpdate\022\013\n\003uid\030\001 \002(" +
+      "\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\026\n\016" +
+      "reservedAmount\030\004 \002(\001\"v\n\032ReservedCashInOu" +
+      "tOperation\022\n\n\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t",
+      "\022\021\n\ttimestamp\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\026\n\016" +
+      "reservedVolume\030\005 \002(\001\"t\n\003Fee\022\014\n\004type\030\001 \002(" +
+      "\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourceClientId\030\003 \001(\t\022" +
+      "\026\n\016targetClientId\030\004 \001(\t\022\020\n\010sizeType\030\005 \001(" +
+      "\005\022\017\n\007assetId\030\006 \003(\t\"\317\001\n\rLimitOrderFee\022\014\n\004" +
+      "type\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\ttakerSi" +
+      "ze\030\003 \001(\001\022\026\n\016sourceClientId\030\004 \001(\t\022\026\n\016targ" +
+      "etClientId\030\005 \001(\t\022\025\n\rmakerSizeType\030\006 \001(\005\022" +
+      "\025\n\rtakerSizeType\030\007 \001(\005\022\017\n\007assetId\030\010 \003(\t\022" +
+      "\033\n\023makerFeeModificator\030\t \001(\001*+\n\016LimitOrd",
+      "erType\022\t\n\005LIMIT\020\000\022\016\n\nSTOP_LIMIT\020\001*7\n\007Fee" +
+      "Type\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTE" +
+      "RNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020" +
+      "\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching.en" +
+      "gine.messagesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -33662,7 +34132,7 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_LimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", "CancelAllPreviousLimitOrders", "Fee", "Fees", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", "CancelAllPreviousLimitOrders", "Fee", "Fees", "Type", "LowerLimitPrice", "LowerPrice", "UpperLimitPrice", "UpperPrice", });
     internal_static_com_lykke_matching_engine_messages_OldMarketOrder_descriptor =
       getDescriptor().getMessageTypes().get(10);
     internal_static_com_lykke_matching_engine_messages_OldMarketOrder_fieldAccessorTable = new

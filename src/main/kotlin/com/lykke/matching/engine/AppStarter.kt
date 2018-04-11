@@ -50,7 +50,7 @@ fun main(args: Array<String>) {
     startLogsCleaner(config)
 
     SocketServer(config) { appInitialData ->
-        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
+        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : Started : ${appInitialData.ordersCount} orders, ${appInitialData.stopOrdersCount} stop orders, ${appInitialData.balancesCount} balances for ${appInitialData.clientsCount} clients")
     }.run()
 }
 
