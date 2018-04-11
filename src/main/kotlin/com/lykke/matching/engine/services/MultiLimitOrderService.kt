@@ -401,7 +401,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val orders = ArrayList<NewLimitOrder>(result.acceptedOrders.size + result.rejectedOrders.size)
         orders.addAll(result.acceptedOrders)
-        orders.addAll(result.rejectedOrders)
+        orders.addAll(result.rejectedOrders.map { it.order })
 
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
         responseBuilder.setId(multiLimitOrder.messageUid)

@@ -27,7 +27,7 @@ import java.util.concurrent.BlockingQueue
 
 class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
 
-    @Deprecated("Use primary constructor")
+    /*@Deprecated("Use primary constructor")
     constructor(limitOrderService: GenericLimitOrderService,
                 stopLimitOrderService: GenericStopLimitOrderService,
                 trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
@@ -49,7 +49,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                     assetsPairsHolder,
                     balancesHolder,
                     applicationSettingsCache,
-                    lkkTradesQueue))
+                    lkkTradesQueue))*/
 
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)

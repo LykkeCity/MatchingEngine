@@ -7,11 +7,11 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
+import com.lykke.matching.engine.order.LimitOrderValidator
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -31,10 +31,10 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class LimitOrdersProcessor(assetsHolder: AssetsHolder,
-                           private val assetsPairsHolder: AssetsPairsHolder,
+                           assetsPairsHolder: AssetsPairsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
-                           private val applicationSettingsCache: ApplicationSettingsCache,
+                           applicationSettingsCache: ApplicationSettingsCache,
                            private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -51,6 +51,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            private val LOGGER: Logger) {
 
+    private val validator = LimitOrderValidator(assetsPairsHolder, applicationSettingsCache)
+
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
     private val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
@@ -65,7 +67,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private val ordersToCancel = mutableListOf<NewLimitOrder>()
     private val completedOrders = mutableListOf<NewLimitOrder>()
 
-    private val rejectedOrders = mutableListOf<NewLimitOrder>()
+    private val rejectedOrders = mutableListOf<RejectedOrder>()
     private val acceptedOrders = mutableListOf<NewLimitOrder>()
     private val ordersToAdd = mutableListOf<NewLimitOrder>()
 
@@ -154,7 +156,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
             addToReportIfNotTrusted(order)
-            rejectedOrders.add(order)
+            rejectedOrders.add(RejectedOrder(order, e.message))
             return
         }
 
@@ -165,19 +167,19 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             when (OrderStatus.valueOf(orderStatus)) {
                 OrderStatus.NoLiquidity -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(order)
+                    rejectedOrders.add(RejectedOrder(order))
                 }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(order)
+                    rejectedOrders.add(RejectedOrder(order, "Reserved volume is higher than available balance"))
                 }
                 OrderStatus.NotEnoughFunds -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(order)
+                    rejectedOrders.add(RejectedOrder(order))
                 }
                 OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(order)
+                    rejectedOrders.add(RejectedOrder(order))
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing -> {
@@ -214,10 +216,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                             LOGGER.error("$orderInfo: Unable to process cancelled orders wallet operations after matching: ${e.message}")
                         }
                     } catch (e: BalanceException) {
-                        LOGGER.error("$orderInfo: Unable to process wallet operations after matching: ${e.message}")
+                        val message = "$orderInfo: Unable to process wallet operations after matching: ${e.message}"
+                        LOGGER.error(message)
                         order.status = OrderStatus.NotEnoughFunds.name
                         addToReportIfNotTrusted(order)
-                        rejectedOrders.add(order)
+                        rejectedOrders.add(RejectedOrder(order, message))
                         return
                     }
 
@@ -308,45 +311,15 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (!isTrustedClient) {
-            validateFee(order)
-            validateAssets(assetPair)
-            checkBalance(availableBalance, limitVolume)
+            validator.validateFee(order)
+            validator.validateAssets(assetPair)
+            validator.checkBalance(availableBalance, limitVolume)
         }
-        validatePrice(order)
-        validateVolume(order)
+        validator.validatePrice(order)
+        validator.validateVolume(order)
 
         if (orderBook.leadToNegativeSpreadForClient(order)) {
             throw OrderValidationException("${orderInfo(order)} lead to negative spread", OrderStatus.LeadToNegativeSpread)
-        }
-    }
-
-    private fun validateFee(order: NewLimitOrder) {
-        if (order.fee != null && order.fees?.size ?: 0 > 1 || !checkFee(null, order.fees)) {
-            throw OrderValidationException("has invalid fee", OrderStatus.InvalidFee)
-        }
-    }
-
-    private fun validateAssets(assetPair: AssetPair) {
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
-            throw OrderValidationException("disabled asset", OrderStatus.DisabledAsset)
-        }
-    }
-
-    private fun validatePrice(order: NewLimitOrder) {
-        if (order.price <= 0.0) {
-            throw OrderValidationException("price is invalid", OrderStatus.InvalidPrice)
-        }
-    }
-
-    private fun validateVolume(order: NewLimitOrder) {
-        if (!order.checkVolume(assetsPairsHolder)) {
-            throw OrderValidationException("volume is too small", OrderStatus.TooSmallVolume)
-        }
-    }
-
-    private fun checkBalance(availableBalance: Double, limitVolume: Double) {
-        if (availableBalance < limitVolume) {
-            throw OrderValidationException("not enough funds to reserve", OrderStatus.NotEnoughFunds)
         }
     }
 

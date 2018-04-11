@@ -172,8 +172,25 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
-        val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue,
-                orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, applicationSettingsCache, lkkTradesQueue)
+        val limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder,
+                assetsPairsHolder,
+                balanceHolder,
+                genericLimitOrderService,
+                applicationSettingsCache,
+                rabbitTrustedClientsLimitOrdersQueue,
+                rabbitClientLimitOrdersQueue,
+                lkkTradesQueue,
+                orderBooksQueue,
+                rabbitOrderBooksQueue)
+
+        val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
+                genericStopLimitOrderService,
+                limitOrdersProcessorFactory,
+                rabbitClientLimitOrdersQueue,
+                assetsHolder,
+                assetsPairsHolder,
+                balanceHolder,
+                applicationSettingsCache)
 
         val genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
@@ -183,17 +200,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
                 genericLimitOrderProcessorFactory,
                 rabbitTrustedClientsLimitOrdersQueue,
                 rabbitClientLimitOrdersQueue,
-                orderBooksQueue,
-                rabbitOrderBooksQueue)
-
-        val limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder,
-                assetsPairsHolder,
-                balanceHolder,
-                genericLimitOrderService,
-                applicationSettingsCache,
-                rabbitTrustedClientsLimitOrdersQueue,
-                rabbitClientLimitOrdersQueue,
-                lkkTradesQueue,
                 orderBooksQueue,
                 rabbitOrderBooksQueue)
 
