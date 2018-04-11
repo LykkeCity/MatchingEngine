@@ -1,12 +1,12 @@
 package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -14,40 +14,84 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.ApplicationContext
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MinVolumeOrderCancellerTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     private lateinit var canceller: MinVolumeOrderCanceller
 
+    @Autowired
+    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "BTC", 2.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 3.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "BTC", 3.0))
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 100.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "EUR", 200.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 300.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "EUR", 300.0))
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "USD", 2000.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 3000.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "USD", 3000.0))
+
+            return testWalletDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
+            testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+            return testSettingsDatabaseAccessor
+        }
+    }
+
+    @Autowired
+    lateinit var applicationContext: ApplicationContext
+
     @Before
     fun setUp() {
-        testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
-
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 5))
-
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "BTC", 2.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 3.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "BTC", 3.0))
-
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "EUR", 200.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 300.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "EUR", 300.0))
-
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "USD", 2000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 3000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("ClientForPartiallyMatching", "USD", 3000.0))
 
         initServices()
     }
@@ -93,7 +137,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         trustedClientsLimitOrdersQueue.clear()
         clientsLimitOrdersQueue.clear()
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         rabbitOrderBookQueue.clear()
         orderBookQueue.clear()
         canceller.cancel()
@@ -154,7 +198,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(1, clientsLimitOrdersQueue.size)
         assertEquals(5, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
 
-        assertEquals(1, balanceUpdateQueue.size)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         assertEquals(4, rabbitOrderBookQueue.size)
         assertEquals(4, orderBookQueue.size)
@@ -191,7 +235,9 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestStopOrderBookDatabaseAccessor(), TestReservedVolumesDatabaseAccessor(), applicationSettingsCache)
+        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
+                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestStopOrderBookDatabaseAccessor(), TestReservedVolumesDatabaseAccessor(), applicationContext)
+
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

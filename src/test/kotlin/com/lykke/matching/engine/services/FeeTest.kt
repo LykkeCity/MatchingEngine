@@ -1,12 +1,16 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -16,18 +20,43 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (FeeTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FeeTest: AbstractTest() {
+
+    @Autowired
+    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
+    @TestConfiguration
+    open class Config {
+
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         initServices()
@@ -167,6 +196,7 @@ class FeeTest: AbstractTest() {
                                 assetIds = listOf("USD"))!!
                 )
         ))
+
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
@@ -217,7 +247,7 @@ class FeeTest: AbstractTest() {
 
         assertEquals(5, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.05
@@ -239,7 +269,6 @@ class FeeTest: AbstractTest() {
     fun testOrderBookNotEnoughFundsForMultipleFee() {
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 600.0))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.0403))
-
         initServices()
 
         for (i in 1..2) {
@@ -276,7 +305,7 @@ class FeeTest: AbstractTest() {
 
         assertEquals(4, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.04
@@ -306,7 +335,7 @@ class FeeTest: AbstractTest() {
             )))
         }
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.05,
@@ -319,7 +348,7 @@ class FeeTest: AbstractTest() {
 
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.NotEnoughFunds.name, result.orders.first { it.order.externalId == "order" }.order.status)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(5, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
     }
@@ -337,7 +366,7 @@ class FeeTest: AbstractTest() {
             )))
         }
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client1", assetId = "BTCUSD", volume = 0.05,
@@ -350,7 +379,7 @@ class FeeTest: AbstractTest() {
 
         val result = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.NotEnoughFunds.name, result.order.status)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(5, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
     }
@@ -368,7 +397,7 @@ class FeeTest: AbstractTest() {
             )))
         }
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(
                 clientId = "Client1", assetId = "BTCUSD", volume = -750.0, straight = false,
@@ -381,7 +410,7 @@ class FeeTest: AbstractTest() {
 
         val result = rabbitSwapQueue.poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.NotEnoughFunds.name, result.order.status)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(5, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
     }
@@ -404,7 +433,7 @@ class FeeTest: AbstractTest() {
                             assetIds = listOf("BTC"))!!))))
         }
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
@@ -417,11 +446,11 @@ class FeeTest: AbstractTest() {
 
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.NotEnoughFunds.name, result.orders.first { it.order.externalId == "order4" }.order.status)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(3, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order5", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
@@ -471,7 +500,7 @@ class FeeTest: AbstractTest() {
                             assetIds = listOf("EUR"))!!))))
         }
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
@@ -484,11 +513,11 @@ class FeeTest: AbstractTest() {
 
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.NotEnoughFunds.name, result.orders.first { it.order.externalId == "order4" }.order.status)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(3, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
 
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order5", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,

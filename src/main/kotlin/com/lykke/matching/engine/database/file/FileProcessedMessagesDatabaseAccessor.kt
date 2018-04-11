@@ -2,9 +2,12 @@ package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -14,7 +17,7 @@ import java.util.Arrays
 import java.util.Date
 import java.util.LinkedList
 
-class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): ProcessedMessagesDatabaseAccessor {
+class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: String): ProcessedMessagesDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileProcessedMessagesDatabaseAccessor::class.java.name)
@@ -30,7 +33,7 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
         val startFileName = DATE_FORMAT.format(startDate)
 
         try {
-            val dir = File(messagesDir)
+            val dir = File(filePath)
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
                     if (!file.isDirectory && file.name >= startFileName) {
@@ -70,12 +73,12 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
     override fun saveProcessedMessage(message: ProcessedMessage) {
         try {
             val fileName = DATE_FORMAT.format(Date(message.timestamp))
-            val file = File("$messagesDir/$fileName")
+            val file = File("$filePath/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asJsonString(message)
-            Files.write(FileSystems.getDefault().getPath("$messagesDir/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            Files.write(FileSystems.getDefault().getPath("$filePath/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (ex: Exception) {
             LOGGER.error("Unable to save message info: $message", ex)
             METRICS_LOGGER.logError( "Unable to save message info: $message", ex)

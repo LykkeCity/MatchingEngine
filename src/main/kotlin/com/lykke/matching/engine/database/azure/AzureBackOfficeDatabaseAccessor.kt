@@ -10,14 +10,14 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import java.util.HashMap
 
-class AzureBackOfficeDatabaseAccessor(dictsConfig: String) : BackOfficeDatabaseAccessor {
+class AzureBackOfficeDatabaseAccessor constructor (connectionString: String) : BackOfficeDatabaseAccessor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureBackOfficeDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    val assetsTable: CloudTable = getOrCreateTable(dictsConfig, "Dictionaries")
+    val assetsTable: CloudTable = getOrCreateTable(connectionString, "Dictionaries")
 
     private val ASSET = "Asset"
 

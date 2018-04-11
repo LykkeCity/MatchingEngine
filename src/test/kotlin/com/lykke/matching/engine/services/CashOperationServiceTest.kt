@@ -1,11 +1,12 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -18,28 +19,57 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import java.util.UUID
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (CashOperationServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class CashOperationServiceTest: AbstractTest() {
 
     companion object {
         private const val DELTA = 1e-15
     }
 
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("Asset1", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("Asset2", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("Asset3", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("Asset4", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("Asset5", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
+            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
+
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
+            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "Asset1", 100.0, reservedBalance = 50.0))
+
+            return testWalletDatabaseAccessor
+        }
+    }
+
     @Before
     fun setUp() {
-        testWalletDatabaseAccessor.clear()
-        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset1", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset2", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset3", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset4", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset5", 8))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "Asset1", 100.0, reservedBalance = 50.0))
         cashInOutQueue.clear()
-
         initServices()
     }
 

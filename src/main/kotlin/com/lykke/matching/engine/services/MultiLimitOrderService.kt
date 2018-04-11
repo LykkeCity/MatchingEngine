@@ -362,6 +362,20 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         return responseBuilder.build()
     }
 
+    private fun buildResponse(messageUid: String,
+                              assetPairId: String,
+                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse {
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).assetPairId = assetPairId
+
+        orders.forEach {
+            responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
+                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
+                    .setVolume(it.volume).setPrice(it.price).build())
+        }
+        return responseBuilder.build()
+    }
+
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
         return ProtocolMessages.OldMultiLimitOrder.parseFrom(array)
     }

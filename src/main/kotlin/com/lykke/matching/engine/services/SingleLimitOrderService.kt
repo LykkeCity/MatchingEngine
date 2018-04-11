@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder

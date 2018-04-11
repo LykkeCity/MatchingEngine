@@ -9,14 +9,14 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.TableOperation
 
-class AzureCashOperationsDatabaseAccessor(balancesConfig: String) : CashOperationsDatabaseAccessor {
-
+class AzureCashOperationsDatabaseAccessor constructor(connectionString: String,
+                                                                 tableName: String) : CashOperationsDatabaseAccessor {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureCashOperationsDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val transferOperationsTable = getOrCreateTable(balancesConfig, "SwapOperationsCash")
+    private val transferOperationsTable = getOrCreateTable(connectionString, tableName)
 
     override fun insertTransferOperation(operation: TransferOperation) {
         try {
