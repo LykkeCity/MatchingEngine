@@ -32,16 +32,6 @@ import kotlin.test.assertEquals
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinRemainingVolumeTest : AbstractTest() {
 
-    @Before
-    fun setUp() {
-        testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
-        testSettingsDatabaseAccessor.addTrustedClient("Client3")
-
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 10000.0))
-
     @TestConfiguration
     open class Config {
         @Bean
