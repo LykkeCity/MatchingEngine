@@ -15,4 +15,8 @@ class TestSettingsDatabaseAccessor : ConfigDatabaseAccessor {
 
         settings = Settings(trustedClients = trustedClients)
     }
+
+    fun clear() {
+        settings = Settings(emptySet(), emptySet())
+    }
 }

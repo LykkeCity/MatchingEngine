@@ -16,8 +16,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
     }
 
     fun validateAssets(assetPair: AssetPair) {
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
-                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
             throw OrderValidationException("disabled asset", OrderStatus.DisabledAsset)
         }
     }

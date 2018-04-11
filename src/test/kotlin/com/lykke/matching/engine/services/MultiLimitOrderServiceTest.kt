@@ -392,6 +392,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
+        testSettingsDatabaseAccessor.addTrustedClient("Client3")
+
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 1000.0))
 
@@ -423,8 +425,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(0.20343524, result.orders[1].order.reservedLimitVolume!!)
         assertEquals(0.20443524, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
 
-        val cancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, trustedClientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, orderBookQueue, rabbitOrderBookQueue)
-        cancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
+        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
         assertEquals(0.001, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
     }
 

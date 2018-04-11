@@ -205,8 +205,25 @@ class MessageBuilder {
             return multiOrderBuilder.build()
         }
 
-         fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
-                    .setUid(UUID.randomUUID().toString()).setLimitOrderId(uid).build().toByteArray(), null)
+        fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
+
+        fun buildLimitOrderCancelWrapper(uids: List<String>): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
+                .setUid(UUID.randomUUID().toString()).addAllLimitOrderId(uids).build().toByteArray(), null)
+
+        fun buildLimitOrderMassCancelWrapper(clientId: String,
+                                             assetPairId: String? = null,
+                                             isBuy: Boolean? = null): MessageWrapper {
+            val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
+                    .setUid(UUID.randomUUID().toString())
+                    .setClientId(clientId)
+            assetPairId?.let {
+                builder.setAssetPairId(it)
+            }
+            isBuy?.let {
+                builder.setIsBuy(it)
+            }
+            return MessageWrapper("Test", MessageType.LIMIT_ORDER_MASS_CANCEL.type, builder.build().toByteArray(), null)
+        }
 
         fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())
@@ -253,9 +270,10 @@ class MessageBuilder {
                                            makerSize: Double? = null,
                                            sourceClientId: String? = null,
                                            targetClientId: String? = null,
+                                           assetIds: List<String> = emptyList(),
                                            makerFeeModificator: Double? = null): List<NewLimitOrderFeeInstruction> {
             return if (type == null) listOf()
-            else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, listOf(), makerFeeModificator))
+            else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, assetIds, makerFeeModificator))
         }
 
         fun buildTransferWrapper(fromClientId: String,
