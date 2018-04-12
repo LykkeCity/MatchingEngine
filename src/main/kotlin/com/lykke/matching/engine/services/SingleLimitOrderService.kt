@@ -332,7 +332,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(order.externalId)
+                    .setMessageId(messageWrapper.messageId)
+                    .setMatchingEngineId(order.id)
+                    .setStatus(status.type)
+                    .build())
         }
 
         if (trustedLimitOrdersReport.orders.isNotEmpty()) {
@@ -351,9 +356,20 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()).build())
         } else {
             if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMatchingEngineId(order.id)
+                        .setStatus(status.type)
+                        .setMessageId(messageWrapper.messageId)
+                        .build())
             } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMatchingEngineId(order.id)
+                        .setStatus(status.type)
+                        .setStatusReason(reason)
+                        .setMessageId(messageWrapper.messageId)
+                        .build())
             }
         }
     }
@@ -384,7 +400,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(messageWrapper.messageId!!)
+                    .setStatus(status.type)
+                    .setMessageId(messageWrapper.messageId)
+                    .build())
         }
     }
 }

@@ -246,12 +246,26 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()).setRecordId(order.id).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(order.externalId.toLong())
+                    .setMessageId(messageWrapper.messageId)
+                    .setRecordId(order.id).build())
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
             if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMessageId(messageWrapper.messageId)
+                        .setMatchingEngineId(order.id)
+                        .setStatus(status.type)
+                        .build())
             } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMessageId(messageWrapper.messageId)
+                        .setMatchingEngineId(order.id)
+                        .setStatus(status.type)
+                        .setStatusReason(reason)
+                        .build())
             }
         } else {
             if (order.price != null) {
@@ -280,9 +294,16 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setMessageId(messageWrapper.messageId)
+                    .build())
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(messageWrapper.messageId!!)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(status.type)
+                    .build())
         } else{
             messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
         }

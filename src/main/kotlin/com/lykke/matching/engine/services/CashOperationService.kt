@@ -28,7 +28,10 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
 
         if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(message.uid)
+                    .setMessageId(messageWrapper.messageId)
+                    .setBussinesId(message.bussinesId).build())
             LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: disabled asset")
             return
         }
@@ -37,7 +40,11 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
             if (balance - reservedBalance < Math.abs(message.amount)) {
-                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                        .setUid(message.uid)
+                        .setMessageId(messageWrapper.messageId)
+                        .setBussinesId(message.bussinesId)
+                        .build())
                 LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
@@ -50,11 +57,20 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.uid.toString(), MessageType.CASH_OPERATION.name)
         } catch (e: BalanceException) {
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(message.uid)
+                    .setMessageId(messageWrapper.messageId)
+                    .setBussinesId(message.bussinesId)
+                    .build())
             return
         }
 
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).setRecordId(operation.id).build())
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                .setMessageId(messageWrapper.messageId)
+                .setUid(message.uid)
+                .setBussinesId(message.bussinesId)
+                .setRecordId(operation.id)
+                .build())
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)} processed")
     }
 
@@ -71,6 +87,10 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
-        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                .setMessageId(message.messageId)
+                .setUid(message.uid)
+                .setBussinesId(message.bussinesId)
+                .build())
     }
 }

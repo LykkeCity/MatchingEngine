@@ -15,6 +15,7 @@ message NewResponse {
     optional string matchingEngineId = 2;
     required int32 status = 3;
     optional string statusReason = 4;
+    required string messageId = 5;
 }
 
 message MarketOrderResponse {
