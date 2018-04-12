@@ -252,7 +252,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     }.toMutableList()))
 
                     matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
-                        var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.externalId == orderReport.order.externalId }
+                        var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.id == orderReport.order.id }
                         if (orderWithTrades == null) {
                             orderWithTrades = LimitOrderWithTrades(orderReport.order)
                             clientsLimitOrdersWithTrades.add(orderWithTrades)

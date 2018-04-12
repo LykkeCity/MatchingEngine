@@ -37,16 +37,6 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
 
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
     private val orderBooks = HashMap<String, OrderBook>()
-    //private var cancelResult: LimitOrdersCancelResult? = null
-
-    /*override fun apply(): LimitOrdersCancelResult {
-        val baseResult = super.apply()
-        val cancelResult = LimitOrdersCancelResult(baseResult.walletOperations,
-                baseResult.clientsOrdersWithTrades,
-                baseResult.trustedClientsOrdersWithTrades, baseResult.assetOrderBooks, orderBooks.values.toList())
-        this.cancelResult = cancelResult
-        return cancelResult
-    }*/
 
     override fun getCancelResult(walletOperations: List<WalletOperation>, clientsOrdersWithTrades: List<LimitOrderWithTrades>, trustedClientsOrdersWithTrades: List<LimitOrderWithTrades>, assetOrderBooks: Map<String, AssetOrderBook>): LimitOrdersCancelResult {
         return LimitOrdersCancelResult(walletOperations,
