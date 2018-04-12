@@ -251,30 +251,31 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     .setMessageId(messageWrapper.messageId)
                     .setRecordId(order.id).build())
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
-            if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                        .setId(order.externalId)
-                        .setMessageId(messageWrapper.messageId)
-                        .setMatchingEngineId(order.id)
-                        .setStatus(status.type)
-                        .build())
-            } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                        .setId(order.externalId)
-                        .setMessageId(messageWrapper.messageId)
-                        .setMatchingEngineId(order.id)
-                        .setStatus(status.type)
-                        .setStatusReason(reason)
-                        .build())
+            val newResponseBuilder = ProtocolMessages.NewResponse.newBuilder()
+                    .setId(order.externalId)
+                    .setMessageId(messageWrapper.messageId)
+                    .setMatchingEngineId(order.id)
+                    .setStatus(status.type)
+
+            if (reason != null) {
+                newResponseBuilder.statusReason = reason
             }
+
+            messageWrapper.writeNewResponse(newResponseBuilder.build())
+
         } else {
+            val marketOrderResponse = ProtocolMessages.MarketOrderResponse.newBuilder()
+                    .setId(order.externalId)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(status.type)
+
             if (order.price != null) {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setPrice(order.price!!).setStatus(status.type).build())
-            } else if (reason == null) {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setStatus(status.type).build())
-            } else {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setStatus(status.type).setStatusReason(reason).build())
+                marketOrderResponse.price = order.price!!
+            } else if (reason != null) {
+                marketOrderResponse.statusReason = reason
             }
+
+            messageWrapper.writeMarketOrderResponse(marketOrderResponse.build())
         }
     }
 
@@ -305,7 +306,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     .setStatus(status.type)
                     .build())
         } else{
-            messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
+                    .setId(messageWrapper.messageId!!)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(status.type)
+                    .build())
         }
     }
 }

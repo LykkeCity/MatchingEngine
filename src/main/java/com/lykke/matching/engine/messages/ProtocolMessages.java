@@ -2154,6 +2154,20 @@ public final class ProtocolMessages {
      * <code>optional double price = 4;</code>
      */
     double getPrice();
+
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MarketOrderResponse}
@@ -2171,6 +2185,7 @@ public final class ProtocolMessages {
       status_ = 0;
       statusReason_ = "";
       price_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -2220,6 +2235,12 @@ public final class ProtocolMessages {
             case 33: {
               bitField0_ |= 0x00000008;
               price_ = input.readDouble();
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -2362,6 +2383,48 @@ public final class ProtocolMessages {
       return price_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 5;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -2373,6 +2436,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasStatus()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -2393,6 +2460,9 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeDouble(4, price_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getMessageIdBytes());
       }
       unknownFields.writeTo(output);
     }
@@ -2418,6 +2488,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(4, price_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -2539,6 +2613,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         price_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -2579,6 +2655,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.price_ = price_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2611,6 +2691,11 @@ public final class ProtocolMessages {
         if (other.hasPrice()) {
           setPrice(other.getPrice());
         }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000010;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -2621,6 +2706,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasStatus()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         return true;
@@ -2861,6 +2949,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MarketOrderResponse)
     }
 
@@ -2982,6 +3146,20 @@ public final class ProtocolMessages {
      */
     com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrderResponse.OrderStatusOrBuilder getStatusesOrBuilder(
         int index);
+
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrderResponse}
@@ -3000,6 +3178,7 @@ public final class ProtocolMessages {
       statusReason_ = "";
       assetPairId_ = "";
       statuses_ = java.util.Collections.emptyList();
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -3058,6 +3237,12 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000010;
               }
               statuses_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrderResponse.OrderStatus.PARSER, extensionRegistry));
+              break;
+            }
+            case 50: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -4313,6 +4498,48 @@ public final class ProtocolMessages {
       return statuses_.get(index);
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 6;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -4328,6 +4555,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasAssetPairId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -4358,6 +4589,9 @@ public final class ProtocolMessages {
       for (int i = 0; i < statuses_.size(); i++) {
         output.writeMessage(5, statuses_.get(i));
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(6, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -4386,6 +4620,10 @@ public final class ProtocolMessages {
       for (int i = 0; i < statuses_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(5, statuses_.get(i));
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(6, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -4514,6 +4752,8 @@ public final class ProtocolMessages {
         } else {
           statusesBuilder_.clear();
         }
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -4563,6 +4803,10 @@ public final class ProtocolMessages {
         } else {
           result.statuses_ = statusesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -4623,6 +4867,11 @@ public final class ProtocolMessages {
             }
           }
         }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000020;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -4636,6 +4885,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasAssetPairId()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         for (int i = 0; i < getStatusesCount(); i++) {
@@ -5163,6 +5415,82 @@ public final class ProtocolMessages {
           statuses_ = null;
         }
         return statusesBuilder_;
+      }
+
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MultiLimitOrderResponse)
@@ -35573,118 +35901,119 @@ public final class ProtocolMessages {
       "\001(\t\022\021\n\tmessageId\030\004 \002(\t\"l\n\013NewResponse\022\n\n" +
       "\002id\030\001 \002(\t\022\030\n\020matchingEngineId\030\002 \001(\t\022\016\n\006s" +
       "tatus\030\003 \002(\005\022\024\n\014statusReason\030\004 \001(\t\022\021\n\tmes" +
-      "sageId\030\005 \002(\t\"V\n\023MarketOrderResponse\022\n\n\002i" +
+      "sageId\030\005 \002(\t\"i\n\023MarketOrderResponse\022\n\n\002i" +
       "d\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\022\024\n\014statusReason\030" +
-      "\003 \001(\t\022\r\n\005price\030\004 \001(\001\"\265\002\n\027MultiLimitOrder" +
-      "Response\022\n\n\002id\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\022\024\n\014",
-      "statusReason\030\003 \001(\t\022\023\n\013assetPairId\030\004 \002(\t\022" +
-      "Y\n\010statuses\030\005 \003(\0132G.com.lykke.matching.e" +
-      "ngine.messages.MultiLimitOrderResponse.O" +
-      "rderStatus\032x\n\013OrderStatus\022\n\n\002id\030\001 \002(\t\022\030\n" +
-      "\020matchingEngineId\030\002 \001(\t\022\016\n\006status\030\003 \002(\005\022" +
-      "\024\n\014statusReason\030\004 \001(\t\022\016\n\006volume\030\005 \002(\001\022\r\n" +
-      "\005price\030\006 \002(\001\"\240\001\n\rCashOperation\022\013\n\003uid\030\001 " +
-      "\002(\003\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002(\003" +
-      "\022\017\n\007assetId\030\004 \002(\t\022\016\n\006amount\030\005 \002(\001\022\022\n\nbus" +
-      "sinesId\030\006 \002(\t\022\025\n\rsendToBitcoin\030\007 \002(\010\022\021\n\t",
-      "messageId\030\010 \001(\t\"\260\001\n\022CashInOutOperation\022\n" +
-      "\n\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestam" +
-      "p\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001" +
-      "\0225\n\004fees\030\006 \003(\0132\'.com.lykke.matching.engi" +
-      "ne.messages.Fee\022\021\n\tmessageId\030\007 \001(\t\"\231\002\n\025C" +
-      "ashTransferOperation\022\n\n\002id\030\001 \002(\t\022\024\n\014from" +
-      "ClientId\030\002 \002(\t\022\022\n\ntoClientId\030\003 \002(\t\022\021\n\tti" +
-      "mestamp\030\004 \002(\003\022\017\n\007assetId\030\005 \002(\t\022\016\n\006volume" +
-      "\030\006 \002(\001\0224\n\003fee\030\007 \001(\0132\'.com.lykke.matching" +
-      ".engine.messages.Fee\022\026\n\016overdraftLimit\030\010",
-      " \001(\001\0225\n\004fees\030\t \003(\0132\'.com.lykke.matching." +
-      "engine.messages.Fee\022\021\n\tmessageId\030\n \001(\t\"\261" +
-      "\001\n\021CashSwapOperation\022\n\n\002id\030\001 \002(\t\022\021\n\tclie" +
-      "ntId1\030\002 \002(\t\022\020\n\010assetId1\030\003 \002(\t\022\017\n\007volume1" +
-      "\030\004 \002(\001\022\021\n\tclientId2\030\005 \002(\t\022\020\n\010assetId2\030\006 " +
-      "\002(\t\022\017\n\007volume2\030\007 \002(\001\022\021\n\ttimestamp\030\010 \002(\003\022" +
-      "\021\n\tmessageId\030\t \001(\t\"\256\001\n\rOldLimitOrder\022\013\n\003" +
-      "uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId" +
-      "\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 " +
-      "\002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPreviousL",
-      "imitOrders\030\007 \001(\010\022\021\n\tmessageId\030\010 \001(\t\"\254\002\n\n" +
-      "LimitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002" +
-      "(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(" +
-      "\t\022\016\n\006volume\030\005 \002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034canc" +
-      "elAllPreviousLimitOrders\030\007 \001(\010\022>\n\003fee\030\010 " +
-      "\001(\01321.com.lykke.matching.engine.messages" +
-      ".LimitOrderFee\022?\n\004fees\030\t \003(\01321.com.lykke" +
-      ".matching.engine.messages.LimitOrderFee\022" +
-      "\021\n\tmessageId\030\n \001(\t\"\251\001\n\016OldMarketOrder\022\013\n" +
-      "\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientI",
-      "d\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005" +
-      " \002(\001\022\020\n\010straight\030\006 \002(\010\022\033\n\023reservedLimitV" +
-      "olume\030\007 \001(\001\022\021\n\tmessageId\030\010 \001(\t\"\223\002\n\013Marke" +
-      "tOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020" +
-      "\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n" +
-      "\006volume\030\005 \002(\001\022\020\n\010straight\030\006 \002(\010\022\033\n\023reser" +
-      "vedLimitVolume\030\007 \001(\001\0224\n\003fee\030\010 \001(\0132\'.com." +
-      "lykke.matching.engine.messages.Fee\0225\n\004fe" +
-      "es\030\t \003(\0132\'.com.lykke.matching.engine.mes" +
-      "sages.Fee\022\021\n\tmessageId\030\n \001(\t\"H\n\020LimitOrd",
-      "erCancel\022\013\n\003uid\030\001 \002(\t\022\024\n\014limitOrderId\030\002 " +
-      "\002(\t\022\021\n\tmessageId\030\003 \001(\t\"\200\001\n\025MultiLimitOrd" +
-      "erCancel\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003" +
+      "\003 \001(\t\022\r\n\005price\030\004 \001(\001\022\021\n\tmessageId\030\005 \002(\t\"" +
+      "\310\002\n\027MultiLimitOrderResponse\022\n\n\002id\030\001 \002(\t\022",
+      "\016\n\006status\030\002 \002(\005\022\024\n\014statusReason\030\003 \001(\t\022\023\n" +
+      "\013assetPairId\030\004 \002(\t\022Y\n\010statuses\030\005 \003(\0132G.c" +
+      "om.lykke.matching.engine.messages.MultiL" +
+      "imitOrderResponse.OrderStatus\022\021\n\tmessage" +
+      "Id\030\006 \002(\t\032x\n\013OrderStatus\022\n\n\002id\030\001 \002(\t\022\030\n\020m" +
+      "atchingEngineId\030\002 \001(\t\022\016\n\006status\030\003 \002(\005\022\024\n" +
+      "\014statusReason\030\004 \001(\t\022\016\n\006volume\030\005 \002(\001\022\r\n\005p" +
+      "rice\030\006 \002(\001\"\240\001\n\rCashOperation\022\013\n\003uid\030\001 \002(" +
+      "\003\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002(\003\022\017" +
+      "\n\007assetId\030\004 \002(\t\022\016\n\006amount\030\005 \002(\001\022\022\n\nbussi",
+      "nesId\030\006 \002(\t\022\025\n\rsendToBitcoin\030\007 \002(\010\022\021\n\tme" +
+      "ssageId\030\010 \001(\t\"\260\001\n\022CashInOutOperation\022\n\n\002" +
+      "id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030" +
+      "\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\0225" +
+      "\n\004fees\030\006 \003(\0132\'.com.lykke.matching.engine" +
+      ".messages.Fee\022\021\n\tmessageId\030\007 \001(\t\"\231\002\n\025Cas" +
+      "hTransferOperation\022\n\n\002id\030\001 \002(\t\022\024\n\014fromCl" +
+      "ientId\030\002 \002(\t\022\022\n\ntoClientId\030\003 \002(\t\022\021\n\ttime" +
+      "stamp\030\004 \002(\003\022\017\n\007assetId\030\005 \002(\t\022\016\n\006volume\030\006" +
+      " \002(\001\0224\n\003fee\030\007 \001(\0132\'.com.lykke.matching.e",
+      "ngine.messages.Fee\022\026\n\016overdraftLimit\030\010 \001" +
+      "(\001\0225\n\004fees\030\t \003(\0132\'.com.lykke.matching.en" +
+      "gine.messages.Fee\022\021\n\tmessageId\030\n \001(\t\"\261\001\n" +
+      "\021CashSwapOperation\022\n\n\002id\030\001 \002(\t\022\021\n\tclient" +
+      "Id1\030\002 \002(\t\022\020\n\010assetId1\030\003 \002(\t\022\017\n\007volume1\030\004" +
+      " \002(\001\022\021\n\tclientId2\030\005 \002(\t\022\020\n\010assetId2\030\006 \002(" +
+      "\t\022\017\n\007volume2\030\007 \002(\001\022\021\n\ttimestamp\030\010 \002(\003\022\021\n" +
+      "\tmessageId\030\t \001(\t\"\256\001\n\rOldLimitOrder\022\013\n\003ui" +
+      "d\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003" +
+      " \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(",
+      "\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPreviousLim" +
+      "itOrders\030\007 \001(\010\022\021\n\tmessageId\030\010 \001(\t\"\254\002\n\nLi" +
+      "mitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003" +
       "\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022" +
-      "\r\n\005isBuy\030\005 \002(\010\022\021\n\tmessageId\030\006 \001(\t\"K\n\023Old" +
-      "LimitOrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014limitOr" +
-      "derId\030\002 \002(\003\022\021\n\tmessageId\030\003 \001(\t\"b\n\rBalanc" +
-      "eUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017" +
-      "\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\022\021\n\tmessa" +
-      "geId\030\005 \001(\t\"e\n\020OldBalanceUpdate\022\013\n\003uid\030\001 ",
-      "\002(\003\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016" +
-      "\n\006amount\030\004 \002(\001\022\021\n\tmessageId\030\005 \001(\t\"\212\002\n\022Ol" +
-      "dMultiLimitOrder\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimesta" +
-      "mp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairI" +
-      "d\030\004 \002(\t\022L\n\006orders\030\005 \003(\0132<.com.lykke.matc" +
-      "hing.engine.messages.OldMultiLimitOrder." +
-      "Order\022$\n\034cancelAllPreviousLimitOrders\030\006 " +
-      "\001(\010\022\021\n\tmessageId\030\007 \001(\t\032&\n\005Order\022\016\n\006volum" +
-      "e\030\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\223\003\n\017MultiLimitOrd" +
-      "er\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010cl",
-      "ientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022I\n\006ord" +
-      "ers\030\005 \003(\01329.com.lykke.matching.engine.me" +
-      "ssages.MultiLimitOrder.Order\022$\n\034cancelAl" +
-      "lPreviousLimitOrders\030\006 \001(\010\022\021\n\tmessageId\030" +
-      "\007 \001(\t\032\264\001\n\005Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006volume\030\002" +
-      " \002(\001\022\r\n\005price\030\003 \002(\001\022>\n\003fee\030\004 \001(\01321.com.l" +
-      "ykke.matching.engine.messages.LimitOrder" +
-      "Fee\022?\n\004fees\030\005 \003(\01321.com.lykke.matching.e" +
-      "ngine.messages.LimitOrderFee\"8\n\027WalletCr" +
-      "edentialsReload\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId",
-      "\030\002 \001(\t\"\032\n\030SubscribeToBalanceUpdate\"\'\n\023Ba" +
-      "lanceNotification\022\020\n\010clientId\030\001 \002(\t\"\031\n\027S" +
-      "ubscribeToQuotesUpdate\">\n\014QuotesUpdate\022\017" +
-      "\n\007assetId\030\001 \002(\t\022\r\n\005price\030\002 \002(\001\022\016\n\006volume" +
-      "\030\003 \002(\001\"\313\001\n\021OrderBookSnapshot\022\r\n\005asset\030\001 " +
-      "\002(\t\022\r\n\005isBuy\030\002 \002(\010\022\021\n\ttimestamp\030\003 \002(\003\022T\n" +
-      "\006levels\030\004 \003(\0132D.com.lykke.matching.engin" +
-      "e.messages.OrderBookSnapshot.OrderBookLe" +
-      "vel\032/\n\016OrderBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006" +
-      "volume\030\002 \002(\t\"r\n\025ReservedBalanceUpdate\022\013\n",
-      "\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030" +
-      "\003 \002(\t\022\026\n\016reservedAmount\030\004 \002(\001\022\021\n\tmessage" +
-      "Id\030\005 \001(\t\"\211\001\n\032ReservedCashInOutOperation\022" +
-      "\n\n\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimesta" +
-      "mp\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\026\n\016reservedVol" +
-      "ume\030\005 \002(\001\022\021\n\tmessageId\030\006 \001(\t\"t\n\003Fee\022\014\n\004t" +
-      "ype\030\001 \002(\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourceClientI" +
-      "d\030\003 \001(\t\022\026\n\016targetClientId\030\004 \001(\t\022\020\n\010sizeT" +
-      "ype\030\005 \001(\005\022\017\n\007assetId\030\006 \003(\t\"\317\001\n\rLimitOrde" +
-      "rFee\022\014\n\004type\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n",
-      "\ttakerSize\030\003 \001(\001\022\026\n\016sourceClientId\030\004 \001(\t" +
-      "\022\026\n\016targetClientId\030\005 \001(\t\022\025\n\rmakerSizeTyp" +
-      "e\030\006 \001(\005\022\025\n\rtakerSizeType\030\007 \001(\005\022\017\n\007assetI" +
-      "d\030\010 \003(\t\022\033\n\023makerFeeModificator\030\t \001(\001*7\n\007" +
-      "FeeType\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014E" +
-      "XTERNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTA" +
-      "GE\020\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching" +
-      ".engine.messagesB\020ProtocolMessages"
+      "\016\n\006volume\030\005 \002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancel" +
+      "AllPreviousLimitOrders\030\007 \001(\010\022>\n\003fee\030\010 \001(" +
+      "\01321.com.lykke.matching.engine.messages.L" +
+      "imitOrderFee\022?\n\004fees\030\t \003(\01321.com.lykke.m" +
+      "atching.engine.messages.LimitOrderFee\022\021\n" +
+      "\tmessageId\030\n \001(\t\"\251\001\n\016OldMarketOrder\022\013\n\003u",
+      "id\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030" +
+      "\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002" +
+      "(\001\022\020\n\010straight\030\006 \002(\010\022\033\n\023reservedLimitVol" +
+      "ume\030\007 \001(\001\022\021\n\tmessageId\030\010 \001(\t\"\223\002\n\013MarketO" +
+      "rder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010" +
+      "clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006v" +
+      "olume\030\005 \002(\001\022\020\n\010straight\030\006 \002(\010\022\033\n\023reserve" +
+      "dLimitVolume\030\007 \001(\001\0224\n\003fee\030\010 \001(\0132\'.com.ly" +
+      "kke.matching.engine.messages.Fee\0225\n\004fees" +
+      "\030\t \003(\0132\'.com.lykke.matching.engine.messa",
+      "ges.Fee\022\021\n\tmessageId\030\n \001(\t\"H\n\020LimitOrder" +
+      "Cancel\022\013\n\003uid\030\001 \002(\t\022\024\n\014limitOrderId\030\002 \002(" +
+      "\t\022\021\n\tmessageId\030\003 \001(\t\"\200\001\n\025MultiLimitOrder" +
+      "Cancel\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020" +
+      "\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\r\n" +
+      "\005isBuy\030\005 \002(\010\022\021\n\tmessageId\030\006 \001(\t\"K\n\023OldLi" +
+      "mitOrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014limitOrde" +
+      "rId\030\002 \002(\003\022\021\n\tmessageId\030\003 \001(\t\"b\n\rBalanceU" +
+      "pdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007" +
+      "assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\022\021\n\tmessage",
+      "Id\030\005 \001(\t\"e\n\020OldBalanceUpdate\022\013\n\003uid\030\001 \002(" +
+      "\003\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006" +
+      "amount\030\004 \002(\001\022\021\n\tmessageId\030\005 \001(\t\"\212\002\n\022OldM" +
+      "ultiLimitOrder\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimestamp" +
+      "\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030" +
+      "\004 \002(\t\022L\n\006orders\030\005 \003(\0132<.com.lykke.matchi" +
+      "ng.engine.messages.OldMultiLimitOrder.Or" +
+      "der\022$\n\034cancelAllPreviousLimitOrders\030\006 \001(" +
+      "\010\022\021\n\tmessageId\030\007 \001(\t\032&\n\005Order\022\016\n\006volume\030" +
+      "\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\223\003\n\017MultiLimitOrder",
+      "\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clie" +
+      "ntId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022I\n\006order" +
+      "s\030\005 \003(\01329.com.lykke.matching.engine.mess" +
+      "ages.MultiLimitOrder.Order\022$\n\034cancelAllP" +
+      "reviousLimitOrders\030\006 \001(\010\022\021\n\tmessageId\030\007 " +
+      "\001(\t\032\264\001\n\005Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006volume\030\002 \002" +
+      "(\001\022\r\n\005price\030\003 \002(\001\022>\n\003fee\030\004 \001(\01321.com.lyk" +
+      "ke.matching.engine.messages.LimitOrderFe" +
+      "e\022?\n\004fees\030\005 \003(\01321.com.lykke.matching.eng" +
+      "ine.messages.LimitOrderFee\"8\n\027WalletCred",
+      "entialsReload\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002" +
+      " \001(\t\"\032\n\030SubscribeToBalanceUpdate\"\'\n\023Bala" +
+      "nceNotification\022\020\n\010clientId\030\001 \002(\t\"\031\n\027Sub" +
+      "scribeToQuotesUpdate\">\n\014QuotesUpdate\022\017\n\007" +
+      "assetId\030\001 \002(\t\022\r\n\005price\030\002 \002(\001\022\016\n\006volume\030\003" +
+      " \002(\001\"\313\001\n\021OrderBookSnapshot\022\r\n\005asset\030\001 \002(" +
+      "\t\022\r\n\005isBuy\030\002 \002(\010\022\021\n\ttimestamp\030\003 \002(\003\022T\n\006l" +
+      "evels\030\004 \003(\0132D.com.lykke.matching.engine." +
+      "messages.OrderBookSnapshot.OrderBookLeve" +
+      "l\032/\n\016OrderBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006vo",
+      "lume\030\002 \002(\t\"r\n\025ReservedBalanceUpdate\022\013\n\003u" +
+      "id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 " +
+      "\002(\t\022\026\n\016reservedAmount\030\004 \002(\001\022\021\n\tmessageId" +
+      "\030\005 \001(\t\"\211\001\n\032ReservedCashInOutOperation\022\n\n" +
+      "\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp" +
+      "\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\026\n\016reservedVolum" +
+      "e\030\005 \002(\001\022\021\n\tmessageId\030\006 \001(\t\"t\n\003Fee\022\014\n\004typ" +
+      "e\030\001 \002(\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourceClientId\030" +
+      "\003 \001(\t\022\026\n\016targetClientId\030\004 \001(\t\022\020\n\010sizeTyp" +
+      "e\030\005 \001(\005\022\017\n\007assetId\030\006 \003(\t\"\317\001\n\rLimitOrderF",
+      "ee\022\014\n\004type\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\tt" +
+      "akerSize\030\003 \001(\001\022\026\n\016sourceClientId\030\004 \001(\t\022\026" +
+      "\n\016targetClientId\030\005 \001(\t\022\025\n\rmakerSizeType\030" +
+      "\006 \001(\005\022\025\n\rtakerSizeType\030\007 \001(\005\022\017\n\007assetId\030" +
+      "\010 \003(\t\022\033\n\023makerFeeModificator\030\t \001(\001*7\n\007Fe" +
+      "eType\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXT" +
+      "ERNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE" +
+      "\020\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching.e" +
+      "ngine.messagesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -35715,13 +36044,13 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_MarketOrderResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MarketOrderResponse_descriptor,
-        new java.lang.String[] { "Id", "Status", "StatusReason", "Price", });
+        new java.lang.String[] { "Id", "Status", "StatusReason", "Price", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_descriptor,
-        new java.lang.String[] { "Id", "Status", "StatusReason", "AssetPairId", "Statuses", });
+        new java.lang.String[] { "Id", "Status", "StatusReason", "AssetPairId", "Statuses", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_OrderStatus_descriptor =
       internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_descriptor.getNestedTypes().get(0);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_OrderStatus_fieldAccessorTable = new

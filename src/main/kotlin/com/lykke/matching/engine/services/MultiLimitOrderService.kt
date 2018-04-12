@@ -297,10 +297,21 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     .build())
         } else {
             val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
-            responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).setAssetPairId(assetPairId)
+            responseBuilder
+                    .setId(messageUid)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(MessageStatus.OK.type)
+                    .setAssetPairId(assetPairId)
             orders.forEach {
-                responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                        .setMatchingEngineId(it.id).setStatus(MessageStatus.OK.type).setVolume(it.volume).setPrice(it.price).build())
+                responseBuilder
+                        .addStatuses(
+                                ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder()
+                                        .setId(it.externalId)
+                                        .setMatchingEngineId(it.id)
+                                        .setStatus(MessageStatus.OK.type)
+                                        .setVolume(it.volume)
+                                        .setPrice(it.price)
+                                        .build())
             }
             messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
         }

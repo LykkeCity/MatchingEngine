@@ -23,6 +23,7 @@ message MarketOrderResponse {
     required int32 status = 2;
     optional string statusReason = 3;
     optional double price = 4;
+    required string messageId = 5;
 }
 
 message MultiLimitOrderResponse {
@@ -39,8 +40,8 @@ message MultiLimitOrderResponse {
         required double volume = 5;
         required double price = 6;
     }
-
     repeated OrderStatus statuses = 5;
+    required string messageId = 6;
 }
 
 message CashOperation {
