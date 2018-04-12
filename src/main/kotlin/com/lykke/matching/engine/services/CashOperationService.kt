@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -21,8 +22,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
@@ -46,7 +45,14 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
                 Date(message.timestamp), message.amount, 0.0)
-        balancesHolder.processWalletOperations(message.uid.toString(), MessageType.CASH_OPERATION.name, listOf(operation))
+
+        try {
+            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.uid.toString(), MessageType.CASH_OPERATION.name)
+        } catch (e: BalanceException) {
+            LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
+            return
+        }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).setRecordId(operation.id).build())
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)} processed")

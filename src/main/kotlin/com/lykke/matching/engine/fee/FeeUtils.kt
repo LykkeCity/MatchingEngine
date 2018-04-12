@@ -60,6 +60,7 @@ private fun checkFee(feeInstruction: FeeInstruction): Boolean {
                 feeInstruction.makerSize != null && feeInstruction.makerSize < 0) {
             return false
         }
+        feeInstruction.makerFeeModificator?.let { if (it <= 0) return false }
         mandatorySize = false
     }
 
