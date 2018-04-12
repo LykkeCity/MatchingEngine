@@ -20,7 +20,6 @@ class MinRemainingVolumeTest : AbstractTest() {
 
     @Before
     fun setUp() {
-        trustedClients.add("TrustedClient")
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))

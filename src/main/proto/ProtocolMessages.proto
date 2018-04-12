@@ -7,6 +7,7 @@ message Response {
     required int64 uid = 1;
     optional string bussinesId = 2;
     optional string recordId = 3;
+    required string messageId = 4;
 }
 
 message NewResponse {

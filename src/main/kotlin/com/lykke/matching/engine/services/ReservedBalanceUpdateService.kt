@@ -45,7 +45,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.uid
+        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
     }

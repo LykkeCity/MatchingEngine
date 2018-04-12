@@ -66,7 +66,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.id
+        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
     }

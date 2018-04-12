@@ -315,12 +315,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
             val message =  parseOldMultiLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
         } else {
             val message =  parseMultiLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
         }
