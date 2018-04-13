@@ -67,8 +67,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private val ordersToCancel = mutableListOf<NewLimitOrder>()
     private val completedOrders = mutableListOf<NewLimitOrder>()
 
-    private val rejectedOrders = mutableListOf<RejectedOrder>()
-    private val acceptedOrders = mutableListOf<NewLimitOrder>()
+    private val processedOrders = mutableListOf<ProcessedOrder>()
     private val ordersToAdd = mutableListOf<NewLimitOrder>()
 
     private val lkkTrades = mutableListOf<LkkTrade>()
@@ -139,7 +138,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             clientsLimitOrdersQueue.put(LimitOrdersReport(clientsLimitOrdersWithTrades))
         }
 
-        return OrderProcessResult(acceptedOrders, rejectedOrders)
+        return OrderProcessResult(processedOrders)
     }
 
     private fun preProcess(order: NewLimitOrder) {
@@ -156,7 +155,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
             addToReportIfNotTrusted(order)
-            rejectedOrders.add(RejectedOrder(order, e.message))
+            processedOrders.add(ProcessedOrder(order, false, e.message))
             return
         }
 
@@ -167,19 +166,19 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             when (OrderStatus.valueOf(orderStatus)) {
                 OrderStatus.NoLiquidity -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(RejectedOrder(order))
+                    processedOrders.add(ProcessedOrder(order, false))
                 }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(RejectedOrder(order, "Reserved volume is higher than available balance"))
+                    processedOrders.add(ProcessedOrder(order, false, "Reserved volume is higher than available balance"))
                 }
                 OrderStatus.NotEnoughFunds -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(RejectedOrder(order))
+                    processedOrders.add(ProcessedOrder(order, false))
                 }
                 OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
-                    rejectedOrders.add(RejectedOrder(order))
+                    processedOrders.add(ProcessedOrder(order, false))
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing -> {
@@ -220,7 +219,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                         LOGGER.error(message)
                         order.status = OrderStatus.NotEnoughFunds.name
                         addToReportIfNotTrusted(order)
-                        rejectedOrders.add(RejectedOrder(order, message))
+                        processedOrders.add(ProcessedOrder(order, false, message))
                         return
                     }
 
@@ -269,7 +268,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
 
                     buySideOrderBookChanged = true
                     sellSideOrderBookChanged = true
-                    acceptedOrders.add(order)
+                    processedOrders.add(ProcessedOrder(order, true))
                 }
                 else -> {
                     LOGGER.error("Not handled order status: ${matchingResult.order.status}")
@@ -284,7 +283,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         orderBook.addOrder(order)
         ordersToAdd.add(order)
         addToReport(order)
-        acceptedOrders.add(order)
+        processedOrders.add(ProcessedOrder(order, true))
 
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume
         if (!isTrustedClient) {

@@ -416,17 +416,20 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val result = processor.preProcess(multiLimitOrder.orders)
                 .apply(multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 
-        val orders = ArrayList<NewLimitOrder>(result.acceptedOrders.size + result.rejectedOrders.size)
-        orders.addAll(result.acceptedOrders)
-        orders.addAll(result.rejectedOrders.map { it.order })
-
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
         responseBuilder.setId(multiLimitOrder.messageUid)
                 .setStatus(MessageStatus.OK.type).assetPairId = multiLimitOrder.assetPairId
 
-        orders.forEach {
-            responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(it.status).type).setVolume(it.volume).setPrice(it.price).build())
+        result.orders.forEach {processedOrder ->
+            val order = processedOrder.order
+            val statusBuilder = ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder()
+                    .setId(order.externalId)
+                    .setMatchingEngineId(order.id)
+                    .setStatus(OrderStatusUtils.toMessageStatus(order.status).type)
+                    .setVolume(order.volume)
+                    .setPrice(order.price)
+            processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
+            responseBuilder.addStatuses(statusBuilder.build())
         }
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
