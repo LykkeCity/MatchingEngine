@@ -154,6 +154,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
+                .setMessageId(messageWrapper.messageId)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage)
