@@ -54,12 +54,14 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         val result = processor.preProcess(listOf(order))
                 .apply(order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 
-        val success = !result.rejectedOrders.isNotEmpty()
-        if (success) {
+        if (result.orders.size != 1) {
+            throw Exception("Error during limit order process (id: ${order.externalId}): result has invalid orders count: ${result.orders.size}")
+        }
+        val processedOrder = result.orders.first()
+        if (processedOrder.accepted) {
             writeResponse(messageWrapper, order, MessageStatus.OK)
         } else {
-            val rejectedOrder = result.rejectedOrders.first()
-            writeResponse(messageWrapper, rejectedOrder.order, OrderStatusUtils.toMessageStatus(rejectedOrder.order.status), rejectedOrder.reason)
+            writeResponse(messageWrapper, processedOrder.order, OrderStatusUtils.toMessageStatus(processedOrder.order.status), processedOrder.reason)
         }
     }
 
