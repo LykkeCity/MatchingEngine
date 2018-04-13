@@ -67,7 +67,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         }
 
         try {
-            processSwapOperation(operation)
+            processSwapOperation(operation, messageWrapper.messageId!!)
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
@@ -81,7 +81,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
-                operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
+                operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
@@ -97,7 +97,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashSwapOperation.parseFrom(array)
     }
 
-    private fun processSwapOperation(operation: SwapOperation) {
+    private fun processSwapOperation(operation: SwapOperation, messageId: String) {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,
@@ -110,7 +110,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
                 operation.dateTime, -operation.volume2))
 
-        balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(operation.externalId, MessageType.CASH_SWAP_OPERATION.name)
+        balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, messageId)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

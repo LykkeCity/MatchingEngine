@@ -60,14 +60,18 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - limitVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.LIMIT_ORDER_CANCEL.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+                balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
+                        MessageType.LIMIT_ORDER_CANCEL.name,
+                        now,
+                        listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance)),
+                        messageWrapper.messageId!!))
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setMessageId(messageWrapper.messageId)
                         .setId(message.uid)
                         .setStatus(MessageStatus.OK.type)
                         .build())
 
-                val report = LimitOrdersReport()
+                val report = LimitOrdersReport(messageWrapper.messageId!!)
                 report.orders.add(LimitOrderWithTrades(order))
                 limitOrderReportQueue.put(report)
 

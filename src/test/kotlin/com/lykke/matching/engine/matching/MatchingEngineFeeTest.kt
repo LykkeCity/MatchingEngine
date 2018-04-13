@@ -43,7 +43,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true))
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true), "test")
 
         assertCashMovementsEquals(
                 listOf(
@@ -85,7 +85,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false))
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false), "test")
 
         assertCashMovementsEquals(
                 listOf(
@@ -127,7 +127,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true))
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
         assertCashMovementsEquals(
                 listOf(
@@ -169,7 +169,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false))
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false), "test")
 
         assertCashMovementsEquals(
                 listOf(

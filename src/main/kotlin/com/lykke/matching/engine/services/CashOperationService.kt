@@ -54,7 +54,10 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
                 Date(message.timestamp), message.amount, 0.0)
 
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.uid.toString(), MessageType.CASH_OPERATION.name)
+            balancesHolder.createWalletProcessor(LOGGER)
+                    .preProcess(listOf(operation))
+                    .apply(message.uid.toString(), MessageType.CASH_OPERATION.name, messageWrapper.messageId!!)
+
         } catch (e: BalanceException) {
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()

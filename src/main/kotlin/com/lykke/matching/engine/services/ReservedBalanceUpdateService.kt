@@ -37,7 +37,10 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
         balancesHolder.updateReservedBalance(message.clientId, message.assetId, message.reservedAmount, false)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.RESERVED_BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount))))
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
+                MessageType.RESERVED_BALANCE_UPDATE.name,
+                Date(),
+                listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount)), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.uid)

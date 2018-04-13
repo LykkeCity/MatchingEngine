@@ -33,8 +33,8 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
 
         if (ordersToCancel.isNotEmpty()) {
-            val limitOrdersReport = LimitOrdersReport()
-            val trustedLimitOrdersReport = LimitOrdersReport()
+            val limitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
+            val trustedLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
 
             val orderBook = limitOrderService.getOrderBook(message.assetPairId).copy()
 

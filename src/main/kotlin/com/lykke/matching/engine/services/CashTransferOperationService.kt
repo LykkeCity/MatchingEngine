@@ -79,7 +79,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val fees = try {
-            processTransferOperation(operation)
+            processTransferOperation(operation, messageWrapper.messageId!!)
         } catch (e: FeeException) {
             writeInvalidFeeResponse(messageWrapper, message, operationId, e.message)
             return
@@ -88,7 +88,17 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             return
         }
         cashOperationsDatabaseAccessor.insertTransferOperation(operation)
-        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
+        notificationQueue.put(CashTransferOperation(message.id,
+                operation.fromClientId,
+                operation.toClientId,
+                operation.dateTime,
+                operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy),
+                operation.overdraftLimit,
+                operation.asset,
+                feeInstruction,
+                singleFeeTransfer(feeInstruction, fees),
+                fees,
+                messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMessageId(messageWrapper.messageId)
@@ -102,7 +112,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashTransferOperation.parseFrom(array)
     }
 
-    private fun processTransferOperation(operation: TransferOperation): List<Fee> {
+    private fun processTransferOperation(operation: TransferOperation, messageId: String): List<Fee> {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,
@@ -113,7 +123,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        balancesHolder.createWalletProcessor(LOGGER, false).preProcess(operations).apply(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name)
+        balancesHolder.createWalletProcessor(LOGGER, false).preProcess(operations).apply(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
 
         return fees
     }

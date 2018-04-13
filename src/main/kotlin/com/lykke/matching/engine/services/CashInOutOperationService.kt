@@ -87,7 +87,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
 
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name)
+            balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
         }  catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, message, operationId, MessageStatus.LOW_BALANCE, e.message)
             return
@@ -99,6 +99,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                 operation.dateTime,
                 operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy),
                 operation.assetId,
+                messageWrapper.messageId!!,
                 fees
         ))
 

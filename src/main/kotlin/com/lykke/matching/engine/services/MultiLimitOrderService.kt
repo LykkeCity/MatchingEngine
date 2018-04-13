@@ -60,8 +60,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val startTime = System.nanoTime()
         val orders: List<NewLimitOrder>
         val now = Date()
-        val trustedClientLimitOrdersReport = LimitOrdersReport()
-        val clientLimitOrdersReport = LimitOrdersReport()
+        val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
+        val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         var cancelBuySide = false
         var cancelSellSide = false
         val cancelAllPreviousLimitOrders: Boolean
@@ -163,7 +163,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             } else if (orderBook.leadToNegativeSpreadForClient(order)) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.match(originOrder = order,
+                        orderBook = orderBook.getOrderBook(!order.isBuySide()),
+                        messageId = messageWrapper.messageId!!,
+                        balance =  balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
@@ -263,7 +266,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         val startPersistTime = System.nanoTime()
-        walletOperationsProcessor.apply(messageUid, MessageType.MULTI_LIMIT_ORDER.name)
+        walletOperationsProcessor.apply(messageUid, MessageType.MULTI_LIMIT_ORDER.name, messageWrapper.messageId!!)
         lkkTradesQueue.put(trades)
         limitOrderService.cancelLimitOrders(ordersToCancel)
         limitOrderService.addOrders(ordersToAdd)

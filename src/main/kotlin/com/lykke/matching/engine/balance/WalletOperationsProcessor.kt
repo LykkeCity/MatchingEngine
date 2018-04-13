@@ -81,14 +81,14 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return this
     }
 
-    fun apply(id: String, type: String) {
+    fun apply(id: String, type: String, messageId: String) {
         if (changedAssetBalances.isEmpty()) {
             return
         }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
         walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets.toList())
         clientIds.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
     }
 
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {

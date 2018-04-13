@@ -73,9 +73,10 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
 
 
         teeLog("Starting orders cancellation (orders count: $totalCount)")
+        val cancelOperationId = UUID.randomUUID().toString()
         val walletOperations = LinkedList<WalletOperation>()
-        val clientsLimitOrdersReport = LimitOrdersReport()
-        val trustedClientsLimitOrdersReport = LimitOrdersReport()
+        val clientsLimitOrdersReport = LimitOrdersReport(cancelOperationId)
+        val trustedClientsLimitOrdersReport = LimitOrdersReport(cancelOperationId)
 
         ordersToCancel.forEach { _, sideOrders ->
             sideOrders.forEach { _, orders ->
@@ -110,7 +111,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         }
 
         teeLog("Starting balances updating (wallet operations count: ${walletOperations.size})")
-        walletOperationsProcessor.apply(UUID.randomUUID().toString(), MessageType.LIMIT_ORDER.name)
+        walletOperationsProcessor.apply(cancelOperationId, MessageType.LIMIT_ORDER.name, cancelOperationId)
 
         teeLog("Min volume orders cancellation is finished")
     }
