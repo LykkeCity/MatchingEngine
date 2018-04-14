@@ -28,7 +28,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -79,7 +79,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null)
 
-            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(oldMessage.volume)}, price: ${NumberUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
             feeInstruction = null
@@ -93,7 +93,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null,
                     fee = feeInstruction, fees = listOfLimitOrderFee(feeInstruction, feeInstructions))
 
-            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}, fee: $feeInstruction, fees: $feeInstructions")
+            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, price: ${NumberUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}, fee: $feeInstruction, fees: $feeInstructions")
 
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
@@ -101,7 +101,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val limitAssetAccuracy = assetsHolder.getAsset(limitAsset).accuracy
-        val limitVolume = if (order.isBuySide()) RoundingUtils.round(order.getAbsVolume() * order.price, limitAssetAccuracy, true) else order.getAbsVolume()
+        val limitVolume = if (order.isBuySide()) NumberUtils.round(order.getAbsVolume() * order.price, limitAssetAccuracy, true) else order.getAbsVolume()
 
         val balance = balancesHolder.getBalance(order.clientId, limitAsset)
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
@@ -119,7 +119,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
 
         if (!checkFee(feeInstruction, feeInstructions)) {
-            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} has invalid fee")
+            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${NumberUtils.roundForPrint(order.price)} has invalid fee")
             order.status = OrderStatus.InvalidFee.name
             rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_FEE, now, isCancelOrders)
 
@@ -131,7 +131,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
-        val orderInfo = "Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)}"
+        val orderInfo = "Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${NumberUtils.roundForPrint(order.price)}"
 
         if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
                 || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId))  {
@@ -155,7 +155,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
-        if (RoundingUtils.parseDouble(balance - (reservedBalance - cancelVolume), limitAssetAccuracy).toDouble() < limitVolume) {
+        if (NumberUtils.parseDouble(balance - (reservedBalance - cancelVolume), limitAssetAccuracy).toDouble() < limitVolume) {
             LOGGER.info("$orderInfo not enough funds to reserve")
             order.status = OrderStatus.NotEnoughFunds.name
             rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, now, isCancelOrders)
@@ -207,11 +207,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
                     if (orderCopy.status == OrderStatus.Processing.name) {
                         if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
-                            LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${RoundingUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+                            LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                             orderCopy.status = OrderStatus.Cancelled.name
                         } else {
-                            orderCopy.reservedLimitVolume = if (orderCopy.isBuySide()) RoundingUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAssetAccuracy, false) else orderCopy.getAbsRemainingVolume()
-                            val newReservedBalance = RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!! - cancelVolume, limitAssetAccuracy).toDouble()
+                            orderCopy.reservedLimitVolume = if (orderCopy.isBuySide()) NumberUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAssetAccuracy, false) else orderCopy.getAbsRemainingVolume()
+                            val newReservedBalance = NumberUtils.parseDouble(orderCopy.reservedLimitVolume!! - cancelVolume, limitAssetAccuracy).toDouble()
                             ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset, matchingResult.timestamp, 0.0, newReservedBalance))
                         }
                     }
@@ -290,7 +290,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             limitOrderService.putTradeInfo(TradeInfo(order.assetPairId, order.isBuySide(), if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice(), now))
             clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
-            val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAssetAccuracy).toDouble()
+            val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAssetAccuracy).toDouble()
             balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
 
@@ -321,7 +321,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
     private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date, isCancelOrders: Boolean) {
         if (cancelVolume > 0) {
-            val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+            val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
             balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
         }

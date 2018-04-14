@@ -18,7 +18,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
@@ -41,7 +41,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
 
         val operationId = UUID.randomUUID().toString()
         if (!checkFee(null, feeInstructions)) {
@@ -56,17 +56,17 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.DISABLED_ASSET.type).build())
-            LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
+            LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: disabled asset")
             return
         }
 
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (RoundingUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
+            if (NumberUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
-                LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
+                LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
         }
@@ -95,7 +95,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         ))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
-        LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
+        LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)} processed")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashInOutOperation {
@@ -129,7 +129,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                 .setStatus(status.type)
                 .setStatusReason(errorMessage)
                 .build())
-        LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
+        LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)}: $errorMessage")
         return
     }
 }

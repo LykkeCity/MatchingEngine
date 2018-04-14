@@ -35,7 +35,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -77,7 +77,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+            LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
@@ -86,7 +86,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
             feeInstructions = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
+            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
@@ -234,7 +234,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
     }
 
-    private fun orderInfo(order: MarketOrder) = "market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}"
+    private fun orderInfo(order: MarketOrder) = "market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, straight: ${order.straight}"
 
     private fun parseOld(array: ByteArray): ProtocolMessages.OldMarketOrder {
         return ProtocolMessages.OldMarketOrder.parseFrom(array)

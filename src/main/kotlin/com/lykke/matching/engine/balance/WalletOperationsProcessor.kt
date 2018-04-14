@@ -9,7 +9,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.Date
@@ -43,9 +43,9 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
-            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount, asset.accuracy).toDouble()
+            changedAssetBalance.balance = NumberUtils.parseDouble(changedAssetBalance.balance + operation.amount, asset.accuracy).toDouble()
             changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
-                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy).toDouble()
+                NumberUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy).toDouble()
             else
                 changedAssetBalance.reserved
         }

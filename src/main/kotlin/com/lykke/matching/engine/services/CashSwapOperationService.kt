@@ -15,7 +15,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -33,8 +33,8 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
-        LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
-                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)}")
+        LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
+                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)}")
 
         val operation = SwapOperation(UUID.randomUUID().toString(), message.id, Date(message.timestamp)
                 , message.clientId1, message.assetId1, message.volume1
@@ -72,8 +72,8 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
-        LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
-                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)} processed")
+        LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
+                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)} processed")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashSwapOperation {
