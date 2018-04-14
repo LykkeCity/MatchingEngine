@@ -34,9 +34,15 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
             balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(), MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
+                    MessageType.BALANCE_UPDATE.name, Date(),
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setMessageId(messageWrapper.messageId)
+                    .setUid(message.uid)
+                    .build())
+
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.BalanceUpdate
@@ -45,15 +51,26 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
             if (reservedBalance > message.amount) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(message.uid)
+                        .setMessageId(messageWrapper.messageId)
+                        .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type)
+                        .build())
                 LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
                 return
             }
 
             balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
+                    MessageType.BALANCE_UPDATE.name,
+                    Date(),
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(message.uid)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(MessageStatus.OK.type)
+                    .build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         }
     }
@@ -69,12 +86,12 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             val message =  parseOld(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid.toString()
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
         } else {
             val message =  parse(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
         }
@@ -82,9 +99,16 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setMessageId(messageWrapper.messageId)
+                    .build())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(messageWrapper.messageId)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(status.type)
+                    .build())
         }
     }
 }

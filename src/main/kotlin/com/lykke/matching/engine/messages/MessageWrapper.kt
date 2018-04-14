@@ -23,9 +23,16 @@ class MessageWrapper(
     }
 
     fun writeResponse(response: ProtocolMessages.Response) {
+        val resultResponse = ProtocolMessages.Response
+                .newBuilder()
+                .mergeFrom(response)
+                .setMessageId(messageId)
+                .build()
+
+
         if (clientHandler != null) {
             try {
-                clientHandler.writeOutput(toByteArray(MessageType.RESPONSE.type, response.serializedSize, response.toByteArray()))
+                clientHandler.writeOutput(toByteArray(MessageType.RESPONSE.type, response.serializedSize, resultResponse.toByteArray()))
             } catch (exception: IOException){
                 LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
                 METRICS_LOGGER.logError( "[$sourceIp]: Unable to write response", exception)

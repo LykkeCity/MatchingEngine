@@ -63,6 +63,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
 
+
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
 
@@ -172,7 +173,10 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setMessageId(messageWrapper.messageId)
+                    .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
         }

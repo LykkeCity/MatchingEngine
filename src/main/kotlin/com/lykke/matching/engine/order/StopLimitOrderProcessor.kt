@@ -44,7 +44,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val balance = balancesHolder.getBalance(order.clientId, limitAsset.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
-        val clientLimitOrdersReport = LimitOrdersReport()
+        val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         var cancelVolume = 0.0
         if (isCancelOrders) {
             stopLimitOrderService.getAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
@@ -64,10 +64,14 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             if (cancelVolume > 0) {
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
+                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
             }
 
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(messageStatus.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(order.externalId)
+                    .setMatchingEngineId(order.id)
+                    .setMessageId(messageWrapper.messageId)
+                    .setStatus(messageStatus.type).build())
 
             clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
@@ -92,7 +96,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.status = OrderStatus.InOrderBook.name
             order.price = price
 
-            genericLimitOrderProcessor.processLimitOrder(order, now, 0.0)
+            genericLimitOrderProcessor.processLimitOrder(messageWrapper, order, now, 0.0)
             return
         }
 
@@ -103,7 +107,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy).toDouble()
         balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
 
         writeResponse(messageWrapper, order, MessageStatus.OK)
         LOGGER.info("${orderInfo(order)} added to stop order book")
@@ -130,9 +134,15 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             return
         }
         if (reason == null) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(order.externalId)
+                    .setMessageId(messageWrapper.messageId)
+                    .setMatchingEngineId(order.id)
+                    .setStatus(status.type).build())
             return
         }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMessageId(messageWrapper.messageId)
+                .setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
     }
 }

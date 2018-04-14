@@ -54,18 +54,18 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
             applicationSettingsCache,
             LOGGER)
 
-    fun checkAndProcessStopOrder(assetPairId: String, now: Date) {
+    fun checkAndProcessStopOrder(messageWrapper: MessageWrapper?, assetPairId: String, now: Date) {
         val order = stopLimitOrderService.getStopOrderForProcess(assetPairId) ?: return
         val orderBook = limitOrderService.getOrderBook(assetPairId)
         LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()})")
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
-        processLimitOrder(order, now, payBackReserved)
+        processLimitOrder(messageWrapper, order, now, payBackReserved)
     }
 
     private fun processLimitOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         limitOrderProcessor.processLimitOrder(messageWrapper, order, isCancelOrders, now, null)
-        checkAndProcessStopOrder(order.assetPairId, now)
+        checkAndProcessStopOrder(messageWrapper, order.assetPairId, now)
     }
 
     fun processOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
@@ -75,9 +75,9 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         }
     }
 
-    fun processLimitOrder(order: NewLimitOrder, now: Date, payBackReserved: Double) {
-        limitOrderProcessor.processLimitOrder(null, order, false, now, payBackReserved)
-        checkAndProcessStopOrder(order.assetPairId, now)
+    fun processLimitOrder(messageWrapper: MessageWrapper?, order: NewLimitOrder, now: Date, payBackReserved: Double) {
+        limitOrderProcessor.processLimitOrder(messageWrapper, order, false, now, payBackReserved)
+        checkAndProcessStopOrder(messageWrapper, order.assetPairId, now)
     }
 
     private fun processStopOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) =

@@ -211,7 +211,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
         connectionsHolder.start()
 
         processedMessagesDatabaseAccessor = FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
-        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval, processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
+        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval,
+                processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
+
         servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {

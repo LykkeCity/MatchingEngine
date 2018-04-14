@@ -309,6 +309,20 @@ public final class ProtocolMessages {
      */
     com.google.protobuf.ByteString
         getRecordIdBytes();
+
+    /**
+     * <code>required string messageId = 4;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 4;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 4;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.Response}
@@ -325,6 +339,7 @@ public final class ProtocolMessages {
       uid_ = 0L;
       bussinesId_ = "";
       recordId_ = "";
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -369,6 +384,12 @@ public final class ProtocolMessages {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
               recordId_ = bs;
+              break;
+            }
+            case 34: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000008;
+              messageId_ = bs;
               break;
             }
           }
@@ -496,6 +517,48 @@ public final class ProtocolMessages {
       }
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 4;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 4;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>required string messageId = 4;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 4;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -503,6 +566,10 @@ public final class ProtocolMessages {
       if (isInitialized == 0) return false;
 
       if (!hasUid()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -520,6 +587,9 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(3, getRecordIdBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, getMessageIdBytes());
       }
       unknownFields.writeTo(output);
     }
@@ -541,6 +611,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(3, getRecordIdBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -660,6 +734,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000002);
         recordId_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -696,6 +772,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000004;
         }
         result.recordId_ = recordId_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -725,6 +805,11 @@ public final class ProtocolMessages {
           recordId_ = other.recordId_;
           onChanged();
         }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000008;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -732,6 +817,9 @@ public final class ProtocolMessages {
 
       public final boolean isInitialized() {
         if (!hasUid()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         return true;
@@ -940,6 +1028,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 4;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>required string messageId = 4;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 4;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 4;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 4;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 4;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.Response)
     }
 
@@ -1037,6 +1201,20 @@ public final class ProtocolMessages {
      */
     com.google.protobuf.ByteString
         getStatusReasonBytes();
+
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.NewResponse}
@@ -1054,6 +1232,7 @@ public final class ProtocolMessages {
       matchingEngineId_ = "";
       status_ = 0;
       statusReason_ = "";
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -1104,6 +1283,12 @@ public final class ProtocolMessages {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000008;
               statusReason_ = bs;
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -1273,6 +1458,48 @@ public final class ProtocolMessages {
       }
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 5;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -1284,6 +1511,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasStatus()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1304,6 +1535,9 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, getStatusReasonBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getMessageIdBytes());
       }
       unknownFields.writeTo(output);
     }
@@ -1329,6 +1563,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(4, getStatusReasonBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -1450,6 +1688,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         statusReason_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -1490,6 +1730,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.statusReason_ = statusReason_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1524,6 +1768,11 @@ public final class ProtocolMessages {
           statusReason_ = other.statusReason_;
           onChanged();
         }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000010;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -1534,6 +1783,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasStatus()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         return true;
@@ -1818,6 +2070,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.NewResponse)
     }
 
@@ -1910,6 +2238,20 @@ public final class ProtocolMessages {
      * <code>optional double price = 4;</code>
      */
     double getPrice();
+
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MarketOrderResponse}
@@ -1927,6 +2269,7 @@ public final class ProtocolMessages {
       status_ = 0;
       statusReason_ = "";
       price_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -1976,6 +2319,12 @@ public final class ProtocolMessages {
             case 33: {
               bitField0_ |= 0x00000008;
               price_ = input.readDouble();
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -2118,6 +2467,48 @@ public final class ProtocolMessages {
       return price_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 5;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -2129,6 +2520,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasStatus()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -2149,6 +2544,9 @@ public final class ProtocolMessages {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeDouble(4, price_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getMessageIdBytes());
       }
       unknownFields.writeTo(output);
     }
@@ -2174,6 +2572,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(4, price_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -2295,6 +2697,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         price_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -2335,6 +2739,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.price_ = price_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2367,6 +2775,11 @@ public final class ProtocolMessages {
         if (other.hasPrice()) {
           setPrice(other.getPrice());
         }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000010;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -2377,6 +2790,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasStatus()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         return true;
@@ -2617,6 +3033,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 5;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MarketOrderResponse)
     }
 
@@ -2738,6 +3230,20 @@ public final class ProtocolMessages {
      */
     com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrderResponse.OrderStatusOrBuilder getStatusesOrBuilder(
         int index);
+
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrderResponse}
@@ -2756,6 +3262,7 @@ public final class ProtocolMessages {
       statusReason_ = "";
       assetPairId_ = "";
       statuses_ = java.util.Collections.emptyList();
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -2814,6 +3321,12 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000010;
               }
               statuses_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.MultiLimitOrderResponse.OrderStatus.PARSER, extensionRegistry));
+              break;
+            }
+            case 50: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -4069,6 +4582,48 @@ public final class ProtocolMessages {
       return statuses_.get(index);
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 6;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -4084,6 +4639,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasAssetPairId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -4114,6 +4673,9 @@ public final class ProtocolMessages {
       for (int i = 0; i < statuses_.size(); i++) {
         output.writeMessage(5, statuses_.get(i));
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(6, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -4142,6 +4704,10 @@ public final class ProtocolMessages {
       for (int i = 0; i < statuses_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(5, statuses_.get(i));
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(6, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -4270,6 +4836,8 @@ public final class ProtocolMessages {
         } else {
           statusesBuilder_.clear();
         }
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -4319,6 +4887,10 @@ public final class ProtocolMessages {
         } else {
           result.statuses_ = statusesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -4379,6 +4951,11 @@ public final class ProtocolMessages {
             }
           }
         }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000020;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -4392,6 +4969,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasAssetPairId()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         for (int i = 0; i < getStatusesCount(); i++) {
@@ -4921,6 +5501,82 @@ public final class ProtocolMessages {
         return statusesBuilder_;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 6;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MultiLimitOrderResponse)
     }
 
@@ -5045,6 +5701,20 @@ public final class ProtocolMessages {
      * <code>required bool sendToBitcoin = 7;</code>
      */
     boolean getSendToBitcoin();
+
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.CashOperation}
@@ -5065,6 +5735,7 @@ public final class ProtocolMessages {
       amount_ = 0D;
       bussinesId_ = "";
       sendToBitcoin_ = false;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -5130,6 +5801,12 @@ public final class ProtocolMessages {
             case 56: {
               bitField0_ |= 0x00000040;
               sendToBitcoin_ = input.readBool();
+              break;
+            }
+            case 66: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000080;
+              messageId_ = bs;
               break;
             }
           }
@@ -5344,6 +6021,48 @@ public final class ProtocolMessages {
       return sendToBitcoin_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 8;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -5405,6 +6124,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeBool(7, sendToBitcoin_);
       }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeBytes(8, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -5441,6 +6163,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(7, sendToBitcoin_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(8, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -5568,6 +6294,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000020);
         sendToBitcoin_ = false;
         bitField0_ = (bitField0_ & ~0x00000040);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -5620,6 +6348,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000040;
         }
         result.sendToBitcoin_ = sendToBitcoin_;
+        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5662,6 +6394,11 @@ public final class ProtocolMessages {
         }
         if (other.hasSendToBitcoin()) {
           setSendToBitcoin(other.getSendToBitcoin());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000080;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -6068,6 +6805,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000080;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000080;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.CashOperation)
     }
 
@@ -6198,6 +7011,20 @@ public final class ProtocolMessages {
      */
     com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder getFeesOrBuilder(
         int index);
+
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.CashInOutOperation}
@@ -6217,6 +7044,7 @@ public final class ProtocolMessages {
       assetId_ = "";
       volume_ = 0D;
       fees_ = java.util.Collections.emptyList();
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -6280,6 +7108,12 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000020;
               }
               fees_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.Fee.PARSER, extensionRegistry));
+              break;
+            }
+            case 58: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000020;
+              messageId_ = bs;
               break;
             }
           }
@@ -6502,6 +7336,48 @@ public final class ProtocolMessages {
       return fees_.get(index);
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 7;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -6558,6 +7434,9 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         output.writeMessage(6, fees_.get(i));
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(7, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -6590,6 +7469,10 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(6, fees_.get(i));
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(7, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -6720,6 +7603,8 @@ public final class ProtocolMessages {
         } else {
           feesBuilder_.clear();
         }
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -6773,6 +7658,10 @@ public final class ProtocolMessages {
         } else {
           result.fees_ = feesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -6835,6 +7724,11 @@ public final class ProtocolMessages {
               feesBuilder_.addAllMessages(other.fees_);
             }
           }
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000040;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -7416,6 +8310,82 @@ public final class ProtocolMessages {
         return feesBuilder_;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.CashInOutOperation)
     }
 
@@ -7582,6 +8552,20 @@ public final class ProtocolMessages {
      */
     com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder getFeesOrBuilder(
         int index);
+
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.CashTransferOperation}
@@ -7603,6 +8587,7 @@ public final class ProtocolMessages {
       volume_ = 0D;
       overdraftLimit_ = 0D;
       fees_ = java.util.Collections.emptyList();
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -7690,6 +8675,12 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000100;
               }
               fees_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.Fee.PARSER, extensionRegistry));
+              break;
+            }
+            case 82: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000100;
+              messageId_ = bs;
               break;
             }
           }
@@ -7990,6 +8981,48 @@ public final class ProtocolMessages {
       return fees_.get(index);
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 10;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -8065,6 +9098,9 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         output.writeMessage(9, fees_.get(i));
       }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeBytes(10, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -8109,6 +9145,10 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(9, fees_.get(i));
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(10, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -8250,6 +9290,8 @@ public final class ProtocolMessages {
         } else {
           feesBuilder_.clear();
         }
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000200);
         return this;
       }
 
@@ -8319,6 +9361,10 @@ public final class ProtocolMessages {
         } else {
           result.fees_ = feesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+          to_bitField0_ |= 0x00000100;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -8392,6 +9438,11 @@ public final class ProtocolMessages {
               feesBuilder_.addAllMessages(other.fees_);
             }
           }
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000200;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -9207,6 +10258,82 @@ public final class ProtocolMessages {
         return feesBuilder_;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000200) == 0x00000200);
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000200;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000200);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000200;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.CashTransferOperation)
     }
 
@@ -9350,6 +10477,20 @@ public final class ProtocolMessages {
      * <code>required int64 timestamp = 8;</code>
      */
     long getTimestamp();
+
+    /**
+     * <code>optional string messageId = 9;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 9;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 9;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.CashSwapOperation}
@@ -9371,6 +10512,7 @@ public final class ProtocolMessages {
       assetId2_ = "";
       volume2_ = 0D;
       timestamp_ = 0L;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -9443,6 +10585,12 @@ public final class ProtocolMessages {
             case 64: {
               bitField0_ |= 0x00000080;
               timestamp_ = input.readInt64();
+              break;
+            }
+            case 74: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000100;
+              messageId_ = bs;
               break;
             }
           }
@@ -9726,6 +10874,48 @@ public final class ProtocolMessages {
       return timestamp_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 9;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 9;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    /**
+     * <code>optional string messageId = 9;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 9;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -9794,6 +10984,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         output.writeInt64(8, timestamp_);
       }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeBytes(9, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -9834,6 +11027,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(8, timestamp_);
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(9, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -9963,6 +11160,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000040);
         timestamp_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000080);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000100);
         return this;
       }
 
@@ -10019,6 +11218,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000080;
         }
         result.timestamp_ = timestamp_;
+        if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+          to_bitField0_ |= 0x00000100;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -10068,6 +11271,11 @@ public final class ProtocolMessages {
         }
         if (other.hasTimestamp()) {
           setTimestamp(other.getTimestamp());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000100;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -10597,6 +11805,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 9;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000100) == 0x00000100);
+      }
+      /**
+       * <code>optional string messageId = 9;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 9;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 9;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000100;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 9;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000100);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 9;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000100;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.CashSwapOperation)
     }
 
@@ -10716,6 +12000,20 @@ public final class ProtocolMessages {
      * <code>optional bool cancelAllPreviousLimitOrders = 7;</code>
      */
     boolean getCancelAllPreviousLimitOrders();
+
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.OldLimitOrder}
@@ -10736,6 +12034,7 @@ public final class ProtocolMessages {
       volume_ = 0D;
       price_ = 0D;
       cancelAllPreviousLimitOrders_ = false;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -10800,6 +12099,12 @@ public final class ProtocolMessages {
             case 56: {
               bitField0_ |= 0x00000040;
               cancelAllPreviousLimitOrders_ = input.readBool();
+              break;
+            }
+            case 66: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000080;
+              messageId_ = bs;
               break;
             }
           }
@@ -10987,6 +12292,48 @@ public final class ProtocolMessages {
       return cancelAllPreviousLimitOrders_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 8;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -11044,6 +12391,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeBool(7, cancelAllPreviousLimitOrders_);
       }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeBytes(8, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -11080,6 +12430,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(7, cancelAllPreviousLimitOrders_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(8, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -11207,6 +12561,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000020);
         cancelAllPreviousLimitOrders_ = false;
         bitField0_ = (bitField0_ & ~0x00000040);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -11259,6 +12615,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000040;
         }
         result.cancelAllPreviousLimitOrders_ = cancelAllPreviousLimitOrders_;
+        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -11299,6 +12659,11 @@ public final class ProtocolMessages {
         }
         if (other.hasCancelAllPreviousLimitOrders()) {
           setCancelAllPreviousLimitOrders(other.getCancelAllPreviousLimitOrders());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000080;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -11658,6 +13023,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000080;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000080;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.OldLimitOrder)
     }
 
@@ -11864,6 +13305,20 @@ public final class ProtocolMessages {
      * <code>optional double upperPrice = 14;</code>
      */
     double getUpperPrice();
+
+    /**
+     * <code>optional string messageId = 15;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 15;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 15;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrder}
@@ -11890,6 +13345,7 @@ public final class ProtocolMessages {
       lowerPrice_ = 0D;
       upperLimitPrice_ = 0D;
       upperPrice_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -12001,6 +13457,12 @@ public final class ProtocolMessages {
             case 113: {
               bitField0_ |= 0x00001000;
               upperPrice_ = input.readDouble();
+              break;
+            }
+            case 122: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00002000;
+              messageId_ = bs;
               break;
             }
           }
@@ -12349,6 +13811,48 @@ public final class ProtocolMessages {
       return upperPrice_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 15;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 15;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00002000) == 0x00002000);
+    }
+    /**
+     * <code>optional string messageId = 15;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 15;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -12435,6 +13939,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00001000) == 0x00001000)) {
         output.writeDouble(14, upperPrice_);
       }
+      if (((bitField0_ & 0x00002000) == 0x00002000)) {
+        output.writeBytes(15, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -12499,6 +14006,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00001000) == 0x00001000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(14, upperPrice_);
+      }
+      if (((bitField0_ & 0x00002000) == 0x00002000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(15, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -12650,6 +14161,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00001000);
         upperPrice_ = 0D;
         bitField0_ = (bitField0_ & ~0x00002000);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00004000);
         return this;
       }
 
@@ -12739,6 +14252,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00001000;
         }
         result.upperPrice_ = upperPrice_;
+        if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
+          to_bitField0_ |= 0x00002000;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -12825,6 +14342,11 @@ public final class ProtocolMessages {
         }
         if (other.hasUpperPrice()) {
           setUpperPrice(other.getUpperPrice());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00004000;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -13753,6 +15275,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 15;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00004000) == 0x00004000);
+      }
+      /**
+       * <code>optional string messageId = 15;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 15;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 15;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00004000;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 15;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00004000);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 15;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00004000;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.LimitOrder)
     }
 
@@ -13872,6 +15470,20 @@ public final class ProtocolMessages {
      * <code>optional double reservedLimitVolume = 7;</code>
      */
     double getReservedLimitVolume();
+
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.OldMarketOrder}
@@ -13892,6 +15504,7 @@ public final class ProtocolMessages {
       volume_ = 0D;
       straight_ = false;
       reservedLimitVolume_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -13956,6 +15569,12 @@ public final class ProtocolMessages {
             case 57: {
               bitField0_ |= 0x00000040;
               reservedLimitVolume_ = input.readDouble();
+              break;
+            }
+            case 66: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000080;
+              messageId_ = bs;
               break;
             }
           }
@@ -14143,6 +15762,48 @@ public final class ProtocolMessages {
       return reservedLimitVolume_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 8;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 8;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -14200,6 +15861,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeDouble(7, reservedLimitVolume_);
       }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeBytes(8, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -14236,6 +15900,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(7, reservedLimitVolume_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(8, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -14363,6 +16031,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000020);
         reservedLimitVolume_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000040);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -14415,6 +16085,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000040;
         }
         result.reservedLimitVolume_ = reservedLimitVolume_;
+        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -14455,6 +16129,11 @@ public final class ProtocolMessages {
         }
         if (other.hasReservedLimitVolume()) {
           setReservedLimitVolume(other.getReservedLimitVolume());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000080;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -14814,6 +16493,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000080;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 8;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000080;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.OldMarketOrder)
     }
 
@@ -14975,6 +16730,20 @@ public final class ProtocolMessages {
      */
     com.lykke.matching.engine.messages.ProtocolMessages.FeeOrBuilder getFeesOrBuilder(
         int index);
+
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MarketOrder}
@@ -14996,6 +16765,7 @@ public final class ProtocolMessages {
       straight_ = false;
       reservedLimitVolume_ = 0D;
       fees_ = java.util.Collections.emptyList();
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -15082,6 +16852,12 @@ public final class ProtocolMessages {
                 mutable_bitField0_ |= 0x00000100;
               }
               fees_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.Fee.PARSER, extensionRegistry));
+              break;
+            }
+            case 82: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000100;
+              messageId_ = bs;
               break;
             }
           }
@@ -15355,6 +17131,48 @@ public final class ProtocolMessages {
       return fees_.get(index);
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 10;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 10;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -15430,6 +17248,9 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         output.writeMessage(9, fees_.get(i));
       }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeBytes(10, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -15474,6 +17295,10 @@ public final class ProtocolMessages {
       for (int i = 0; i < fees_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(9, fees_.get(i));
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(10, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -15615,6 +17440,8 @@ public final class ProtocolMessages {
         } else {
           feesBuilder_.clear();
         }
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000200);
         return this;
       }
 
@@ -15684,6 +17511,10 @@ public final class ProtocolMessages {
         } else {
           result.fees_ = feesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+          to_bitField0_ |= 0x00000100;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -15755,6 +17586,11 @@ public final class ProtocolMessages {
               feesBuilder_.addAllMessages(other.fees_);
             }
           }
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000200;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -16526,6 +18362,82 @@ public final class ProtocolMessages {
         return feesBuilder_;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000200) == 0x00000200);
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000200;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000200);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 10;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000200;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MarketOrder)
     }
 
@@ -16600,6 +18512,20 @@ public final class ProtocolMessages {
      */
     com.google.protobuf.ByteString
         getLimitOrderIdBytes();
+
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.LimitOrderCancel}
@@ -16615,6 +18541,7 @@ public final class ProtocolMessages {
     private LimitOrderCancel() {
       uid_ = "";
       limitOrderId_ = "";
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -16654,6 +18581,12 @@ public final class ProtocolMessages {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
               limitOrderId_ = bs;
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              messageId_ = bs;
               break;
             }
           }
@@ -16766,6 +18699,48 @@ public final class ProtocolMessages {
       }
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 3;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -16792,6 +18767,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getLimitOrderIdBytes());
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -16808,6 +18786,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(2, getLimitOrderIdBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -16925,6 +18907,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000001);
         limitOrderId_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -16957,6 +18941,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000002;
         }
         result.limitOrderId_ = limitOrderId_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -16981,6 +18969,11 @@ public final class ProtocolMessages {
         if (other.hasLimitOrderId()) {
           bitField0_ |= 0x00000002;
           limitOrderId_ = other.limitOrderId_;
+          onChanged();
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000004;
+          messageId_ = other.messageId_;
           onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -17169,6 +19162,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.LimitOrderCancel)
     }
 
@@ -17275,6 +19344,20 @@ public final class ProtocolMessages {
      * <code>required bool isBuy = 5;</code>
      */
     boolean getIsBuy();
+
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrderCancel}
@@ -17293,6 +19376,7 @@ public final class ProtocolMessages {
       clientId_ = "";
       assetPairId_ = "";
       isBuy_ = false;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -17348,6 +19432,12 @@ public final class ProtocolMessages {
             case 40: {
               bitField0_ |= 0x00000010;
               isBuy_ = input.readBool();
+              break;
+            }
+            case 50: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000020;
+              messageId_ = bs;
               break;
             }
           }
@@ -17532,6 +19622,48 @@ public final class ProtocolMessages {
       return isBuy_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 6;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -17579,6 +19711,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeBool(5, isBuy_);
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(6, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -17607,6 +19742,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(5, isBuy_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(6, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -17730,6 +19869,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000008);
         isBuy_ = false;
         bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -17774,6 +19915,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000010;
         }
         result.isBuy_ = isBuy_;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -17810,6 +19955,11 @@ public final class ProtocolMessages {
         }
         if (other.hasIsBuy()) {
           setIsBuy(other.getIsBuy());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000020;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -18146,6 +20296,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MultiLimitOrderCancel)
     }
 
@@ -18210,6 +20436,20 @@ public final class ProtocolMessages {
      * <code>required int64 limitOrderId = 2;</code>
      */
     long getLimitOrderId();
+
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.OldLimitOrderCancel}
@@ -18225,6 +20465,7 @@ public final class ProtocolMessages {
     private OldLimitOrderCancel() {
       uid_ = 0L;
       limitOrderId_ = 0L;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -18262,6 +20503,12 @@ public final class ProtocolMessages {
             case 16: {
               bitField0_ |= 0x00000002;
               limitOrderId_ = input.readInt64();
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              messageId_ = bs;
               break;
             }
           }
@@ -18320,6 +20567,48 @@ public final class ProtocolMessages {
       return limitOrderId_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 3;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -18346,6 +20635,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt64(2, limitOrderId_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -18362,6 +20654,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(2, limitOrderId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -18479,6 +20775,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000001);
         limitOrderId_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -18511,6 +20809,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000002;
         }
         result.limitOrderId_ = limitOrderId_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -18532,6 +20834,11 @@ public final class ProtocolMessages {
         }
         if (other.hasLimitOrderId()) {
           setLimitOrderId(other.getLimitOrderId());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000004;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -18627,6 +20934,82 @@ public final class ProtocolMessages {
       public Builder clearLimitOrderId() {
         bitField0_ = (bitField0_ & ~0x00000002);
         limitOrderId_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 3;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageId_ = value;
         onChanged();
         return this;
       }
@@ -18728,6 +21111,20 @@ public final class ProtocolMessages {
      * <code>required double amount = 4;</code>
      */
     double getAmount();
+
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.BalanceUpdate}
@@ -18745,6 +21142,7 @@ public final class ProtocolMessages {
       clientId_ = "";
       assetId_ = "";
       amount_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -18795,6 +21193,12 @@ public final class ProtocolMessages {
             case 33: {
               bitField0_ |= 0x00000008;
               amount_ = input.readDouble();
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -18964,6 +21368,48 @@ public final class ProtocolMessages {
       return amount_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 5;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -19004,6 +21450,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeDouble(4, amount_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -19028,6 +21477,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(4, amount_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -19149,6 +21602,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         amount_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -19189,6 +21644,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.amount_ = amount_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -19222,6 +21681,11 @@ public final class ProtocolMessages {
         }
         if (other.hasAmount()) {
           setAmount(other.getAmount());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000010;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -19523,6 +21987,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.BalanceUpdate)
     }
 
@@ -19615,6 +22155,20 @@ public final class ProtocolMessages {
      * <code>required double amount = 4;</code>
      */
     double getAmount();
+
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.OldBalanceUpdate}
@@ -19632,6 +22186,7 @@ public final class ProtocolMessages {
       clientId_ = "";
       assetId_ = "";
       amount_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -19681,6 +22236,12 @@ public final class ProtocolMessages {
             case 33: {
               bitField0_ |= 0x00000008;
               amount_ = input.readDouble();
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -19823,6 +22384,48 @@ public final class ProtocolMessages {
       return amount_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 5;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -19863,6 +22466,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeDouble(4, amount_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -19887,6 +22493,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(4, amount_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -20008,6 +22618,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         amount_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -20048,6 +22660,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.amount_ = amount_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -20079,6 +22695,11 @@ public final class ProtocolMessages {
         }
         if (other.hasAmount()) {
           setAmount(other.getAmount());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000010;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -20336,6 +22957,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.OldBalanceUpdate)
     }
 
@@ -20461,6 +23158,20 @@ public final class ProtocolMessages {
      * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
      */
     boolean getCancelAllPreviousLimitOrders();
+
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.OldMultiLimitOrder}
@@ -20480,6 +23191,7 @@ public final class ProtocolMessages {
       assetPairId_ = "";
       orders_ = java.util.Collections.emptyList();
       cancelAllPreviousLimitOrders_ = false;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -20542,6 +23254,12 @@ public final class ProtocolMessages {
             case 48: {
               bitField0_ |= 0x00000010;
               cancelAllPreviousLimitOrders_ = input.readBool();
+              break;
+            }
+            case 58: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000020;
+              messageId_ = bs;
               break;
             }
           }
@@ -21222,6 +23940,48 @@ public final class ProtocolMessages {
       return cancelAllPreviousLimitOrders_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 7;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -21274,6 +24034,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeBool(6, cancelAllPreviousLimitOrders_);
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(7, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -21306,6 +24069,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(6, cancelAllPreviousLimitOrders_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(7, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -21436,6 +24203,8 @@ public final class ProtocolMessages {
         }
         cancelAllPreviousLimitOrders_ = false;
         bitField0_ = (bitField0_ & ~0x00000020);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -21489,6 +24258,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000010;
         }
         result.cancelAllPreviousLimitOrders_ = cancelAllPreviousLimitOrders_;
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -21549,6 +24322,11 @@ public final class ProtocolMessages {
         }
         if (other.hasCancelAllPreviousLimitOrders()) {
           setCancelAllPreviousLimitOrders(other.getCancelAllPreviousLimitOrders());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000040;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -22083,6 +24861,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.OldMultiLimitOrder)
     }
 
@@ -22213,6 +25067,20 @@ public final class ProtocolMessages {
      * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
      */
     boolean getCancelAllPreviousLimitOrders();
+
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder}
@@ -22232,6 +25100,7 @@ public final class ProtocolMessages {
       assetPairId_ = "";
       orders_ = java.util.Collections.emptyList();
       cancelAllPreviousLimitOrders_ = false;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -22295,6 +25164,12 @@ public final class ProtocolMessages {
             case 48: {
               bitField0_ |= 0x00000010;
               cancelAllPreviousLimitOrders_ = input.readBool();
+              break;
+            }
+            case 58: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000020;
+              messageId_ = bs;
               break;
             }
           }
@@ -23738,6 +26613,48 @@ public final class ProtocolMessages {
       return cancelAllPreviousLimitOrders_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 7;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 7;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -23790,6 +26707,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeBool(6, cancelAllPreviousLimitOrders_);
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(7, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -23822,6 +26742,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(6, cancelAllPreviousLimitOrders_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(7, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -23952,6 +26876,8 @@ public final class ProtocolMessages {
         }
         cancelAllPreviousLimitOrders_ = false;
         bitField0_ = (bitField0_ & ~0x00000020);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -24005,6 +26931,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000010;
         }
         result.cancelAllPreviousLimitOrders_ = cancelAllPreviousLimitOrders_;
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -24067,6 +26997,11 @@ public final class ProtocolMessages {
         }
         if (other.hasCancelAllPreviousLimitOrders()) {
           setCancelAllPreviousLimitOrders(other.getCancelAllPreviousLimitOrders());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000040;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -24641,6 +27576,82 @@ public final class ProtocolMessages {
       public Builder clearCancelAllPreviousLimitOrders() {
         bitField0_ = (bitField0_ & ~0x00000020);
         cancelAllPreviousLimitOrders_ = false;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 7;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        messageId_ = value;
         onChanged();
         return this;
       }
@@ -28708,6 +31719,20 @@ public final class ProtocolMessages {
      * <code>required double reservedAmount = 4;</code>
      */
     double getReservedAmount();
+
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.ReservedBalanceUpdate}
@@ -28725,6 +31750,7 @@ public final class ProtocolMessages {
       clientId_ = "";
       assetId_ = "";
       reservedAmount_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -28775,6 +31801,12 @@ public final class ProtocolMessages {
             case 33: {
               bitField0_ |= 0x00000008;
               reservedAmount_ = input.readDouble();
+              break;
+            }
+            case 42: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000010;
+              messageId_ = bs;
               break;
             }
           }
@@ -28944,6 +31976,48 @@ public final class ProtocolMessages {
       return reservedAmount_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 5;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -28984,6 +32058,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeDouble(4, reservedAmount_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -29008,6 +32085,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(4, reservedAmount_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -29129,6 +32210,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         reservedAmount_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000008);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -29169,6 +32252,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.reservedAmount_ = reservedAmount_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -29202,6 +32289,11 @@ public final class ProtocolMessages {
         }
         if (other.hasReservedAmount()) {
           setReservedAmount(other.getReservedAmount());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000010;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -29503,6 +32595,82 @@ public final class ProtocolMessages {
         return this;
       }
 
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 5;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.ReservedBalanceUpdate)
     }
 
@@ -29609,6 +32777,20 @@ public final class ProtocolMessages {
      * <code>required double reservedVolume = 5;</code>
      */
     double getReservedVolume();
+
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.ReservedCashInOutOperation}
@@ -29627,6 +32809,7 @@ public final class ProtocolMessages {
       timestamp_ = 0L;
       assetId_ = "";
       reservedVolume_ = 0D;
+      messageId_ = "";
     }
 
     @java.lang.Override
@@ -29682,6 +32865,12 @@ public final class ProtocolMessages {
             case 41: {
               bitField0_ |= 0x00000010;
               reservedVolume_ = input.readDouble();
+              break;
+            }
+            case 50: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000020;
+              messageId_ = bs;
               break;
             }
           }
@@ -29866,6 +33055,48 @@ public final class ProtocolMessages {
       return reservedVolume_;
     }
 
+    public static final int MESSAGEID_FIELD_NUMBER = 6;
+    private volatile java.lang.Object messageId_;
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string messageId = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -29913,6 +33144,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeDouble(5, reservedVolume_);
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(6, getMessageIdBytes());
+      }
       unknownFields.writeTo(output);
     }
 
@@ -29941,6 +33175,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(5, reservedVolume_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(6, getMessageIdBytes());
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -30064,6 +33302,8 @@ public final class ProtocolMessages {
         bitField0_ = (bitField0_ & ~0x00000008);
         reservedVolume_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000010);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -30108,6 +33348,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000010;
         }
         result.reservedVolume_ = reservedVolume_;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -30144,6 +33388,11 @@ public final class ProtocolMessages {
         }
         if (other.hasReservedVolume()) {
           setReservedVolume(other.getReservedVolume());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000020;
+          messageId_ = other.messageId_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -30476,6 +33725,82 @@ public final class ProtocolMessages {
       public Builder clearReservedVolume() {
         bitField0_ = (bitField0_ & ~0x00000010);
         reservedVolume_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string messageId = 6;</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        messageId_ = value;
         onChanged();
         return this;
       }
@@ -33038,118 +36363,128 @@ public final class ProtocolMessages {
   static {
     java.lang.String[] descriptorData = {
       "\n\026ProtocolMessages.proto\022\"com.lykke.matc" +
-      "hing.engine.messages\"=\n\010Response\022\013\n\003uid\030" +
+      "hing.engine.messages\"P\n\010Response\022\013\n\003uid\030" +
       "\001 \002(\003\022\022\n\nbussinesId\030\002 \001(\t\022\020\n\010recordId\030\003 " +
-      "\001(\t\"Y\n\013NewResponse\022\n\n\002id\030\001 \002(\t\022\030\n\020matchi" +
-      "ngEngineId\030\002 \001(\t\022\016\n\006status\030\003 \002(\005\022\024\n\014stat" +
-      "usReason\030\004 \001(\t\"V\n\023MarketOrderResponse\022\n\n" +
-      "\002id\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\022\024\n\014statusReaso" +
-      "n\030\003 \001(\t\022\r\n\005price\030\004 \001(\001\"\265\002\n\027MultiLimitOrd" +
-      "erResponse\022\n\n\002id\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\022\024" +
-      "\n\014statusReason\030\003 \001(\t\022\023\n\013assetPairId\030\004 \002(",
-      "\t\022Y\n\010statuses\030\005 \003(\0132G.com.lykke.matching" +
-      ".engine.messages.MultiLimitOrderResponse" +
-      ".OrderStatus\032x\n\013OrderStatus\022\n\n\002id\030\001 \002(\t\022" +
-      "\030\n\020matchingEngineId\030\002 \001(\t\022\016\n\006status\030\003 \002(" +
-      "\005\022\024\n\014statusReason\030\004 \001(\t\022\016\n\006volume\030\005 \002(\001\022" +
-      "\r\n\005price\030\006 \002(\001\"\215\001\n\rCashOperation\022\013\n\003uid\030" +
-      "\001 \002(\003\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002" +
-      "(\003\022\017\n\007assetId\030\004 \002(\t\022\016\n\006amount\030\005 \002(\001\022\022\n\nb" +
-      "ussinesId\030\006 \002(\t\022\025\n\rsendToBitcoin\030\007 \002(\010\"\235" +
-      "\001\n\022CashInOutOperation\022\n\n\002id\030\001 \002(\t\022\020\n\010cli",
-      "entId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002(\003\022\017\n\007assetI" +
-      "d\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\0225\n\004fees\030\006 \003(\0132\'." +
-      "com.lykke.matching.engine.messages.Fee\"\206" +
-      "\002\n\025CashTransferOperation\022\n\n\002id\030\001 \002(\t\022\024\n\014" +
-      "fromClientId\030\002 \002(\t\022\022\n\ntoClientId\030\003 \002(\t\022\021" +
-      "\n\ttimestamp\030\004 \002(\003\022\017\n\007assetId\030\005 \002(\t\022\016\n\006vo" +
-      "lume\030\006 \002(\001\0224\n\003fee\030\007 \001(\0132\'.com.lykke.matc" +
-      "hing.engine.messages.Fee\022\026\n\016overdraftLim" +
-      "it\030\010 \001(\001\0225\n\004fees\030\t \003(\0132\'.com.lykke.match" +
-      "ing.engine.messages.Fee\"\236\001\n\021CashSwapOper",
-      "ation\022\n\n\002id\030\001 \002(\t\022\021\n\tclientId1\030\002 \002(\t\022\020\n\010" +
-      "assetId1\030\003 \002(\t\022\017\n\007volume1\030\004 \002(\001\022\021\n\tclien" +
-      "tId2\030\005 \002(\t\022\020\n\010assetId2\030\006 \002(\t\022\017\n\007volume2\030" +
-      "\007 \002(\001\022\021\n\ttimestamp\030\010 \002(\003\"\233\001\n\rOldLimitOrd" +
-      "er\022\013\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010cl" +
-      "ientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006vol" +
-      "ume\030\005 \002(\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPre" +
-      "viousLimitOrders\030\007 \001(\010\"\201\003\n\nLimitOrder\022\013\n" +
-      "\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientI" +
-      "d\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005",
-      " \002(\001\022\r\n\005price\030\006 \001(\001\022$\n\034cancelAllPrevious" +
-      "LimitOrders\030\007 \001(\010\022>\n\003fee\030\010 \001(\01321.com.lyk" +
-      "ke.matching.engine.messages.LimitOrderFe" +
-      "e\022?\n\004fees\030\t \003(\01321.com.lykke.matching.eng" +
-      "ine.messages.LimitOrderFee\022\014\n\004type\030\n \001(\005" +
-      "\022\027\n\017lowerLimitPrice\030\013 \001(\001\022\022\n\nlowerPrice\030" +
-      "\014 \001(\001\022\027\n\017upperLimitPrice\030\r \001(\001\022\022\n\nupperP" +
-      "rice\030\016 \001(\001\"\226\001\n\016OldMarketOrder\022\013\n\003uid\030\001 \002" +
-      "(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022" +
-      "\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010",
-      "straight\030\006 \002(\010\022\033\n\023reservedLimitVolume\030\007 " +
-      "\001(\001\"\200\002\n\013MarketOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttime" +
+      "\001(\t\022\021\n\tmessageId\030\004 \002(\t\"l\n\013NewResponse\022\n\n" +
+      "\002id\030\001 \002(\t\022\030\n\020matchingEngineId\030\002 \001(\t\022\016\n\006s" +
+      "tatus\030\003 \002(\005\022\024\n\014statusReason\030\004 \001(\t\022\021\n\tmes" +
+      "sageId\030\005 \002(\t\"i\n\023MarketOrderResponse\022\n\n\002i" +
+      "d\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\022\024\n\014statusReason\030" +
+      "\003 \001(\t\022\r\n\005price\030\004 \001(\001\022\021\n\tmessageId\030\005 \002(\t\"" +
+      "\310\002\n\027MultiLimitOrderResponse\022\n\n\002id\030\001 \002(\t\022",
+      "\016\n\006status\030\002 \002(\005\022\024\n\014statusReason\030\003 \001(\t\022\023\n" +
+      "\013assetPairId\030\004 \002(\t\022Y\n\010statuses\030\005 \003(\0132G.c" +
+      "om.lykke.matching.engine.messages.MultiL" +
+      "imitOrderResponse.OrderStatus\022\021\n\tmessage" +
+      "Id\030\006 \002(\t\032x\n\013OrderStatus\022\n\n\002id\030\001 \002(\t\022\030\n\020m" +
+      "atchingEngineId\030\002 \001(\t\022\016\n\006status\030\003 \002(\005\022\024\n" +
+      "\014statusReason\030\004 \001(\t\022\016\n\006volume\030\005 \002(\001\022\r\n\005p" +
+      "rice\030\006 \002(\001\"\240\001\n\rCashOperation\022\013\n\003uid\030\001 \002(" +
+      "\003\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002(\003\022\017" +
+      "\n\007assetId\030\004 \002(\t\022\016\n\006amount\030\005 \002(\001\022\022\n\nbussi",
+      "nesId\030\006 \002(\t\022\025\n\rsendToBitcoin\030\007 \002(\010\022\021\n\tme" +
+      "ssageId\030\010 \001(\t\"\260\001\n\022CashInOutOperation\022\n\n\002" +
+      "id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimestamp\030" +
+      "\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\0225" +
+      "\n\004fees\030\006 \003(\0132\'.com.lykke.matching.engine" +
+      ".messages.Fee\022\021\n\tmessageId\030\007 \001(\t\"\231\002\n\025Cas" +
+      "hTransferOperation\022\n\n\002id\030\001 \002(\t\022\024\n\014fromCl" +
+      "ientId\030\002 \002(\t\022\022\n\ntoClientId\030\003 \002(\t\022\021\n\ttime" +
+      "stamp\030\004 \002(\003\022\017\n\007assetId\030\005 \002(\t\022\016\n\006volume\030\006" +
+      " \002(\001\0224\n\003fee\030\007 \001(\0132\'.com.lykke.matching.e",
+      "ngine.messages.Fee\022\026\n\016overdraftLimit\030\010 \001" +
+      "(\001\0225\n\004fees\030\t \003(\0132\'.com.lykke.matching.en" +
+      "gine.messages.Fee\022\021\n\tmessageId\030\n \001(\t\"\261\001\n" +
+      "\021CashSwapOperation\022\n\n\002id\030\001 \002(\t\022\021\n\tclient" +
+      "Id1\030\002 \002(\t\022\020\n\010assetId1\030\003 \002(\t\022\017\n\007volume1\030\004" +
+      " \002(\001\022\021\n\tclientId2\030\005 \002(\t\022\020\n\010assetId2\030\006 \002(" +
+      "\t\022\017\n\007volume2\030\007 \002(\001\022\021\n\ttimestamp\030\010 \002(\003\022\021\n" +
+      "\tmessageId\030\t \001(\t\"\256\001\n\rOldLimitOrder\022\013\n\003ui" +
+      "d\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003" +
+      " \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(",
+      "\001\022\r\n\005price\030\006 \002(\001\022$\n\034cancelAllPreviousLim" +
+      "itOrders\030\007 \001(\010\022\021\n\tmessageId\030\010 \001(\t\"\224\003\n\nLi" +
+      "mitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003" +
+      "\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022" +
+      "\016\n\006volume\030\005 \002(\001\022\r\n\005price\030\006 \001(\001\022$\n\034cancel" +
+      "AllPreviousLimitOrders\030\007 \001(\010\022>\n\003fee\030\010 \001(" +
+      "\01321.com.lykke.matching.engine.messages.L" +
+      "imitOrderFee\022?\n\004fees\030\t \003(\01321.com.lykke.m" +
+      "atching.engine.messages.LimitOrderFee\022\014\n" +
+      "\004type\030\n \001(\005\022\027\n\017lowerLimitPrice\030\013 \001(\001\022\022\n\n",
+      "lowerPrice\030\014 \001(\001\022\027\n\017upperLimitPrice\030\r \001(" +
+      "\001\022\022\n\nupperPrice\030\016 \001(\001\022\021\n\tmessageId\030\017 \001(\t" +
+      "\"\251\001\n\016OldMarketOrder\022\013\n\003uid\030\001 \002(\003\022\021\n\ttime" +
       "stamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPa" +
       "irId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010straight\030\006" +
-      " \002(\010\022\033\n\023reservedLimitVolume\030\007 \001(\001\0224\n\003fee" +
-      "\030\010 \001(\0132\'.com.lykke.matching.engine.messa" +
-      "ges.Fee\0225\n\004fees\030\t \003(\0132\'.com.lykke.matchi" +
-      "ng.engine.messages.Fee\"5\n\020LimitOrderCanc" +
-      "el\022\013\n\003uid\030\001 \002(\t\022\024\n\014limitOrderId\030\002 \002(\t\"m\n" +
-      "\025MultiLimitOrderCancel\022\013\n\003uid\030\001 \002(\t\022\021\n\tt",
-      "imestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013asse" +
-      "tPairId\030\004 \002(\t\022\r\n\005isBuy\030\005 \002(\010\"8\n\023OldLimit" +
-      "OrderCancel\022\013\n\003uid\030\001 \002(\003\022\024\n\014limitOrderId" +
-      "\030\002 \002(\003\"O\n\rBalanceUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010" +
-      "clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amoun" +
-      "t\030\004 \002(\001\"R\n\020OldBalanceUpdate\022\013\n\003uid\030\001 \002(\003" +
-      "\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006a" +
-      "mount\030\004 \002(\001\"\367\001\n\022OldMultiLimitOrder\022\013\n\003ui" +
-      "d\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003" +
-      " \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022L\n\006orders\030\005 \003(",
-      "\0132<.com.lykke.matching.engine.messages.O" +
-      "ldMultiLimitOrder.Order\022$\n\034cancelAllPrev" +
-      "iousLimitOrders\030\006 \001(\010\032&\n\005Order\022\016\n\006volume" +
-      "\030\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\200\003\n\017MultiLimitOrde" +
-      "r\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010cli" +
-      "entId\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022I\n\006orde" +
-      "rs\030\005 \003(\01329.com.lykke.matching.engine.mes" +
-      "sages.MultiLimitOrder.Order\022$\n\034cancelAll" +
-      "PreviousLimitOrders\030\006 \001(\010\032\264\001\n\005Order\022\013\n\003u" +
-      "id\030\001 \002(\t\022\016\n\006volume\030\002 \002(\001\022\r\n\005price\030\003 \002(\001\022",
-      ">\n\003fee\030\004 \001(\01321.com.lykke.matching.engine" +
-      ".messages.LimitOrderFee\022?\n\004fees\030\005 \003(\01321." +
-      "com.lykke.matching.engine.messages.Limit" +
-      "OrderFee\"8\n\027WalletCredentialsReload\022\013\n\003u" +
-      "id\030\001 \002(\003\022\020\n\010clientId\030\002 \001(\t\"\032\n\030SubscribeT" +
-      "oBalanceUpdate\"\'\n\023BalanceNotification\022\020\n" +
-      "\010clientId\030\001 \002(\t\"\031\n\027SubscribeToQuotesUpda" +
-      "te\">\n\014QuotesUpdate\022\017\n\007assetId\030\001 \002(\t\022\r\n\005p" +
-      "rice\030\002 \002(\001\022\016\n\006volume\030\003 \002(\001\"\313\001\n\021OrderBook" +
-      "Snapshot\022\r\n\005asset\030\001 \002(\t\022\r\n\005isBuy\030\002 \002(\010\022\021",
-      "\n\ttimestamp\030\003 \002(\003\022T\n\006levels\030\004 \003(\0132D.com." +
-      "lykke.matching.engine.messages.OrderBook" +
-      "Snapshot.OrderBookLevel\032/\n\016OrderBookLeve" +
-      "l\022\r\n\005price\030\001 \002(\t\022\016\n\006volume\030\002 \002(\t\"_\n\025Rese" +
-      "rvedBalanceUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010client" +
-      "Id\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\026\n\016reservedAmo" +
-      "unt\030\004 \002(\001\"v\n\032ReservedCashInOutOperation\022" +
-      "\n\n\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\ttimesta" +
-      "mp\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\026\n\016reservedVol" +
-      "ume\030\005 \002(\001\"t\n\003Fee\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030\002",
-      " \001(\001\022\026\n\016sourceClientId\030\003 \001(\t\022\026\n\016targetCl" +
-      "ientId\030\004 \001(\t\022\020\n\010sizeType\030\005 \001(\005\022\017\n\007assetI" +
-      "d\030\006 \003(\t\"\317\001\n\rLimitOrderFee\022\014\n\004type\030\001 \002(\005\022" +
-      "\021\n\tmakerSize\030\002 \001(\001\022\021\n\ttakerSize\030\003 \001(\001\022\026\n" +
-      "\016sourceClientId\030\004 \001(\t\022\026\n\016targetClientId\030" +
-      "\005 \001(\t\022\025\n\rmakerSizeType\030\006 \001(\005\022\025\n\rtakerSiz" +
-      "eType\030\007 \001(\005\022\017\n\007assetId\030\010 \003(\t\022\033\n\023makerFee" +
-      "Modificator\030\t \001(\001*+\n\016LimitOrderType\022\t\n\005L" +
-      "IMIT\020\000\022\016\n\nSTOP_LIMIT\020\001*7\n\007FeeType\022\n\n\006NO_" +
-      "FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTERNAL_FEE\020\002*",
-      "+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020\000\022\014\n\010ABSOLU" +
-      "TE\020\001B6\n\"com.lykke.matching.engine.messag" +
-      "esB\020ProtocolMessages"
+      " \002(\010\022\033\n\023reservedLimitVolume\030\007 \001(\001\022\021\n\tmes" +
+      "sageId\030\010 \001(\t\"\223\002\n\013MarketOrder\022\013\n\003uid\030\001 \002(" +
+      "\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023" +
+      "\n\013assetPairId\030\004 \002(\t\022\016\n\006volume\030\005 \002(\001\022\020\n\010s" +
+      "traight\030\006 \002(\010\022\033\n\023reservedLimitVolume\030\007 \001",
+      "(\001\0224\n\003fee\030\010 \001(\0132\'.com.lykke.matching.eng" +
+      "ine.messages.Fee\0225\n\004fees\030\t \003(\0132\'.com.lyk" +
+      "ke.matching.engine.messages.Fee\022\021\n\tmessa" +
+      "geId\030\n \001(\t\"H\n\020LimitOrderCancel\022\013\n\003uid\030\001 " +
+      "\002(\t\022\024\n\014limitOrderId\030\002 \002(\t\022\021\n\tmessageId\030\003" +
+      " \001(\t\"\200\001\n\025MultiLimitOrderCancel\022\013\n\003uid\030\001 " +
+      "\002(\t\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t" +
+      "\022\023\n\013assetPairId\030\004 \002(\t\022\r\n\005isBuy\030\005 \002(\010\022\021\n\t" +
+      "messageId\030\006 \001(\t\"K\n\023OldLimitOrderCancel\022\013" +
+      "\n\003uid\030\001 \002(\003\022\024\n\014limitOrderId\030\002 \002(\003\022\021\n\tmes",
+      "sageId\030\003 \001(\t\"b\n\rBalanceUpdate\022\013\n\003uid\030\001 \002" +
+      "(\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n" +
+      "\006amount\030\004 \002(\001\022\021\n\tmessageId\030\005 \001(\t\"e\n\020OldB" +
+      "alanceUpdate\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 " +
+      "\002(\t\022\017\n\007assetId\030\003 \002(\t\022\016\n\006amount\030\004 \002(\001\022\021\n\t" +
+      "messageId\030\005 \001(\t\"\212\002\n\022OldMultiLimitOrder\022\013" +
+      "\n\003uid\030\001 \002(\003\022\021\n\ttimestamp\030\002 \002(\003\022\020\n\010client" +
+      "Id\030\003 \002(\t\022\023\n\013assetPairId\030\004 \002(\t\022L\n\006orders\030" +
+      "\005 \003(\0132<.com.lykke.matching.engine.messag" +
+      "es.OldMultiLimitOrder.Order\022$\n\034cancelAll",
+      "PreviousLimitOrders\030\006 \001(\010\022\021\n\tmessageId\030\007" +
+      " \001(\t\032&\n\005Order\022\016\n\006volume\030\001 \002(\001\022\r\n\005price\030\002" +
+      " \002(\001\"\223\003\n\017MultiLimitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n" +
+      "\ttimestamp\030\002 \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013as" +
+      "setPairId\030\004 \002(\t\022I\n\006orders\030\005 \003(\01329.com.ly" +
+      "kke.matching.engine.messages.MultiLimitO" +
+      "rder.Order\022$\n\034cancelAllPreviousLimitOrde" +
+      "rs\030\006 \001(\010\022\021\n\tmessageId\030\007 \001(\t\032\264\001\n\005Order\022\013\n" +
+      "\003uid\030\001 \002(\t\022\016\n\006volume\030\002 \002(\001\022\r\n\005price\030\003 \002(" +
+      "\001\022>\n\003fee\030\004 \001(\01321.com.lykke.matching.engi",
+      "ne.messages.LimitOrderFee\022?\n\004fees\030\005 \003(\0132" +
+      "1.com.lykke.matching.engine.messages.Lim" +
+      "itOrderFee\"8\n\027WalletCredentialsReload\022\013\n" +
+      "\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \001(\t\"\032\n\030Subscrib" +
+      "eToBalanceUpdate\"\'\n\023BalanceNotification\022" +
+      "\020\n\010clientId\030\001 \002(\t\"\031\n\027SubscribeToQuotesUp" +
+      "date\">\n\014QuotesUpdate\022\017\n\007assetId\030\001 \002(\t\022\r\n" +
+      "\005price\030\002 \002(\001\022\016\n\006volume\030\003 \002(\001\"\313\001\n\021OrderBo" +
+      "okSnapshot\022\r\n\005asset\030\001 \002(\t\022\r\n\005isBuy\030\002 \002(\010" +
+      "\022\021\n\ttimestamp\030\003 \002(\003\022T\n\006levels\030\004 \003(\0132D.co",
+      "m.lykke.matching.engine.messages.OrderBo" +
+      "okSnapshot.OrderBookLevel\032/\n\016OrderBookLe" +
+      "vel\022\r\n\005price\030\001 \002(\t\022\016\n\006volume\030\002 \002(\t\"r\n\025Re" +
+      "servedBalanceUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n\010clie" +
+      "ntId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\026\n\016reservedA" +
+      "mount\030\004 \002(\001\022\021\n\tmessageId\030\005 \001(\t\"\211\001\n\032Reser" +
+      "vedCashInOutOperation\022\n\n\002id\030\001 \002(\t\022\020\n\010cli" +
+      "entId\030\002 \002(\t\022\021\n\ttimestamp\030\003 \002(\003\022\017\n\007assetI" +
+      "d\030\004 \002(\t\022\026\n\016reservedVolume\030\005 \002(\001\022\021\n\tmessa" +
+      "geId\030\006 \001(\t\"t\n\003Fee\022\014\n\004type\030\001 \002(\005\022\014\n\004size\030",
+      "\002 \001(\001\022\026\n\016sourceClientId\030\003 \001(\t\022\026\n\016targetC" +
+      "lientId\030\004 \001(\t\022\020\n\010sizeType\030\005 \001(\005\022\017\n\007asset" +
+      "Id\030\006 \003(\t\"\317\001\n\rLimitOrderFee\022\014\n\004type\030\001 \002(\005" +
+      "\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\ttakerSize\030\003 \001(\001\022\026" +
+      "\n\016sourceClientId\030\004 \001(\t\022\026\n\016targetClientId" +
+      "\030\005 \001(\t\022\025\n\rmakerSizeType\030\006 \001(\005\022\025\n\rtakerSi" +
+      "zeType\030\007 \001(\005\022\017\n\007assetId\030\010 \003(\t\022\033\n\023makerFe" +
+      "eModificator\030\t \001(\001*+\n\016LimitOrderType\022\t\n\005" +
+      "LIMIT\020\000\022\016\n\nSTOP_LIMIT\020\001*7\n\007FeeType\022\n\n\006NO" +
+      "_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTERNAL_FEE\020\002",
+      "*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020\000\022\014\n\010ABSOL" +
+      "UTE\020\001B6\n\"com.lykke.matching.engine.messa" +
+      "gesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -33168,25 +36503,25 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_Response_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_Response_descriptor,
-        new java.lang.String[] { "Uid", "BussinesId", "RecordId", });
+        new java.lang.String[] { "Uid", "BussinesId", "RecordId", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_NewResponse_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_com_lykke_matching_engine_messages_NewResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_NewResponse_descriptor,
-        new java.lang.String[] { "Id", "MatchingEngineId", "Status", "StatusReason", });
+        new java.lang.String[] { "Id", "MatchingEngineId", "Status", "StatusReason", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MarketOrderResponse_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_com_lykke_matching_engine_messages_MarketOrderResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MarketOrderResponse_descriptor,
-        new java.lang.String[] { "Id", "Status", "StatusReason", "Price", });
+        new java.lang.String[] { "Id", "Status", "StatusReason", "Price", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_descriptor,
-        new java.lang.String[] { "Id", "Status", "StatusReason", "AssetPairId", "Statuses", });
+        new java.lang.String[] { "Id", "Status", "StatusReason", "AssetPairId", "Statuses", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_OrderStatus_descriptor =
       internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_descriptor.getNestedTypes().get(0);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderResponse_OrderStatus_fieldAccessorTable = new
@@ -33198,85 +36533,85 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_CashOperation_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_CashOperation_descriptor,
-        new java.lang.String[] { "Uid", "ClientId", "Timestamp", "AssetId", "Amount", "BussinesId", "SendToBitcoin", });
+        new java.lang.String[] { "Uid", "ClientId", "Timestamp", "AssetId", "Amount", "BussinesId", "SendToBitcoin", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_CashInOutOperation_descriptor =
       getDescriptor().getMessageTypes().get(5);
     internal_static_com_lykke_matching_engine_messages_CashInOutOperation_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_CashInOutOperation_descriptor,
-        new java.lang.String[] { "Id", "ClientId", "Timestamp", "AssetId", "Volume", "Fees", });
+        new java.lang.String[] { "Id", "ClientId", "Timestamp", "AssetId", "Volume", "Fees", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_CashTransferOperation_descriptor =
       getDescriptor().getMessageTypes().get(6);
     internal_static_com_lykke_matching_engine_messages_CashTransferOperation_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_CashTransferOperation_descriptor,
-        new java.lang.String[] { "Id", "FromClientId", "ToClientId", "Timestamp", "AssetId", "Volume", "Fee", "OverdraftLimit", "Fees", });
+        new java.lang.String[] { "Id", "FromClientId", "ToClientId", "Timestamp", "AssetId", "Volume", "Fee", "OverdraftLimit", "Fees", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_CashSwapOperation_descriptor =
       getDescriptor().getMessageTypes().get(7);
     internal_static_com_lykke_matching_engine_messages_CashSwapOperation_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_CashSwapOperation_descriptor,
-        new java.lang.String[] { "Id", "ClientId1", "AssetId1", "Volume1", "ClientId2", "AssetId2", "Volume2", "Timestamp", });
+        new java.lang.String[] { "Id", "ClientId1", "AssetId1", "Volume1", "ClientId2", "AssetId2", "Volume2", "Timestamp", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_OldLimitOrder_descriptor =
       getDescriptor().getMessageTypes().get(8);
     internal_static_com_lykke_matching_engine_messages_OldLimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_OldLimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", "CancelAllPreviousLimitOrders", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", "CancelAllPreviousLimitOrders", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_LimitOrder_descriptor =
       getDescriptor().getMessageTypes().get(9);
     internal_static_com_lykke_matching_engine_messages_LimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", "CancelAllPreviousLimitOrders", "Fee", "Fees", "Type", "LowerLimitPrice", "LowerPrice", "UpperLimitPrice", "UpperPrice", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Price", "CancelAllPreviousLimitOrders", "Fee", "Fees", "Type", "LowerLimitPrice", "LowerPrice", "UpperLimitPrice", "UpperPrice", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_OldMarketOrder_descriptor =
       getDescriptor().getMessageTypes().get(10);
     internal_static_com_lykke_matching_engine_messages_OldMarketOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_OldMarketOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", "ReservedLimitVolume", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", "ReservedLimitVolume", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor =
       getDescriptor().getMessageTypes().get(11);
     internal_static_com_lykke_matching_engine_messages_MarketOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MarketOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", "ReservedLimitVolume", "Fee", "Fees", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Volume", "Straight", "ReservedLimitVolume", "Fee", "Fees", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_descriptor =
       getDescriptor().getMessageTypes().get(12);
     internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_LimitOrderCancel_descriptor,
-        new java.lang.String[] { "Uid", "LimitOrderId", });
+        new java.lang.String[] { "Uid", "LimitOrderId", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderCancel_descriptor =
       getDescriptor().getMessageTypes().get(13);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrderCancel_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MultiLimitOrderCancel_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "IsBuy", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "IsBuy", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_OldLimitOrderCancel_descriptor =
       getDescriptor().getMessageTypes().get(14);
     internal_static_com_lykke_matching_engine_messages_OldLimitOrderCancel_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_OldLimitOrderCancel_descriptor,
-        new java.lang.String[] { "Uid", "LimitOrderId", });
+        new java.lang.String[] { "Uid", "LimitOrderId", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_BalanceUpdate_descriptor =
       getDescriptor().getMessageTypes().get(15);
     internal_static_com_lykke_matching_engine_messages_BalanceUpdate_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_BalanceUpdate_descriptor,
-        new java.lang.String[] { "Uid", "ClientId", "AssetId", "Amount", });
+        new java.lang.String[] { "Uid", "ClientId", "AssetId", "Amount", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_OldBalanceUpdate_descriptor =
       getDescriptor().getMessageTypes().get(16);
     internal_static_com_lykke_matching_engine_messages_OldBalanceUpdate_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_OldBalanceUpdate_descriptor,
-        new java.lang.String[] { "Uid", "ClientId", "AssetId", "Amount", });
+        new java.lang.String[] { "Uid", "ClientId", "AssetId", "Amount", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_OldMultiLimitOrder_descriptor =
       getDescriptor().getMessageTypes().get(17);
     internal_static_com_lykke_matching_engine_messages_OldMultiLimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_OldMultiLimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_OldMultiLimitOrder_Order_descriptor =
       internal_static_com_lykke_matching_engine_messages_OldMultiLimitOrder_descriptor.getNestedTypes().get(0);
     internal_static_com_lykke_matching_engine_messages_OldMultiLimitOrder_Order_fieldAccessorTable = new
@@ -33288,7 +36623,7 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor =
       internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor.getNestedTypes().get(0);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_fieldAccessorTable = new
@@ -33342,13 +36677,13 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_ReservedBalanceUpdate_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_ReservedBalanceUpdate_descriptor,
-        new java.lang.String[] { "Uid", "ClientId", "AssetId", "ReservedAmount", });
+        new java.lang.String[] { "Uid", "ClientId", "AssetId", "ReservedAmount", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_ReservedCashInOutOperation_descriptor =
       getDescriptor().getMessageTypes().get(26);
     internal_static_com_lykke_matching_engine_messages_ReservedCashInOutOperation_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_ReservedCashInOutOperation_descriptor,
-        new java.lang.String[] { "Id", "ClientId", "Timestamp", "AssetId", "ReservedVolume", });
+        new java.lang.String[] { "Id", "ClientId", "Timestamp", "AssetId", "ReservedVolume", "MessageId", });
     internal_static_com_lykke_matching_engine_messages_Fee_descriptor =
       getDescriptor().getMessageTypes().get(27);
     internal_static_com_lykke_matching_engine_messages_Fee_fieldAccessorTable = new

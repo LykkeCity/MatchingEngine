@@ -59,8 +59,9 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
 
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
-        val clientLimitOrdersReport = LimitOrdersReport()
-        val trustedClientLimitOrdersReport = LimitOrdersReport()
+        val operationId = messageWrapper?.messageId ?: UUID.randomUUID().toString()
+        val clientLimitOrdersReport = LimitOrdersReport(operationId)
+        val trustedClientLimitOrdersReport = LimitOrdersReport(operationId)
 
         var cancelVolume = 0.0
         if (isCancelOrders) {
@@ -81,13 +82,24 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
-            rejectOrder(reservedBalance, totalPayBackReserved, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, e.messageStatus, now, isCancelOrders)
+            rejectOrder(reservedBalance,
+                    totalPayBackReserved,
+                    limitAsset,
+                    order,
+                    balance,
+                    clientLimitOrdersReport,
+                    orderBook,
+                    messageWrapper,
+                    e.messageStatus,
+                    now,
+                    isCancelOrders,
+                    operationId)
             return
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
             var isMatched = false
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), availableBalance)
+            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), operationId, availableBalance)
             val orderCopy = matchingResult.order as NewLimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
@@ -155,7 +167,7 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
 
                     if (preProcessResult) {
                         matchingResult.apply()
-                        walletOperationsProcessor.apply(order.externalId, MessageType.LIMIT_ORDER.name)
+                        walletOperationsProcessor.apply(order.externalId, MessageType.LIMIT_ORDER.name, operationId)
                         limitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
                         limitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
                         orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
@@ -212,7 +224,7 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
 
             val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - totalPayBackReserved + limitVolume, limitAssetAccuracy).toDouble()
             balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance)), operationId))
 
             val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
             orderBookQueue.put(rabbitOrderBook)
@@ -245,11 +257,21 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
         return "Limit order (id: ${order.externalId})"
     }
 
-    private fun rejectOrder(reservedBalance: Double, payBackReserved: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper?, status: MessageStatus, now: Date, isCancelOrders: Boolean) {
+    private fun rejectOrder(reservedBalance: Double,
+                            payBackReserved: Double,
+                            limitAsset: String,
+                            order: NewLimitOrder,
+                            balance: Double,
+                            trustedLimitOrdersReport: LimitOrdersReport,
+                            orderBook: AssetOrderBook,
+                            messageWrapper: MessageWrapper?,
+                            status: MessageStatus,
+                            now: Date,
+                            isCancelOrders: Boolean, operationId: String) {
         if (payBackReserved > 0) {
             val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - payBackReserved, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
             balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance)), operationId))
         }
 
         trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
@@ -257,9 +279,15 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
 
         if (messageWrapper != null) {
             if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())
+                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                        .setMessageId(messageWrapper.messageId)
+                        .setUid(now.time).build())
             } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMatchingEngineId(order.id)
+                        .setMessageId(messageWrapper.messageId)
+                        .setStatus(status.type).build())
             }
         }
 
@@ -279,12 +307,25 @@ class LimitOrderProcessor(private val limitOrderService: GenericLimitOrderServic
             return
         }
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(order.externalId.toLong())
+                    .setMessageId(messageWrapper.messageId)
+                    .build())
         } else {
             if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMatchingEngineId(order.id)
+                        .setStatus(status.type)
+                        .setMessageId(messageWrapper.messageId)
+                        .build())
             } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(order.externalId)
+                        .setMatchingEngineId(order.id)
+                        .setStatus(status.type)
+                        .setMessageId(messageWrapper.messageId)
+                        .setStatusReason(reason).build())
             }
         }
     }

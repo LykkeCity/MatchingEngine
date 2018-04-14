@@ -37,8 +37,8 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
 
         if (ordersToCancel.isNotEmpty()) {
-            val limitOrdersReport = LimitOrdersReport()
-            val trustedLimitOrdersReport = LimitOrdersReport()
+            val limitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
+            val trustedLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
 
             val orderBook = limitOrderService.getOrderBook(message.assetPairId).copy()
 
@@ -70,10 +70,14 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 trustedLimitOrderReportQueue.put(trustedLimitOrdersReport)
             }
         }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setId(message.uid)
+                .setMessageId(messageWrapper.messageId)
+                .setStatus(MessageStatus.OK.type)
+                .build())
 
         if (ordersToCancel.isNotEmpty()) {
-            genericLimitOrderProcessor?.checkAndProcessStopOrder(message.assetPairId, now)
+            genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper, message.assetPairId, now)
         }
 
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
