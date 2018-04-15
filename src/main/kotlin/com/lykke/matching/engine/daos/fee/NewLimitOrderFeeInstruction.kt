@@ -3,6 +3,7 @@ package com.lykke.matching.engine.daos.fee
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.messages.ProtocolMessages
+import org.nustaq.serialization.annotations.Version
 
 class NewLimitOrderFeeInstruction(
         type: FeeType,
@@ -12,7 +13,9 @@ class NewLimitOrderFeeInstruction(
         val makerSize: Double?,
         sourceClientId: String?,
         targetClientId: String?,
-        assetIds: List<String>
+        assetIds: List<String>,
+        @Version(1)
+        val makerFeeModificator: Double?
 ) : NewFeeInstruction(type, takerSizeType, takerSize, sourceClientId, targetClientId, assetIds) {
 
     companion object {
@@ -40,7 +43,8 @@ class NewLimitOrderFeeInstruction(
                     if (fee.hasMakerSize()) fee.makerSize else null,
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null,
-                    fee.assetIdList.toList())
+                    fee.assetIdList.toList(),
+                    if (fee.hasMakerFeeModificator() && fee.makerFeeModificator != 0.0) fee.makerFeeModificator else null)
         }
     }
 
@@ -50,6 +54,7 @@ class NewLimitOrderFeeInstruction(
                 (if (size != null) ", takerSize=$size" else "") +
                 (if (makerSizeType != null) ", makerSizeType=$makerSizeType" else "") +
                 (if (makerSize != null) ", makerSize=$makerSize" else "") +
+                (if (makerFeeModificator != null) ", makerFeeModificator=$makerFeeModificator" else "") +
                 (if (assetIds.isNotEmpty() == true) ", assetIds=$assetIds" else "") +
                 (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
                 "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"

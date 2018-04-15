@@ -42,4 +42,6 @@ open class NewFeeInstruction(type: FeeType,
                 (if (sourceClientId?.isNotEmpty() == true) ", sourceClientId=$sourceClientId" else "") +
                 "${if (targetClientId?.isNotEmpty() == true) ", targetClientId=$targetClientId" else ""})"
     }
+
+    override fun toNewFormat() = this
 }

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database
 
+import com.lykke.matching.engine.daos.Settings
+
 interface ConfigDatabaseAccessor {
-    fun loadConfigs(): Map<String, String>?
-    fun saveValue(name: String, value: String)
+    fun loadConfigs(): Settings?
 }
