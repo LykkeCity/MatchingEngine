@@ -47,11 +47,11 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         val operations = mutableListOf(walletOperation)
 
-        val isValid = performValidation(messageWrapper = messageWrapper,
+        val valid = performValidation(messageWrapper = messageWrapper,
                 walletOperationId = walletOperation.id,
                 feeInstructions = feeInstructions)
 
-        if (!isValid) {
+        if (!valid) {
             return
         }
 
@@ -94,35 +94,21 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                 Date(message.timestamp), message.volume, 0.0)
     }
 
-    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashInOutOperation {
-        if (messageWrapper.parsedMessage == null) {
-            parseMessage(messageWrapper)
-        }
-        return messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
-    }
-
     private fun performValidation(messageWrapper: MessageWrapper,
                                         walletOperationId: String,
                                         feeInstructions: List<NewFeeInstruction>): Boolean {
-        val feeValid = feeValidation(feeInstructions, messageWrapper, walletOperationId)
-        if (!feeValid) {
-            return feeValid
-        }
 
-        val assetEnabled = enabledAssetValidation(messageWrapper, walletOperationId)
-        if (!assetEnabled) {
-            return assetEnabled
-        }
+        val validations = arrayOf({ isFeeValid(feeInstructions, messageWrapper, walletOperationId) },
+                { isAssetEnabled(messageWrapper, walletOperationId) },
+                { isBalanceValid(messageWrapper, walletOperationId) },
+                { isAccuracyValid(messageWrapper, walletOperationId) })
 
-        val balanceValid = balanceValidation(messageWrapper, walletOperationId)
-        if (!balanceValid) {
-            return balanceValid
-        }
+        val failedValidation = validations.find { function: () -> Boolean -> !function() }
 
-        return true
+        return failedValidation == null
     }
 
-    private fun balanceValidation(messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
+    private fun isBalanceValid(messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
         val message = getMessage(messageWrapper)
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
@@ -139,7 +125,19 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         return true
     }
 
-    private fun enabledAssetValidation(messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
+    private fun isAccuracyValid(messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
+        val message = getMessage(messageWrapper)
+
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.volume, assetsHolder.getAsset(message.assetId).accuracy)
+
+        if (!volumeValid) {
+            writeErrorResponse(messageWrapper, walletOperationId, MessageStatus.INVALID_VOLUME_ACCURACY)
+        }
+
+        return volumeValid
+    }
+
+    private fun isAssetEnabled(messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
         val message = getMessage(messageWrapper)
         if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             LOGGER.info("""Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId},
@@ -151,12 +149,19 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         return true
     }
 
-    private fun feeValidation(feeInstructions: List<NewFeeInstruction>, messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
+    private fun isFeeValid(feeInstructions: List<NewFeeInstruction>, messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
         if (!checkFee(null, feeInstructions)) {
             writeInvalidFeeResponse(messageWrapper, walletOperationId)
             return false
         }
         return true
+    }
+
+    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashInOutOperation {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
+        return messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashInOutOperation {
@@ -171,7 +176,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
+        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
                 .setStatus(status.type).build())
@@ -188,7 +193,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                                    operationId: String,
                                    status: MessageStatus,
                                    errorMessage: String = "") {
-        val message = messageWrapper.parsedMessage as ProtocolMessages.CashInOutOperation
+        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
                 .setMatchingEngineId(operationId)
