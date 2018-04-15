@@ -41,35 +41,18 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        LOGGER.debug("""Processing cash in/out operation (${message.id})
+            |for client ${message.clientId}, asset ${message.assetId},
+            |amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions""".trimMargin())
 
         val operationId = UUID.randomUUID().toString()
-        if (!checkFee(null, feeInstructions)) {
-            writeInvalidFeeResponse(messageWrapper, message, operationId)
-            return
-        }
-
         val operation = WalletOperation(operationId, message.id, message.clientId, message.assetId,
                 Date(message.timestamp), message.volume, 0.0)
         val operations = mutableListOf(operation)
 
-        if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
-            LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: disabled asset")
-            return
-        }
-
-        if (message.volume < 0) {
-            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (NumberUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                        .setStatus(MessageStatus.LOW_BALANCE.type).build())
-                LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
-                return
-            }
-        }
+        performValidation(messageWrapper = messageWrapper,
+                operation = operation,
+                feeInstructions = feeInstructions)
 
         val fees = try {
             feeProcessor.processFee(feeInstructions, operation, operations)
@@ -96,6 +79,54 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)} processed")
+    }
+
+    private fun getFirstValidationError(message: ProtocolMessages.CashInOutOperation,
+                                        feeInstructions: List<NewFeeInstruction>, assetId: String): CashInOutOperationService.ValidationErrors? {
+        if (!checkFee(null, feeInstructions)) {
+            return ValidationErrors.INVALID_FEE
+        }
+
+        if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
+            LOGGER.info("""Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId},
+                |volume: ${NumberUtils.roundForPrint(message.volume)}: disabled asset""".trimMargin())
+            return ValidationErrors.DISABLED_ASSET
+        }
+
+        if (message.volume < 0) {
+            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
+            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
+            if (NumberUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(assetId).accuracy).toDouble() < 0.0) {
+                LOGGER.info("""Cash out operation (${message.id})
+                    for client ${message.clientId} asset ${message.assetId},
+                    volume: ${NumberUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance""")
+                return ValidationErrors.LOW_BALANCE
+            }
+        }
+
+        return null
+    }
+
+    private fun performValidation(messageWrapper: MessageWrapper,
+                                  operation: WalletOperation,
+                                  feeInstructions: List<NewFeeInstruction>) {
+
+        val message = messageWrapper.messageId as ProtocolMessages.CashInOutOperation
+        val firstValidationError = getFirstValidationError(message, feeInstructions, operation.assetId)
+
+        when (firstValidationError) {
+            ValidationErrors.INVALID_FEE -> writeInvalidFeeResponse(messageWrapper, message, operation.id)
+
+            ValidationErrors.DISABLED_ASSET -> messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(message.id)
+                    .setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
+
+            ValidationErrors.LOW_BALANCE -> messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(message.id)
+                    .setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.LOW_BALANCE.type).build())
+        }
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashInOutOperation {
@@ -131,5 +162,9 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                 .build())
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)}: $errorMessage")
         return
+    }
+
+    private enum class ValidationErrors {
+        INVALID_FEE, DISABLED_ASSET, LOW_BALANCE
     }
 }
