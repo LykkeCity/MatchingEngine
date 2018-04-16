@@ -9,7 +9,6 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -64,10 +63,10 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testBuyLimitOrderFeeOppositeAsset() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "BTC", balance = 0.1))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "USD", balance = 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client4", assetId = "USD", balance = 10.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client4", assetId = "BTC", balance = 0.1))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "BTC", balance = 0.1)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "USD", balance = 100.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client4", assetId = "USD", balance = 10.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client4", assetId = "BTC", balance = 0.1)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(
                 clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = -0.05,
@@ -122,11 +121,12 @@ class FeeTest: AbstractTest() {
     fun testBuyLimitOrderFeeAnotherAsset() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "BTC", balance = 0.1, reservedBalance = 0.05))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "EUR", balance = 25.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "BTC", balance = 0.1)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client1", assetId = "BTC", reservedBalance =  0.05)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "EUR", balance = 25.0)
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "USD", balance = 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "EUR", balance = 1.88))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "USD", balance = 100.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "EUR", balance = 1.88)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", price = 1.3, volume = -1.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", price = 1.1, volume = 1.0))
@@ -172,11 +172,11 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testSellMarketOrderFeeOppositeAsset() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.1))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 100.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.1)
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client4", assetId = "USD", balance = 10.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client4", assetId = "BTC", balance = 0.1))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client4", assetId = "USD", balance = 10.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client4", assetId = "BTC", balance = 0.1)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(
                 clientId = "Client1", assetId = "BTCUSD", price = 15154.123, volume = 0.005412,
@@ -230,8 +230,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testOrderBookNotEnoughFundsForFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 750.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.0503))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 750.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.0503)
 
         initServices()
 
@@ -267,8 +267,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testOrderBookNotEnoughFundsForMultipleFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 600.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.0403))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 600.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.0403)
         initServices()
 
         for (i in 1..2) {
@@ -324,8 +324,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testMarketNotEnoughFundsForFee1() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 764.99)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.05)
 
         initServices()
 
@@ -355,8 +355,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testMarketNotEnoughFundsForFee2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 764.99)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.05)
 
         initServices()
 
@@ -386,8 +386,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testMarketNotEnoughFundsForFee3() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 764.99))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.05))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 764.99)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.05)
 
         initServices()
 
@@ -417,8 +417,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testNotEnoughFundsForFeeOppositeAsset() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 151.5))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.01521))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 151.5)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.01521)
 
         initServices()
 
@@ -474,12 +474,12 @@ class FeeTest: AbstractTest() {
     fun testNotEnoughFundsForFeeAnotherAsset() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "BTC", balance = 0.015))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "EUR", balance = 1.26))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.015)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "EUR", balance = 1.26)
 
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 150.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "EUR", balance = 1.06))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 150.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "EUR", balance = 1.06)
 
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", assetId = "EURUSD", price = 1.3, volume = -1.0))
@@ -539,8 +539,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testMakerFeeModificator() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "BTC", balance = 0.1))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "USD", balance = 100.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "BTC", balance = 0.1)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "USD", balance = 100.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "AnotherClient", assetId = "BTCUSD", volume = -1.0, price = 10000.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "AnotherClient", assetId = "BTCUSD", volume = -1.0, price = 11000.0))
@@ -585,8 +585,8 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testMakerFeeModificatorForEmptyOppositeOrderBookSide() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "BTC", balance = 0.1))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "USD", balance = 100.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "BTC", balance = 0.1)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "USD", balance = 100.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.01, price = 9700.0,
                 fees = listOf(buildLimitOrderFeeInstruction(

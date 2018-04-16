@@ -55,8 +55,10 @@ class InvalidBalanceTest : AbstractTest() {
     @Test
     fun testLimitOrderLeadsToInvalidBalance() {
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 0.02, reservedBalance = 0.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "ETH", balance = 1000.0, reservedBalance = 0.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 0.02)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client1", assetId = "USD", reservedBalance = 0.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "ETH", balance = 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client2", assetId = "ETH", reservedBalance = 0.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
@@ -99,10 +101,12 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun testMarketOrderWithPreviousInvalidBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 0.02, reservedBalance = 0.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 0.02)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client1", assetId = "USD", reservedBalance = 0.0)
 
         // invalid opposite wallet
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "ETH", balance = 1.0, reservedBalance = 1.1))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "ETH", balance = 1.0)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client2", assetId = "ETH", reservedBalance = 1.1)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
@@ -148,8 +152,8 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun testNegativeBalanceDueToTransferWithOverdraftLimit() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 3.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 3.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 3.0)
 
         initServices()
 
@@ -178,8 +182,9 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun testMultiLimitOrderWithNotEnoughReservedFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 0.25, reservedBalance = 0.09))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 275.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.25)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
 
@@ -210,8 +215,9 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun `Test multi limit order with enough reserved but not enough main balance`() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 0.04, reservedBalance = 0.05))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 275.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.05)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
 

@@ -24,16 +24,6 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     var initialClientsCount: Int = wallets.size
     var initialBalancesCount: Int = wallets.values.sumBy { it.balances.size }
 
-    init {
-        reload()
-    }
-
-    fun reload() {
-        wallets = walletDatabaseAccessor.loadWallets()
-        initialClientsCount = wallets.size
-        initialBalancesCount = wallets.values.sumBy { it.balances.size }
-    }
-
     fun getBalance(clientId: String, assetId: String): Double {
         val wallet = wallets[clientId]
         if (wallet != null) {

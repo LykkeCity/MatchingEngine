@@ -23,9 +23,6 @@ class BalanceUpdateServiceTest: AbstractTest() {
     @Autowired
     private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
-    @Autowired
-    private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
-
     companion object {
         private const val DELTA = 1e-15
     }

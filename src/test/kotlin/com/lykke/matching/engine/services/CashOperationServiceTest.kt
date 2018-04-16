@@ -53,22 +53,15 @@ class CashOperationServiceTest: AbstractTest() {
 
             return testBackOfficeDatabaseAccessor
         }
-
-        @Bean
-        @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 100.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "Asset1", 100.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "Asset1", 100.0, reservedBalance = 50.0))
-
-            return testWalletDatabaseAccessor
-        }
     }
 
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "Asset1", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "Asset1", 100.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "Asset1", 50.0)
+
         cashInOutQueue.clear()
         initServices()
     }
@@ -234,7 +227,8 @@ class CashOperationServiceTest: AbstractTest() {
 
     @Test
     fun testRoundingWithReserved() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 1.00418803, 0.00418803))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset5", 1.00418803)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset5", 0.00418803)
         initServices()
 
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0))
@@ -250,8 +244,10 @@ class CashOperationServiceTest: AbstractTest() {
 
     @Test
     fun testCashOutFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset4", 0.06, 0.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 11.0, 0.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset4", 0.06)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset4",  0.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset5", 11.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset5",0.0)
         initServices()
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.05, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
@@ -263,7 +259,8 @@ class CashOperationServiceTest: AbstractTest() {
 
     @Test
     fun testCashOutInvalidFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset5", 3.0, 0.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset5", 3.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset5", 0.0)
         initServices()
 
         // Negative fee size

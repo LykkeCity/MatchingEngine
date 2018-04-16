@@ -17,6 +17,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -42,18 +43,13 @@ class NegativePriceTest : AbstractTest() {
 
             return testBackOfficeDatabaseAccessor
         }
-
-        @Bean
-        @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client", "USD", 1.0, 0.0))
-            return testWalletDatabaseAccessor
-        }
     }
 
     @Before
     fun setUp() {
+        testBalanceHolderWrapper.updateBalance("Client", "USD", 1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client", "USD", 0.0)
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         initServices()
