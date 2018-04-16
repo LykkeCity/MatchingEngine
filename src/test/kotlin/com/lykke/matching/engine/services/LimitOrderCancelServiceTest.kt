@@ -33,9 +33,6 @@ import kotlin.test.assertNull
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderCancelServiceTest : AbstractTest() {
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
     @TestConfiguration
     open class Config {
         @Bean
@@ -43,6 +40,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
             val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
             testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
 
             return testBackOfficeDatabaseAccessor
         }
@@ -55,7 +53,6 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = 200.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = 300.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = 400.0))
-
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
@@ -103,7 +100,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
     fun testMultiCancel() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "10", clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = -0.5)))

@@ -9,7 +9,6 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -37,8 +36,6 @@ import kotlin.test.assertTrue
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class StopLimitOrderTest : AbstractTest() {
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
     private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
@@ -356,7 +353,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     private fun processStopLimitOrderAfterMultiLimitOrder(forTrustedClient: Boolean) {
         if (forTrustedClient) {
-            testSettingsDatabaseAccessor.addTrustedClient("Client3")
+            testConfigDatabaseAccessor.addTrustedClient("Client3")
         }
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
@@ -427,8 +424,8 @@ class StopLimitOrderTest : AbstractTest() {
             testConfigDatabaseAccessor.addTrustedClient("Client2")
         }
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 0.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 0.1)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(

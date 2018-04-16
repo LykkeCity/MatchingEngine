@@ -43,9 +43,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
 
     @Test
     fun testPreProcessWalletOperations() {

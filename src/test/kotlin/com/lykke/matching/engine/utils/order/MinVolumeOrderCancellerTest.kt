@@ -34,10 +34,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     private lateinit var canceller: MinVolumeOrderCanceller
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-
     @TestConfiguration
     open class Config {
         @Bean
@@ -228,7 +224,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         // recalculate reserved volumes to reset locked reservedAmount
         val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
-                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor,TestStopOrderBookDatabaseAccessor(), TestReservedVolumesDatabaseAccessor(), applicationSettingsCache)
+                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor,TestStopOrderBookDatabaseAccessor(), TestReservedVolumesDatabaseAccessor(),
+                applicationContext)
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

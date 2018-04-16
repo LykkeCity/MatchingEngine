@@ -20,8 +20,6 @@ import org.springframework.test.context.junit4.SpringRunner
 @SpringBootTest(classes = [(TestApplicationContext::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BalanceUpdateServiceTest: AbstractTest() {
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     companion object {
         private const val DELTA = 1e-15
