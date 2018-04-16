@@ -53,7 +53,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     }
 
     private fun processLimitOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
-        limitOrderProcessor.processLimitOrder(messageWrapper, order, isCancelOrders, now, null)
+        limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, messageWrapper = messageWrapper)
         checkAndProcessStopOrder(order.assetPairId, now)
     }
 
@@ -65,7 +65,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     }
 
     fun processLimitOrder(order: NewLimitOrder, now: Date, payBackReserved: Double) {
-        limitOrderProcessor.processLimitOrder(null, order, false, now, payBackReserved)
+        limitOrderProcessor.processLimitOrder(order, false, now, payBackReserved)
         checkAndProcessStopOrder(order.assetPairId, now)
     }
 
