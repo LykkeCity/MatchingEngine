@@ -93,6 +93,108 @@ public final class ProtocolMessages {
   }
 
   /**
+   * Protobuf enum {@code com.lykke.matching.engine.messages.CancelMode}
+   */
+  public enum CancelMode
+      implements com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>NOT_EMPTY_SIDE = 0;</code>
+     */
+    NOT_EMPTY_SIDE(0, 0),
+    /**
+     * <code>BOTH_SIDES = 1;</code>
+     */
+    BOTH_SIDES(1, 1),
+    /**
+     * <code>SELL_SIDE = 2;</code>
+     */
+    SELL_SIDE(2, 2),
+    /**
+     * <code>BUY_SIDE = 3;</code>
+     */
+    BUY_SIDE(3, 3),
+    ;
+
+    /**
+     * <code>NOT_EMPTY_SIDE = 0;</code>
+     */
+    public static final int NOT_EMPTY_SIDE_VALUE = 0;
+    /**
+     * <code>BOTH_SIDES = 1;</code>
+     */
+    public static final int BOTH_SIDES_VALUE = 1;
+    /**
+     * <code>SELL_SIDE = 2;</code>
+     */
+    public static final int SELL_SIDE_VALUE = 2;
+    /**
+     * <code>BUY_SIDE = 3;</code>
+     */
+    public static final int BUY_SIDE_VALUE = 3;
+
+
+    public final int getNumber() {
+      return value;
+    }
+
+    public static CancelMode valueOf(int value) {
+      switch (value) {
+        case 0: return NOT_EMPTY_SIDE;
+        case 1: return BOTH_SIDES;
+        case 2: return SELL_SIDE;
+        case 3: return BUY_SIDE;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<CancelMode>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<CancelMode>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<CancelMode>() {
+            public CancelMode findValueByNumber(int number) {
+              return CancelMode.valueOf(number);
+            }
+          };
+
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(1);
+    }
+
+    private static final CancelMode[] VALUES = values();
+
+    public static CancelMode valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int index;
+    private final int value;
+
+    private CancelMode(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:com.lykke.matching.engine.messages.CancelMode)
+  }
+
+  /**
    * Protobuf enum {@code com.lykke.matching.engine.messages.FeeType}
    */
   public enum FeeType
@@ -160,7 +262,7 @@ public final class ProtocolMessages {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(1);
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(2);
     }
 
     private static final FeeType[] VALUES = values();
@@ -244,7 +346,7 @@ public final class ProtocolMessages {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(2);
+      return com.lykke.matching.engine.messages.ProtocolMessages.getDescriptor().getEnumTypes().get(3);
     }
 
     private static final FeeSizeType[] VALUES = values();
@@ -23110,6 +23212,15 @@ public final class ProtocolMessages {
      * <code>optional bool cancelAllPreviousLimitOrders = 6;</code>
      */
     boolean getCancelAllPreviousLimitOrders();
+
+    /**
+     * <code>optional int32 cancelMode = 7;</code>
+     */
+    boolean hasCancelMode();
+    /**
+     * <code>optional int32 cancelMode = 7;</code>
+     */
+    int getCancelMode();
   }
   /**
    * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder}
@@ -23129,6 +23240,7 @@ public final class ProtocolMessages {
       assetPairId_ = "";
       orders_ = java.util.Collections.emptyList();
       cancelAllPreviousLimitOrders_ = false;
+      cancelMode_ = 0;
     }
 
     @java.lang.Override
@@ -23192,6 +23304,11 @@ public final class ProtocolMessages {
             case 48: {
               bitField0_ |= 0x00000010;
               cancelAllPreviousLimitOrders_ = input.readBool();
+              break;
+            }
+            case 56: {
+              bitField0_ |= 0x00000020;
+              cancelMode_ = input.readInt32();
               break;
             }
           }
@@ -23294,6 +23411,20 @@ public final class ProtocolMessages {
        */
       com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFeeOrBuilder getFeesOrBuilder(
           int index);
+
+      /**
+       * <code>optional string oldUid = 6;</code>
+       */
+      boolean hasOldUid();
+      /**
+       * <code>optional string oldUid = 6;</code>
+       */
+      java.lang.String getOldUid();
+      /**
+       * <code>optional string oldUid = 6;</code>
+       */
+      com.google.protobuf.ByteString
+          getOldUidBytes();
     }
     /**
      * Protobuf type {@code com.lykke.matching.engine.messages.MultiLimitOrder.Order}
@@ -23311,6 +23442,7 @@ public final class ProtocolMessages {
         volume_ = 0D;
         price_ = 0D;
         fees_ = java.util.Collections.emptyList();
+        oldUid_ = "";
       }
 
       @java.lang.Override
@@ -23375,6 +23507,12 @@ public final class ProtocolMessages {
                   mutable_bitField0_ |= 0x00000010;
                 }
                 fees_.add(input.readMessage(com.lykke.matching.engine.messages.ProtocolMessages.LimitOrderFee.PARSER, extensionRegistry));
+                break;
+              }
+              case 50: {
+                com.google.protobuf.ByteString bs = input.readBytes();
+                bitField0_ |= 0x00000010;
+                oldUid_ = bs;
                 break;
               }
             }
@@ -23534,6 +23672,48 @@ public final class ProtocolMessages {
         return fees_.get(index);
       }
 
+      public static final int OLDUID_FIELD_NUMBER = 6;
+      private volatile java.lang.Object oldUid_;
+      /**
+       * <code>optional string oldUid = 6;</code>
+       */
+      public boolean hasOldUid() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional string oldUid = 6;</code>
+       */
+      public java.lang.String getOldUid() {
+        java.lang.Object ref = oldUid_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            oldUid_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>optional string oldUid = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getOldUidBytes() {
+        java.lang.Object ref = oldUid_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          oldUid_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
@@ -23585,6 +23765,9 @@ public final class ProtocolMessages {
         for (int i = 0; i < fees_.size(); i++) {
           output.writeMessage(5, fees_.get(i));
         }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          output.writeBytes(6, getOldUidBytes());
+        }
         unknownFields.writeTo(output);
       }
 
@@ -23613,6 +23796,10 @@ public final class ProtocolMessages {
         for (int i = 0; i < fees_.size(); i++) {
           size += com.google.protobuf.CodedOutputStream
             .computeMessageSize(5, fees_.get(i));
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(6, getOldUidBytes());
         }
         size += unknownFields.getSerializedSize();
         memoizedSerializedSize = size;
@@ -23746,6 +23933,8 @@ public final class ProtocolMessages {
           } else {
             feesBuilder_.clear();
           }
+          oldUid_ = "";
+          bitField0_ = (bitField0_ & ~0x00000020);
           return this;
         }
 
@@ -23799,6 +23988,10 @@ public final class ProtocolMessages {
           } else {
             result.fees_ = feesBuilder_.build();
           }
+          if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+            to_bitField0_ |= 0x00000010;
+          }
+          result.oldUid_ = oldUid_;
           result.bitField0_ = to_bitField0_;
           onBuilt();
           return result;
@@ -23854,6 +24047,11 @@ public final class ProtocolMessages {
                 feesBuilder_.addAllMessages(other.fees_);
               }
             }
+          }
+          if (other.hasOldUid()) {
+            bitField0_ |= 0x00000020;
+            oldUid_ = other.oldUid_;
+            onChanged();
           }
           this.mergeUnknownFields(other.unknownFields);
           onChanged();
@@ -24400,6 +24598,82 @@ public final class ProtocolMessages {
           return feesBuilder_;
         }
 
+        private java.lang.Object oldUid_ = "";
+        /**
+         * <code>optional string oldUid = 6;</code>
+         */
+        public boolean hasOldUid() {
+          return ((bitField0_ & 0x00000020) == 0x00000020);
+        }
+        /**
+         * <code>optional string oldUid = 6;</code>
+         */
+        public java.lang.String getOldUid() {
+          java.lang.Object ref = oldUid_;
+          if (!(ref instanceof java.lang.String)) {
+            com.google.protobuf.ByteString bs =
+                (com.google.protobuf.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            if (bs.isValidUtf8()) {
+              oldUid_ = s;
+            }
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>optional string oldUid = 6;</code>
+         */
+        public com.google.protobuf.ByteString
+            getOldUidBytes() {
+          java.lang.Object ref = oldUid_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            oldUid_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>optional string oldUid = 6;</code>
+         */
+        public Builder setOldUid(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+          oldUid_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional string oldUid = 6;</code>
+         */
+        public Builder clearOldUid() {
+          bitField0_ = (bitField0_ & ~0x00000020);
+          oldUid_ = getDefaultInstance().getOldUid();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional string oldUid = 6;</code>
+         */
+        public Builder setOldUidBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+          oldUid_ = value;
+          onChanged();
+          return this;
+        }
+
         // @@protoc_insertion_point(builder_scope:com.lykke.matching.engine.messages.MultiLimitOrder.Order)
       }
 
@@ -24635,6 +24909,21 @@ public final class ProtocolMessages {
       return cancelAllPreviousLimitOrders_;
     }
 
+    public static final int CANCELMODE_FIELD_NUMBER = 7;
+    private int cancelMode_;
+    /**
+     * <code>optional int32 cancelMode = 7;</code>
+     */
+    public boolean hasCancelMode() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional int32 cancelMode = 7;</code>
+     */
+    public int getCancelMode() {
+      return cancelMode_;
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -24687,6 +24976,9 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeBool(6, cancelAllPreviousLimitOrders_);
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeInt32(7, cancelMode_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -24719,6 +25011,10 @@ public final class ProtocolMessages {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(6, cancelAllPreviousLimitOrders_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(7, cancelMode_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSerializedSize = size;
@@ -24849,6 +25145,8 @@ public final class ProtocolMessages {
         }
         cancelAllPreviousLimitOrders_ = false;
         bitField0_ = (bitField0_ & ~0x00000020);
+        cancelMode_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -24902,6 +25200,10 @@ public final class ProtocolMessages {
           to_bitField0_ |= 0x00000010;
         }
         result.cancelAllPreviousLimitOrders_ = cancelAllPreviousLimitOrders_;
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.cancelMode_ = cancelMode_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -24964,6 +25266,9 @@ public final class ProtocolMessages {
         }
         if (other.hasCancelAllPreviousLimitOrders()) {
           setCancelAllPreviousLimitOrders(other.getCancelAllPreviousLimitOrders());
+        }
+        if (other.hasCancelMode()) {
+          setCancelMode(other.getCancelMode());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -25538,6 +25843,38 @@ public final class ProtocolMessages {
       public Builder clearCancelAllPreviousLimitOrders() {
         bitField0_ = (bitField0_ & ~0x00000020);
         cancelAllPreviousLimitOrders_ = false;
+        onChanged();
+        return this;
+      }
+
+      private int cancelMode_ ;
+      /**
+       * <code>optional int32 cancelMode = 7;</code>
+       */
+      public boolean hasCancelMode() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional int32 cancelMode = 7;</code>
+       */
+      public int getCancelMode() {
+        return cancelMode_;
+      }
+      /**
+       * <code>optional int32 cancelMode = 7;</code>
+       */
+      public Builder setCancelMode(int value) {
+        bitField0_ |= 0x00000040;
+        cancelMode_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 cancelMode = 7;</code>
+       */
+      public Builder clearCancelMode() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        cancelMode_ = 0;
         onChanged();
         return this;
       }
@@ -34014,46 +34351,49 @@ public final class ProtocolMessages {
       "orders\030\005 \003(\0132<.com.lykke.matching.engine" +
       ".messages.OldMultiLimitOrder.Order\022$\n\034ca" +
       "ncelAllPreviousLimitOrders\030\006 \001(\010\032&\n\005Orde" +
-      "r\022\016\n\006volume\030\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\200\003\n\017Mul" +
+      "r\022\016\n\006volume\030\001 \002(\001\022\r\n\005price\030\002 \002(\001\"\244\003\n\017Mul" +
       "tiLimitOrder\022\013\n\003uid\030\001 \002(\t\022\021\n\ttimestamp\030\002" +
       " \002(\003\022\020\n\010clientId\030\003 \002(\t\022\023\n\013assetPairId\030\004 " +
       "\002(\t\022I\n\006orders\030\005 \003(\01329.com.lykke.matching" +
       ".engine.messages.MultiLimitOrder.Order\022$",
-      "\n\034cancelAllPreviousLimitOrders\030\006 \001(\010\032\264\001\n" +
-      "\005Order\022\013\n\003uid\030\001 \002(\t\022\016\n\006volume\030\002 \002(\001\022\r\n\005p" +
-      "rice\030\003 \002(\001\022>\n\003fee\030\004 \001(\01321.com.lykke.matc" +
-      "hing.engine.messages.LimitOrderFee\022?\n\004fe" +
-      "es\030\005 \003(\01321.com.lykke.matching.engine.mes" +
-      "sages.LimitOrderFee\"8\n\027WalletCredentials" +
-      "Reload\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \001(\t\"\032\n" +
-      "\030SubscribeToBalanceUpdate\"\'\n\023BalanceNoti" +
-      "fication\022\020\n\010clientId\030\001 \002(\t\"\031\n\027SubscribeT" +
-      "oQuotesUpdate\">\n\014QuotesUpdate\022\017\n\007assetId",
-      "\030\001 \002(\t\022\r\n\005price\030\002 \002(\001\022\016\n\006volume\030\003 \002(\001\"\313\001" +
-      "\n\021OrderBookSnapshot\022\r\n\005asset\030\001 \002(\t\022\r\n\005is" +
-      "Buy\030\002 \002(\010\022\021\n\ttimestamp\030\003 \002(\003\022T\n\006levels\030\004" +
-      " \003(\0132D.com.lykke.matching.engine.message" +
-      "s.OrderBookSnapshot.OrderBookLevel\032/\n\016Or" +
-      "derBookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006volume\030\002 " +
-      "\002(\t\"_\n\025ReservedBalanceUpdate\022\013\n\003uid\030\001 \002(" +
-      "\t\022\020\n\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\026\n\016" +
-      "reservedAmount\030\004 \002(\001\"v\n\032ReservedCashInOu" +
-      "tOperation\022\n\n\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t",
-      "\022\021\n\ttimestamp\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\026\n\016" +
-      "reservedVolume\030\005 \002(\001\"t\n\003Fee\022\014\n\004type\030\001 \002(" +
-      "\005\022\014\n\004size\030\002 \001(\001\022\026\n\016sourceClientId\030\003 \001(\t\022" +
-      "\026\n\016targetClientId\030\004 \001(\t\022\020\n\010sizeType\030\005 \001(" +
-      "\005\022\017\n\007assetId\030\006 \003(\t\"\317\001\n\rLimitOrderFee\022\014\n\004" +
-      "type\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\ttakerSi" +
-      "ze\030\003 \001(\001\022\026\n\016sourceClientId\030\004 \001(\t\022\026\n\016targ" +
-      "etClientId\030\005 \001(\t\022\025\n\rmakerSizeType\030\006 \001(\005\022" +
-      "\025\n\rtakerSizeType\030\007 \001(\005\022\017\n\007assetId\030\010 \003(\t\022" +
-      "\033\n\023makerFeeModificator\030\t \001(\001*+\n\016LimitOrd",
-      "erType\022\t\n\005LIMIT\020\000\022\016\n\nSTOP_LIMIT\020\001*7\n\007Fee" +
-      "Type\022\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTE" +
-      "RNAL_FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020" +
-      "\000\022\014\n\010ABSOLUTE\020\001B6\n\"com.lykke.matching.en" +
-      "gine.messagesB\020ProtocolMessages"
+      "\n\034cancelAllPreviousLimitOrders\030\006 \001(\010\022\022\n\n" +
+      "cancelMode\030\007 \001(\005\032\304\001\n\005Order\022\013\n\003uid\030\001 \002(\t\022" +
+      "\016\n\006volume\030\002 \002(\001\022\r\n\005price\030\003 \002(\001\022>\n\003fee\030\004 " +
+      "\001(\01321.com.lykke.matching.engine.messages" +
+      ".LimitOrderFee\022?\n\004fees\030\005 \003(\01321.com.lykke" +
+      ".matching.engine.messages.LimitOrderFee\022" +
+      "\016\n\006oldUid\030\006 \001(\t\"8\n\027WalletCredentialsRelo" +
+      "ad\022\013\n\003uid\030\001 \002(\003\022\020\n\010clientId\030\002 \001(\t\"\032\n\030Sub" +
+      "scribeToBalanceUpdate\"\'\n\023BalanceNotifica" +
+      "tion\022\020\n\010clientId\030\001 \002(\t\"\031\n\027SubscribeToQuo",
+      "tesUpdate\">\n\014QuotesUpdate\022\017\n\007assetId\030\001 \002" +
+      "(\t\022\r\n\005price\030\002 \002(\001\022\016\n\006volume\030\003 \002(\001\"\313\001\n\021Or" +
+      "derBookSnapshot\022\r\n\005asset\030\001 \002(\t\022\r\n\005isBuy\030" +
+      "\002 \002(\010\022\021\n\ttimestamp\030\003 \002(\003\022T\n\006levels\030\004 \003(\013" +
+      "2D.com.lykke.matching.engine.messages.Or" +
+      "derBookSnapshot.OrderBookLevel\032/\n\016OrderB" +
+      "ookLevel\022\r\n\005price\030\001 \002(\t\022\016\n\006volume\030\002 \002(\t\"" +
+      "_\n\025ReservedBalanceUpdate\022\013\n\003uid\030\001 \002(\t\022\020\n" +
+      "\010clientId\030\002 \002(\t\022\017\n\007assetId\030\003 \002(\t\022\026\n\016rese" +
+      "rvedAmount\030\004 \002(\001\"v\n\032ReservedCashInOutOpe",
+      "ration\022\n\n\002id\030\001 \002(\t\022\020\n\010clientId\030\002 \002(\t\022\021\n\t" +
+      "timestamp\030\003 \002(\003\022\017\n\007assetId\030\004 \002(\t\022\026\n\016rese" +
+      "rvedVolume\030\005 \002(\001\"t\n\003Fee\022\014\n\004type\030\001 \002(\005\022\014\n" +
+      "\004size\030\002 \001(\001\022\026\n\016sourceClientId\030\003 \001(\t\022\026\n\016t" +
+      "argetClientId\030\004 \001(\t\022\020\n\010sizeType\030\005 \001(\005\022\017\n" +
+      "\007assetId\030\006 \003(\t\"\317\001\n\rLimitOrderFee\022\014\n\004type" +
+      "\030\001 \002(\005\022\021\n\tmakerSize\030\002 \001(\001\022\021\n\ttakerSize\030\003" +
+      " \001(\001\022\026\n\016sourceClientId\030\004 \001(\t\022\026\n\016targetCl" +
+      "ientId\030\005 \001(\t\022\025\n\rmakerSizeType\030\006 \001(\005\022\025\n\rt" +
+      "akerSizeType\030\007 \001(\005\022\017\n\007assetId\030\010 \003(\t\022\033\n\023m",
+      "akerFeeModificator\030\t \001(\001*+\n\016LimitOrderTy" +
+      "pe\022\t\n\005LIMIT\020\000\022\016\n\nSTOP_LIMIT\020\001*M\n\nCancelM" +
+      "ode\022\022\n\016NOT_EMPTY_SIDE\020\000\022\016\n\nBOTH_SIDES\020\001\022" +
+      "\r\n\tSELL_SIDE\020\002\022\014\n\010BUY_SIDE\020\003*7\n\007FeeType\022" +
+      "\n\n\006NO_FEE\020\000\022\016\n\nCLIENT_FEE\020\001\022\020\n\014EXTERNAL_" +
+      "FEE\020\002*+\n\013FeeSizeType\022\016\n\nPERCENTAGE\020\000\022\014\n\010" +
+      "ABSOLUTE\020\001B6\n\"com.lykke.matching.engine." +
+      "messagesB\020ProtocolMessages"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -34198,13 +34538,13 @@ public final class ProtocolMessages {
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor,
-        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", });
+        new java.lang.String[] { "Uid", "Timestamp", "ClientId", "AssetPairId", "Orders", "CancelAllPreviousLimitOrders", "CancelMode", });
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor =
       internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_descriptor.getNestedTypes().get(0);
     internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_lykke_matching_engine_messages_MultiLimitOrder_Order_descriptor,
-        new java.lang.String[] { "Uid", "Volume", "Price", "Fee", "Fees", });
+        new java.lang.String[] { "Uid", "Volume", "Price", "Fee", "Fees", "OldUid", });
     internal_static_com_lykke_matching_engine_messages_WalletCredentialsReload_descriptor =
       getDescriptor().getMessageTypes().get(20);
     internal_static_com_lykke_matching_engine_messages_WalletCredentialsReload_fieldAccessorTable = new

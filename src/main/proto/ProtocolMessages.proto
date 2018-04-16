@@ -204,10 +204,19 @@ message MultiLimitOrder {
         required double price = 3;
         optional LimitOrderFee fee = 4;
         repeated LimitOrderFee fees = 5;
+        optional string oldUid = 6;
     }
 
     repeated Order orders = 5;
     optional bool cancelAllPreviousLimitOrders = 6;
+    optional int32 cancelMode = 7;
+}
+
+enum CancelMode {
+    NOT_EMPTY_SIDE = 0;
+    BOTH_SIDES = 1;
+    SELL_SIDE = 2;
+    BUY_SIDE = 3;
 }
 
 message WalletCredentialsReload {

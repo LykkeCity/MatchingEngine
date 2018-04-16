@@ -4,8 +4,9 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -15,6 +16,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ClientMultiLimitOrderTest : AbstractTest() {
 
@@ -37,13 +39,12 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     fun testAdd() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
                 listOf(
-                        VolumePrice(-0.1, 10000.0),
-                        VolumePrice(-0.2, 10500.0),
-                        VolumePrice(-0.30000001, 11000.0),
-                        VolumePrice(0.1, 9500.0),
-                        VolumePrice(0.2, 9000.0)
-                ),
-                emptyList(), emptyList(), listOf("1", "2", "3", "4", "5")))
+                        IncomingLimitOrder(-0.1, 10000.0, "1"),
+                        IncomingLimitOrder(-0.2, 10500.0, "2"),
+                        IncomingLimitOrder(-0.30000001, 11000.0, "3"),
+                        IncomingLimitOrder(0.1, 9500.0, "4"),
+                        IncomingLimitOrder(0.2, 9000.0, "5")
+                )))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 2)
@@ -77,10 +78,9 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     fun testAddOneSide() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
                 listOf(
-                        VolumePrice(-0.1, 10000.0),
-                        VolumePrice(-0.2, 10500.0)
-                ),
-                emptyList(), emptyList()))
+                        IncomingLimitOrder(-0.1, 10000.0),
+                        IncomingLimitOrder(-0.2, 10500.0)
+                )))
 
         assertOrderBookSize("BTCUSD", false, 2)
         assertOrderBookSize("BTCUSD", true, 0)
@@ -118,13 +118,12 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
                 listOf(
-                        VolumePrice(-0.1, 10000.0),
-                        VolumePrice(-0.2, 10500.0),
-                        VolumePrice(-0.30000001, 11000.0),
-                        VolumePrice(0.1, 9500.0),
-                        VolumePrice(0.2, 9000.0)
-                ),
-                emptyList(), emptyList(), cancel = true))
+                        IncomingLimitOrder(-0.1, 10000.0),
+                        IncomingLimitOrder(-0.2, 10500.0),
+                        IncomingLimitOrder(-0.30000001, 11000.0),
+                        IncomingLimitOrder(0.1, 9500.0),
+                        IncomingLimitOrder(0.2, 9000.0)
+                )))
 
         assertOrderBookSize("BTCUSD", false, 4)
         assertOrderBookSize("BTCUSD", true, 2)
@@ -171,11 +170,10 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
                 listOf(
-                        VolumePrice(-0.1, 10000.0),
-                        VolumePrice(-0.2, 10500.0),
-                        VolumePrice(-0.30000001, 11000.0)
-                ),
-                emptyList(), emptyList(), cancel = true))
+                        IncomingLimitOrder(-0.1, 10000.0),
+                        IncomingLimitOrder(-0.2, 10500.0),
+                        IncomingLimitOrder(-0.30000001, 11000.0)
+                )))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 3)
@@ -202,15 +200,14 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     fun testAddNotEnoughFundsOrder() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
                 listOf(
-                        VolumePrice(-0.1, 10000.0),
-                        VolumePrice(-0.2, 10500.0),
-                        VolumePrice(-0.30000001, 11000.0),
-                        VolumePrice(-0.4, 12000.0),
-                        VolumePrice(0.1, 9500.0),
-                        VolumePrice(0.2, 9000.0),
-                        VolumePrice(0.03, 9500.0)
-                ),
-                emptyList(), emptyList(), listOf("1", "2", "3", "ToReject-1", "5", "6", "ToReject-2")))
+                        IncomingLimitOrder(-0.1, 10000.0, "1"),
+                        IncomingLimitOrder(-0.2, 10500.0, "2"),
+                        IncomingLimitOrder(-0.30000001, 11000.0, "3"),
+                        IncomingLimitOrder(-0.4, 12000.0, "ToReject-1"),
+                        IncomingLimitOrder(0.1, 9500.0, "5"),
+                        IncomingLimitOrder(0.2, 9000.0, "6"),
+                        IncomingLimitOrder(0.03, 9500.0, "ToReject-2")
+                )))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 2)
@@ -250,11 +247,11 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                VolumePrice(-0.3, 10800.0),
-                VolumePrice(-0.4, 10900.0),
-                VolumePrice(0.1, 9500.0),
-                VolumePrice(0.2, 9300.0)
-        ), emptyList(), emptyList(), listOf("3", "2", "6", "7")))
+                IncomingLimitOrder(-0.3, 10800.0, "3"),
+                IncomingLimitOrder(-0.4, 10900.0, "2"),
+                IncomingLimitOrder(0.1, 9500.0, "6"),
+                IncomingLimitOrder(0.2, 9300.0, "7")
+        )))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "ToCancelDueToNoFundsForFee", clientId = "Client3", assetId = "BTCUSD", volume = -0.2, price = 10500.0,
@@ -262,20 +259,20 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         )))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client2", listOf(
-                VolumePrice(-0.1, 10000.0),
-                VolumePrice(-0.5, 11000.0),
-                VolumePrice(0.3, 9000.0),
-                VolumePrice(0.4, 8800.0)
-        ), emptyList(), emptyList(), listOf("5", "1", "8", "9")))
+                IncomingLimitOrder(-0.1, 10000.0, "5"),
+                IncomingLimitOrder(-0.5, 11000.0, "1"),
+                IncomingLimitOrder(0.3, 9000.0, "8"),
+                IncomingLimitOrder(0.4, 8800.0, "9")
+        )))
 
         clearMessageQueues()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
-                VolumePrice(-0.1, 11500.0),
-                VolumePrice(0.05, 11000.0),
-                VolumePrice(0.2, 10800.0),
-                VolumePrice(0.1, 9900.0)
-        ), emptyList(), emptyList(), listOf("14", "12", "13", "11")))
+                IncomingLimitOrder(-0.1, 11500.0, "14"),
+                IncomingLimitOrder(0.05, 11000.0, "12"),
+                IncomingLimitOrder(0.2, 10800.0, "13"),
+                IncomingLimitOrder(0.1, 9900.0, "11")
+        )))
 
 
         assertOrderBookSize("BTCUSD", false, 4)
@@ -322,9 +319,9 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     @Test
     fun testNegativeSpread() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
-                VolumePrice(-0.1, 10000.0),
-                VolumePrice(0.1, 10100.0)
-        ), emptyList(), emptyList()))
+                IncomingLimitOrder(-0.1, 10000.0),
+                IncomingLimitOrder(0.1, 10100.0)
+        )))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)
@@ -343,19 +340,19 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.3, price = 9500.0)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
-                VolumePrice(0.1, 9000.0),
-                VolumePrice(0.1, 8000.0),
-                VolumePrice(0.1, 7000.0)
-        ), emptyList(), emptyList()))
+                IncomingLimitOrder(0.1, 9000.0),
+                IncomingLimitOrder(0.1, 8000.0),
+                IncomingLimitOrder(0.1, 7000.0)
+        )))
 
         clearMessageQueues()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
-                VolumePrice(0.1, 10000.0),
-                VolumePrice(0.01, 9500.0),
-                VolumePrice(0.1, 9000.0),
-                VolumePrice(0.1, 8000.0)
-        ), emptyList(), emptyList(), cancel = true))
+                IncomingLimitOrder(0.1, 10000.0),
+                IncomingLimitOrder(0.01, 9500.0),
+                IncomingLimitOrder(0.1, 9000.0),
+                IncomingLimitOrder(0.1, 8000.0)
+        )))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 1)
@@ -368,6 +365,138 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         assertEquals(8, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
+    }
+
+    private fun setOrder() {
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
+                IncomingLimitOrder(-0.4, 9200.0),
+                IncomingLimitOrder(-0.3, 9100.0),
+                IncomingLimitOrder(-0.2, 9000.0),
+                IncomingLimitOrder(0.2, 7900.0),
+                IncomingLimitOrder(0.1, 7800.0)
+        )))
+        clearMessageQueues()
+    }
+
+    @Test
+    fun testEmptyOrderWithCancelPreviousBothSides() {
+        setOrder()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", orders = emptyList(),
+                cancel = true, cancelMode = OrderCancelMode.BOTH_SIDES))
+
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 0)
+        val report = clientsLimitOrdersQueue.first() as LimitOrdersReport
+        assertEquals(5, report.orders.size)
+        report.orders.forEach {
+            assertEquals(OrderStatus.Cancelled.name, it.order.status)
+        }
+    }
+
+    @Test
+    fun testOneSideOrderWithCancelPreviousBothSides() {
+        setOrder()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
+                listOf(IncomingLimitOrder(-0.4, 9100.0, "1"),
+                        IncomingLimitOrder(-0.3, 9000.0, "2")),
+                cancel = true, cancelMode = OrderCancelMode.BOTH_SIDES))
+
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 2)
+        val report = clientsLimitOrdersQueue.first() as LimitOrdersReport
+        assertEquals(7, report.orders.size)
+
+        assertTrue(genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).map { it.externalId }.containsAll(listOf("1", "2")))
+    }
+
+    @Test
+    fun testBothSidesOrderWithCancelPreviousOneSide() {
+        setOrder()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
+                listOf(IncomingLimitOrder(-0.01, 9100.0, "1"),
+                        IncomingLimitOrder(-0.009, 9000.0, "2"),
+                        IncomingLimitOrder(0.2, 7900.0, "3")),
+                cancel = true, cancelMode = OrderCancelMode.BUY_SIDE))
+
+        assertOrderBookSize("BTCUSD", true, 1)
+        assertOrderBookSize("BTCUSD", false, 5)
+        val report = clientsLimitOrdersQueue.first() as LimitOrdersReport
+        assertEquals(5, report.orders.size)
+
+        assertTrue(genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).map { it.externalId } == listOf("3"))
+    }
+
+    @Test
+    fun testReplaceOrders() {
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1, 0.1))
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "ClientOrder", clientId = "Client2", assetId = "BTCUSD", volume = -0.1, price = 8000.0))
+        initServices()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
+                IncomingLimitOrder(-0.4, 9300.0, "Ask-ToReplace-2"),
+                IncomingLimitOrder(-0.3, 9200.0, "Ask-ToReplace-1"),
+                IncomingLimitOrder(-0.2, 9100.0, "Ask-ToCancel-2"),
+                IncomingLimitOrder(-0.1, 9000.0, "Ask-ToCancel-1"),
+                IncomingLimitOrder(0.2, 7900.0, "Bid-ToReplace-1"),
+                IncomingLimitOrder(0.1, 7800.0, "Bid-ToCancel-1"),
+                IncomingLimitOrder(0.05, 7700.0, "Bid-ToReplace-2")
+        )))
+        clearMessageQueues()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
+                IncomingLimitOrder(-0.2, 9400.0, "NotFoundPrevious-1", oldUid = "NotExist-1"),
+                IncomingLimitOrder(-0.2, 9300.0, "ask2", oldUid = "Ask-ToReplace-2"),
+                IncomingLimitOrder(-0.3, 9200.0, "ask3", oldUid = "Ask-ToReplace-1"),
+                IncomingLimitOrder(-0.2, 9100.0, "ask4"),
+                IncomingLimitOrder(-0.3001, 9000.0, "NotEnoughFunds"),
+                IncomingLimitOrder(0.11, 8000.0, "bid1", oldUid = "Bid-ToReplace-1"),
+                IncomingLimitOrder(0.1, 7900.0, "bid2", oldUid = "Bid-ToReplace-2"),
+                IncomingLimitOrder(0.1, 7800.0, "NotFoundPrevious-2", oldUid = "NotExist-2"),
+                IncomingLimitOrder(0.05, 7700.0, "bid4")
+        ), cancel = true))
+
+        assertOrderBookSize("BTCUSD", true, 3)
+        assertOrderBookSize("BTCUSD", false, 3)
+
+        assertBalance("Client1", "BTC", 1.1, 0.7)
+        assertBalance("Client1", "USD", 2200.0, 1255.0)
+
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        val report = clientsLimitOrdersQueue.first() as LimitOrdersReport
+
+        assertEquals(17, report.orders.size)
+
+        val replacedOrders = report.orders.filter { it.order.status == OrderStatus.Replaced.name }
+        assertEquals(4, replacedOrders.size)
+        assertTrue(listOf("Ask-ToReplace-1", "Ask-ToReplace-2", "Bid-ToReplace-1", "Bid-ToReplace-2")
+                .containsAll(replacedOrders.map { it.order.externalId }))
+
+        val notFoundPreviousOrders = report.orders.filter { it.order.status == OrderStatus.NotFoundPrevious.name }
+        assertEquals(2, notFoundPreviousOrders.size)
+        assertTrue(listOf("NotFoundPrevious-1", "NotFoundPrevious-2").containsAll(notFoundPreviousOrders.map { it.order.externalId }))
+
+        val notEnoughFundsOrders = report.orders.filter { it.order.status == OrderStatus.NotEnoughFunds.name }
+        assertEquals(1, notEnoughFundsOrders.size)
+        assertTrue(listOf("NotEnoughFunds").containsAll(notEnoughFundsOrders.map { it.order.externalId }))
+
+        val matchedOrders = report.orders.filter { it.order.status == OrderStatus.Matched.name }
+        assertEquals(1, matchedOrders.size)
+        assertTrue(listOf("ClientOrder").containsAll(matchedOrders.map { it.order.externalId }))
+
+        val processedOrders = report.orders.filter { it.order.status == OrderStatus.Processing.name }
+        assertEquals(1, processedOrders.size)
+        assertTrue(listOf("bid1").containsAll(processedOrders.map { it.order.externalId }))
+
+        val inOrderBookOrders = report.orders.filter { it.order.status == OrderStatus.InOrderBook.name }
+        assertEquals(5, inOrderBookOrders.size)
+        assertTrue(listOf("ask2", "ask3", "ask4", "bid2", "bid4").containsAll(inOrderBookOrders.map { it.order.externalId }))
+
+        val cancelledOrders = report.orders.filter { it.order.status == OrderStatus.Cancelled.name }
+        assertEquals(3, cancelledOrders.size)
+        assertTrue(listOf("Ask-ToCancel-1", "Ask-ToCancel-2", "Bid-ToCancel-1").containsAll(cancelledOrders.map { it.order.externalId }))
     }
 
 }

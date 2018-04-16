@@ -46,7 +46,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             val uid = UUID.randomUUID().toString()
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null,
-                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null)
+                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
             LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
@@ -112,7 +112,8 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 lowerLimitPrice = if (message.hasLowerLimitPrice()) message.lowerLimitPrice else null,
                 lowerPrice = if (message.hasLowerPrice()) message.lowerPrice else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) message.upperLimitPrice else null,
-                upperPrice = if (message.hasUpperPrice()) message.upperPrice else null)
+                upperPrice = if (message.hasUpperPrice()) message.upperPrice else null,
+                previousExternalId = null)
     }
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {
