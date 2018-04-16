@@ -113,7 +113,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
 
             if (!balancesHolder.isTrustedClient(message.clientId)) {
-                processClientOrders(message)
+                processClientOrders(messageWrapper, message)
                 return
             }
 
@@ -371,7 +371,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         return responseBuilder.build()
     }
 
-    private fun processClientOrders(message: ProtocolMessages.MultiLimitOrder) {
+    private fun processClientOrders(messageWrapper: MessageWrapper, message: ProtocolMessages.MultiLimitOrder) {
         LOGGER.debug("Got client multi limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, cancelPrevious: ${message.cancelAllPreviousLimitOrders}")
         val now = Date()
         val multiLimitOrder = readMultiLimitOrder(message)
@@ -431,6 +431,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
             responseBuilder.addStatuses(statusBuilder.build())
         }
+        messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
     }
