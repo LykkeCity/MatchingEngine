@@ -51,7 +51,6 @@ abstract class AbstractTest {
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
