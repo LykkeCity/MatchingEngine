@@ -2,6 +2,8 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
+import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -32,9 +34,12 @@ open class AzureDatabaseAccessorConfig {
     }
 
     @Bean
-    open  fun azureLimitOrderDatabaseAccessor()
+    open  fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
+                                              @Value("\${azure.candles.table}")candlesTable: String,
+                                              @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
-       return AzureLimitOrderDatabaseAccessor(config.me.db.hLiquidityConnString)
+       return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
+               bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)
     }
 
     @Bean
@@ -57,9 +62,28 @@ open class AzureDatabaseAccessorConfig {
     }
 
     @Bean
-    open  fun AzureConfigDatabaseAccessor(@Value("\$azure.config.database.acessor.table") tableName: String)
+    open  fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
             : ConfigDatabaseAccessor {
        return AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
+    }
+
+    @Bean
+    open  fun azureMonitoringDatabaseAccessor(@Value("\${azure.monitoring.table}") monitoringTable: String,
+                                              @Value("\${azure.performance.table}") performanceTable: String)
+            : MonitoringDatabaseAccessor {
+       return AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString, monitoringTable, performanceTable)
+    }
+
+    @Bean
+    open  fun fileOrderBookDatabaseAccessor()
+            : OrderBookDatabaseAccessor {
+       return FileOrderBookDatabaseAccessor(config.me.orderBookPath)
+    }
+
+    @Bean
+    open  fun fileProcessedMessagesDatabaseAccessor()
+            : ProcessedMessagesDatabaseAccessor {
+       return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
     }
 
 

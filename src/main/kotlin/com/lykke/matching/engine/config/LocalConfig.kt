@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
 @Component
-@Profile("dev")
+@Profile("local_config")
 class LocalConfig : FactoryBean<Config> {
     override fun getObject(): Config {
         return ConfigInitializer.initConfig("local",  classOfT = Config::class.java)

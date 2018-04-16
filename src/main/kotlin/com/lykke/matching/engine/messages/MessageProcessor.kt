@@ -3,13 +3,7 @@ package com.lykke.matching.engine.messages
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
@@ -17,7 +11,6 @@ import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccesso
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
@@ -153,7 +146,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     init {
-        val isDevProfile = applicationContext.environment.acceptsProfiles("dev")
+        val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
 
@@ -217,7 +210,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 genericLimitOrderService,
                 applicationContext.environment.getProperty("application.settings.update.interval").toLong())
 
-        if (!isDevProfile) {
+        if (!isLocalProfile) {
             marketStateCache.refresh()
             this.historyTicksBuilder = historyTicksService.start()
         }
@@ -240,27 +233,28 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService)
 
         val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
+        val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations")), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.reservedCashOperations, rabbitReservedCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineReservedCashOperations")), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineReservedCashOperations", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers")), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineSwapOperations")), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineSwapOperations", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders")), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue, null, rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitClientLimitOrdersQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders")), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)), rabbitMqService)
 
-        if(!isDevProfile) {
+        if(!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
                 limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
             }
@@ -282,7 +276,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             }
 
             val healthService = MonitoringStatsCollector()
-            val monitoringDatabaseAccessor = AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString)
+            val monitoringDatabaseAccessor = applicationContext.getBean(MonitoringDatabaseAccessor::class.java)
             fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
                 val result = healthService.collectMonitoringResult()
                 if (result != null) {

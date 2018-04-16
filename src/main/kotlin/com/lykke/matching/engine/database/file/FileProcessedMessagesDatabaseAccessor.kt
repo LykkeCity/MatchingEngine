@@ -17,8 +17,7 @@ import java.util.Arrays
 import java.util.Date
 import java.util.LinkedList
 
-@Component
-class FileProcessedMessagesDatabaseAccessor @Autowired constructor (private val config: Config): ProcessedMessagesDatabaseAccessor {
+class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: String): ProcessedMessagesDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileProcessedMessagesDatabaseAccessor::class.java.name)
@@ -34,7 +33,7 @@ class FileProcessedMessagesDatabaseAccessor @Autowired constructor (private val 
         val startFileName = DATE_FORMAT.format(startDate)
 
         try {
-            val dir = File(config.me.processedMessagesPath)
+            val dir = File(filePath)
             if (dir.exists()) {
                 dir.listFiles().forEach { file ->
                     if (!file.isDirectory && file.name >= startFileName) {
@@ -74,12 +73,12 @@ class FileProcessedMessagesDatabaseAccessor @Autowired constructor (private val 
     override fun saveProcessedMessage(message: ProcessedMessage) {
         try {
             val fileName = DATE_FORMAT.format(Date(message.timestamp))
-            val file = File("$config.me.processedMessagesPath/$fileName")
+            val file = File("$filePath/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asJsonString(message)
-            Files.write(FileSystems.getDefault().getPath("$config.me.processedMessagesPath/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            Files.write(FileSystems.getDefault().getPath("$filePath/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (ex: Exception) {
             LOGGER.error("Unable to save message info: $message", ex)
             METRICS_LOGGER.logError( "Unable to save message info: $message", ex)

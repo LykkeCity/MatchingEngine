@@ -15,7 +15,7 @@ import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.util.UUID
 
-class AzureMessageLogDatabaseAccessor(connString: String, tableName: String) : MessageLogDatabaseAccessor<Message> {
+class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, logBlobContainer: String) : MessageLogDatabaseAccessor<Message> {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureMessageLogDatabaseAccessor::class.java.name)
@@ -23,7 +23,7 @@ class AzureMessageLogDatabaseAccessor(connString: String, tableName: String) : M
     }
 
     private val eventLogTable: CloudTable = getOrCreateTable(connString, tableName)
-    private val logsBlobContainer: CloudBlobContainer = getOrCreateBlob(connString, "me-messages")
+    private val logsBlobContainer: CloudBlobContainer = getOrCreateBlob(connString, logBlobContainer)
 
     override fun log(message: Message) {
         try {

@@ -15,16 +15,19 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import java.util.ArrayList
 
-class AzureLimitOrderDatabaseAccessor constructor (connectionString: String) : LimitOrderDatabaseAccessor {
+class AzureLimitOrderDatabaseAccessor constructor (connectionString: String,
+                                                   bestPricesTable: String,
+                                                   candlesTable: String,
+                                                   hourCandlesTable: String) : LimitOrderDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(LimitOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val bestPricesTable: CloudTable = getOrCreateTable(connectionString, "MarketProfile")
-    private val candlesTable: CloudTable = getOrCreateTable(connectionString, "FeedHistory")
-    private val hourCandlesTable: CloudTable = getOrCreateTable(connectionString, "FeedHoursHistory")
+    private val bestPricesTable: CloudTable = getOrCreateTable(connectionString, bestPricesTable)
+    private val candlesTable: CloudTable = getOrCreateTable(connectionString, candlesTable)
+    private val hourCandlesTable: CloudTable = getOrCreateTable(connectionString, hourCandlesTable)
 
     override fun updateBestPrices(prices: List<BestPrice>) {
         try {

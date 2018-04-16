@@ -1,5 +1,8 @@
 package com.lykke.matching.engine
 
+import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.AppVersion
+import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -13,16 +16,9 @@ open class AppStarter
 
 fun main(args: Array<String>) {
     val context = SpringApplication.run(AppStarter::class.java, *args)
-
-    if (!context.environment.acceptsProfiles("dev")) {
-        if (args.isEmpty()) {
-            LOGGER.error("Not enough args. Usage: httpConfigString")
-            return
-        }
-    }
-
+    val spotName = context.getBean(Config::class.java).me.name
+    Runtime.getRuntime().addShutdownHook(ShutdownHook(spotName))
     addCommandLinePropertySource(args, context)
-
     context.getBean(Application::class.java).run()
 }
 
@@ -32,6 +28,18 @@ private fun addCommandLinePropertySource(args: Array<String>, context: Configura
             .environment
             .propertySources
             .addFirst(commandLineArguments)
+}
+
+internal class ShutdownHook(private val spotName: String) : Thread() {
+    init {
+        this.name = "ShutdownHook"
+    }
+
+    override fun run() {
+        LOGGER.info("Stopping application")
+        AppContext.destroy()
+        MetricsLogger.logWarning("Spot.$spotName ${AppVersion.VERSION} : Stopped :")
+    }
 }
 
 

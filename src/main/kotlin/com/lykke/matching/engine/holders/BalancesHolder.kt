@@ -8,8 +8,9 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Component
 
-
+@Component
 class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                      private val assetsHolder: AssetsHolder,
                      private val applicationEventPublisher: ApplicationEventPublisher,

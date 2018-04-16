@@ -8,6 +8,7 @@ import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationContext
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
@@ -25,6 +26,9 @@ class BalanceUpdatesListener {
     @Autowired
     private lateinit var config: Config
 
+    @Value("\${azure.logs.blob.container}")
+    private lateinit var logBlobName: String
+
     @Value("\${azure.table.prefix}")
     private lateinit var tablePrefix: String
 
@@ -38,6 +42,6 @@ class BalanceUpdatesListener {
         rabbitMqService.startPublisher(config.me.rabbitMqConfigs.balanceUpdates, queue,
                 MessageDatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                                "${tablePrefix}MatchingEngineMarketOrders")))
+                                "${tablePrefix}MatchingEngineMarketOrders", logBlobName)))
     }
 }
