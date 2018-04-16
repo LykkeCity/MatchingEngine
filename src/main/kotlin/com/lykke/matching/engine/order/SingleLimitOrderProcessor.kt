@@ -20,7 +20,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                                 private val matchingEngine: MatchingEngine,
                                 private val LOGGER: Logger) {
 
-    fun processLimitOrder(messageWrapper: MessageWrapper?, order: NewLimitOrder, isCancelOrders: Boolean, now: Date, payBackReserved: Double?) {
+    fun processLimitOrder(order: NewLimitOrder, isCancelOrders: Boolean, now: Date, payBackReserved: Double? = null, messageWrapper: MessageWrapper? = null) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
