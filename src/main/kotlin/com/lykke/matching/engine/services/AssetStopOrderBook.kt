@@ -1,11 +1,12 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import org.apache.log4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetStopOrderBook(private val assetPairId: String) {
+class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBook {
 
     companion object {
 
@@ -94,28 +95,49 @@ class AssetStopOrderBook(private val assetPairId: String) {
         }
     }
 
-    fun removeOrder(order: NewLimitOrder) {
+    override fun removeOrder(order: NewLimitOrder): Boolean {
         if (order.assetPairId != assetPairId) {
             LOGGER.error("Unable to remove order ${order.externalId} (order asset pair: ${order.assetPairId}, order book asset pair: $assetPairId)")
-            return
+            return false
         }
+        var result = false
         if (order.isBuySide()) {
             bidOrderBook.remove(order.externalId)
             if (order.lowerLimitPrice != null) {
-                lowerBidOrderBook.remove(order)
+                result = lowerBidOrderBook.remove(order) || result
             }
             if (order.upperLimitPrice != null) {
-                upperBidOrderBook.remove(order)
+                result = upperBidOrderBook.remove(order) || result
             }
         } else {
             askOrderBook.remove(order.externalId)
             if (order.lowerLimitPrice != null) {
-                lowerAskOrderBook.remove(order)
+                result = lowerAskOrderBook.remove(order) || result
             }
             if (order.upperLimitPrice != null) {
-                upperAskOrderBook.remove(order)
+                result = upperAskOrderBook.remove(order) || result
             }
         }
+        return result
+    }
+
+    override fun copy(): AssetStopOrderBook {
+        val book = AssetStopOrderBook(assetPairId)
+        lowerAskOrderBook.forEach {
+            book.lowerAskOrderBook.put(it)
+        }
+        upperAskOrderBook.forEach {
+            book.upperAskOrderBook.put(it)
+        }
+        lowerBidOrderBook.forEach {
+            book.lowerBidOrderBook.put(it)
+        }
+        upperBidOrderBook.forEach {
+            book.upperBidOrderBook.put(it)
+        }
+        book.askOrderBook.putAll(askOrderBook)
+        book.bidOrderBook.putAll(bidOrderBook)
+        return book;
     }
 
     fun getOrder(price: Double, isBuySide: Boolean, isLowerSide: Boolean): NewLimitOrder? {

@@ -18,7 +18,9 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
                     @Version(3)
                     val upperLimitPrice: Double?,
                     @Version(3)
-                    val upperPrice: Double?)
+                    val upperPrice: Double?,
+                    @Transient
+                    val previousExternalId: String?)
     : NewOrder(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees), Serializable {
 
     fun getAbsRemainingVolume(): Double {
@@ -59,7 +61,7 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
 
     override fun copy(): NewLimitOrder {
         return NewLimitOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered,
-                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice)
+                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice, previousExternalId)
     }
 
     override fun applyToOrigin(origin: Copyable) {

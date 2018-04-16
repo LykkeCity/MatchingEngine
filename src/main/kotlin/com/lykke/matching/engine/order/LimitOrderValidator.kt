@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import java.math.BigDecimal
 
 class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
                           private val applicationSettingsCache: ApplicationSettingsCache) {
@@ -16,8 +17,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
     }
 
     fun validateAssets(assetPair: AssetPair) {
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
-                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
             throw OrderValidationException("disabled asset", OrderStatus.DisabledAsset)
         }
     }
@@ -48,7 +48,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
         }
     }
 
-    fun checkBalance(availableBalance: Double, limitVolume: Double) {
+    fun checkBalance(availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (availableBalance < limitVolume) {
             throw OrderValidationException("not enough funds to reserve", OrderStatus.NotEnoughFunds)
         }

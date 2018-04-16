@@ -90,7 +90,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     override fun initServices() {
         super.initServices()
-        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
+        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
     @Test
@@ -228,8 +228,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         // recalculate reserved volumes to reset locked reservedAmount
         val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
-                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestStopOrderBookDatabaseAccessor(), TestReservedVolumesDatabaseAccessor(), applicationContext)
-
+                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor,TestStopOrderBookDatabaseAccessor(), TestReservedVolumesDatabaseAccessor(), applicationSettingsCache)
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

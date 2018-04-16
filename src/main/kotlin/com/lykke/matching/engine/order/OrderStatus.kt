@@ -29,4 +29,8 @@ enum class OrderStatus {
     ,TooSmallVolume
     //Invalid price
     ,InvalidPrice
+    // Previous order is not found (by oldUid)
+    ,NotFoundPrevious
+    // Replaced
+    ,Replaced
 }
