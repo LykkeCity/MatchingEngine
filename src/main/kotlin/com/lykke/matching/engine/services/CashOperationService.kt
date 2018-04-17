@@ -24,10 +24,10 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+        val message = getMessage(messageWrapper)
         LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
-        if(!performValidation(message, messageWrapper)) {
+        if(!performValidation(messageWrapper)) {
             return
         }
 
@@ -46,21 +46,25 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)} processed")
     }
 
-    private fun performValidation(message: ProtocolMessages.CashOperation, messageWrapper: MessageWrapper): Boolean {
-        val validationError = getFirstValidationError(message)
+    private fun performValidation(messageWrapper: MessageWrapper): Boolean {
+        val validations = arrayOf({isAssetEnabled(messageWrapper)}, {isBalanceValid(messageWrapper)})
 
-        when (validationError) {
-            ValidationErrors.DEFAULT ->  { messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(message.uid)
-                    .setBussinesId(message.bussinesId)
-                    .build())
-                return false
-            }
-            ValidationErrors.PRICE_ACCURACY -> {
-                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                        .setUid(message.uid)
-                        .setBussinesId(message.bussinesId)
-                        .build())
+        val failedValidation = validations.find { function: () -> Boolean -> !function() }
+
+        return failedValidation == null
+    }
+
+    private fun isBalanceValid(messageWrapper: MessageWrapper): Boolean {
+        val message = getMessage(messageWrapper)
+        if (message.amount < 0) {
+            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
+            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
+            if (balance - reservedBalance < Math.abs(message.amount)) {
+                LOGGER.info("""Cash out operation (${message.uid})
+                        for client ${message.clientId} asset ${message.assetId},
+                        volume: ${NumberUtils.roundForPrint(message.amount)}:
+                        low balance $balance, reserved balance $reservedBalance""")
+                writeErrorResponse(messageWrapper)
                 return false
             }
         }
@@ -68,28 +72,17 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         return true
     }
 
-    private fun getFirstValidationError(message: ProtocolMessages.CashOperation): ValidationErrors? {
-
+    private fun isAssetEnabled(messageWrapper: MessageWrapper): Boolean {
+        val message = getMessage(messageWrapper)
         if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             LOGGER.info("""Cash out operation (${message.uid})
-                |for client ${message.clientId} asset ${message.assetId},
-                |volume: ${NumberUtils.roundForPrint(message.amount)}: disabled asset""".trimMargin())
-            return ValidationErrors.DEFAULT
+                    |for client ${message.clientId} asset ${message.assetId},
+                    |volume: ${NumberUtils.roundForPrint(message.amount)}: disabled asset""".trimMargin())
+            writeErrorResponse(messageWrapper)
+            return false
         }
 
-        if (message.amount < 0) {
-            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (balance - reservedBalance < Math.abs(message.amount)) {
-                LOGGER.info("""Cash out operation (${message.uid})
-                    for client ${message.clientId} asset ${message.assetId},
-                    volume: ${NumberUtils.roundForPrint(message.amount)}:
-                    low balance $balance, reserved balance $reservedBalance""")
-                return ValidationErrors.DEFAULT
-            }
-        }
-
-        return null
+        return true
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
@@ -104,11 +97,17 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+        val message = getMessage(messageWrapper)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
     }
 
-    private enum class ValidationErrors {
-        DEFAULT, PRICE_ACCURACY
+    fun writeErrorResponse(messageWrapper: MessageWrapper) {
+        val message = getMessage(messageWrapper)
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                .setUid(message.uid)
+                .setBussinesId(message.bussinesId).build())
     }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
 }
