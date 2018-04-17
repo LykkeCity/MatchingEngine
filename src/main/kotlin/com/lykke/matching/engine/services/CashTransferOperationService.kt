@@ -44,33 +44,24 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+        val message = getMessage(messageWrapper)
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
         val feeInstructions = NewFeeInstruction.create(message.feesList)
         LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}, feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
         val operationId = UUID.randomUUID().toString()
-        if (!checkFee(feeInstruction, feeInstructions)) {
-            writeInvalidFeeResponse(messageWrapper, message, operationId)
-            return
-        }
+
         val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
 
-        if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
-            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: disabled asset")
+        if (!performValidation()) {
             return
         }
 
-        val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
-        val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
-        val overdraftLimit = if (operation.overdraftLimit != null) -operation.overdraftLimit else 0.0
-        if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
-            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
-            return
-        }
+        isFeeValid(feeInstruction, feeInstructions, messageWrapper, message, operationId)
+
+
+        isAssetEnabled(message, messageWrapper, operation)
+
+       isBalanceValid(message, operation, operation.overdraftLimit!!, messageWrapper)
 
         val fees = try {
             processTransferOperation(operation)
@@ -86,6 +77,37 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)} processed")
+    }
+
+    private fun isBalanceValid(message: ProtocolMessages.CashTransferOperation, operation: TransferOperation, overdraftLimit: Double, messageWrapper: MessageWrapper): Boolean {
+        val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
+        val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
+        val overdraftLimit = if (operation.overdraftLimit != null) -overdraftLimit else 0.0
+        if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
+            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
+            return true
+        }
+        return false
+    }
+
+    private fun isAssetEnabled(message: ProtocolMessages.CashTransferOperation, messageWrapper: MessageWrapper, operation: TransferOperation) {
+        if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
+            LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: disabled asset")
+        }
+    }
+
+    private fun isFeeValid(feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>, messageWrapper: MessageWrapper, message: ProtocolMessages.CashTransferOperation, operationId: String) {
+        if (!checkFee(feeInstruction, feeInstructions)) {
+            writeInvalidFeeResponse(messageWrapper, message, operationId)
+        }
+    }
+
+    private fun performValidation(messageWrapper: MessageWrapper): Boolean {
+
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashTransferOperation {
@@ -116,9 +138,12 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
     }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashTransferOperation, operationId: String, errorMessage: String = "invalid fee for client") {
         writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, errorMessage)
