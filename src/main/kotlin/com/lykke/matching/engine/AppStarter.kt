@@ -37,7 +37,6 @@ internal class ShutdownHook(private val spotName: String) : Thread() {
 
     override fun run() {
         LOGGER.info("Stopping application")
-        AppContext.destroy()
         MetricsLogger.logWarning("Spot.$spotName ${AppVersion.VERSION} : Stopped :")
     }
 }

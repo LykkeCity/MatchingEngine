@@ -10,7 +10,7 @@ import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 import java.util.HashMap
 
-class AzureBackOfficeDatabaseAccessor constructor (connectionString: String) : BackOfficeDatabaseAccessor {
+class AzureBackOfficeDatabaseAccessor (connectionString: String) : BackOfficeDatabaseAccessor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureBackOfficeDatabaseAccessor::class.java.name)

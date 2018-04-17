@@ -11,7 +11,7 @@ import com.microsoft.azure.storage.table.TableQuery
 import java.util.HashMap
 
 
-class AzureWalletDatabaseAccessor constructor(val connectionString: String,
+class AzureWalletDatabaseAccessor (val connectionString: String,
                                                          tableName: String) : WalletDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
