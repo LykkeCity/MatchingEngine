@@ -202,7 +202,6 @@ class MatchingEngine(private val LOGGER: Logger,
                 val roundedAbsoluteSpread = if (absoluteSpread != null) RoundingUtils.parseDouble(absoluteSpread, assetPair.accuracy).toDouble() else null
                 val roundedRelativeSpread = if (relativeSpread != null) RoundingUtils.parseDouble(relativeSpread, RELATIVE_SPREAD_ACCURACY).toDouble() else null
 
-                tradeIndex++
 
                 marketOrderTrades.add(TradeInfo(traderId,
                         order.clientId,
@@ -240,6 +239,7 @@ class MatchingEngine(private val LOGGER: Logger,
                                 makerFees,
                                 roundedAbsoluteSpread,
                                 roundedRelativeSpread))))
+                tradeIndex++
 
                 totalVolume += BigDecimal.valueOf(volume)
                 totalLimitPrice += BigDecimal.valueOf(volume) * BigDecimal.valueOf(limitOrder.price)
