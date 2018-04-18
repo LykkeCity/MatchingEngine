@@ -155,6 +155,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
+        matchingEngine.initTransaction()
         orders.forEach { order ->
             if (order.price <= 0) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")

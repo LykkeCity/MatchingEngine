@@ -171,7 +171,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         if (orderBook.leadToNegativeSpread(order)) {
             var isMatched = false
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide())/*, autoSuccessApply = false*/)
+            val matchingResult = matchingEngine.initTransaction().match(order, orderBook.getOrderBook(!order.isBuySide())/*, autoSuccessApply = false*/)
             val orderCopy = matchingResult.order as NewLimitOrder
             when (OrderStatus.valueOf(orderCopy.status)) {
                 OrderStatus.NoLiquidity -> {
