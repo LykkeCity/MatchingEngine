@@ -149,6 +149,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
+        matchingEngine.startMatchingSession()
         orders.forEach { order ->
             if (order.price <= 0) {
                 order.status = OrderStatus.InvalidPrice.name
@@ -160,7 +161,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 order.status = OrderStatus.LeadToNegativeSpread.name
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.matchInCurrentSession(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.status = OrderStatus.NoLiquidity.name
@@ -224,7 +225,23 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             }
 
                             limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
-                                LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees, it.absoluteSpread, it.relativeSpread)
+                                LimitTradeInfo(it.tradeId,
+                                        it.marketClientId,
+                                        it.marketAsset,
+                                        it.marketVolume,
+                                        it.price,
+                                        matchingResult.timestamp,
+                                        it.limitOrderId,
+                                        it.limitOrderExternalId,
+                                        it.limitAsset,
+                                        it.limitClientId,
+                                        it.limitVolume,
+                                        it.index,
+                                        it.feeInstruction,
+                                        it.feeTransfer,
+                                        it.fees,
+                                        it.absoluteSpread,
+                                        it.relativeSpread)
                             })
 
                             matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
@@ -263,6 +280,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
 
         }
+
+        matchingEngine.endMatchingSession()
 
         val startPersistTime = System.nanoTime()
         walletOperationsProcessor.apply(messageUid, MessageType.MULTI_LIMIT_ORDER.name)
