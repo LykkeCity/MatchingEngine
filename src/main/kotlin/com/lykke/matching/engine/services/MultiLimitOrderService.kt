@@ -155,6 +155,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
+        matchingEngine.startMatchingSession()
         orders.forEach { order ->
             if (order.price <= 0) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
@@ -163,7 +164,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             } else if (orderBook.leadToNegativeSpreadForClient(order)) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.matchInCurrentSession(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
@@ -277,6 +278,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
         }
+
+        matchingEngine.endMatchingSession()
 
         val startPersistTime = System.nanoTime()
         walletOperationsProcessor.apply(messageUid, MessageType.MULTI_LIMIT_ORDER.name)

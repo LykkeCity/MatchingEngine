@@ -40,11 +40,22 @@ class MatchingEngine(private val LOGGER: Logger,
     companion object {
         private const val RELATIVE_SPREAD_ACCURACY = 4
     }
-
+    private var tradesInfoIndex = 0L
     private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
+    fun matchInCurrentSession(originOrder: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: Double? = null): MatchingResult {
+        return performMatching(originOrder, orderBook, balance)
+    }
+
     fun match(originOrder: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: Double? = null): MatchingResult {
-        var tradeIndex: Long = 0
+        startMatchingSession()
+        val matchingResult = performMatching(originOrder, orderBook, balance)
+        endMatchingSession()
+
+        return matchingResult
+    }
+
+    private fun performMatching(originOrder: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: Double? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
@@ -214,7 +225,7 @@ class MatchingEngine(private val LOGGER: Logger,
                         limitOrder.id,
                         limitOrder.externalId,
                         now,
-                        tradeIndex,
+                        tradesInfoIndex,
                         order.fee,
                         singleFeeTransfer(order.fee, takerFees),
                         takerFees,
@@ -233,13 +244,13 @@ class MatchingEngine(private val LOGGER: Logger,
                                 asset.assetId,
                                 order.clientId,
                                 Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy),
-                                tradeIndex,
+                                tradesInfoIndex,
                                 limitOrder.fee,
                                 singleFeeTransfer(limitOrder.fee, makerFees),
                                 makerFees,
                                 roundedAbsoluteSpread,
                                 roundedRelativeSpread))))
-                tradeIndex++
+                tradesInfoIndex++
 
                 totalVolume += BigDecimal.valueOf(volume)
                 totalLimitPrice += BigDecimal.valueOf(volume) * BigDecimal.valueOf(limitOrder.price)
@@ -294,6 +305,14 @@ class MatchingEngine(private val LOGGER: Logger,
                 workingOrderBook,
                 marketBalance,
                 false)
+    }
+
+    fun startMatchingSession() {
+        tradesInfoIndex = 0
+    }
+
+    fun endMatchingSession() {
+        tradesInfoIndex = 0
     }
 
     private fun checkOrderBook(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>): Boolean =
