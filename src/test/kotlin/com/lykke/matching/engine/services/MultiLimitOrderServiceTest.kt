@@ -15,6 +15,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -23,6 +24,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import org.junit.Before
 import org.junit.Test
 import java.util.Date
+import java.util.function.Consumer
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -74,14 +76,29 @@ class MultiLimitOrderServiceTest: AbstractTest() {
                 ordersFee = listOf(),
                 ordersFees = listOf()
         ))
+
+
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         val limitOrders = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assetTradeIndex(limitOrders.orders)
         assertEquals(5, limitOrders.orders.size)
         assertEquals(2.0, limitOrders.orders[0].order.price)
         assertEquals(1.5, limitOrders.orders[1].order.price)
         assertEquals(1.2, limitOrders.orders[2].order.price)
         assertEquals(2.1, limitOrders.orders[3].order.price)
         assertEquals(2.4, limitOrders.orders[4].order.price)
+    }
+
+    fun assetTradeIndex(limitOrders: List<LimitOrderWithTrades>) {
+        var prevIndex = 0L
+        limitOrders.forEach(Consumer {
+            it.trades.forEach(Consumer {
+                if (prevIndex != 0L) {
+                    assertEquals(prevIndex + 1, it.index)
+                }
+                prevIndex = it.index
+            })
+        })
     }
 
     @Test
