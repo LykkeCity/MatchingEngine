@@ -248,7 +248,23 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     lkkTrades.addAll(matchingResult.lkkTrades)
 
                     clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order, matchingResult.marketOrderTrades.map { it ->
-                        LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, it.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees, it.absoluteSpread, it.relativeSpread)
+                        LimitTradeInfo(it.tradeId,
+                                it.marketClientId,
+                                it.marketAsset,
+                                it.marketVolume,
+                                it.price,
+                                it.timestamp,
+                                it.limitOrderId,
+                                it.limitOrderExternalId,
+                                it.limitAsset,
+                                it.limitClientId,
+                                it.limitVolume,
+                                it.index,
+                                it.feeInstruction,
+                                it.feeTransfer,
+                                it.fees,
+                                it.absoluteSpread,
+                                it.relativeSpread)
                     }.toMutableList()))
 
                     matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
