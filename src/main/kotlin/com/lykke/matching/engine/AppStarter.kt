@@ -19,7 +19,11 @@ fun main(args: Array<String>) {
     val spotName = context.getBean(Config::class.java).me.name
     Runtime.getRuntime().addShutdownHook(ShutdownHook(spotName))
     addCommandLinePropertySource(args, context)
-    context.getBean(Application::class.java).run()
+    try {
+        context.getBean(Application::class.java).run()
+    } catch (e: Exception) {
+        System.exit(1)
+    }
 }
 
 private fun addCommandLinePropertySource(args: Array<String>, context: ConfigurableApplicationContext) {
@@ -37,7 +41,6 @@ internal class ShutdownHook(private val spotName: String) : Thread() {
 
     override fun run() {
         LOGGER.info("Stopping application")
-        AppContext.destroy()
         MetricsLogger.logWarning("Spot.$spotName ${AppVersion.VERSION} : Stopped :")
     }
 }

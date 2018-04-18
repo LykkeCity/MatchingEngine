@@ -14,7 +14,7 @@ import kotlin.collections.HashMap
 
 @Component
 class MarketStateCache @Autowired constructor (private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor,
-                                                   @Value("\${application.settings.update.interval}") private val frequency: Long) {
+                                                   @Value("\${application.tick.frequency}") private val frequency: Long) {
 
     companion object {
         private val performanceLogger = PerformanceLogger(Logger.getLogger("marketStateCache"), 10, "buildTicks: ")

@@ -39,11 +39,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
                 val assetPair = try {
                     assetsPairsHolder.getAssetPair(order.assetPairId)
                 } catch (e: Exception) {
-                    try {
-                        dictionariesDatabaseAccessor.loadAssetPair(order.assetPairId, true)
-                    } catch (e: Exception) {
-                        throw e
-                    }
+                    dictionariesDatabaseAccessor.loadAssetPair(order.assetPairId, true)
                 }
                 if (assetPair == null) {
                     // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)

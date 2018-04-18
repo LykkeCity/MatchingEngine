@@ -26,7 +26,7 @@ class Application {
             azureStatusProcessor.run()
         } catch (e: CheckAppInstanceRunningException) {
             LOGGER.error(e.message)
-            return
+            System.exit(1)
         }
 
         correctReservedVolumesIfNeed(config, applicationContext)

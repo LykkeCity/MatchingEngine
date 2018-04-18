@@ -28,9 +28,9 @@ open class AzureDatabaseAccessorConfig {
     }
 
     @Bean
-    open  fun azureHistoryTicksDatabaseAccessor(@Value("\${application.settings.update.interval}") interval: Long)
+    open  fun azureHistoryTicksDatabaseAccessor(@Value("\${application.tick.frequency}") frequency: Long)
             : HistoryTicksDatabaseAccessor {
-       return AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString, interval)
+       return AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString, frequency)
     }
 
     @Bean

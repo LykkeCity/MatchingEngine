@@ -112,7 +112,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
-    private val historyTicksDatabaseAccessor: HistoryTicksDatabaseAccessor
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
     private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
 
@@ -163,7 +162,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
-        this.historyTicksDatabaseAccessor = applicationContext.getBean(AzureHistoryTicksDatabaseAccessor::class.java)
         this.orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
@@ -247,7 +245,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
                 genericLimitOrderService,
-                applicationContext.environment.getProperty("application.settings.update.interval").toLong())
+                applicationContext.environment.getProperty("application.tick.frequency").toLong())
 
         if (!isLocalProfile) {
             marketStateCache.refresh()
