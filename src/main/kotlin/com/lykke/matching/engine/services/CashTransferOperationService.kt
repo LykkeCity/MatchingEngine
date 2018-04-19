@@ -90,9 +90,9 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             LOGGER.info("""Cash transfer operation (${message.id}) from client ${message.fromClientId}
                 |to client ${message.toClientId}, asset ${message.assetId},
                 | volume: ${NumberUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}""".trimMargin())
-            return true
+            return false
         }
-        return false
+        return true
     }
 
     private fun isAssetEnabled(messageWrapper: MessageWrapper, operationId: String): Boolean {

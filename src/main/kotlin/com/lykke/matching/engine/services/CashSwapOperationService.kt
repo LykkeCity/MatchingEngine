@@ -16,6 +16,7 @@ import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.NumberUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -32,29 +33,15 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
-        LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
-                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)}")
+        val message = getMessage(messageWrapper)
+        LOGGER.debug("""Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)}
+            |to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)}""".trimMargin())
 
-        val operation = SwapOperation(UUID.randomUUID().toString(), message.id, Date(message.timestamp)
-                , message.clientId1, message.assetId1, message.volume1
-                , message.clientId2, message.assetId2, message.volume2)
+        val operation = SwapOperation(UUID.randomUUID().toString(), message.id, Date(message.timestamp),
+                message.clientId1, message.assetId1, message.volume1,
+                message.clientId2, message.assetId2, message.volume2)
 
-        val balance1 = balancesHolder.getBalance(message.clientId1, message.assetId1)
-        val reservedBalance1 = balancesHolder.getReservedBalance(message.clientId1, message.assetId1)
-        if (balance1 - reservedBalance1 < operation.volume1) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId1},asset:${message.assetId1}, volume:${message.volume1}").build())
-            LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId1}, ${operation.volume1} ${operation.asset1}")
-            return
-        }
-
-        val balance2 = balancesHolder.getBalance(message.clientId2, message.assetId2)
-        val reservedBalance2 = balancesHolder.getReservedBalance(message.clientId2, message.assetId2)
-        if (balance2 - reservedBalance2 < operation.volume1) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId2},asset:${message.assetId2}, volume:${message.volume2}").build())
-            LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId2}, ${operation.volume2} ${operation.asset2}")
+        if (!performValidation(messageWrapper, operation)) {
             return
         }
 
@@ -62,8 +49,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
             processSwapOperation(operation)
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message).build())
+            writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
             return
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
@@ -72,12 +58,58 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
-        LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
-                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)} processed")
+        LOGGER.info("""Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1},
+            |amount: ${NumberUtils.roundForPrint(message.volume1)} to client ${message.clientId2}, asset ${message.assetId2},
+            |amount: ${NumberUtils.roundForPrint(message.volume2)} processed""".trimMargin())
+    }
+
+    private fun isBalanceValid(client: String, assetId: String,
+                               volume: Double, operation: SwapOperation,
+                               messageWrapper: MessageWrapper): Boolean {
+        val balance = balancesHolder.getBalance(client, assetId)
+        val reservedBalance = balancesHolder.getReservedBalance(client, assetId)
+        if (balance - reservedBalance < operation.volume1) {
+            writeErrorResponse(messageWrapper, operation, LOW_BALANCE,"ClientId:$client,asset:$assetId, volume:$volume")
+            LOGGER.info("Cash swap operation failed due to low balance: $client, $volume $assetId")
+            return false
+        }
+
+        return true
+    }
+
+    private fun isAccuracyValid(messageWrapper: MessageWrapper, assetId: String, volume: Double, operation: SwapOperation): Boolean {
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)
+
+        if (!volumeValid) {
+            writeErrorResponse(messageWrapper, operation, MessageStatus.INVALID_VOLUME_ACCURACY, StringUtils.EMPTY)
+        }
+
+        return volumeValid
+    }
+
+    private fun performValidation(messageWrapper: MessageWrapper, operation: SwapOperation): Boolean {
+        val message = getMessage(messageWrapper)
+        val validations = arrayOf({ isBalanceValid(message.clientId1, message.assetId1, operation.volume1, operation, messageWrapper) },
+                { isBalanceValid(message.clientId2, message.assetId2, operation.volume2, operation, messageWrapper) },
+                { isAccuracyValid(messageWrapper, message.assetId1, operation.volume1, operation) },
+                { isAccuracyValid(messageWrapper, message.assetId2, operation.volume2, operation) })
+
+        val failedValidation = validations.find { function: () -> Boolean -> !function() }
+
+        return failedValidation == null
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashSwapOperation {
         return ProtocolMessages.CashSwapOperation.parseFrom(array)
+    }
+
+    fun writeErrorResponse(messageWrapper: MessageWrapper, operation: SwapOperation, status: MessageStatus, errorMessage: String) {
+        val message = getMessage(messageWrapper)
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
+                .newBuilder()
+                .setId(message.id)
+                .setMatchingEngineId(operation.id)
+                .setStatus(status.type).setStatusReason(errorMessage).build())
     }
 
     private fun processSwapOperation(operation: SwapOperation) {
@@ -104,7 +136,12 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
+        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+    }
+
+    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashSwapOperation {
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
+        return message
     }
 }
