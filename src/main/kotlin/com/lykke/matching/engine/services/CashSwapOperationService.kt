@@ -81,7 +81,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)
 
         if (!volumeValid) {
-            writeErrorResponse(messageWrapper, operation, MessageStatus.INVALID_VOLUME_ACCURACY, StringUtils.EMPTY)
+            writeErrorResponse(messageWrapper, operation, MessageStatus.INVALID_VOLUME_ACCURACY)
         }
 
         return volumeValid
@@ -103,7 +103,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashSwapOperation.parseFrom(array)
     }
 
-    fun writeErrorResponse(messageWrapper: MessageWrapper, operation: SwapOperation, status: MessageStatus, errorMessage: String) {
+    private fun writeErrorResponse(messageWrapper: MessageWrapper, operation: SwapOperation, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
         val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()

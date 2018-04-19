@@ -98,7 +98,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     private fun isAssetEnabled(messageWrapper: MessageWrapper, operationId: String): Boolean {
         val message = getMessage(messageWrapper)
         if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            writeErrorResponse(messageWrapper, operationId,  DISABLED_ASSET, StringUtils.EMPTY)
+            writeErrorResponse(messageWrapper, operationId,  DISABLED_ASSET)
 
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} " +
                     "to client ${message.toClientId}, asset ${message.assetId}, " +
@@ -126,7 +126,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.volume, assetsHolder.getAsset(message.assetId).accuracy)
 
         if (!volumeValid) {
-            writeErrorResponse(messageWrapper, transferOperationId, MessageStatus.INVALID_VOLUME_ACCURACY, StringUtils.EMPTY)
+            writeErrorResponse(messageWrapper, transferOperationId, MessageStatus.INVALID_VOLUME_ACCURACY)
         }
 
         return volumeValid
@@ -190,7 +190,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    operationId: String,
                                    status: MessageStatus,
-                                   errorMessage: String) {
+                                   errorMessage: String =  StringUtils.EMPTY) {
         val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
