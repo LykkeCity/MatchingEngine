@@ -120,7 +120,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         return true
     }
 
-    private fun isAccuracyValid(messageWrapper: MessageWrapper, transferOperationId: String): Boolean {
+    private fun isVolumeAccuracyValid(messageWrapper: MessageWrapper, transferOperationId: String): Boolean {
         val message = getMessage(messageWrapper)
 
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.volume, assetsHolder.getAsset(message.assetId).accuracy)
@@ -139,7 +139,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val validations = arrayOf({isAssetEnabled(messageWrapper, operation.id)},
                 {isFeeValid(messageWrapper, feeInstruction, feeInstructions, operation.id) },
                 {isBalanceValid(messageWrapper, operation)},
-                {isAccuracyValid(messageWrapper, operation.id)}
+                { isVolumeAccuracyValid(messageWrapper, operation.id)}
         )
 
         val failedValidation = validations.find { function: () -> Boolean -> !function() }

@@ -1,11 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
@@ -34,7 +30,6 @@ import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
-
 class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderService,
                               private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                               private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
@@ -79,7 +74,10 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null)
 
-            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(oldMessage.volume)}, price: ${NumberUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+            LOGGER.info("""Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId},
+                |assetPair: ${oldMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(oldMessage.volume)},
+                |price: ${NumberUtils.roundForPrint(oldMessage.price)},
+                |cancel: ${oldMessage.cancelAllPreviousLimitOrders}""".trimMargin())
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
             feeInstruction = null
@@ -98,13 +96,13 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
 
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val limitAssetAccuracy = assetsHolder.getAsset(limitAsset).accuracy
-        val limitVolume = if (order.isBuySide()) NumberUtils.round(order.getAbsVolume() * order.price, limitAssetAccuracy, true) else order.getAbsVolume()
+        val assetPair = getAssetPair(order)
+        val limitAsset = getLimitAsset(order)
+        val limitAssetAccuracy = getLimitAssetAccuracy(limitAsset)
+        val limitVolume = getLimitVolume(order, limitAssetAccuracy)
 
-        val balance = balancesHolder.getBalance(order.clientId, limitAsset)
-        val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
+        val balance = getBalance(order)
+        val reservedBalance = getReservedBalance(order)
 
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
 
@@ -118,54 +116,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        if (!checkFee(feeInstruction, feeInstructions)) {
-            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${NumberUtils.roundForPrint(order.price)} has invalid fee")
-            order.status = OrderStatus.InvalidFee.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_FEE, now, isCancelOrders)
 
-            if (isCancelOrders) {
-                val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(), now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
-                orderBookQueue.put(rabbitOrderBook)
-                rabbitOrderBookQueue.put(rabbitOrderBook)
-            }
-            return
-        }
+        val orderInfo = getOrderInfo(order)
 
-        val orderInfo = "Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${NumberUtils.roundForPrint(order.price)}"
-
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
-                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId))  {
-            LOGGER.info("$orderInfo: disabled asset")
-            order.status = OrderStatus.DisabledAsset.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.DISABLED_ASSET, now, isCancelOrders)
-            return
-        }
-
-        if (order.price <= 0.0) {
-            LOGGER.info("$orderInfo price is invalid")
-            order.status = OrderStatus.InvalidPrice.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_PRICE, now, isCancelOrders)
-            return
-        }
-
-        if (!order.checkVolume(assetsPairsHolder))  {
-            LOGGER.info("$orderInfo volume is too small")
-            order.status = OrderStatus.TooSmallVolume.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.TOO_SMALL_VOLUME, now, isCancelOrders)
-            return
-        }
-
-        if (NumberUtils.parseDouble(balance - (reservedBalance - cancelVolume), limitAssetAccuracy).toDouble() < limitVolume) {
-            LOGGER.info("$orderInfo not enough funds to reserve")
-            order.status = OrderStatus.NotEnoughFunds.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, now, isCancelOrders)
-            return
-        }
-
-        if (orderBook.leadToNegativeSpreadForClient(order)) {
-            LOGGER.info("$orderInfo lead to negative spread")
-            order.status = OrderStatus.LeadToNegativeSpread.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.LEAD_TO_NEGATIVE_SPREAD, now, isCancelOrders)
+        if (!performValidation(order, cancelVolume, clientLimitOrdersReport,
+                orderBook, messageWrapper, now, isCancelOrders, feeInstruction, feeInstructions)) {
             return
         }
 
@@ -319,11 +274,232 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
     }
 
-    private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date, isCancelOrders: Boolean) {
+    private fun isPriceAccuracyValid(order: NewLimitOrder, cancelVolume: Double,
+                                     clientLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper,
+                                     now: Date, isCancelOrders: Boolean): Boolean{
+        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.price, getAssetPair(order).accuracy)
+
+        if (!priceAccuracyValid) {
+            LOGGER.info("${getOrderInfo(order)} invalid price accuracy")
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.INVALID_PRICE_ACCURACY, now, isCancelOrders)
+        }
+
+        return priceAccuracyValid
+    }
+
+    private fun isVolumeAccuracyValid(order: NewLimitOrder,
+                                      cancelVolume: Double, clientLimitOrdersReport: LimitOrdersReport,
+                                      orderBook: AssetOrderBook, messageWrapper: MessageWrapper,
+                                      now: Date, isCancelOrders: Boolean): Boolean {
+        val baseAssetAccuracy = getBaseAssetAccuracy(order)
+        val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetAccuracy)
+
+        if (!volumeAccuracyValid) {
+            LOGGER.info("${getOrderInfo(order)} invalid volume accuracy")
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.INVALID_VOLUME_ACCURACY, now, isCancelOrders)
+        }
+
+        return volumeAccuracyValid
+    }
+
+    private fun getLimitVolume(order: NewLimitOrder, limitAssetAccuracy: Int) =
+            if (order.isBuySide()) NumberUtils.round(order.getAbsVolume() * order.price, limitAssetAccuracy, true) else order.getAbsVolume()
+
+    private fun getOrderInfo(order: NewLimitOrder): String {
+        return """Limit order id: ${order.externalId}, client ${order.clientId},
+                |assetPair: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)},
+                |price: ${NumberUtils.roundForPrint(order.price)}""".trimMargin()
+    }
+
+    private fun performValidation(order: NewLimitOrder, cancelVolume: Double,
+                                  clientLimitOrdersReport: LimitOrdersReport,
+                                  orderBook: AssetOrderBook, messageWrapper: MessageWrapper,
+                                  now: Date, isCancelOrders: Boolean, feeInstruction: LimitOrderFeeInstruction?,
+                                  feeInstructions: List<NewLimitOrderFeeInstruction>?): Boolean {
+
+        val validations = arrayOf(
+                {isAssetEnabled(order, cancelVolume,
+                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+
+                {isPriceAccuracyValid(order, cancelVolume,
+                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+
+                {isPriceValid(order, cancelVolume,
+                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+
+                {isVolumeValid(order, cancelVolume,
+                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+
+                {isVolumeAccuracyValid(order, cancelVolume,
+                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+
+                {isEnoughFunds( cancelVolume, order,
+                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+
+                {isSpreadValid(orderBook, order, cancelVolume,
+                clientLimitOrdersReport, messageWrapper, now, isCancelOrders)},
+
+                {isFeeValid(feeInstruction, feeInstructions,
+                    order, cancelVolume, clientLimitOrdersReport,
+                    orderBook, messageWrapper, now, isCancelOrders)
+        })
+
+        val failedValidation = validations.find { function: () -> Boolean -> !function() }
+
+        return failedValidation == null
+    }
+
+    private fun isSpreadValid(orderBook: AssetOrderBook, order: NewLimitOrder, cancelVolume: Double,
+                              clientLimitOrdersReport: LimitOrdersReport,
+                              messageWrapper: MessageWrapper, now: Date, isCancelOrders: Boolean): Boolean {
+        if (orderBook.leadToNegativeSpreadForClient(order)) {
+            LOGGER.info("${getOrderInfo(order)} lead to negative spread")
+            order.status = OrderStatus.LeadToNegativeSpread.name
+
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.LEAD_TO_NEGATIVE_SPREAD, now, isCancelOrders)
+            return false
+        }
+
+        return true
+    }
+
+    private fun isEnoughFunds(cancelVolume: Double, order: NewLimitOrder,
+                              clientLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook,
+                              messageWrapper: MessageWrapper, now: Date, isCancelOrders: Boolean): Boolean {
+        val reservedBalance = getReservedBalance(order)
+        val limitAssetAccuracy = getLimitAssetAccuracy(getLimitAsset(order))
+        val balance = getBalance(order)
+        val limitVolume = getLimitVolume(order, limitAssetAccuracy)
+
+        if (NumberUtils.parseDouble(balance - (reservedBalance - cancelVolume), limitAssetAccuracy).toDouble() < limitVolume) {
+            LOGGER.info("${getOrderInfo(order)} not enough funds to reserve")
+            order.status = OrderStatus.NotEnoughFunds.name
+
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, now, isCancelOrders)
+
+            return false
+        }
+
+        return true
+    }
+
+    private fun isVolumeValid(order: NewLimitOrder,
+                              cancelVolume: Double, clientLimitOrdersReport: LimitOrdersReport,
+                              orderBook: AssetOrderBook, messageWrapper: MessageWrapper,
+                              now: Date, isCancelOrders: Boolean): Boolean {
+        if (!order.checkVolume(assetsPairsHolder)) {
+            LOGGER.info("${getOrderInfo(order)} volume is too small")
+            order.status = OrderStatus.TooSmallVolume.name
+
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.TOO_SMALL_VOLUME, now, isCancelOrders)
+            return false
+        }
+
+        return true
+    }
+
+    private fun isAssetEnabled(order: NewLimitOrder, cancelVolume: Double,
+                               clientLimitOrdersReport: LimitOrdersReport,
+                               orderBook: AssetOrderBook, messageWrapper: MessageWrapper,
+                               now: Date, isCancelOrders: Boolean): Boolean {
+        val assetPair = getAssetPair(order)
+        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
+                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+            LOGGER.info("${getOrderInfo(order)}: disabled asset")
+            order.status = OrderStatus.DisabledAsset.name
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.DISABLED_ASSET, now, isCancelOrders)
+
+            return false
+        }
+
+        return true
+    }
+
+    private fun isPriceValid(order: NewLimitOrder,
+                             cancelVolume: Double, clientLimitOrdersReport: LimitOrdersReport,
+                             orderBook: AssetOrderBook, messageWrapper: MessageWrapper,
+                             now: Date, isCancelOrders: Boolean): Boolean {
+        if (order.price <= 0.0) {
+            LOGGER.info("${getOrderInfo(order)} price is invalid")
+            order.status = OrderStatus.InvalidPrice.name
+
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport,
+                    orderBook, messageWrapper, MessageStatus.INVALID_PRICE, now, isCancelOrders)
+            return false
+        }
+
+        return true
+    }
+
+    private fun isFeeValid(feeInstruction: LimitOrderFeeInstruction?, feeInstructions: List<NewLimitOrderFeeInstruction>?,
+                           order: NewLimitOrder, cancelVolume: Double,
+                           clientLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook,
+                           messageWrapper: MessageWrapper, now: Date, isCancelOrders: Boolean): Boolean {
+        if (!checkFee(feeInstruction, feeInstructions)) {
+            LOGGER.info("""Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId},
+                    |volume: ${NumberUtils.roundForPrint(order.volume)},
+                    |price: ${NumberUtils.roundForPrint(order.price)} has invalid fee""".trimMargin())
+            order.status = OrderStatus.InvalidFee.name
+            rejectOrder(cancelVolume, order, clientLimitOrdersReport, orderBook,
+                    messageWrapper, MessageStatus.INVALID_FEE,
+                    now, isCancelOrders)
+
+            if (isCancelOrders) {
+                val rabbitOrderBook = OrderBook(order.assetPairId, order.isBuySide(),
+                        now, limitOrderService.getOrderBook(order.assetPairId).copy().getOrderBook(order.isBuySide()))
+                orderBookQueue.put(rabbitOrderBook)
+                rabbitOrderBookQueue.put(rabbitOrderBook)
+            }
+            return false
+        }
+
+        return true
+    }
+
+    private fun getBalance(order: NewLimitOrder): Double  {
+        val limitAsset = getLimitAsset(order)
+        return balancesHolder.getBalance(order.clientId, limitAsset)
+    }
+
+    private fun getReservedBalance(order: NewLimitOrder): Double {
+        val limitAsset = getLimitAsset(order)
+        return balancesHolder.getReservedBalance(order.clientId, limitAsset)
+    }
+
+    private fun getLimitAsset(order: NewLimitOrder): String {
+        val assetPair = getAssetPair(order)
+        return if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+    }
+
+    private fun getAssetPair(order: NewLimitOrder): AssetPair {
+        return assetsPairsHolder.getAssetPair(order.assetPairId)
+    }
+
+    private fun rejectOrder(cancelVolume: Double,
+                            order: NewLimitOrder,
+                            trustedLimitOrdersReport: LimitOrdersReport,
+                            orderBook: AssetOrderBook,
+                            messageWrapper: MessageWrapper,
+                            status: MessageStatus,
+                            now: Date,
+                            isCancelOrders: Boolean) {
+        val reservedBalance = getReservedBalance(order)
+        val limitAsset = getLimitAsset(order)
+        val balance = getBalance(order)
+
         if (cancelVolume > 0) {
-            val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
+            val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, getLimitAssetAccuracy(limitAsset)).toDouble()
             balancesHolder.updateReservedBalance(order.clientId, limitAsset, newReservedBalance)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance))))
+            balancesHolder.sendBalanceUpdate(
+                    BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
+                            listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance,
+                                    reservedBalance, newReservedBalance))))
         }
 
         trustedLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
@@ -345,6 +521,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             rabbitOrderBookQueue.put(rabbitOrderBook)
         }
     }
+
+    private fun getLimitAssetAccuracy(limitAsset: String) = assetsHolder.getAsset(limitAsset).accuracy
+
+    private fun getBaseAssetAccuracy(order: NewLimitOrder) =
+            assetsHolder.getAsset(assetsPairsHolder.getAssetPair(order.assetPairId).baseAssetId).accuracy
+
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
@@ -388,3 +570,4 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
     }
 }
+

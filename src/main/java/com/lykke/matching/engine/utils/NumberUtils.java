@@ -39,6 +39,6 @@ public class NumberUtils {
     }
 
     public static boolean isScaleSmallerOrEqual(double number, int expectedScale) {
-        return BigDecimal.valueOf(number).scale() <= expectedScale;
+        return BigDecimal.valueOf(number).stripTrailingZeros().scale() <= expectedScale;
     }
 }
