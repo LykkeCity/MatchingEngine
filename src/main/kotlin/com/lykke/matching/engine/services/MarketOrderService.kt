@@ -34,14 +34,12 @@ import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
-import java.util.Date
-import java.util.LinkedList
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                          private val genericLimitOrderService: GenericLimitOrderService,
-                         assetsHolder: AssetsHolder,
+                         private val assetsHolder: AssetsHolder,
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
                          private val assetSettingsCache: ApplicationSettingsCache,
@@ -74,7 +72,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+            LOGGER.debug("""Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId},
+                |volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}""".trimMargin())
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
@@ -83,10 +82,13 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
             feeInstructions = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
+            LOGGER.debug("""Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId},
+                | volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight},
+                | fee: $feeInstruction, fees: $feeInstructions""".trimMargin())
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
+                    Processing.name, Date(message.timestamp), Date(), null, message.straight,
+                    message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
         if (!performValidation(messageWrapper, order, feeInstruction, feeInstructions)) {
@@ -264,12 +266,46 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         return true
     }
 
+    private fun getBaseAsset(order: MarketOrder): String {
+        val assetPair = getAssetPair(order)
+        return if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId
+    }
+
+    private fun isVolumeAccuracyValid(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
+        val baseAssetVolumeAccuracy = assetsHolder.getAsset(getBaseAsset(order)).accuracy
+        val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetVolumeAccuracy)
+
+        if (!volumeAccuracyValid) {
+            order.status = OrderStatus.InvalidVolumeAccuracy.name
+            LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy")
+            writeResponse(messageWrapper, order, MessageStatus.INVALID_VOLUME_ACCURACY, order.assetPairId)
+        }
+
+        return volumeAccuracyValid
+    }
+
+    private fun isPriceAccuracyValid(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
+        val price = order.price ?: return true
+
+        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(price, getAssetPair(order).accuracy)
+
+        if (!priceAccuracyValid) {
+            order.status = OrderStatus.InvalidPriceAccuracy.name
+            LOGGER.info("Invalid order accuracy, ${order.assetPairId}")
+            writeResponse(messageWrapper, order, MessageStatus.INVALID_PRICE_ACCURACY, order.assetPairId)
+        }
+
+        return priceAccuracyValid
+    }
+
     fun performValidation(messageWrapper: MessageWrapper, order: MarketOrder, feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?): Boolean {
         val validations = arrayOf({isAssetKnown(order, messageWrapper)},
                 {isAssetEnabled(messageWrapper, order)},
                 {isVolumeValid(messageWrapper, order)},
                 {isFeeValid(messageWrapper, feeInstruction, feeInstructions, order)},
-                {isOrderBookValid(messageWrapper, order)})
+                {isOrderBookValid(messageWrapper, order)},
+                {isVolumeAccuracyValid(messageWrapper, order)},
+                {isPriceAccuracyValid(messageWrapper, order)})
 
         val failedValidation = validations.find { function: () -> Boolean -> !function() }
 
