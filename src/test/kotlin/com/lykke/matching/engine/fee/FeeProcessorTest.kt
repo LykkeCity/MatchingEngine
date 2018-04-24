@@ -37,6 +37,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (FeeProcessorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -102,7 +103,6 @@ class FeeProcessorTest {
     @Test
     fun testNoPercentageFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10.0)
-
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
@@ -183,7 +183,6 @@ class FeeProcessorTest {
     @Test
     fun testNoAbsoluteFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.09)
-
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
@@ -255,6 +254,7 @@ class FeeProcessorTest {
     @Test
     fun testAnotherAssetFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.6543)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 0.0)
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
         initServices()
 
@@ -400,7 +400,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalPercentageFeeNotEnoughFunds() {
-        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 0.1)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -611,8 +611,9 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testExternalMultipleFeeNotEnoughFundsAndMoreThanOperationVolume() {
-        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 11.0)
+    fun testExternalFeeGreaterThanOperationVolume() {
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 11.0)
+        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -719,4 +720,3 @@ class FeeProcessorTest {
         assertTrue { operations[2].isFee }
     }
 }
-
