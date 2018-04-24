@@ -79,6 +79,14 @@ jar {
     }
 }
 
+bootDistZip {
+    archiveName "${project.name}-${project.version}.zip"
+
+    into("${project.name}-${project.version}") {
+        from "${rootProject.projectDir}/src/dist"
+    }
+}
+
 mainClassName = "com.lykke.matching.engine.AppStarterKt"
 applicationDefaultJvmArgs = ["-Xms512m", "-Xmx1g"]
 distTar.enabled = false
