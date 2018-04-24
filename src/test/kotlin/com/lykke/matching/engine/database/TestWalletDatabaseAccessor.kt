@@ -6,17 +6,7 @@ import java.util.HashMap
 
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
-    private val balances = HashMap<String, MutableMap<String, AssetBalance>>()
     private val wallets = HashMap<String, Wallet>()
-
-    override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
-        return balances.mapValues { clientBalanceEntry ->
-            clientBalanceEntry.value.mapValues { assetBalanceEntry ->
-                val assetBalance = assetBalanceEntry.value
-                AssetBalance(assetBalance.asset, assetBalance.balance, assetBalance.reserved)
-            }.toMutableMap()
-        }.toMap(HashMap())
-    }
 
     override fun loadWallets(): HashMap<String, Wallet> {
         return wallets.mapValues { walletEntry ->
@@ -36,10 +26,8 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         }
 
         wallets.forEach { wallet ->
-            val client = balances.getOrPut(wallet.clientId,  { HashMap<String, AssetBalance>() })
             val updatedWallet = this.wallets.getOrPut(wallet.clientId) { Wallet(wallet.clientId) }
             wallet.balances.values.forEach {
-                client.put(it.asset, AssetBalance(it.asset, it.balance, it.reserved))
                 updatedWallet.setBalance(it.asset, it.balance)
                 updatedWallet.setReservedBalance(it.asset, it.reserved)
             }
@@ -47,7 +35,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     fun getBalance(clientId: String, assetId: String): Double {
-        val client = balances[clientId]
+        val client = wallets[clientId]?.balances
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
@@ -59,7 +47,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
 
     fun getReservedBalance(clientId: String, assetId: String): Double {
-        val client = balances[clientId]
+        val client = wallets[clientId]?.balances
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
@@ -70,7 +58,6 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     fun clear() {
-        balances.clear()
         wallets.clear()
     }
 

@@ -174,7 +174,7 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, TestPersistenceManager(testWalletDatabaseAccessor), assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
         genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
         matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
     }

@@ -7,29 +7,27 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.WalletDatabaseAccessorFactory
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.concurrent.LinkedBlockingQueue
 
 fun correctReservedVolumesIfNeed(config: Config, applicationSettingsCache: ApplicationSettingsCache) {
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
+    val walletDatabaseAccessor = WalletDatabaseAccessorFactory(config.me).createAccessorsHolder().primaryAccessor
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
     val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
     val filePath = config.me.orderBookPath
@@ -57,8 +55,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
     fun recalculate() {
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
-        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
-
+        val wallets = walletDatabaseAccessor.loadWallets()
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
@@ -97,7 +94,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
         LOGGER.info("---------------------------------------------------------------------------------------------------")
 
         val corrections = LinkedList<ReservedVolumeCorrection>()
-        balanceHolder.wallets.forEach {
+        wallets.forEach {
             val wallet = it.value
             val id = wallet.clientId
             wallet.balances.values.forEach {

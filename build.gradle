@@ -37,6 +37,7 @@ dependencies {
     compile 'org.apache.httpcomponents:httpclient:4.5.2'
     compile 'com.rabbitmq:amqp-client:3.6.5'
     compile 'de.ruedigermoeller:fst:2.52'
+    compile 'redis.clients:jedis:2.9.0'
 
     testCompile  'junit:junit:4.11'
     testCompile "com.nhaarman:mockito-kotlin:1.5.0"

@@ -1,16 +1,20 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
+import com.lykke.matching.engine.daos.wallet.ClientAssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
-class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
+class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
+                     private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
                      private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
@@ -75,9 +79,10 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     fun updateBalance(clientId: String, assetId: String, balance: Double) {
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
         wallet.setBalance(assetId, balance)
-
-        walletDatabaseAccessor.insertOrUpdateWallet(wallet)
-
+        persistenceManager.persist(PersistenceData(
+                listOf(wallet),
+                listOf(ClientAssetBalance(clientId, wallet.balances[assetId]!!))
+        ))
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 
@@ -88,9 +93,10 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
 
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
         wallet.setReservedBalance(assetId, balance)
-
-        walletDatabaseAccessor.insertOrUpdateWallet(wallet)
-
+        persistenceManager.persist(PersistenceData(
+                listOf(wallet),
+                listOf(ClientAssetBalance(clientId, wallet.balances[assetId]!!))
+        ))
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
 
@@ -102,6 +108,6 @@ class BalancesHolder(private val walletDatabaseAccessor: WalletDatabaseAccessor,
     fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
 
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
-        return WalletOperationsProcessor(this, walletDatabaseAccessor, notificationQueue, assetsHolder, validate, logger)
+        return WalletOperationsProcessor(this, persistenceManager, notificationQueue, assetsHolder, validate, logger)
     }
 }

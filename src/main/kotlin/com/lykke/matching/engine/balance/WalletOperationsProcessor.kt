@@ -2,8 +2,10 @@ package com.lykke.matching.engine.balance
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
+import com.lykke.matching.engine.daos.wallet.ClientAssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -16,7 +18,7 @@ import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
-                                private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                private val persistenceManager: PersistenceManager,
                                 private val notificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
@@ -85,8 +87,9 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         if (changedAssetBalances.isEmpty()) {
             return
         }
+        val clientAssetBalances = changedAssetBalances.values.toSet().map { ClientAssetBalance(it.clientId, it.assetBalance) }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
-        walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets.toList())
+        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
         clientIds.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
         balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
     }
@@ -111,7 +114,7 @@ private abstract class AbstractChangedAssetBalance(val assetId: String,
 }
 
 private class ChangedAssetBalance(private val wallet: Wallet,
-                                  assetBalance: AssetBalance) :
+                                  val assetBalance: AssetBalance) :
         AbstractChangedAssetBalance(assetBalance.asset,
                 wallet.clientId,
                 assetBalance.balance,

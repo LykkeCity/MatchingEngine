@@ -7,6 +7,8 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.HttpConfigParser
 import com.lykke.matching.engine.utils.logging.startLogsCleaner
+import com.lykke.matching.engine.utils.migration.AccountsMigrationException
+import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
@@ -43,6 +45,14 @@ fun main(args: Array<String>) {
     MetricsLogger.init("ME", config.slackNotifications)
 
     ThrottlingLogger.init(config.throttlingLogger)
+
+    try {
+        migrateAccountsIfConfigured(config)
+    } catch (e: AccountsMigrationException) {
+        AppInitializer.teeLog(e.message)
+        LOGGER.error(e.message, e)
+        return
+    }
 
     correctReservedVolumesIfNeed(config, applicationSettingsCache)
     Runtime.getRuntime().addShutdownHook(ShutdownHook(config))

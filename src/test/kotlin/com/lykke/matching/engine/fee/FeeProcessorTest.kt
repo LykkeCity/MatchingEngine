@@ -58,7 +58,7 @@ class FeeProcessorTest {
 
     private fun initServices() {
         assetsPairsCache.update()
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
+        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, TestPersistenceManager(testWalletDatabaseAccessor), assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
         genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }

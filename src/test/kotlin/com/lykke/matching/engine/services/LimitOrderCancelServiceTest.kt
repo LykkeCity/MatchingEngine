@@ -25,7 +25,7 @@ import kotlin.test.assertNull
 
 class LimitOrderCancelServiceTest {
     private val testFileDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    private val testWalletDatabaseAcessor = TestWalletDatabaseAccessor()
+    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
     private val testBackOfficeDatabaseAcessor = TestBackOfficeDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -39,7 +39,7 @@ class LimitOrderCancelServiceTest {
     private val applicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
     private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAcessor))
     private val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
-    private val balancesHolder = BalancesHolder(testWalletDatabaseAcessor, assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
+    private val balancesHolder = BalancesHolder(testWalletDatabaseAccessor, TestPersistenceManager(testWalletDatabaseAccessor), assetsHolder, balanceNotificationQueue, balanceUpdateQueue, applicationSettingsCache)
 
     @Before
     fun setUp() {
@@ -54,8 +54,8 @@ class LimitOrderCancelServiceTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
 
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
-        testWalletDatabaseAcessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
+        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
     }
 
     @Test
