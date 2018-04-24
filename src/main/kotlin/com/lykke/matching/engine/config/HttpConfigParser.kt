@@ -45,7 +45,7 @@ class HttpConfigParser :  FactoryBean<Config> {
             throw IllegalArgumentException("Not enough args. Usage: httpConfigString")
         }
 
-        config = initConfig(commangLineArgs[commangLineArgs.size - 1])
+        config = initConfig(commangLineArgs[0])
     }
 
     fun initConfig(httpString: String): Config {

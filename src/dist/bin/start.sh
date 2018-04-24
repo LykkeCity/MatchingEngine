@@ -22,14 +22,14 @@ fi
 mkdir $BASEDIR/log 2>/dev/null
 cd "$BINDIR"
 
-EXECSTR="$JAVACMD -jar $BASEDIR/lib/lykke-me-prototype-0.1.jar \
+EXECSTR="$JAVACMD \
     -DMatchingEngineService -server -Dlog4j.configuration=file:///"$BASEDIR"/cfg/log4j.properties $JAVA_OPTS \
-    -jar $BASEDIR/lib/lykke-me-prototype-0.1.jar \
     -Xloggc:../log/sys.gc.log -XX:+PrintGC -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=2m \
     -Dapp.name="start.sh" \
     -Dapp.pid="$$" \
     -Dapp.home="$BASEDIR" \
     -Dbasedir="$BASEDIR" \
+    -jar $BASEDIR/lib/lykke-me-prototype-0.1.jar \
     $HTTP_CONFIG"
 
 
