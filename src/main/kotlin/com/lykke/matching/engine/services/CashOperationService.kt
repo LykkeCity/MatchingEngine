@@ -49,7 +49,7 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     }
 
     private fun performValidation(messageWrapper: MessageWrapper): Boolean {
-        val validations = arrayOf({isAssetEnabled(messageWrapper)}, {isBalanceValid(messageWrapper)})
+        val validations = arrayOf({isAssetEnabled(messageWrapper)}, {isBalanceValid(messageWrapper)}, {isAccuracyValid(messageWrapper)})
 
         val failedValidation = validations.find { function: () -> Boolean -> !function() }
 
@@ -74,12 +74,13 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         return true
     }
 
-    private fun isAccuracyValid(messageWrapper: MessageWrapper, walletOperationId: String): Boolean {
+    private fun isAccuracyValid(messageWrapper: MessageWrapper): Boolean {
         val message = getMessage(messageWrapper)
 
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.amount, assetsHolder.getAsset(message.assetId).accuracy)
 
         if (!volumeValid) {
+            LOGGER.info("amount accuracy is invalid clientId: ${message.clientId}, amount  $message.amount")
             writeErrorResponse(messageWrapper)
         }
 

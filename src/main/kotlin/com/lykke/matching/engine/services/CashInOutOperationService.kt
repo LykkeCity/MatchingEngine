@@ -131,6 +131,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.volume, assetsHolder.getAsset(message.assetId).accuracy)
 
         if (!volumeValid) {
+            LOGGER.info("Volume accuracy is invalid  client: ${message.clientId}, asset: ${message.assetId}, volume: $message.volume")
             writeErrorResponse(messageWrapper, walletOperationId, MessageStatus.INVALID_VOLUME_ACCURACY)
         }
 

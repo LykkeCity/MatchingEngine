@@ -113,6 +113,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     private fun isFeeValid( messageWrapper: MessageWrapper, feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>, operationId: String): Boolean {
         val message = getMessage(messageWrapper)
         if (!checkFee(feeInstruction, feeInstructions)) {
+            LOGGER.info("Fee is invalid  from client: ${message.fromClientId}, to cloent: ${message.toClientId}")
             writeInvalidFeeResponse(messageWrapper, message, operationId)
             return false
         }
