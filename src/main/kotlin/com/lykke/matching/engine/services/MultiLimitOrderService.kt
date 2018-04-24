@@ -1,12 +1,8 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -37,7 +33,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                             assetsHolder: AssetsHolder,
+                             private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
@@ -98,7 +94,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
             messageUid = message.uid
             clientId = message.clientId
-            assetPairId = message.assetPairId
+            assetPairId = getAssetPair(message)
             LOGGER.debug("Got multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
             orders = ArrayList(message.ordersList.size)
             cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
@@ -106,7 +102,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 val uid = UUID.randomUUID().toString()
                 val feeInstruction = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null
                 val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
-                orders.add(NewLimitOrder(uid, currentOrder.uid, message.assetPairId, message.clientId, currentOrder.volume,
+                orders.add(NewLimitOrder(uid, currentOrder.uid, getAssetPair(message), message.clientId, currentOrder.volume,
                         currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
                         fee = feeInstruction,
                         fees = listOfLimitOrderFee(feeInstruction, feeInstructions)))
@@ -156,13 +152,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
         orders.forEach { order ->
-            if (order.price <= 0) {
-                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
-            } else if (!order.checkVolume(assetPair)) {
-                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
-            } else if (orderBook.leadToNegativeSpreadForClient(order)) {
-                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
-            } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
+            if(!performValidation(order, assetPair, orderBook)){
+                LOGGER.info("order is invalid order id: ${order.id}")
+            }
+            else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
@@ -324,6 +317,74 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
+    }
+
+    private fun getAssetPair(message: ProtocolMessages.MultiLimitOrder) =
+            message.assetPairId
+
+    private fun isSpreadValid(orderBook: AssetOrderBook, order: NewLimitOrder): Boolean {
+        if (orderBook.leadToNegativeSpreadForClient(order)) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
+            return false
+        }
+
+        return true
+    }
+
+    private fun isPriceAccuracyValid(order: NewLimitOrder, assetPair: AssetPair): Boolean {
+        val priceAccuracy = assetPair.accuracy
+
+        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.price, priceAccuracy)
+
+        if (!priceAccuracyValid) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price accuracy")
+        }
+
+        return priceAccuracyValid
+    }
+
+    private fun isVolumeAccuracyValid(order: NewLimitOrder, assetPair: AssetPair): Boolean {
+        val baseAssetId = assetPair.baseAssetId
+        val volumeAccuracy = assetsHolder.getAsset(baseAssetId).accuracy
+
+        val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, volumeAccuracy)
+
+        if (!volumeAccuracyValid) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid volume accuracy")
+        }
+
+        return volumeAccuracyValid
+
+    }
+
+    private fun isVolumeValid(order: NewLimitOrder, assetPair: AssetPair): Boolean {
+        if (!order.checkVolume(assetPair)) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
+            return false
+        }
+
+        return true
+    }
+
+    private fun isPriceValid(order: NewLimitOrder): Boolean {
+        if (order.price <= 0) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
+            return false
+        }
+
+        return true
+    }
+
+    private fun performValidation(order: NewLimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook): Boolean {
+        val validations = arrayOf({isPriceValid(order)},
+                {isVolumeValid(order, assetPair)},
+                {isSpreadValid(orderBook, order)},
+                {isVolumeAccuracyValid(order, assetPair)},
+                {isPriceAccuracyValid(order, assetPair)})
+
+        val failedValidation = validations.find { function: () -> Boolean -> !function() }
+
+        return failedValidation == null
     }
 
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
