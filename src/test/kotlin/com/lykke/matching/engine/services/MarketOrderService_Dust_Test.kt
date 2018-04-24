@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -14,25 +16,47 @@ import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderService_Dust_Test.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MarketOrderService_Dust_Test: AbstractTest() {
 
     companion object {
         private const val DELTA = 1e-9
     }
 
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
+
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("SLR", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
@@ -55,8 +79,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDustMatchOneToOne() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 1000.0, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 0.020009))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.020009)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.02)))
@@ -83,8 +107,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDustIncorrectBalanceAndDust1() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTC1USD", price = 610.96, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.14441494999999982))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.14441494999999982)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 88.23, straight = false)))
@@ -111,8 +135,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDustIncorrectBalanceAndDust2() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTC1USD", price = 598.916, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.033407))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.033407)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 20.0, straight = false)))
@@ -140,8 +164,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDustIncorrectBalanceAndDust3() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTC1USD", price = 593.644, volume = 1000.0, clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.00092519))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.00092519)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.54, straight = false)))
@@ -169,8 +193,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDustNotStraight() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = 500.0, assetId = "BTCUSD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 0.02001))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.02001)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 20.0, straight = false)))
@@ -197,8 +221,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testBuyDustStraight() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = -500.0, assetId = "BTC1USD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC1", 0.02001))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 500.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC1", 0.02001)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0000272, straight = true)))
@@ -211,8 +235,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun test_20170309_01() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 0.0000782, volume = -4000.0, assetId = "SLRBTC1", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "SLR", 238619.65864945))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.01))
+        testBalanceHolderWrapper.updateBalance("Client3", "SLR", 238619.65864945)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.01)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.8722, straight = true)))
@@ -234,8 +258,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun test_20170309_02() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 0.0000782, volume = -4000.0, assetId = "SLRBTC1", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "SLR", 238619.65864945))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.01))
+        testBalanceHolderWrapper.updateBalance("Client3", "SLR", 238619.65864945)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.01)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = -0.01, straight = false)))
@@ -257,8 +281,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testSellDustStraight() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = 500.0, assetId = "BTC1USD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.02001))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.02001)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0000272, straight = true)))
@@ -271,8 +295,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testBuyDustNotStraight() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 19739.43939992, volume = 500.0, assetId = "BTC1LKK", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "LKK", 500.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 0.02001))
+        testBalanceHolderWrapper.updateBalance("Client3", "LKK", 500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.02001)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = 0.01, straight = false)))
@@ -285,8 +309,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testSellDustNotStraight() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 19739.43939992, volume = -500.0, assetId = "BTC1LKK", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC1", 0.02001))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "LKK", 500.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC1", 0.02001)
+        testBalanceHolderWrapper.updateBalance("Client4", "LKK", 500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = -0.01, straight = false)))
@@ -299,8 +323,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDust1() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = -0.05, assetId = "BTC1USD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 5000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC1", 10.0))
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 5000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC1", 10.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.04997355, straight = true)))
@@ -322,8 +346,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDust2() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = 0.05, assetId = "BTC1USD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 5000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 10.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 5000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 10.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.04997355, straight = true)))
@@ -345,8 +369,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDust3() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = -0.05, assetId = "BTC1USD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 5000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC1", 10.0))
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 5000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC1", 10.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0499727, straight = true)))
@@ -368,8 +392,8 @@ class MarketOrderService_Dust_Test: AbstractTest() {
     @Test
     fun testDust4() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1000.0, volume = 0.05, assetId = "BTC1USD", clientId = "Client3"))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 5000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC1", 10.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 5000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 10.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0499727, straight = true)))

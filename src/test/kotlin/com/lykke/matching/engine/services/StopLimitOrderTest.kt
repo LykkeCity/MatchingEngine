@@ -1,10 +1,13 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -17,20 +20,48 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (StopLimitOrderTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class StopLimitOrderTest : AbstractTest() {
+
+
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 0.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 0.0)
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 6))
-
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0, 0.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 0.0))
-
         initServices()
     }
 
@@ -41,7 +72,7 @@ class StopLimitOrderTest : AbstractTest() {
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.0, lowerPrice = 9000.0
         )))
 
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(1, clientsLimitOrdersQueue.size)
         val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, report.orders.size)
@@ -59,7 +90,7 @@ class StopLimitOrderTest : AbstractTest() {
                 upperLimitPrice = 9500.0, upperPrice = 9100.0
         )))
 
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(1, clientsLimitOrdersQueue.size)
         val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, report.orders.size)
@@ -81,7 +112,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, report.orders.size)
         assertEquals(OrderStatus.Pending.name, report.orders.first().order.status)
         assertEquals(0.01, report.orders.first().order.reservedLimitVolume)
-        assertEquals(1, balanceUpdateQueue.size)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         assertEquals(1, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", false).size)
         assertEquals(1, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
@@ -95,7 +126,7 @@ class StopLimitOrderTest : AbstractTest() {
                 clientId = "Client1", assetId = "BTCUSD", volume = -0.01,
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.0, lowerPrice = 9000.0
         )))
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = -0.02,
@@ -109,7 +140,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, report.orders.filter { it.order.status == OrderStatus.Cancelled.name }.size)
         assertEquals(1, report.orders.filter { it.order.status == OrderStatus.Pending.name }.size)
 
-        assertEquals(1, balanceUpdateQueue.size)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(1, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", false).size)
         assertEquals(1, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
         assertEquals(-0.02, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).first().volume)
@@ -139,8 +170,8 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopLimitOrder() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -176,8 +207,8 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopOrderAfterRejectLimitOrderWithCancelPrevious() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 0.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 0.1)
 
         initServices()
 
@@ -213,7 +244,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopLimitOrderAfterLimitOrderCancellation() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -250,8 +281,8 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testRejectStopOrderDuringMatching() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.03, price = 9600.0)))
@@ -259,7 +290,7 @@ class StopLimitOrderTest : AbstractTest() {
         // Order leading to negative spread. Added to reject stop order.
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = 0.03, price = 9500.0)))
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "BTCUSD", volume = -0.01,
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.5, lowerPrice = 9000.0
@@ -284,8 +315,8 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopLimitOrderAfterMarketOrder() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1900.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1900.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -322,11 +353,11 @@ class StopLimitOrderTest : AbstractTest() {
 
     private fun processStopLimitOrderAfterMultiLimitOrder(forTrustedClient: Boolean) {
         if (forTrustedClient) {
-            testSettingsDatabaseAccessor.addTrustedClient("Client3")
+            testConfigDatabaseAccessor.addTrustedClient("Client3")
         }
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -390,11 +421,11 @@ class StopLimitOrderTest : AbstractTest() {
 
     private fun processStopLimitOrderAfterMultiLimitOrderCancellation(forTrustedClient: Boolean) {
         if (forTrustedClient) {
-            testSettingsDatabaseAccessor.addTrustedClient("Client2")
+            testConfigDatabaseAccessor.addTrustedClient("Client2")
         }
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.3))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 0.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 0.1)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -457,9 +488,9 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopLimitOrderAfterMinVolumeOrdersCancellation() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 5.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 10000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 5.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
@@ -509,9 +540,9 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopLimitOrdersChain() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 10000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 10000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.1, price = 10000.0)))
@@ -557,10 +588,11 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessBothSideStopLimitOrders() {
-        testSettingsDatabaseAccessor.addTrustedClient("Client2")
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1050.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 850.0))
+        testConfigDatabaseAccessor.addTrustedClient("Client2")
+
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1050.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 850.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -590,7 +622,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessStopLimitOrderImmediately() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
         initServices()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.1, price = 9900.0)))
         clientsLimitOrdersQueue.clear()

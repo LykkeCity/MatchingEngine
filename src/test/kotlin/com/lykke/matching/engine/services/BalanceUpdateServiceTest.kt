@@ -1,16 +1,24 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
-import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BalanceUpdateServiceTest: AbstractTest() {
 
     companion object {
@@ -19,7 +27,7 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Before
     fun setUp() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
         initServices()
     }
 
@@ -32,7 +40,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Test
     fun testUpdateBalanceWithAnotherAssetBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset2", 2000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset2",  500.0)
         initServices()
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -50,7 +59,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Test
     fun testUpdateBalanceLowerThanResolved() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0, 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset1",  1000.0)
         initServices()
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -67,7 +77,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Test
     fun testUpdateReservedBalanceWithAnotherAssetBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset2", 2000.0, 500.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "Asset2", 2000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset2",  500.0)
         initServices()
 
         reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
@@ -93,12 +104,12 @@ class BalanceUpdateServiceTest: AbstractTest() {
     private fun assertSuccessfulUpdate(messageType: MessageType, clientId: String, assetId: String, balance: Double, oldBalance: Double, reserved: Double, oldReserved: Double) {
         assertUpdateResult(clientId, assetId, balance, reserved)
 
-        assertEquals(1, balanceNotificationQueue.size)
-        val notification = balanceNotificationQueue.poll()
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
+        val notification = balanceUpdateHandlerTest.balanceUpdateQueueNotification.poll()
         assertEquals(clientId, notification.clientId)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll()
         assertEquals(messageType.name, balanceUpdate.type)
 
         assertEquals(1, balanceUpdate.balances.size)
@@ -111,8 +122,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: Double, reserved: Double) {
         assertUpdateResult(clientId, assetId, balance, reserved)
-        assertEquals(0, balanceNotificationQueue.size)
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 
     private fun assertUpdateResult(clientId: String, assetId: String, balance: Double, reserved: Double) {

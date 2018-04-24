@@ -25,7 +25,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                private val balancesHolder: BalancesHolder,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                                private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>,
-                               applicationSettingsCache: ApplicationSettingsCache): AbstractGenericLimitOrderService<AssetOrderBook> {
+                               applicationSettingsCache: ApplicationSettingsCache) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
         val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
