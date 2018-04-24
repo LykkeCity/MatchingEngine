@@ -51,6 +51,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 emptyList(),
                 LOGGER)
 
+        matchingEngine.initTransaction()
         val result = processor.preProcess(listOf(order))
                 .apply(order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 
