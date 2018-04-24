@@ -2,7 +2,7 @@ package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.Settings
 
-class TestSettingsDatabaseAccessor : ConfigDatabaseAccessor {
+class TestConfigDatabaseAccessor : ConfigDatabaseAccessor {
     private var settings = Settings()
 
     override fun loadConfigs(): Settings {

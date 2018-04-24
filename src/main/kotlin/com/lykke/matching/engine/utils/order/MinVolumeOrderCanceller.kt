@@ -41,7 +41,6 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
                 } catch (e: Exception) {
                     dictionariesDatabaseAccessor.loadAssetPair(order.assetPairId, true)
                 }
-
                 if (assetPair == null) {
                     // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)
                     teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")

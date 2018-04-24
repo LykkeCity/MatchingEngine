@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.LinkedList
 
-class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
+class AzureHistoryTicksDatabaseAccessor(connectionString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureHistoryTicksDatabaseAccessor::class.java.name)
@@ -23,7 +23,7 @@ class AzureHistoryTicksDatabaseAccessor(historyTicksString: String, val frequenc
         private const val BLOB_NAME_PATTERN = "BA_%s_%s"
     }
 
-    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(historyTicksString, "history")
+    private val historyBlobContainer: CloudBlobContainer = getOrCreateBlob(connectionString, "history")
 
 
     override fun loadHistoryTicks(): List<TickBlobHolder> {
