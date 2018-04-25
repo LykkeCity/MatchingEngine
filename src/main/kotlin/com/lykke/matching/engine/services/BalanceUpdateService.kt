@@ -39,7 +39,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
                     listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
                     .setUid(message.uid)
                     .build())
 
@@ -53,7 +52,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             if (reservedBalance > message.amount) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.uid)
-                        .setMessageId(messageWrapper.messageId)
                         .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type)
                         .build())
                 LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
@@ -68,7 +66,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.uid)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(MessageStatus.OK.type)
                     .build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
@@ -110,12 +107,10 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                     .setUid(getMessageUid(messageWrapper)!!)
-                    .setMessageId(messageWrapper.messageId)
                     .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(status.type)
                     .build())
         }

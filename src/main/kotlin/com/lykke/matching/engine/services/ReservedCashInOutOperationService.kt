@@ -41,7 +41,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             if (RoundingUtils.parseDouble(reservedBalance + message.reservedVolume, accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.id)
-                        .setMessageId(messageWrapper.messageId)
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
                 LOGGER.info("Reserved cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low reserved balance $reservedBalance")
@@ -53,7 +52,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.id)
                         .setMatchingEngineId(operation.id)
-                        .setMessageId(messageWrapper.messageId)
                         .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type).build())
                 LOGGER.info("Reserved cash in operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low balance $balance, current reserved balance $reservedBalance")
                 return
@@ -66,7 +64,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message).build())
             return
@@ -83,7 +80,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setId(message.id)
                 .setMatchingEngineId(operation.id)
                 .setStatus(MessageStatus.OK.type)
-                .setMessageId(messageWrapper.messageId)
                 .build())
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)} processed")
     }
@@ -103,7 +99,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setStatus(status.type)
                 .build())
     }

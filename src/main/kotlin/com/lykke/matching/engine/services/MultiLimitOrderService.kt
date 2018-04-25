@@ -296,14 +296,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         if (isOldTypeMessage) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
                     .setUid(messageUid.toLong())
                     .build())
         } else {
             val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
             responseBuilder
                     .setId(messageUid)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(MessageStatus.OK.type)
                     .setAssetPairId(assetPairId)
             orders.forEach {
@@ -377,13 +375,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
                     .setUid(getMessageUid(messageWrapper)!!)
                     .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(status.type)
                     .build())
         }

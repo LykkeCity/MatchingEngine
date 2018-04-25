@@ -42,7 +42,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
             genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
                     .setUid(message.uid).build())
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderCancel
@@ -66,7 +65,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                         listOf(ClientBalanceUpdate(order.clientId, limitAsset, balance, balance, reservedBalance, newReservedBalance)),
                         messageWrapper.messageId!!))
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                        .setMessageId(messageWrapper.messageId)
                         .setId(message.uid)
                         .setStatus(MessageStatus.OK.type)
                         .build())
@@ -82,7 +80,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 LOGGER.info("Unable to find order id: ${message.limitOrderId}")
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.uid)
-                        .setMessageId(messageWrapper.messageId)
                         .setStatus(MessageStatus.LIMIT_ORDER_NOT_FOUND.type)
                         .build())
             }
@@ -123,13 +120,11 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
                     .setUid(getMessageUid(messageWrapper)!!)
                     .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(status.type)
                     .build())
         }

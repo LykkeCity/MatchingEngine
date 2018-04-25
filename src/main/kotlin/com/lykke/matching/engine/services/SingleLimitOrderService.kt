@@ -352,7 +352,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(order.externalId)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(order.id)
                     .setStatus(status.type)
                     .build())
@@ -378,7 +377,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         .setId(order.externalId)
                         .setMatchingEngineId(order.id)
                         .setStatus(status.type)
-                        .setMessageId(messageWrapper.messageId)
                         .build())
             } else {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
@@ -386,7 +384,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                         .setMatchingEngineId(order.id)
                         .setStatus(status.type)
                         .setStatusReason(reason)
-                        .setMessageId(messageWrapper.messageId)
                         .build())
             }
         }
@@ -423,7 +420,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
                     .setStatus(status.type)
-                    .setMessageId(messageWrapper.messageId)
                     .build())
         }
     }
