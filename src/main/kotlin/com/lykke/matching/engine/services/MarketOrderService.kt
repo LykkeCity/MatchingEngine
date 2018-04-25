@@ -234,6 +234,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
     }
 
+    private fun getMessageUid(messageWrapper: MessageWrapper): Long ? {
+        if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
+            return message.uid
+        }
+        return null
+    }
+
     private fun orderInfo(order: MarketOrder) = "market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}"
 
     private fun parseOld(array: ByteArray): ProtocolMessages.OldMarketOrder {
@@ -296,7 +304,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setUid(getMessageUid(messageWrapper)!!)
                     .setMessageId(messageWrapper.messageId!!)
                     .build())
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {

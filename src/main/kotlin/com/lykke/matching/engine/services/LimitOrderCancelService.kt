@@ -89,6 +89,15 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         }
     }
 
+    private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
+            return message.uid
+        }
+
+        return null
+    }
+
     private fun parseOldLimitOrderCancel(array: ByteArray): ProtocolMessages.OldLimitOrderCancel {
         return ProtocolMessages.OldLimitOrderCancel.parseFrom(array)
     }
@@ -115,7 +124,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                     .setMessageId(messageWrapper.messageId)
-                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setUid(getMessageUid(messageWrapper)!!)
                     .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()

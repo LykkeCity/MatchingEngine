@@ -326,6 +326,14 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
     }
 
+    private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
+            return message.uid
+        }
+        return null
+    }
+
     private fun rejectOrder(reservedBalance: Double, cancelVolume: Double, limitAsset: String, order: NewLimitOrder, balance: Double, trustedLimitOrdersReport: LimitOrdersReport, orderBook: AssetOrderBook, messageWrapper: MessageWrapper, status: MessageStatus, now: Date, isCancelOrders: Boolean) {
         if (cancelVolume > 0) {
             val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, assetsHolder.getAsset(limitAsset).accuracy).toDouble()
@@ -408,7 +416,9 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setUid(getMessageUid(messageWrapper)!!)
+                    .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)

@@ -75,6 +75,15 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
         }
     }
 
+    private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
+        if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
+            return message.uid
+        }
+
+        return null
+    }
+
     private fun parse(array: ByteArray): ProtocolMessages.BalanceUpdate {
         return ProtocolMessages.BalanceUpdate.parseFrom(array)
     }
@@ -100,7 +109,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setUid(getMessageUid(messageWrapper)!!)
                     .setMessageId(messageWrapper.messageId)
                     .build())
         } else {
