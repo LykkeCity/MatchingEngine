@@ -2,7 +2,6 @@ package com.lykke.matching.engine.balance
 
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
-import com.lykke.matching.engine.daos.wallet.ClientAssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.PersistenceData
@@ -87,7 +86,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         if (changedAssetBalances.isEmpty()) {
             return
         }
-        val clientAssetBalances = changedAssetBalances.values.toSet().map { ClientAssetBalance(it.clientId, it.assetBalance) }
+        val clientAssetBalances = changedAssetBalances.values.toSet().map { it.assetBalance }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
         persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
         clientIds.forEach { notificationQueue.put(BalanceUpdateNotification(it)) }
@@ -99,7 +98,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             Wallet(operation.clientId)
         }
         val assetBalance = wallet.balances.getOrPut(operation.assetId) {
-            AssetBalance(operation.assetId)
+            AssetBalance(operation.clientId, operation.assetId)
         }
         return ChangedAssetBalance(wallet, assetBalance)
     }

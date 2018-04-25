@@ -46,7 +46,7 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
             var success = false
             try {
                 primaryBalancesAccessor as RedisWalletDatabaseAccessor
-                primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.clientAssetBalances)
+                primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
                 if (secondaryBalancesAccessor != null) {
                     updatedWalletsQueue.put(data.wallets)
                 }

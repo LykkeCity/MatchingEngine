@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.database.redis
 
-import com.lykke.matching.engine.daos.wallet.ClientAssetBalance
+import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.utils.logging.MetricsLogger
@@ -32,11 +32,11 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
                     if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
                         throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
                     }
-                    if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.assetBalance.asset) {
-                        throw Exception("Invalid assetId: ${balance.assetBalance.asset}, balance key: $key")
+                    if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.asset) {
+                        throw Exception("Invalid assetId: ${balance.asset}, balance key: $key")
                     }
                     val clientBalances = result.getOrPut(balance.clientId) { Wallet(balance.clientId) }
-                    clientBalances.balances[balance.assetBalance.asset] = balance.assetBalance
+                    clientBalances.balances[balance.asset] = balance
                     balancesCount++
                 } catch (e: Exception) {
                     val message = "Unable to load, balanceKey: $key"
@@ -54,11 +54,7 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
             val transaction = jedis.multi()
             var success = false
             try {
-                insertOrUpdateBalances(transaction, wallets.flatMap { wallet ->
-                    wallet.balances.values.map { assetBalance ->
-                        ClientAssetBalance(wallet.clientId, assetBalance)
-                    }
-                })
+                insertOrUpdateBalances(transaction, wallets.flatMap { it.balances.values })
                 success = true
             } finally {
                 if (success) transaction.exec() else jedis.resetState()
@@ -70,7 +66,7 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
         insertOrUpdateWallets(listOf(wallet))
     }
 
-    fun insertOrUpdateBalances(transaction: Transaction, balances: Collection<ClientAssetBalance>) {
+    fun insertOrUpdateBalances(transaction: Transaction, balances: Collection<AssetBalance>) {
         balances.forEach { clientAssetBalance ->
             transaction.set(key(clientAssetBalance).toByteArray(), serializeClientAssetBalance(clientAssetBalance))
         }
@@ -80,16 +76,16 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
         return jedis.keys("$KEY_PREFIX_BALANCE*")
     }
 
-    private fun serializeClientAssetBalance(balance: ClientAssetBalance) = conf.asByteArray(balance)
+    private fun serializeClientAssetBalance(balance: AssetBalance) = conf.asByteArray(balance)
 
-    private fun deserializeClientAssetBalance(jedis: Jedis, key: String): ClientAssetBalance {
+    private fun deserializeClientAssetBalance(jedis: Jedis, key: String): AssetBalance {
         val bytes = jedis[key.toByteArray()]
         val readCase = conf.asObject(bytes)
-        return readCase as ClientAssetBalance
+        return readCase as AssetBalance
     }
 
-    private fun key(balance: ClientAssetBalance): String {
-        return "$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR${balance.assetBalance.asset}"
+    private fun key(balance: AssetBalance): String {
+        return "$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR${balance.asset}"
     }
 
 }

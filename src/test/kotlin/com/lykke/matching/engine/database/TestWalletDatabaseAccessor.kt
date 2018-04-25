@@ -14,7 +14,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
             Wallet(wallet.clientId, wallet.balances.map { assetBalanceEntry ->
                 val assetId = assetBalanceEntry.key
                 val assetBalance = assetBalanceEntry.value
-                AssetBalance(assetId, assetBalance.balance, assetBalance.reserved)
+                AssetBalance(wallet.clientId, assetId, assetBalance.balance, assetBalance.reserved)
             })
         }.toMap(HashMap())
     }

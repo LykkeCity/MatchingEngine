@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
-import com.lykke.matching.engine.daos.wallet.ClientAssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
@@ -81,7 +80,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
         wallet.setBalance(assetId, balance)
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
-                listOf(ClientAssetBalance(clientId, wallet.balances[assetId]!!))
+                listOf(wallet.balances[assetId]!!)
         ))
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
@@ -95,7 +94,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
         wallet.setReservedBalance(assetId, balance)
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
-                listOf(ClientAssetBalance(clientId, wallet.balances[assetId]!!))
+                listOf(wallet.balances[assetId]!!)
         ))
         notificationQueue.put(BalanceUpdateNotification(clientId))
     }
