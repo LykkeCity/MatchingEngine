@@ -13,8 +13,8 @@ RUN apt-get update && \
     apt-get clean
 	
 ADD lykke-me-prototype-boot-0.1.zip .
-RUN unzip -q lykke-me-prototype-boot-0.1.zip && \
-    rm lykke-me-prototype-boot-0.1.zip && \
+RUN unzip -q lykke-me-prototype-0.1.zip && \
+    rm lykke-me-prototype-0.1.zip && \
     mv lykke-me-prototype-* lykke-me-prototype && \
     chmod +x lykke-me-prototype/bin/start.sh && \
     chmod +x lykke-me-prototype/bin/stop.sh && \
