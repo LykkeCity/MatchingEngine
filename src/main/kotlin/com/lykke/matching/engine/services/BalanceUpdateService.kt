@@ -39,7 +39,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
                     listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
                     .setUid(message.uid)
                     .build())
 
@@ -53,7 +52,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             if (reservedBalance > message.amount) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.uid)
-                        .setMessageId(messageWrapper.messageId)
                         .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type)
                         .build())
                 LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
@@ -68,11 +66,19 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.uid)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(MessageStatus.OK.type)
                     .build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         }
+    }
+
+    private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
+        if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
+            return message.uid
+        }
+
+        return null
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.BalanceUpdate {
@@ -100,13 +106,11 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageWrapper.messageId!!.toLong())
-                    .setMessageId(messageWrapper.messageId)
+                    .setUid(getMessageUid(messageWrapper)!!)
                     .build())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId)
-                    .setMessageId(messageWrapper.messageId)
                     .setStatus(status.type)
                     .build())
         }

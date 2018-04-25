@@ -56,7 +56,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.DISABLED_ASSET.type)
                     .build())
@@ -70,7 +69,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
             if (RoundingUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.id)
-                        .setMessageId(messageWrapper.messageId)
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type)
                         .build())
@@ -105,7 +103,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setMatchingEngineId(operation.id)
                 .setStatus(OK.type)
                 .build())
@@ -127,7 +124,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setStatus(status.type)
                 .build())
     }
@@ -143,7 +139,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage)

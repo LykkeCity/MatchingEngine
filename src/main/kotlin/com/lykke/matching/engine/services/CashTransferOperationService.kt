@@ -57,7 +57,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setMessageId(messageWrapper.messageId)
+                    
                     .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.DISABLED_ASSET.type).build())
@@ -71,7 +71,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
-                    .setMessageId(messageWrapper.messageId)
+                    
                     .setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
@@ -101,7 +101,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMessageId(messageWrapper.messageId)
+                
                 .setId(message.id)
                 .setMatchingEngineId(operation.id)
                 .setStatus(OK.type).build())
@@ -138,7 +138,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMessageId(messageWrapper.messageId)
                 .setId(message.id)
                 .setStatus(status.type).build())
     }
@@ -154,7 +153,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage)

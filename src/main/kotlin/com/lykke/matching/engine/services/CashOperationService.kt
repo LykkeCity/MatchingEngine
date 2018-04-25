@@ -30,7 +30,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                     .setUid(message.uid)
-                    .setMessageId(messageWrapper.messageId)
                     .setBussinesId(message.bussinesId).build())
             LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: disabled asset")
             return
@@ -42,7 +41,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             if (balance - reservedBalance < Math.abs(message.amount)) {
                 messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                         .setUid(message.uid)
-                        .setMessageId(messageWrapper.messageId)
                         .setBussinesId(message.bussinesId)
                         .build())
                 LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance, reserved balance $reservedBalance")
@@ -62,14 +60,12 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                     .setUid(message.uid)
-                    .setMessageId(messageWrapper.messageId)
                     .setBussinesId(message.bussinesId)
                     .build())
             return
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                .setMessageId(messageWrapper.messageId)
                 .setUid(message.uid)
                 .setBussinesId(message.bussinesId)
                 .setRecordId(operation.id)
@@ -91,7 +87,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                .setMessageId(message.messageId)
                 .setUid(message.uid)
                 .setBussinesId(message.bussinesId)
                 .build())

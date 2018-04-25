@@ -77,8 +77,8 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
 
         val assetPairIds = HashSet(ordersToCancel.keys)
 
-        teeLog("Starting orders cancellation (orders count: $totalCount)")
         val cancelOperationId = UUID.randomUUID().toString()
+        teeLog("Starting orders cancellation (orders count: $totalCount), cancel operation id $cancelOperationId")
         val walletOperations = LinkedList<WalletOperation>()
         val clientsLimitOrdersReport = LimitOrdersReport(cancelOperationId)
         val trustedClientsLimitOrdersReport = LimitOrdersReport(cancelOperationId)

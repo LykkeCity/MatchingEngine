@@ -105,6 +105,14 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
     }
 
+    private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
+            return message.uid
+        }
+        return null
+    }
+
     private fun incomingMessageInfo(message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
         return "id: ${message.uid}" +
                 ", type: ${order.type}" +
@@ -174,11 +182,14 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageWrapper.messageId!!.toLong())
+                    .setUid(getMessageUid(messageWrapper)!!)
                     .setMessageId(messageWrapper.messageId)
                     .build())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
+                    .newBuilder()
+                    .setId(messageWrapper.messageId!!)
+                    .setStatus(status.type).build())
         }
     }
 }

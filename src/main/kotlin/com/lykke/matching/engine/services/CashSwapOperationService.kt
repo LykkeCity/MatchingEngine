@@ -45,7 +45,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         if (balance1 - reservedBalance1 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type)
                     .setStatusReason("ClientId:${message.clientId1},asset:${message.assetId1}, volume:${message.volume1}").build())
@@ -58,7 +57,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         if (balance2 - reservedBalance2 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type)
                     .setStatusReason("ClientId:${message.clientId2},asset:${message.assetId2}, volume:${message.volume2}").build())
@@ -72,7 +70,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.LOW_BALANCE.type)
                     .setStatusReason(e.message).build())
@@ -85,7 +82,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setMatchingEngineId(operation.id)
                 .setStatus(OK.type)
                 .build())
@@ -124,7 +120,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setMessageId(messageWrapper.messageId)
                 .setStatus(status.type)
                 .build())
     }
