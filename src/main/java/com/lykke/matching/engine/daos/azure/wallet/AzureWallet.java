@@ -28,7 +28,7 @@ public class AzureWallet extends TableServiceEntity {
         if (balances.isEmpty()) {
             this.balances = "[]";
         } else {
-            balances.forEach(balance -> addBalance(balance.getAsset(), balance.getBalance(), balance.getReserved()));
+            balances.forEach(balance -> addBalance(balance.getAsset(), balance.getBalance().doubleValue(), balance.getReserved().doubleValue()));
         }
     }
 

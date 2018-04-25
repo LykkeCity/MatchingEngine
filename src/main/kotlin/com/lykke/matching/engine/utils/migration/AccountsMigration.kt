@@ -123,7 +123,7 @@ class AccountsMigration(config: MatchingEngineConfig) : Closeable {
         val azureBalances = azureWallet.balances
         val redisBalances = redisWallet.balances
 
-        val onlyAzureAssets = azureBalances.keys.filterNot { redisBalances.keys.contains(it) || azureBalances[it]!!.balance == 0.0 }
+        val onlyAzureAssets = azureBalances.keys.filterNot { redisBalances.keys.contains(it) || azureBalances[it]!!.balance.signum() == 0 }
         val onlyRedisAssets = redisBalances.keys.filterNot { azureBalances.keys.contains(it) }
 
         if (onlyAzureAssets.isNotEmpty() || onlyRedisAssets.isNotEmpty()) {

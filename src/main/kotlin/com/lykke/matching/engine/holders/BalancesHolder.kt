@@ -32,7 +32,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return balance.balance
+                return balance.balance.toDouble()
             }
         }
         return 0.0
@@ -43,7 +43,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return balance.reserved
+                return balance.reserved.toDouble()
             }
         }
 
@@ -55,7 +55,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return if (balance.reserved > 0.0) balance.balance - balance.reserved else balance.balance
+                return (if (balance.reserved.signum() == 1) balance.balance - balance.reserved else balance.balance).toDouble()
             }
         }
 
@@ -68,7 +68,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
             val balance = wallet.balances[assetId]
             if (balance != null) {
                 // reserved can be greater than base balance due to transfer with overdraft
-                return if (balance.reserved > 0.0 && balance.reserved <= balance.balance) balance.reserved else balance.balance
+                return (if (balance.reserved.signum() == 1 && balance.reserved <= balance.balance) balance.reserved else balance.balance).toDouble()
             }
         }
 
@@ -77,7 +77,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
 
     fun updateBalance(clientId: String, assetId: String, balance: Double) {
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setBalance(assetId, balance)
+        wallet.setBalance(assetId, balance.toBigDecimal())
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
                 listOf(wallet.balances[assetId]!!)
@@ -91,7 +91,7 @@ class BalancesHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
         }
 
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setReservedBalance(assetId, balance)
+        wallet.setReservedBalance(assetId, balance.toBigDecimal())
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
                 listOf(wallet.balances[assetId]!!)

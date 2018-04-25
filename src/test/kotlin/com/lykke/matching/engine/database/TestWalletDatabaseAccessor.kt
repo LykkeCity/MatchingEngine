@@ -39,7 +39,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
-                return wallet.balance
+                return wallet.balance.toDouble()
             }
         }
         return 0.0
@@ -51,7 +51,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
-                return wallet.reserved
+                return wallet.reserved.toDouble()
             }
         }
         return 0.0
@@ -64,7 +64,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 }
 fun buildWallet(clientId: String, assetId: String, balance: Double, reservedBalance: Double = 0.0): Wallet {
     val wallet = Wallet(clientId)
-    wallet.setBalance(assetId, balance)
-    wallet.setReservedBalance(assetId, reservedBalance)
+    wallet.setBalance(assetId, balance.toBigDecimal())
+    wallet.setReservedBalance(assetId, reservedBalance.toBigDecimal())
     return wallet
 }

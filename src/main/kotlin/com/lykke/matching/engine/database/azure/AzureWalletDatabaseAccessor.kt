@@ -31,7 +31,12 @@ class AzureWalletDatabaseAccessor(balancesConfig: String, balancesTableName: Str
             val partitionQuery = TableQuery.from(AzureWallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
-                result.put(wallet.rowKey, Wallet(wallet.clientId, wallet.balancesList.map { AssetBalance(wallet.clientId, it.asset, it.balance, it.reserved ?: 0.0) }))
+                result.put(wallet.rowKey, Wallet(wallet.clientId, wallet.balancesList.map {
+                    AssetBalance(wallet.clientId,
+                            it.asset,
+                            it.balance.toBigDecimal(),
+                            (it.reserved ?: 0.0).toBigDecimal())
+                }))
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load accounts", e)

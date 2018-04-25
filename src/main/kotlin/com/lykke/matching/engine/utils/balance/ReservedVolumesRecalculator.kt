@@ -20,6 +20,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.HashMap
 import java.util.LinkedList
 
@@ -98,14 +99,14 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
             val wallet = it.value
             val id = wallet.clientId
             wallet.balances.values.forEach {
-                val oldBalance = it.reserved
+                val oldBalance = it.reserved.toDouble()
                 val newBalance = reservedBalances[id]?.get(it.asset)
                 if (newBalance != null && newBalance.volume > 0.0) {
                     if (oldBalance != newBalance.volume) {
                         val correction = ReservedVolumeCorrection(id, it.asset, newBalance.orderIds.joinToString(","), oldBalance, newBalance.volume)
                         corrections.add(correction)
                         teeLog("1 $id, ${it.asset} : Old $oldBalance New $newBalance")
-                        wallet.setReservedBalance(it.asset, newBalance.volume)
+                        wallet.setReservedBalance(it.asset, newBalance.volume.toBigDecimal())
                         walletDatabaseAccessor.insertOrUpdateWallet(wallet)
                     }
                 } else if (oldBalance != 0.0) {
@@ -113,7 +114,7 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
                     val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: 0.0)
                     corrections.add(correction)
                     teeLog("2 $id, ${it.asset} : Old $oldBalance New ${newBalance ?: 0.0}")
-                    wallet.setReservedBalance(it.asset, 0.0)
+                    wallet.setReservedBalance(it.asset, BigDecimal.ZERO)
                     walletDatabaseAccessor.insertOrUpdateWallet(wallet)
                 }
             }
