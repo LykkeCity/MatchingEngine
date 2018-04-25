@@ -68,6 +68,7 @@ class MessageWrapper(
         if (clientHandler != null) {
             if (message.getField(message.getDescriptorForType().findFieldByName(MESSAGE_ID_FIELD_NAME)) == null) {
                 LOGGER.error("Message id is not provided sourceIp: $sourceIp")
+                throw IllegalArgumentException("Message id is not provided sourceIp: $sourceIp")
             }
 
             try {
