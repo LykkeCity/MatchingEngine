@@ -1,6 +1,7 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
@@ -22,6 +23,8 @@ fun main(args: Array<String>) {
     try {
         context.getBean(Application::class.java).run()
     } catch (e: Exception) {
+        AppInitializer.teeLog(e.message ?: "Unable to start app")
+        e.printStackTrace()
         System.exit(1)
     }
 }

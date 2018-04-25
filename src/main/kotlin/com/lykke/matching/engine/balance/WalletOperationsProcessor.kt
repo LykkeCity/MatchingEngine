@@ -3,7 +3,8 @@ package com.lykke.matching.engine.balance
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -13,10 +14,11 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
+import java.math.BigDecimal
 import java.util.Date
 
  class WalletOperationsProcessor constructor (private val balancesHolder: BalancesHolder,
-                                              private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                              private val persistenceManager: PersistenceManager,
                                               private val applicationEventPublisher: ApplicationEventPublisher,
                                               private val assetsHolder: AssetsHolder,
                                               private val validate: Boolean,
@@ -43,9 +45,9 @@ import java.util.Date
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
-            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount, asset.accuracy).toDouble()
+            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount.toBigDecimal(), asset.accuracy)
             changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
-                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy).toDouble()
+                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount.toBigDecimal(), asset.accuracy)
             else
                 changedAssetBalance.reserved
         }
@@ -69,13 +71,13 @@ import java.util.Date
             val update = updates.getOrPut(key(transactionChangedAssetBalance)) {
                 ClientBalanceUpdate(transactionChangedAssetBalance.clientId,
                         transactionChangedAssetBalance.assetId,
-                        transactionChangedAssetBalance.changedAssetBalance.originBalance,
-                        transactionChangedAssetBalance.balance,
-                        transactionChangedAssetBalance.changedAssetBalance.originReserved,
-                        transactionChangedAssetBalance.reserved)
+                        transactionChangedAssetBalance.changedAssetBalance.originBalance.toDouble(),
+                        transactionChangedAssetBalance.balance.toDouble(),
+                        transactionChangedAssetBalance.changedAssetBalance.originReserved.toDouble(),
+                        transactionChangedAssetBalance.reserved.toDouble())
             }
-            update.newBalance = transactionChangedAssetBalance.balance
-            update.newReserved = transactionChangedAssetBalance.reserved
+            update.newBalance = transactionChangedAssetBalance.balance.toDouble()
+            update.newReserved = transactionChangedAssetBalance.reserved.toDouble()
             it.value.apply()
         })
         return this
@@ -85,8 +87,9 @@ import java.util.Date
         if (changedAssetBalances.isEmpty()) {
             return
         }
+        val clientAssetBalances = changedAssetBalances.values.toSet().map { it.assetBalance }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
-        walletDatabaseAccessor.insertOrUpdateWallets(updatedWallets.toList())
+        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
         clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
         balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
     }
@@ -96,7 +99,7 @@ import java.util.Date
             Wallet(operation.clientId)
         }
         val assetBalance = wallet.balances.getOrPut(operation.assetId) {
-            AssetBalance(operation.assetId)
+            AssetBalance(operation.clientId, operation.assetId)
         }
         return ChangedAssetBalance(wallet, assetBalance)
     }
@@ -104,14 +107,14 @@ import java.util.Date
 
 private abstract class AbstractChangedAssetBalance(val assetId: String,
                                                    val clientId: String,
-                                                   val originBalance: Double,
-                                                   val originReserved: Double) {
-    var balance: Double = originBalance
-    var reserved: Double = originReserved
+                                                   val originBalance: BigDecimal,
+                                                   val originReserved: BigDecimal) {
+    var balance = originBalance
+    var reserved = originReserved
 }
 
 private class ChangedAssetBalance(private val wallet: Wallet,
-                                  assetBalance: AssetBalance) :
+                                  val assetBalance: AssetBalance) :
         AbstractChangedAssetBalance(assetBalance.asset,
                 wallet.clientId,
                 assetBalance.balance,
@@ -143,7 +146,12 @@ private fun key(assetBalance: TransactionChangedAssetBalance) = "${assetBalance.
 
 @Throws(BalanceException::class)
 private fun validateBalanceChange(assetBalance: TransactionChangedAssetBalance) =
-        validateBalanceChange(assetBalance.clientId, assetBalance.assetId, assetBalance.originBalance, assetBalance.originReserved, assetBalance.balance, assetBalance.reserved)
+        validateBalanceChange(assetBalance.clientId,
+                assetBalance.assetId,
+                assetBalance.originBalance.toDouble(),
+                assetBalance.originReserved.toDouble(),
+                assetBalance.balance.toDouble(),
+                assetBalance.reserved.toDouble())
 
 @Throws(BalanceException::class)
 fun validateBalanceChange(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double) {

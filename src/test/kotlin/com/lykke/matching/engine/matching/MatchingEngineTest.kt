@@ -57,9 +57,6 @@ abstract class MatchingEngineTest {
     protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
     @Autowired
-    protected lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
-
-    @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @TestConfiguration

@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
 import org.junit.Test
@@ -46,27 +47,6 @@ class ReservedVolumesRecalculatorTest {
 
         @Bean
         @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient", "BTC", balance = 10.0, reservedBalance = 2.0))
-            // negative reserved balance
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("trustedClient2", "BTC", balance = 1.0, reservedBalance = -0.001))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", balance = 0.0, reservedBalance = -0.001))
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", balance = 10.0, reservedBalance = 1.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", balance = 10.0, reservedBalance = 2.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", balance = 10.0, reservedBalance = 3.0))
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", balance = 10.0, reservedBalance = 0.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", balance = 10.0, reservedBalance = 1.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", balance = 990.0, reservedBalance = 1.0))
-
-            return testWalletDatabaseAccessor
-        }
-
-        @Bean
-        @Primary
         open fun testConfig(): TestConfigDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
             testSettingsDatabaseAccessor.addTrustedClient("trustedClient")
@@ -79,7 +59,7 @@ class ReservedVolumesRecalculatorTest {
     lateinit var applicationContext: ApplicationContext
 
     @Autowired
-    lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
+    protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -127,15 +107,18 @@ class ReservedVolumesRecalculatorTest {
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC",  10.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC", 1.0)
+
+        testBalanceHolderWrapper.updateBalance("Client2", "USD",  990.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "USD", 1.0)
     }
 
     @Test
     fun testRecalculate() {
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor,
-                testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
+        val recalculator = ReservedVolumesRecalculator(testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
                 stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext)
         recalculator.recalculate()
 
+        val testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient2", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client3", "BTC"))
