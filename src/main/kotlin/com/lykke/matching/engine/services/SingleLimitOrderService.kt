@@ -281,6 +281,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         if (!priceAccuracyValid) {
             LOGGER.info("${getOrderInfo(order)} invalid price accuracy")
+            order.status = OrderStatus.InvalidPriceAccuracy.name
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
                     orderBook, messageWrapper, MessageStatus.INVALID_PRICE_ACCURACY, now, isCancelOrders)
         }
@@ -297,6 +298,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         if (!volumeAccuracyValid) {
             LOGGER.info("${getOrderInfo(order)} invalid volume accuracy")
+            order.status = OrderStatus.InvalidVolumeAccuracy.name
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
                     orderBook, messageWrapper, MessageStatus.INVALID_VOLUME_ACCURACY, now, isCancelOrders)
         }

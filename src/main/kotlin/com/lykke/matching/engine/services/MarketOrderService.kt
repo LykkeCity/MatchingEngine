@@ -277,7 +277,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         if (!volumeAccuracyValid) {
             order.status = OrderStatus.InvalidVolumeAccuracy.name
-            LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy")
+            LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy, volume: ${order.volume}")
             writeResponse(messageWrapper, order, MessageStatus.INVALID_VOLUME_ACCURACY, order.assetPairId)
         }
 
@@ -291,7 +291,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         if (!priceAccuracyValid) {
             order.status = OrderStatus.InvalidPriceAccuracy.name
-            LOGGER.info("Invalid order accuracy, ${order.assetPairId}")
+            LOGGER.info("Invalid order accuracy, ${order.assetPairId}, price: ${order.price}")
             writeResponse(messageWrapper, order, MessageStatus.INVALID_PRICE_ACCURACY, order.assetPairId)
         }
 

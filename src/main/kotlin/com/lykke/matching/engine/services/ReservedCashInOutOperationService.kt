@@ -107,6 +107,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)
 
         if (!volumeValid) {
+            LOGGER.info("Volume accuracy invalid, assetId $assetId, volume $volume")
             writeErrorResponse(messageWrapper, operation, MessageStatus.INVALID_VOLUME_ACCURACY)
         }
 

@@ -127,6 +127,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.volume, assetsHolder.getAsset(message.assetId).accuracy)
 
         if (!volumeValid) {
+            LOGGER.info(""""Volume accuracy invalid fromClient  ${message.fromClientId},
+                |to client ${message.toClientId} assetId: ${message.assetId}, volume: $message.volume""".trimMargin())
             writeErrorResponse(messageWrapper, transferOperationId, MessageStatus.INVALID_VOLUME_ACCURACY)
         }
 

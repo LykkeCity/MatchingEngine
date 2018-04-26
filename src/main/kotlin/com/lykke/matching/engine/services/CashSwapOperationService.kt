@@ -81,6 +81,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)
 
         if (!volumeValid) {
+            LOGGER.info("Volume accuracy invalid, assetId: $assetId, clientId1 ${operation.clientId1}, clientId2 ${operation.clientId2}, volume $volume")
             writeErrorResponse(messageWrapper, operation, MessageStatus.INVALID_VOLUME_ACCURACY)
         }
 
