@@ -25,10 +25,19 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
         val result = HashMap<String, Wallet>()
         var balancesCount = 0
         jedisPool.resource().use { jedis ->
-            val keys = balancesKeys(jedis)
-            keys.forEach { key ->
+            val keys = balancesKeys(jedis).toList()
+
+            val values = if (keys.isNotEmpty())
+                jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
+            else emptyList()
+
+            values.forEachIndexed { index, value ->
+                val key = keys[index]
                 try {
-                    val balance = deserializeClientAssetBalance(jedis, key)
+                    if (value == null) {
+                        throw Exception("Balance is not exist, key: $key")
+                    }
+                    val balance = deserializeClientAssetBalance(value)
                     if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
                         throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
                     }
@@ -78,9 +87,8 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
 
     private fun serializeClientAssetBalance(balance: AssetBalance) = conf.asByteArray(balance)
 
-    private fun deserializeClientAssetBalance(jedis: Jedis, key: String): AssetBalance {
-        val bytes = jedis[key.toByteArray()]
-        val readCase = conf.asObject(bytes)
+    private fun deserializeClientAssetBalance(value: ByteArray): AssetBalance {
+        val readCase = conf.asObject(value)
         return readCase as AssetBalance
     }
 
