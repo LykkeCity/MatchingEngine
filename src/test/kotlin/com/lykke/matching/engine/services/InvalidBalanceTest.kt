@@ -1,9 +1,13 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -16,22 +20,48 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitO
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildTransferWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (InvalidBalanceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class InvalidBalanceTest : AbstractTest() {
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
+    @TestConfiguration
+    open class Config {
+
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("ETHUSD", "ETH", "USD", 5))
     }
 
     @Test
     fun testLimitOrderLeadsToInvalidBalance() {
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 0.02, reservedBalance = 0.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "ETH", balance = 1000.0, reservedBalance = 0.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 0.02)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client1", assetId = "USD", reservedBalance = 0.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "ETH", balance = 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client2", assetId = "ETH", reservedBalance = 0.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
@@ -74,10 +104,12 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun testMarketOrderWithPreviousInvalidBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client1", assetId = "USD", balance = 0.02, reservedBalance = 0.0))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 0.02)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client1", assetId = "USD", reservedBalance = 0.0)
 
         // invalid opposite wallet
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(clientId = "Client2", assetId = "ETH", balance = 1.0, reservedBalance = 1.1))
+        testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "ETH", balance = 1.0)
+        testBalanceHolderWrapper.updateReservedBalance(clientId = "Client2", assetId = "ETH", reservedBalance = 1.1)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
@@ -123,8 +155,8 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun testNegativeBalanceDueToTransferWithOverdraftLimit() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 3.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 3.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 3.0)
 
         initServices()
 
@@ -153,16 +185,21 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun testMultiLimitOrderWithNotEnoughReservedFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 0.25, reservedBalance = 0.09))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 275.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.25)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
 
+        testConfigDatabaseAccessor.addTrustedClient("Client1")
+        applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
                 VolumePrice(-0.1, 1000.0),
                 VolumePrice(-0.05, 1010.0),
                 VolumePrice(-0.1, 1100.0)
         ), emptyList(), emptyList(), ordersUid = listOf("1", "2", "3")))
+        testConfigDatabaseAccessor.clear()
+        applicationSettingsCache.update()
 
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))
@@ -185,13 +222,18 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun `Test multi limit order with enough reserved but not enough main balance`() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "ETH", 0.04, reservedBalance = 0.05))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 275.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.05)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
 
+        testConfigDatabaseAccessor.addTrustedClient("Client1")
+        applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(VolumePrice(-0.05, 1010.0)), emptyList(), emptyList(), ordersUid = listOf("1")))
+        testConfigDatabaseAccessor.clear()
+        applicationSettingsCache.update()
 
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))

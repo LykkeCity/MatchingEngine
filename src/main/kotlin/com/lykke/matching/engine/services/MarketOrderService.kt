@@ -140,7 +140,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val matchingResult = matchingEngine.match(order, orderBook, messageWrapper.messageId!!)
+        val matchingResult = matchingEngine.initTransaction().match(order, orderBook, messageWrapper.messageId!!)
         val orderStatus = matchingResult.order.status
         when (OrderStatus.valueOf(orderStatus)) {
             NoLiquidity -> {

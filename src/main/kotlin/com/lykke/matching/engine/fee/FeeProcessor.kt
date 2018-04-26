@@ -96,7 +96,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             Fee(feeInstruction, feeTransfer)
         }
         val totalFeeAmount = fees.sumByDouble { fee ->
-            if (fee.transfer != null && fee.transfer.asset == receiptOperation.assetId) fee.transfer.volume else 0.0
+            if (fee.instruction.type == FeeType.CLIENT_FEE && fee.transfer != null && fee.transfer.asset == receiptOperation.assetId)
+                fee.transfer.volume else 0.0
         }
         if (totalFeeAmount > 0 && totalFeeAmount > Math.abs(receiptOperation.amount)) {
             throw FeeException("Total fee amount should be not more than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
@@ -135,13 +136,9 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             FeeSizeType.ABSOLUTE -> feeSize * (feeCoef ?: 1.0)
         }, feeAsset.accuracy, true)
 
-        if (!isAnotherAsset && absFeeAmount > Math.abs(receiptOperation.amount)) {
-            throw FeeException("Base asset fee amount ($absFeeAmount) should be in [0, ${Math.abs(receiptOperation.amount)}]")
-        }
-
         return when (feeInstruction.type) {
             FeeType.CLIENT_FEE -> processClientFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances)
-            FeeType.EXTERNAL_FEE -> processExternalFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances)
+            FeeType.EXTERNAL_FEE -> processExternalFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, feeCoef, balances)
             else -> {
                 LOGGER.error("Unknown fee type: ${feeInstruction.type}")
                 null
@@ -154,7 +151,6 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                                    operations: MutableList<WalletOperation>,
                                    absFeeAmount: Double,
                                    feeAsset: Asset,
-                                   isAnotherAsset: Boolean,
                                    feeCoef: Double?,
                                    balances: MutableMap<String, MutableMap<String, Double>>): FeeTransfer? {
         if (feeInstruction.sourceClientId == null) {
@@ -162,15 +158,14 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         }
         val clientBalances = balances.getOrPut(feeInstruction.sourceClientId) { HashMap() }
         val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesHolder.getAvailableBalance(feeInstruction.sourceClientId, feeAsset.assetId) }
-        return if (balance < absFeeAmount) {
-            processClientFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances)
-        } else {
-            val receiptOperation = receiptOperationWrapper.baseReceiptOperation
-            clientBalances[feeAsset.assetId] = RoundingUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
-            operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.sourceClientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
-            operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
-            FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) RoundingUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
+        if (balance < absFeeAmount) {
+            throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
         }
+        val receiptOperation = receiptOperationWrapper.baseReceiptOperation
+        clientBalances[feeAsset.assetId] = RoundingUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
+        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.sourceClientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
+        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
+        return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) RoundingUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
     }
 
     private fun processClientFee(feeInstruction: FeeInstruction,
@@ -193,6 +188,9 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, receiptOperation.clientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
         } else {
             val baseReceiptOperationAmount = receiptOperationWrapper.baseReceiptOperation.amount
+            if (absFeeAmount > Math.abs(baseReceiptOperationAmount)) {
+                throw FeeException("Base asset fee amount ($absFeeAmount) should be in [0, ${Math.abs(baseReceiptOperationAmount)}]")
+            }
             val newReceiptAmount = if (baseReceiptOperationAmount > 0) receiptOperation.amount - absFeeAmount else receiptOperation.amount
             operations.remove(receiptOperation)
             val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId, receiptOperation.assetId, receiptOperation.dateTime, RoundingUtils.parseDouble(newReceiptAmount, feeAsset.accuracy).toDouble())

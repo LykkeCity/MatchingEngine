@@ -19,7 +19,15 @@ class OrderStatusUtils {
                 OrderStatus.NoLiquidity -> MessageStatus.NO_LIQUIDITY
                 OrderStatus.ReservedVolumeGreaterThanBalance -> MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE
                 OrderStatus.NotEnoughFunds -> MessageStatus.NOT_ENOUGH_FUNDS
-                else -> MessageStatus.OK
+                OrderStatus.UnknownAsset -> MessageStatus.UNKNOWN_ASSET
+                OrderStatus.NotFoundPrevious -> MessageStatus.NOT_FOUND_PREVIOUS
+                OrderStatus.Replaced -> MessageStatus.REPLACED
+
+                OrderStatus.InOrderBook,
+                OrderStatus.Processing,
+                OrderStatus.Pending,
+                OrderStatus.Matched,
+                OrderStatus.Cancelled -> MessageStatus.OK
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.fee
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
@@ -8,12 +10,9 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
@@ -21,6 +20,14 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderF
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
@@ -28,45 +35,74 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (FeeProcessorTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FeeProcessorTest {
 
-    private val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-    private val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
-    private val assetsHolder = AssetsHolder(AssetsCache(testBackOfficeDatabaseAccessor))
     private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
     private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
-    private lateinit var balancesHolder: BalancesHolder
     private lateinit var feeProcessor: FeeProcessor
     private lateinit var genericLimitOrderService: GenericLimitOrderService
 
-    private val applicationSettingsCache: ApplicationSettingsCache = ApplicationSettingsCache(TestSettingsDatabaseAccessor())
+    @Autowired
+    private lateinit var assetsHolder: AssetsHolder
+
+    @Autowired
+    lateinit var balancesHolder: BalancesHolder
+
+    @Autowired
+    lateinit var  testBalanceHolderWrapper: TestBalanceHolderWrapper
+
+    @Autowired
+    lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
+    @Autowired
+    lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
+
+    @Autowired
+    lateinit var applicationSettingsCache: ApplicationSettingsCache
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
         initServices()
     }
 
     private fun initServices() {
         assetsPairsCache.update()
-        balancesHolder = BalancesHolder(testWalletDatabaseAccessor, assetsHolder, LinkedBlockingQueue<BalanceUpdateNotification>(), balanceUpdateQueue, applicationSettingsCache)
-        genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
+        genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor,
+                assetsHolder,
+                assetsPairsHolder,
+                balancesHolder,
+                LinkedBlockingQueue(),
+                LinkedBlockingQueue(),
+                applicationSettingsCache)
+
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 
     @Test
     fun testNoPercentageFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 10.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10.0)
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
@@ -146,7 +182,7 @@ class FeeProcessorTest {
 
     @Test
     fun testNoAbsoluteFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.09))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.09)
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         initServices()
@@ -217,7 +253,8 @@ class FeeProcessorTest {
 
     @Test
     fun testAnotherAssetFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 0.6543, 0.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.6543)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 0.0)
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
         initServices()
 
@@ -329,7 +366,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalPercentageFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -363,7 +400,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalPercentageFeeNotEnoughFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 0.1))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 0.1)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -374,24 +411,8 @@ class FeeProcessorTest {
         val originalOperations = LinkedList(operations)
 
         val feeInstructions = buildFeeInstructions(type = FeeType.EXTERNAL_FEE, size = 0.01, sourceClientId = "Client3", targetClientId = "Client4")
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
-
-        assertEquals(1, fees.size)
-        val fee = fees.first()
-        assertEquals("USD", fee.transfer!!.asset)
-        assertEquals("Client2", fee.transfer!!.fromClientId)
-        assertEquals("Client4", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
-        assertEquals(0.11, fee.transfer!!.volume)
-
-        assertEquals(3, operations.size)
-        assertEquals(originalOperations[0], operations[0])
-        assertEquals(9.99, operations[1].amount)
-        assertFalse { operations[1].isFee }
-        assertEquals(0.11, operations[2].amount)
-        assertEquals("Client4", operations[2].clientId)
-        assertTrue { operations[2].isFee }
+        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertEquals(originalOperations, operations)
     }
 
     @Test
@@ -463,7 +484,7 @@ class FeeProcessorTest {
 
     @Test
     fun testMakerMultipleFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 1000.0)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -533,7 +554,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalMultipleFeeNotEnoughFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1.12))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1.12)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
@@ -541,19 +562,15 @@ class FeeProcessorTest {
         operations.add(WalletOperation("1", null, "Client1", "USD", now, -10.12))
         operations.add(WalletOperation("2", null, "Client2", "USD", now, 10.12))
         val receiptOperation = operations[1]
+        val originalOperations = LinkedList(operations)
 
         val feeInstructions = listOf(
                 buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.03, sourceClientId = "Client3", targetClientId = "Client4")!!,
                 buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.03, sourceClientId = "Client3", targetClientId = "Client5")!!,
                 buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.05, sourceClientId = "Client3", targetClientId = "Client6")!!
         )
-        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
-
-        assertEquals(3, fees.size)
-        val fee = fees.firstOrNull { it.transfer?.toClientId == "Client6" }
-        assertNotNull(fee)
-        assertEquals("Client2", fee!!.transfer!!.fromClientId)
-        assertEquals(7, operations.size)
+        assertFailsWith(NotEnoughFundsFeeException::class) { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
+        assertEquals(originalOperations, operations)
     }
 
     @Test
@@ -594,8 +611,9 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testExternalMultipleFeeNotEnoughFundsAndMoreThanOperationVolume() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 10.12))
+    fun testExternalFeeGreaterThanOperationVolume() {
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 11.0)
+        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -604,13 +622,28 @@ class FeeProcessorTest {
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
-        val feeInstructions = listOf(
-                buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.33, sourceClientId = "Client3", targetClientId = "Client4")!!,
-                buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.33, sourceClientId = "Client3", targetClientId = "Client5")!!,
-                buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 0.35, sourceClientId = "Client3", targetClientId = "Client6")!!
-        )
-        assertFails { feeProcessor.processFee(feeInstructions, receiptOperation, operations) }
-        assertEquals(originalOperations, operations)
+        val feeInstructions = listOf(buildFeeInstruction(type = FeeType.EXTERNAL_FEE, size = 1.01, sourceClientId = "Client3", targetClientId = "Client4")!!)
+
+        val fees = feeProcessor.processFee(feeInstructions, receiptOperation, operations)
+
+        assertEquals(1, fees.size)
+        val fee = fees.first()
+        assertEquals("USD", fee.transfer!!.asset)
+        assertEquals("Client3", fee.transfer!!.fromClientId)
+        assertEquals("Client4", fee.transfer!!.toClientId)
+        assertNull(fee.transfer!!.externalId)
+        assertEquals(now, fee.transfer!!.dateTime)
+        assertEquals(10.23, fee.transfer!!.volume)
+
+        assertEquals(4, operations.size)
+        assertEquals(originalOperations, operations.subList(0, 2))
+        assertEquals(-10.23, operations[2].amount)
+        assertEquals("Client3", operations[2].clientId)
+        assertTrue { operations[2].isFee }
+        assertEquals(10.23, operations[3].amount)
+        assertEquals("Client4", operations[3].clientId)
+        assertTrue { operations[3].isFee }
+
     }
 
     @Test

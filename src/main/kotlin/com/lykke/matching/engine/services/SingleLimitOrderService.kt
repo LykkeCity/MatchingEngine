@@ -1,56 +1,23 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
-import java.util.concurrent.BlockingQueue
 
 class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
-
-    @Deprecated("Use primary constructor")
-    constructor(limitOrderService: GenericLimitOrderService,
-                stopLimitOrderService: GenericStopLimitOrderService,
-                trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                orderBookQueue: BlockingQueue<OrderBook>,
-                rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                assetsHolder: AssetsHolder,
-                assetsPairsHolder: AssetsPairsHolder,
-                balancesHolder: BalancesHolder,
-                applicationSettingsCache: ApplicationSettingsCache,
-                lkkTradesQueue: BlockingQueue<List<LkkTrade>>) :
-            this(GenericLimitOrderProcessorFactory(limitOrderService,
-                    stopLimitOrderService,
-                    trustedClientLimitOrderReportQueue,
-                    clientLimitOrderReportQueue,
-                    orderBookQueue,
-                    rabbitOrderBookQueue,
-                    assetsHolder,
-                    assetsPairsHolder,
-                    balancesHolder,
-                    applicationSettingsCache,
-                    lkkTradesQueue))
 
     companion object {
         private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
@@ -80,7 +47,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             val uid = UUID.randomUUID().toString()
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null,
-                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null)
+                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
             LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
@@ -154,7 +121,8 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 lowerLimitPrice = if (message.hasLowerLimitPrice()) message.lowerLimitPrice else null,
                 lowerPrice = if (message.hasLowerPrice()) message.lowerPrice else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) message.upperLimitPrice else null,
-                upperPrice = if (message.hasUpperPrice()) message.upperPrice else null)
+                upperPrice = if (message.hasUpperPrice()) message.upperPrice else null,
+                previousExternalId = null)
     }
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {

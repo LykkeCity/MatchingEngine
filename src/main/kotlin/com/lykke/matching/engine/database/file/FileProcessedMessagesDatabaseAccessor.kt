@@ -2,10 +2,13 @@ package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.commons.lang3.StringUtils
 import org.nustaq.serialization.FSTConfiguration
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -16,7 +19,7 @@ import java.util.Date
 import java.util.LinkedList
 import java.util.stream.Collectors
 
-class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): ProcessedMessagesDatabaseAccessor {
+class FileProcessedMessagesDatabaseAccessor constructor (private val messagesDir: String): ProcessedMessagesDatabaseAccessor {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileProcessedMessagesDatabaseAccessor::class.java.name)
@@ -71,12 +74,12 @@ class FileProcessedMessagesDatabaseAccessor(private val messagesDir: String): Pr
     override fun saveProcessedMessage(message: ProcessedMessage) {
         try {
             val fileName = DATE_FORMAT.format(Date(message.timestamp))
-            val file = File("$messagesDir/$fileName")
+            val file = File("$filePath/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asJsonString(message)
-            Files.write(FileSystems.getDefault().getPath("$messagesDir/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            Files.write(FileSystems.getDefault().getPath("$filePath/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (ex: Exception) {
             LOGGER.error("Unable to save message info: $message", ex)
             METRICS_LOGGER.logError( "Unable to save message info: $message", ex)

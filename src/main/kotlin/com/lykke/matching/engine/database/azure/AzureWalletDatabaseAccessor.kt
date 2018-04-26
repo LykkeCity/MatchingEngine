@@ -11,14 +11,14 @@ import com.microsoft.azure.storage.table.TableQuery
 import java.util.HashMap
 
 
-class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccessor {
-
+class AzureWalletDatabaseAccessor (val connectionString: String,
+                                                         tableName: String) : WalletDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val accountTable: CloudTable = getOrCreateTable(balancesConfig, "Accounts")
+    private val accountTable: CloudTable = getOrCreateTable(connectionString, tableName)
 
     private val PARTITION_KEY = "PartitionKey"
     private val CLIENT_BALANCE = "ClientBalance"

@@ -9,7 +9,7 @@ import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
 class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                   private val genericLimitOrderService: GenericLimitOrderService) {
+                                   private val genericLimitOrderService: GenericLimitOrderService): AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
     val initialStopOrdersCount: Int
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
@@ -19,7 +19,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
     init {
         val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
         stopOrders.forEach { order ->
-            getStopOrderBook(order.assetPairId).addOrder(order)
+            getOrderBook(order.assetPairId).addOrder(order)
             addOrder(order)
         }
         initialStopOrdersCount = stopOrders.size
@@ -54,22 +54,38 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             removeFromClientMap(uid, clientStopLimitOrdersMap)
         }
 
-        getStopOrderBook(order.assetPairId).removeOrder(order)
+        getOrderBook(order.assetPairId).removeOrder(order)
         order.status = OrderStatus.Cancelled.name
-        updateStopOrderBook(order.assetPairId, order.isBuySide())
+        updateOrderBook(order.assetPairId, order.isBuySide())
         return order
     }
 
-    fun getStopOrderBook(assetPairId: String) = stopLimitOrdersQueues.getOrPut(assetPairId) { AssetStopOrderBook(assetPairId) }!!
+    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>) {
+        orders.forEach { order ->
+            val ord = stopLimitOrdersMap.remove(order.externalId)
+            clientStopLimitOrdersMap[order.clientId]?.remove(order)
+            if (ord != null) {
+                ord.status = OrderStatus.Cancelled.name
+            }
+        }
+    }
 
-    private fun updateStopOrderBook(assetPairId: String, isBuy: Boolean) {
-        stopOrderBookDatabaseAccessor.updateStopOrderBook(assetPairId, isBuy, getStopOrderBook(assetPairId).getOrderBook(isBuy))
+    override fun getOrderBook(assetPairId: String) = stopLimitOrdersQueues.getOrPut(assetPairId) { AssetStopOrderBook(assetPairId) }!!
+
+    fun getOrder(uid: String) = stopLimitOrdersMap[uid]
+
+    override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {
+        stopOrderBookDatabaseAccessor.updateStopOrderBook(assetPairId, isBuy, getOrderBook(assetPairId).getOrderBook(isBuy))
+    }
+
+    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook){
+        stopLimitOrdersQueues[assetPairId] = assetOrderBook
     }
 
     fun addStopOrder(order: NewLimitOrder) {
-        getStopOrderBook(order.assetPairId).addOrder(order)
+        getOrderBook(order.assetPairId).addOrder(order)
         addOrder(order)
-        updateStopOrderBook(order.assetPairId, order.isBuySide())
+        updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
     fun getStopOrderForProcess(assetPairId: String): NewLimitOrder? {
@@ -82,7 +98,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         if (price <= 0) {
             return null
         }
-        val stopOrderBook = getStopOrderBook(assetPairId)
+        val stopOrderBook = getOrderBook(assetPairId)
         var order: NewLimitOrder?
         var orderPrice: Double? = null
         order = stopOrderBook.getOrder(price, isBuySide, true)
@@ -98,7 +114,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             stopLimitOrdersMap.remove(order.externalId)
             removeFromClientMap(order.externalId, clientStopLimitOrdersMap)
             stopOrderBook.removeOrder(order)
-            updateStopOrderBook(order.assetPairId, order.isBuySide())
+            updateOrderBook(order.assetPairId, order.isBuySide())
             order.price = orderPrice!!
             order.status = OrderStatus.InOrderBook.name
         }
