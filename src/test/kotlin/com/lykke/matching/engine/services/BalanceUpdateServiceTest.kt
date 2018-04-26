@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -18,6 +19,9 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     @Before
     fun setUp() {
+        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset1", 2))
+        testBackOfficeDatabaseAccessor.addAsset(Asset("Asset2", 2))
+
         testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "Asset1", 1000.0))
         initServices()
     }

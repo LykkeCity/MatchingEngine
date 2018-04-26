@@ -183,7 +183,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>) : T
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, orderBooksQueue,
                 rabbitTrustedClientsLimitOrdersQueue, rabbitClientLimitOrdersQueue, rabbitOrderBooksQueue)
-        this.balanceUpdateService = BalanceUpdateService(balanceHolder)
+        this.balanceUpdateService = BalanceUpdateService(balanceHolder, assetsHolder)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         if (config.me.cancelMinVolumeOrders) {
