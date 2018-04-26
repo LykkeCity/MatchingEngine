@@ -57,7 +57,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         val assetPairs = HashSet(ordersToCancel.keys)
         if (assetPairs.isNotEmpty()) {
             assetPairs.forEach { assetPair ->
-                genericLimitOrderProcessor.checkAndProcessStopOrder(assetPair.assetPairId, date)
+                genericLimitOrderProcessor.checkAndProcessStopOrder(operationId, assetPair.assetPairId, date)
             }
         }
     }

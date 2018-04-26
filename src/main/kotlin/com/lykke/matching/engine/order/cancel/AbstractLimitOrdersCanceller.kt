@@ -146,13 +146,13 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         }
 
         if (result.clientsOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(result.clientsOrdersWithTrades.toMutableList()))
+            clientsLimitOrdersQueue.put(LimitOrdersReport(operationId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(result.trustedClientsOrdersWithTrades.toMutableList()))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(operationId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
 
-        walletProcessor.apply(operationId, operationType)
+        walletProcessor.apply(operationId, operationType, operationId)
     }
 
     @Suppress("unchecked_cast")

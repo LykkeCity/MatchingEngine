@@ -74,12 +74,12 @@ class FileProcessedMessagesDatabaseAccessor constructor (private val messagesDir
     override fun saveProcessedMessage(message: ProcessedMessage) {
         try {
             val fileName = DATE_FORMAT.format(Date(message.timestamp))
-            val file = File("$filePath/$fileName")
+            val file = File("$messagesDir/$fileName")
             if (!file.exists()) {
                 file.createNewFile()
             }
             val bytes = conf.asJsonString(message)
-            Files.write(FileSystems.getDefault().getPath("$filePath/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            Files.write(FileSystems.getDefault().getPath("$messagesDir/$fileName"), Arrays.asList(bytes), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (ex: Exception) {
             LOGGER.error("Unable to save message info: $message", ex)
             METRICS_LOGGER.logError( "Unable to save message info: $message", ex)

@@ -43,30 +43,30 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
             applicationSettingsCache,
             LOGGER)
 
-    fun checkAndProcessStopOrder(messageWrapper: MessageWrapper?, assetPairId: String, now: Date) {
+    fun checkAndProcessStopOrder(operationId: String, assetPairId: String, now: Date) {
         val order = stopLimitOrderService.getStopOrderForProcess(assetPairId) ?: return
         val orderBook = limitOrderService.getOrderBook(assetPairId)
         LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()})")
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
-        processLimitOrder(messageWrapper, order, now, payBackReserved)
+        processLimitOrder(operationId, order, now, payBackReserved)
     }
 
-    private fun processLimitOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
-        limitOrderProcessor.processLimitOrder(messageWrapper, order, isCancelOrders, now, messageWrapper = messageWrapper)
-        checkAndProcessStopOrder(order.assetPairId, now)
+    private fun processLimitOrder(operationId: String, messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
+        limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, operationId, messageWrapper =   messageWrapper)
+        checkAndProcessStopOrder(operationId, order.assetPairId, now)
     }
 
     fun processOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         when(order.type) {
-            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper, order, isCancelOrders, now)
+            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper.messageId!!, messageWrapper, order, isCancelOrders, now)
             LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, order, isCancelOrders, now)
         }
     }
 
-    fun processLimitOrder(messageWrapper: MessageWrapper?, order: NewLimitOrder, now: Date, payBackReserved: Double) {
-        limitOrderProcessor.processLimitOrder(messageWrapper, order, false, now, payBackReserved)
-        checkAndProcessStopOrder(messageWrapper, order.assetPairId, now)
+    fun processLimitOrder(operationId: String, order: NewLimitOrder, now: Date, payBackReserved: Double) {
+        limitOrderProcessor.processLimitOrder(order, false, now, operationId, payBackReserved)
+        checkAndProcessStopOrder(operationId, order.assetPairId, now)
     }
 
     private fun processStopOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) =
