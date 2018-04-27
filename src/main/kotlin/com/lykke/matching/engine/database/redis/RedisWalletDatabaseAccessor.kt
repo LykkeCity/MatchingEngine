@@ -10,7 +10,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.Transaction
 import java.util.HashMap
 
-class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : WalletDatabaseAccessor/*, BalancesDatabaseAccessor*/ {
+class RedisWalletDatabaseAccessor(private val jedis: Jedis) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisWalletDatabaseAccessor::class.java.name)
@@ -24,7 +24,7 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
         var balancesCount = 0
-        jedisPool.resource().use { jedis ->
+        jedis.use { jedis ->
             val keys = balancesKeys(jedis).toList()
 
             val values = if (keys.isNotEmpty())
@@ -59,20 +59,11 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPoolHolder) : Wall
     }
 
     override fun insertOrUpdateWallets(wallets: List<Wallet>) {
-        jedisPool.resource().use { jedis ->
-            val transaction = jedis.multi()
-            var success = false
-            try {
-                insertOrUpdateBalances(transaction, wallets.flatMap { it.balances.values })
-                success = true
-            } finally {
-                if (success) transaction.exec() else jedis.resetState()
-            }
-        }
+        // Nothing to do
     }
 
     override fun insertOrUpdateWallet(wallet: Wallet) {
-        insertOrUpdateWallets(listOf(wallet))
+        // Nothing to do
     }
 
     fun insertOrUpdateBalances(transaction: Transaction, balances: Collection<AssetBalance>) {

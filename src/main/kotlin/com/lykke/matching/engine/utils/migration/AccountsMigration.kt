@@ -3,7 +3,6 @@ package com.lykke.matching.engine.utils.migration
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.JedisPoolFactory
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.exception.MatchingEngineException
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -11,7 +10,7 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
-import java.io.Closeable
+import redis.clients.jedis.Jedis
 import java.util.Date
 import java.util.LinkedList
 
@@ -22,14 +21,14 @@ fun migrateAccountsIfConfigured(applicationContext: ApplicationContext) {
     }
     val balancesHolder = applicationContext.getBean(BalancesHolder::class.java)
     when (config.me.walletsStorage) {
-        WalletsStorage.Azure -> AccountsMigration(config.me, balancesHolder).use { it.fromRedisToDb() }
-        WalletsStorage.Redis -> AccountsMigration(config.me, balancesHolder).use { it.fromDbToRedis() }
+        WalletsStorage.Azure -> AccountsMigration(config.me, balancesHolder).fromRedisToDb()
+        WalletsStorage.Redis -> AccountsMigration(config.me, balancesHolder).fromDbToRedis()
     }
 }
 
 class AccountsMigrationException(message: String) : MatchingEngineException(message)
 
-class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder: BalancesHolder) : Closeable {
+class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder: BalancesHolder) {
 
     companion object {
         private val LOGGER = Logger.getLogger(AccountsMigration::class.java.name)
@@ -41,14 +40,16 @@ class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder
     private val redisHost = config.redis.balancesHost
     private val redisPort = config.redis.balancesPort
     private val redisIndex = config.redis.balancesDbIndex
-    private val jedisPool = JedisPoolFactory().create(redisHost, redisPort, redisIndex)
 
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, azureAccountsTableName)
-    private val redisDatabaseAccessor = RedisWalletDatabaseAccessor(jedisPool)
+    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor
 
-    override fun close() {
-        jedisPool.close()
+    init {
+        val jedis = Jedis(redisHost, redisPort)
+        jedis.select(redisIndex)
+        redisDatabaseAccessor = RedisWalletDatabaseAccessor(jedis)
     }
+
 
     fun fromDbToRedis() {
         if (redisDatabaseAccessor.loadWallets().isNotEmpty()) {

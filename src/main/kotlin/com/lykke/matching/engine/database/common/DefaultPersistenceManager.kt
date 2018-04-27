@@ -5,22 +5,22 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.utils.logging.MetricsLogger
-import com.lykke.utils.logging.ThrottlingLogger
+import org.apache.log4j.Logger
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder) : PersistenceManager {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(DefaultPersistenceManager::class.java.name)
+        private val LOGGER = Logger.getLogger(DefaultPersistenceManager::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     private val primaryBalancesAccessor = balancesDatabaseAccessorsHolder.primaryAccessor
     private val secondaryBalancesAccessor = balancesDatabaseAccessorsHolder.secondaryAccessor
-    private val balancesJedisPoolHolder = balancesDatabaseAccessorsHolder.jedisPoolHolder
     private val isRedisBalancesPrimary = primaryBalancesAccessor is RedisWalletDatabaseAccessor
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
+    private val balancesJedis = balancesDatabaseAccessorsHolder.jedis
 
     override fun balancesQueueSize() = updatedWalletsQueue.size
 
@@ -40,20 +40,19 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
             return
         }
 
-        val balancesJedis = balancesJedisPoolHolder!!.resource()
-        balancesJedis.use {
-            val transaction = balancesJedis.multi()
+        balancesJedis.use { balancesJedis ->
+            val transaction = balancesJedis!!.multi()
             var success = false
             try {
                 primaryBalancesAccessor as RedisWalletDatabaseAccessor
                 primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
-                if (secondaryBalancesAccessor != null) {
-                    updatedWalletsQueue.put(data.wallets)
-                }
                 success = true
             } finally {
                 if (success) transaction.exec() else balancesJedis.resetState()
             }
+        }
+        if (secondaryBalancesAccessor != null) {
+            updatedWalletsQueue.put(data.wallets)
         }
     }
 
