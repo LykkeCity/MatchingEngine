@@ -348,13 +348,12 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         limitOrderService.setOrderBook(order.assetPairId, orderBook)
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(now.time))
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(order.externalId)
                     .setMatchingEngineId(order.id)
-                    .setStatus(status.type)
-                    .build())
+                    .setStatus(status.type))
         }
 
         if (trustedLimitOrdersReport.orders.isNotEmpty()) {
@@ -370,21 +369,19 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()))
         } else {
             if (reason == null) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(order.externalId)
                         .setMatchingEngineId(order.id)
-                        .setStatus(status.type)
-                        .build())
+                        .setStatus(status.type))
             } else {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(order.externalId)
                         .setMatchingEngineId(order.id)
                         .setStatus(status.type)
-                        .setStatusReason(reason)
-                        .build())
+                        .setStatusReason(reason))
             }
         }
     }
@@ -414,13 +411,11 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!)
-                    .build())
+                    .setUid(getMessageUid(messageWrapper)!!))
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
-                    .setStatus(status.type)
-                    .build())
+                    .setStatus(status.type))
         }
     }
 }

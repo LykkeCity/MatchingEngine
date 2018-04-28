@@ -256,7 +256,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                     .setUid(order.externalId.toLong())
-                    .setRecordId(order.id).build())
+                    .setRecordId(order.id))
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
             val newResponseBuilder = ProtocolMessages.NewResponse.newBuilder()
                     .setId(order.externalId)
@@ -267,7 +267,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 newResponseBuilder.statusReason = reason
             }
 
-            messageWrapper.writeNewResponse(newResponseBuilder.build())
+            messageWrapper.writeNewResponse(newResponseBuilder)
 
         } else {
             val marketOrderResponse = ProtocolMessages.MarketOrderResponse.newBuilder()
@@ -280,7 +280,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 marketOrderResponse.statusReason = reason
             }
 
-            messageWrapper.writeMarketOrderResponse(marketOrderResponse.build())
+            messageWrapper.writeMarketOrderResponse(marketOrderResponse)
         }
     }
 
@@ -301,18 +301,15 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!)
-                    .build())
+                    .setUid(getMessageUid(messageWrapper)!!))
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
-                    .setStatus(status.type)
-                    .build())
+                    .setStatus(status.type))
         } else{
             messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
-                    .setStatus(status.type)
-                    .build())
+                    .setStatus(status.type))
         }
     }
 }

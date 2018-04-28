@@ -39,8 +39,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
                     listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(message.uid)
-                    .build())
+                    .setUid(message.uid))
 
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         } else {
@@ -52,8 +51,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             if (reservedBalance > message.amount) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.uid)
-                        .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type)
-                        .build())
+                        .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type))
                 LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
                 return
             }
@@ -66,8 +64,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.uid)
-                    .setStatus(MessageStatus.OK.type)
-                    .build())
+                    .setStatus(MessageStatus.OK.type))
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         }
     }
@@ -106,13 +103,11 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!)
-                    .build())
+                    .setUid(getMessageUid(messageWrapper)!!))
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(messageWrapper.messageId)
-                    .setStatus(status.type)
-                    .build())
+                    .setId(getMessageUid(messageWrapper).toString()!!)
+                    .setStatus(status.type))
         }
     }
 }

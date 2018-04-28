@@ -28,8 +28,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         if (message.reservedAmount > balance) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.uid)
-                    .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type)
-                    .build())
+                    .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type))
             LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(balance)}) is lower that reserved balance ${RoundingUtils.roundForPrint(message.reservedAmount)}")
             return
         }
@@ -43,8 +42,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.uid)
-                .setStatus(MessageStatus.OK.type)
-                .build())
+                .setStatus(MessageStatus.OK.type))
         LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
     }
 
@@ -63,7 +61,6 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedBalanceUpdate
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.uid)
-                .setStatus(status.type)
-                .build())
+                .setStatus(status.type))
     }
 }

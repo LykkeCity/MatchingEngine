@@ -296,8 +296,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         if (isOldTypeMessage) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageUid.toLong())
-                    .build())
+                    .setUid(messageUid.toLong()))
         } else {
             val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
             responseBuilder
@@ -315,7 +314,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                         .setPrice(it.price)
                                         .build())
             }
-            messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
+            messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
         }
 
         val endTime = System.nanoTime()
@@ -375,13 +374,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!)
-                    .build())
+                    .setUid(getMessageUid(messageWrapper)!!))
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(messageWrapper.messageId!!)
-                    .setStatus(status.type)
-                    .build())
+                    .setStatus(status.type))
         }
     }
 }

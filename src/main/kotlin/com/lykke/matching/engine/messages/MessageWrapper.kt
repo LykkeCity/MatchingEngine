@@ -24,40 +24,32 @@ class MessageWrapper(
         const val MESSAGE_ID_FIELD_NAME = "messageId"
     }
 
-    fun writeResponse(response: ProtocolMessages.Response) {
-        val resultResponse = ProtocolMessages.Response
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeResponse(responseBuilder: ProtocolMessages.Response.Builder) {
+        val resultResponse = responseBuilder
                 .setMessageId(messageId)
                 .build()
 
         writeClientResponse(resultResponse)
     }
 
-    fun writeNewResponse(response: ProtocolMessages.NewResponse) {
-        val resultResponse = ProtocolMessages.NewResponse
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeNewResponse(responseBuilder: ProtocolMessages.NewResponse.Builder) {
+        val resultResponse =  responseBuilder
                 .setMessageId(messageId)
                 .build()
 
         writeClientResponse(resultResponse)
     }
 
-    fun writeMarketOrderResponse(response: ProtocolMessages.MarketOrderResponse) {
-        val resultResponse = ProtocolMessages.MarketOrderResponse
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeMarketOrderResponse(responseBuilder: ProtocolMessages.MarketOrderResponse.Builder) {
+        val resultResponse = responseBuilder
                 .setMessageId(messageId)
                 .build()
 
         writeClientResponse(resultResponse)
     }
 
-    fun writeMultiLimitOrderResponse(response: ProtocolMessages.MultiLimitOrderResponse) {
-        val resultResponse = ProtocolMessages.MultiLimitOrderResponse
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeMultiLimitOrderResponse(responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
+        val resultResponse = responseBuilder
                 .setMessageId(messageId)
                 .build()
 

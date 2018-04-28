@@ -57,8 +57,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(message.id)
                     .setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.DISABLED_ASSET.type)
-                    .build())
+                    .setStatus(MessageStatus.DISABLED_ASSET.type))
             LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
             return
         }
@@ -70,8 +69,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setId(message.id)
                         .setMatchingEngineId(operation.id)
-                        .setStatus(MessageStatus.LOW_BALANCE.type)
-                        .build())
+                        .setStatus(MessageStatus.LOW_BALANCE.type))
                 LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
@@ -104,8 +102,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
                 .setMatchingEngineId(operation.id)
-                .setStatus(OK.type)
-                .build())
+                .setStatus(OK.type))
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
     }
 
@@ -124,8 +121,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
-                .setStatus(status.type)
-                .build())
+                .setStatus(status.type))
     }
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashInOutOperation, operationId: String, errorMessage: String = "invalid fee for client") {
@@ -141,8 +137,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                 .setId(message.id)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
-                .setStatusReason(errorMessage)
-                .build())
+                .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
         return
     }

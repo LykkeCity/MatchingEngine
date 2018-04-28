@@ -227,15 +227,15 @@ public final class ProtocolMessages {
         getRecordIdBytes();
 
     /**
-     * <code>optional string messageId = 4;</code>
+     * <code>required string messageId = 4;</code>
      */
     boolean hasMessageId();
     /**
-     * <code>optional string messageId = 4;</code>
+     * <code>required string messageId = 4;</code>
      */
     java.lang.String getMessageId();
     /**
-     * <code>optional string messageId = 4;</code>
+     * <code>required string messageId = 4;</code>
      */
     com.google.protobuf.ByteString
         getMessageIdBytes();
@@ -436,13 +436,13 @@ public final class ProtocolMessages {
     public static final int MESSAGEID_FIELD_NUMBER = 4;
     private volatile java.lang.Object messageId_;
     /**
-     * <code>optional string messageId = 4;</code>
+     * <code>required string messageId = 4;</code>
      */
     public boolean hasMessageId() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>optional string messageId = 4;</code>
+     * <code>required string messageId = 4;</code>
      */
     public java.lang.String getMessageId() {
       java.lang.Object ref = messageId_;
@@ -459,7 +459,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string messageId = 4;</code>
+     * <code>required string messageId = 4;</code>
      */
     public com.google.protobuf.ByteString
         getMessageIdBytes() {
@@ -482,6 +482,10 @@ public final class ProtocolMessages {
       if (isInitialized == 0) return false;
 
       if (!hasUid()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -731,6 +735,9 @@ public final class ProtocolMessages {
         if (!hasUid()) {
           return false;
         }
+        if (!hasMessageId()) {
+          return false;
+        }
         return true;
       }
 
@@ -939,13 +946,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object messageId_ = "";
       /**
-       * <code>optional string messageId = 4;</code>
+       * <code>required string messageId = 4;</code>
        */
       public boolean hasMessageId() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       /**
-       * <code>optional string messageId = 4;</code>
+       * <code>required string messageId = 4;</code>
        */
       public java.lang.String getMessageId() {
         java.lang.Object ref = messageId_;
@@ -962,7 +969,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 4;</code>
+       * <code>required string messageId = 4;</code>
        */
       public com.google.protobuf.ByteString
           getMessageIdBytes() {
@@ -978,7 +985,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 4;</code>
+       * <code>required string messageId = 4;</code>
        */
       public Builder setMessageId(
           java.lang.String value) {
@@ -991,7 +998,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 4;</code>
+       * <code>required string messageId = 4;</code>
        */
       public Builder clearMessageId() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1000,7 +1007,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 4;</code>
+       * <code>required string messageId = 4;</code>
        */
       public Builder setMessageIdBytes(
           com.google.protobuf.ByteString value) {
@@ -1112,15 +1119,15 @@ public final class ProtocolMessages {
         getStatusReasonBytes();
 
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     boolean hasMessageId();
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     java.lang.String getMessageId();
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     com.google.protobuf.ByteString
         getMessageIdBytes();
@@ -1370,13 +1377,13 @@ public final class ProtocolMessages {
     public static final int MESSAGEID_FIELD_NUMBER = 5;
     private volatile java.lang.Object messageId_;
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     public boolean hasMessageId() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     public java.lang.String getMessageId() {
       java.lang.Object ref = messageId_;
@@ -1393,7 +1400,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     public com.google.protobuf.ByteString
         getMessageIdBytes() {
@@ -1420,6 +1427,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasStatus()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1688,6 +1699,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasStatus()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         return true;
@@ -1974,13 +1988,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object messageId_ = "";
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public boolean hasMessageId() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public java.lang.String getMessageId() {
         java.lang.Object ref = messageId_;
@@ -1997,7 +2011,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public com.google.protobuf.ByteString
           getMessageIdBytes() {
@@ -2013,7 +2027,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public Builder setMessageId(
           java.lang.String value) {
@@ -2026,7 +2040,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public Builder clearMessageId() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -2035,7 +2049,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public Builder setMessageIdBytes(
           com.google.protobuf.ByteString value) {
@@ -2142,15 +2156,15 @@ public final class ProtocolMessages {
     double getPrice();
 
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     boolean hasMessageId();
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     java.lang.String getMessageId();
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     com.google.protobuf.ByteString
         getMessageIdBytes();
@@ -2372,13 +2386,13 @@ public final class ProtocolMessages {
     public static final int MESSAGEID_FIELD_NUMBER = 5;
     private volatile java.lang.Object messageId_;
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     public boolean hasMessageId() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     public java.lang.String getMessageId() {
       java.lang.Object ref = messageId_;
@@ -2395,7 +2409,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string messageId = 5;</code>
+     * <code>required string messageId = 5;</code>
      */
     public com.google.protobuf.ByteString
         getMessageIdBytes() {
@@ -2422,6 +2436,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasStatus()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -2690,6 +2708,9 @@ public final class ProtocolMessages {
         if (!hasStatus()) {
           return false;
         }
+        if (!hasMessageId()) {
+          return false;
+        }
         return true;
       }
 
@@ -2930,13 +2951,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object messageId_ = "";
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public boolean hasMessageId() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public java.lang.String getMessageId() {
         java.lang.Object ref = messageId_;
@@ -2953,7 +2974,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public com.google.protobuf.ByteString
           getMessageIdBytes() {
@@ -2969,7 +2990,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public Builder setMessageId(
           java.lang.String value) {
@@ -2982,7 +3003,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public Builder clearMessageId() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -2991,7 +3012,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 5;</code>
+       * <code>required string messageId = 5;</code>
        */
       public Builder setMessageIdBytes(
           com.google.protobuf.ByteString value) {
@@ -3127,15 +3148,15 @@ public final class ProtocolMessages {
         int index);
 
     /**
-     * <code>optional string messageId = 6;</code>
+     * <code>required string messageId = 6;</code>
      */
     boolean hasMessageId();
     /**
-     * <code>optional string messageId = 6;</code>
+     * <code>required string messageId = 6;</code>
      */
     java.lang.String getMessageId();
     /**
-     * <code>optional string messageId = 6;</code>
+     * <code>required string messageId = 6;</code>
      */
     com.google.protobuf.ByteString
         getMessageIdBytes();
@@ -4480,13 +4501,13 @@ public final class ProtocolMessages {
     public static final int MESSAGEID_FIELD_NUMBER = 6;
     private volatile java.lang.Object messageId_;
     /**
-     * <code>optional string messageId = 6;</code>
+     * <code>required string messageId = 6;</code>
      */
     public boolean hasMessageId() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>optional string messageId = 6;</code>
+     * <code>required string messageId = 6;</code>
      */
     public java.lang.String getMessageId() {
       java.lang.Object ref = messageId_;
@@ -4503,7 +4524,7 @@ public final class ProtocolMessages {
       }
     }
     /**
-     * <code>optional string messageId = 6;</code>
+     * <code>required string messageId = 6;</code>
      */
     public com.google.protobuf.ByteString
         getMessageIdBytes() {
@@ -4534,6 +4555,10 @@ public final class ProtocolMessages {
         return false;
       }
       if (!hasAssetPairId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -4860,6 +4885,9 @@ public final class ProtocolMessages {
           return false;
         }
         if (!hasAssetPairId()) {
+          return false;
+        }
+        if (!hasMessageId()) {
           return false;
         }
         for (int i = 0; i < getStatusesCount(); i++) {
@@ -5391,13 +5419,13 @@ public final class ProtocolMessages {
 
       private java.lang.Object messageId_ = "";
       /**
-       * <code>optional string messageId = 6;</code>
+       * <code>required string messageId = 6;</code>
        */
       public boolean hasMessageId() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>optional string messageId = 6;</code>
+       * <code>required string messageId = 6;</code>
        */
       public java.lang.String getMessageId() {
         java.lang.Object ref = messageId_;
@@ -5414,7 +5442,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 6;</code>
+       * <code>required string messageId = 6;</code>
        */
       public com.google.protobuf.ByteString
           getMessageIdBytes() {
@@ -5430,7 +5458,7 @@ public final class ProtocolMessages {
         }
       }
       /**
-       * <code>optional string messageId = 6;</code>
+       * <code>required string messageId = 6;</code>
        */
       public Builder setMessageId(
           java.lang.String value) {
@@ -5443,7 +5471,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 6;</code>
+       * <code>required string messageId = 6;</code>
        */
       public Builder clearMessageId() {
         bitField0_ = (bitField0_ & ~0x00000020);
@@ -5452,7 +5480,7 @@ public final class ProtocolMessages {
         return this;
       }
       /**
-       * <code>optional string messageId = 6;</code>
+       * <code>required string messageId = 6;</code>
        */
       public Builder setMessageIdBytes(
           com.google.protobuf.ByteString value) {
@@ -35870,18 +35898,18 @@ public final class ProtocolMessages {
       "\n\026ProtocolMessages.proto\022\"com.lykke.matc" +
       "hing.engine.messages\"P\n\010Response\022\013\n\003uid\030" +
       "\001 \002(\003\022\022\n\nbussinesId\030\002 \001(\t\022\020\n\010recordId\030\003 " +
-      "\001(\t\022\021\n\tmessageId\030\004 \001(\t\"l\n\013NewResponse\022\n\n" +
+      "\001(\t\022\021\n\tmessageId\030\004 \002(\t\"l\n\013NewResponse\022\n\n" +
       "\002id\030\001 \002(\t\022\030\n\020matchingEngineId\030\002 \001(\t\022\016\n\006s" +
       "tatus\030\003 \002(\005\022\024\n\014statusReason\030\004 \001(\t\022\021\n\tmes" +
-      "sageId\030\005 \001(\t\"i\n\023MarketOrderResponse\022\n\n\002i" +
+      "sageId\030\005 \002(\t\"i\n\023MarketOrderResponse\022\n\n\002i" +
       "d\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\022\024\n\014statusReason\030" +
-      "\003 \001(\t\022\r\n\005price\030\004 \001(\001\022\021\n\tmessageId\030\005 \001(\t\"" +
+      "\003 \001(\t\022\r\n\005price\030\004 \001(\001\022\021\n\tmessageId\030\005 \002(\t\"" +
       "\310\002\n\027MultiLimitOrderResponse\022\n\n\002id\030\001 \002(\t\022",
       "\016\n\006status\030\002 \002(\005\022\024\n\014statusReason\030\003 \001(\t\022\023\n" +
       "\013assetPairId\030\004 \002(\t\022Y\n\010statuses\030\005 \003(\0132G.c" +
       "om.lykke.matching.engine.messages.MultiL" +
       "imitOrderResponse.OrderStatus\022\021\n\tmessage" +
-      "Id\030\006 \001(\t\032x\n\013OrderStatus\022\n\n\002id\030\001 \002(\t\022\030\n\020m" +
+      "Id\030\006 \002(\t\032x\n\013OrderStatus\022\n\n\002id\030\001 \002(\t\022\030\n\020m" +
       "atchingEngineId\030\002 \001(\t\022\016\n\006status\030\003 \002(\005\022\024\n" +
       "\014statusReason\030\004 \001(\t\022\016\n\006volume\030\005 \002(\001\022\r\n\005p" +
       "rice\030\006 \002(\001\"\240\001\n\rCashOperation\022\013\n\003uid\030\001 \002(" +
