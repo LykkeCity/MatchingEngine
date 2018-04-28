@@ -138,26 +138,25 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             val message =  parseOldLimitOrder(messageWrapper.byteArray)
             messageWrapper.messageId = message.uid.toString()
             messageWrapper.timestamp = message.timestamp
+            messageWrapper.id = message.uid.toString()
             messageWrapper.parsedMessage = message
         } else {
             val message =  parseLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
-            messageWrapper.timestamp = message.timestamp
+            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid
+            messageWrapper.timestamp = message.timestamp
         }
+        LOGGER.info("Parse message ${SingleLimitOrderService::class.java.name} message id: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!)
-                    .setMessageId(messageWrapper.messageId)
-                    .build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                     .newBuilder()
-                    .setId(messageWrapper.messageId!!)
-                    .setStatus(status.type).build())
+                    .setStatus(status.type))
         }
     }
 }

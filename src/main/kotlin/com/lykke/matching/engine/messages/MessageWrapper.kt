@@ -16,49 +16,45 @@ class MessageWrapper(
         val startTimestamp: Long = System.nanoTime(),
         var timestamp: Long? = null,
         var messageId: String? = null,
-        var parsedMessage: MessageOrBuilder? = null) {
+        var parsedMessage: MessageOrBuilder? = null,
+        var id: String? = null) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
-        const val MESSAGE_ID_FIELD_NAME = "messageId"
     }
 
-    fun writeResponse(response: ProtocolMessages.Response) {
-        val resultResponse = ProtocolMessages.Response
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeResponse(responseBuilder: ProtocolMessages.Response.Builder) {
+        val resultResponse = responseBuilder
                 .setMessageId(messageId)
+                .setUid(id!!.toLong())
                 .build()
 
         writeClientResponse(resultResponse)
     }
 
-    fun writeNewResponse(response: ProtocolMessages.NewResponse) {
-        val resultResponse = ProtocolMessages.NewResponse
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeNewResponse(responseBuilder: ProtocolMessages.NewResponse.Builder) {
+        val resultResponse =  responseBuilder
                 .setMessageId(messageId)
+                .setId(id)
                 .build()
 
         writeClientResponse(resultResponse)
     }
 
-    fun writeMarketOrderResponse(response: ProtocolMessages.MarketOrderResponse) {
-        val resultResponse = ProtocolMessages.MarketOrderResponse
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeMarketOrderResponse(responseBuilder: ProtocolMessages.MarketOrderResponse.Builder) {
+        val resultResponse = responseBuilder
                 .setMessageId(messageId)
+                .setId(id)
                 .build()
 
         writeClientResponse(resultResponse)
     }
 
-    fun writeMultiLimitOrderResponse(response: ProtocolMessages.MultiLimitOrderResponse) {
-        val resultResponse = ProtocolMessages.MultiLimitOrderResponse
-                .newBuilder()
-                .mergeFrom(response)
+    fun writeMultiLimitOrderResponse(responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
+        val resultResponse = responseBuilder
                 .setMessageId(messageId)
+                .setId(id)
                 .build()
 
         writeClientResponse(resultResponse)
@@ -66,11 +62,6 @@ class MessageWrapper(
 
     private fun writeClientResponse(message: Message) {
         if (clientHandler != null) {
-            if (message.getField(message.getDescriptorForType().findFieldByName(MESSAGE_ID_FIELD_NAME)) == null) {
-                LOGGER.error("Message id is not provided sourceIp: $sourceIp")
-                throw IllegalArgumentException("Message id is not provided sourceIp: $sourceIp")
-            }
-
             try {
                 LOGGER.info("Writing response with  messageId: $messageId")
                 clientHandler.writeOutput(toByteArray(MessageType.MARKER_ORDER_RESPONSE.type, message.serializedSize, message.toByteArray()))

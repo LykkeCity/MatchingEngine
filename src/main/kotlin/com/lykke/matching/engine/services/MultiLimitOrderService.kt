@@ -312,10 +312,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         if (isOldTypeMessage) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageUid.toLong())
-                    .build())
+                    .setUid(messageUid.toLong()))
         } else {
-            val response = buildResponse(messageUid, messageWrapper.messageId!!, orders)
+            val response = buildResponse(messageWrapper.messageId!!, orders)
             messageWrapper.writeMultiLimitOrderResponse(response)
         }
 
@@ -345,12 +344,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
     }
 
-    private fun buildResponse(messageUid: String,
-                              assetPairId: String,
-                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse {
+    private fun buildResponse(assetPairId: String,
+                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse.Builder {
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
         responseBuilder
-                .setId(messageUid)
                 .setStatus(MessageStatus.OK.type)
                 .assetPairId = assetPairId
 
@@ -360,7 +357,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
                     .setVolume(it.volume).setPrice(it.price).build())
         }
-        return responseBuilder.build()
+        return responseBuilder
     }
 
     private fun processClientOrders(messageWrapper: MessageWrapper) {
@@ -554,14 +551,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         return addedToCancel
     }
 
-        private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
-            if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
-                val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMultiLimitOrder
-                return message.uid
-            }
-            return null
-        }
-
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
         return ProtocolMessages.OldMultiLimitOrder.parseFrom(array)
     }
@@ -576,24 +565,23 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageWrapper.messageId = message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid.toString()
         } else {
             val message =  parseMultiLimitOrder(messageWrapper.byteArray)
             messageWrapper.messageId = message.uid
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid
         }
+        LOGGER.info("Parse message ${MultiLimitOrderService::class.java.name} with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!)
-                    .build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(messageWrapper.messageId!!)
-                    .setStatus(status.type)
-                    .build())
+                    .setStatus(status.type))
         }
     }
 }

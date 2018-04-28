@@ -7,7 +7,7 @@ message Response {
     required int64 uid = 1;
     optional string bussinesId = 2;
     optional string recordId = 3;
-    optional string messageId = 4;
+    required string messageId = 4;
 }
 
 message NewResponse {
@@ -15,7 +15,7 @@ message NewResponse {
     optional string matchingEngineId = 2;
     required int32 status = 3;
     optional string statusReason = 4;
-    optional string messageId = 5;
+    required string messageId = 5;
 }
 
 message MarketOrderResponse {
@@ -23,7 +23,7 @@ message MarketOrderResponse {
     required int32 status = 2;
     optional string statusReason = 3;
     optional double price = 4;
-    optional string messageId = 5;
+    required string messageId = 5;
 }
 
 message MultiLimitOrderResponse {
@@ -41,7 +41,7 @@ message MultiLimitOrderResponse {
         required double price = 6;
     }
     repeated OrderStatus statuses = 5;
-    optional string messageId = 6;
+    required string messageId = 6;
 }
 
 message CashOperation {

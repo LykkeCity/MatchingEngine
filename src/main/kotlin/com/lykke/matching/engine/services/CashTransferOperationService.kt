@@ -57,10 +57,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
+                    .setStatus(MessageStatus.DISABLED_ASSET.type))
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
             return
         }
@@ -70,10 +68,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val overdraftLimit = if (operation.overdraftLimit != null) -operation.overdraftLimit else 0.0
         if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
-                    
                     .setMatchingEngineId(operation.id)
-                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
+                    .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}"))
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
             return
         }
@@ -101,10 +97,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
-                .setStatus(OK.type).build())
+                .setStatus(OK.type))
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)} processed")
     }
 
@@ -131,15 +125,15 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
+        messageWrapper.id = message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        LOGGER.info("Parsed message ${CashTransferOperationService::class.java.name} with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
-                .setStatus(status.type).build())
+                .setStatus(status.type))
     }
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashTransferOperation, operationId: String, errorMessage: String = "invalid fee for client") {
@@ -152,12 +146,11 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    status: MessageStatus,
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
-                .setStatusReason(errorMessage)
-                .build())
-        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
-        return
+                .setStatusReason(errorMessage))
+        LOGGER.info("""Cash transfer operation (${message.id}) from client ${message.fromClientId}
+            | to client ${message.toClientId}, asset ${message.assetId},
+            |  volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage""".trimMargin())
     }
 }

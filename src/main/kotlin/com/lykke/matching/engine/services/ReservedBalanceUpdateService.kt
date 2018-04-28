@@ -27,9 +27,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
         if (message.reservedAmount > balance) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.uid)
-                    .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type)
-                    .build())
+                    .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type))
             LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(balance)}) is lower that reserved balance ${RoundingUtils.roundForPrint(message.reservedAmount)}")
             return
         }
@@ -42,9 +40,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
                 listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount)), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.uid)
-                .setStatus(MessageStatus.OK.type)
-                .build())
+                .setStatus(MessageStatus.OK.type))
         LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
     }
 
@@ -57,13 +53,12 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
+        messageWrapper.id = message.uid
+        LOGGER.info("Parsed message ${ReservedBalanceUpdateService::class.java.name} messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedBalanceUpdate
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.uid)
-                .setStatus(status.type)
-                .build())
+                .setStatus(status.type))
     }
 }
