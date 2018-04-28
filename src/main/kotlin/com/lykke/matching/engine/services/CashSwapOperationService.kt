@@ -44,7 +44,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         val reservedBalance1 = balancesHolder.getReservedBalance(message.clientId1, message.assetId1)
         if (balance1 - reservedBalance1 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type)
                     .setStatusReason("ClientId:${message.clientId1},asset:${message.assetId1}, volume:${message.volume1}"))
@@ -56,7 +55,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         val reservedBalance2 = balancesHolder.getReservedBalance(message.clientId2, message.assetId2)
         if (balance2 - reservedBalance2 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type)
                     .setStatusReason("ClientId:${message.clientId2},asset:${message.assetId2}, volume:${message.volume2}"))
@@ -69,7 +67,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.LOW_BALANCE.type)
                     .setStatusReason(e.message))
@@ -81,7 +78,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
                 .setStatus(OK.type))
         LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
@@ -113,13 +109,12 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed ${CashSwapOperationService.javaClass.name} message with messageId: ${messageWrapper.messageId}")
+        messageWrapper.id = messageWrapper.id
+        LOGGER.info("Parsed ${CashSwapOperationService::class.java.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setStatus(status.type))
     }
 }

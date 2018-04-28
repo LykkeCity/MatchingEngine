@@ -142,7 +142,7 @@ class MessageBuilder {
             order.fees?.forEach {
                 builder.addFees(buildNewLimitOrderFee(it as NewLimitOrderFeeInstruction))
             }
-            return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test")
+            return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test")
         }
 
         fun buildMultiLimitOrderWrapper(pair: String,
@@ -153,7 +153,7 @@ class MessageBuilder {
                                                 ordersUid: List<String> = emptyList(),
                                                 cancel: Boolean = false): MessageWrapper {
             return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type,
-                    buildMultiLimitOrder(pair, clientId, volumes, ordersFee, ordersFees, ordersUid, cancel).toByteArray(), null, messageId = "test")
+                    buildMultiLimitOrder(pair, clientId, volumes, ordersFee, ordersFees, ordersUid, cancel).toByteArray(), null, messageId = "test", id = "test")
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,

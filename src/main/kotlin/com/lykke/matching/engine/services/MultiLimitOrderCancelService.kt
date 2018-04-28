@@ -67,7 +67,6 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             }
         }
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.uid)
                 .setStatus(MessageStatus.OK.type))
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
@@ -81,12 +80,12 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed message ${MultiLimitOrderCancelService.javaClass.name} with messageId ${messageWrapper.messageId}")
+        messageWrapper.id = message.uid
+        LOGGER.info("Parsed message ${MultiLimitOrderCancelService::class.java.name} with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(messageWrapper.messageId)
                 .setStatus(status.type))
     }
 }

@@ -40,7 +40,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         if (message.reservedVolume < 0) {
             if (RoundingUtils.parseDouble(reservedBalance + message.reservedVolume, accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                        .setId(message.id)
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type))
                 LOGGER.info("Reserved cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low reserved balance $reservedBalance")
@@ -50,7 +49,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             if (RoundingUtils.parseDouble(balance - reservedBalance - message.reservedVolume, accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                        .setId(message.id)
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type))
                 LOGGER.info("Reserved cash in operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low balance $balance, current reserved balance $reservedBalance")
@@ -63,7 +61,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message))
             return
@@ -77,7 +74,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
                 messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
                 .setStatus(MessageStatus.OK.type))
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)} processed")
@@ -92,15 +88,13 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed message ${ReservedCashInOutOperationService.javaClass.name} messageId ${messageWrapper.messageId}")
+        messageWrapper.id = message.id
+        LOGGER.info("Parsed message ${ReservedCashInOutOperationService::class.java.name} messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setStatus(status.type)
         )
     }
-
 }

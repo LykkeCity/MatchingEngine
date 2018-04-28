@@ -55,7 +55,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
 
         if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.DISABLED_ASSET.type))
             LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
@@ -67,7 +66,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
             if (RoundingUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                        .setId(message.id)
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type))
                 LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
@@ -100,7 +98,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         ))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
                 .setStatus(OK.type))
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
@@ -115,13 +112,12 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed ${CashInOutOperationService.javaClass.name} message with messageId: ${messageWrapper.messageId}")
+        messageWrapper.id = message.id
+        LOGGER.info("Parsed ${CashInOutOperationService::class.java.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setStatus(status.type))
     }
 
@@ -135,7 +131,6 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
                                    status: MessageStatus,
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))

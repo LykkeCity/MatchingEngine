@@ -79,13 +79,13 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else  message.bussinesId
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed ${CashOperationService.javaClass.name} message with messageId : ${messageWrapper.messageId}")
+        messageWrapper.id = message.uid.toString()
+        LOGGER.info("Parsed ${CashOperationService::class.java.name} message with messageId : ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                .setUid(message.uid)
                 .setBussinesId(message.bussinesId))
     }
 }

@@ -234,14 +234,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
     }
 
-    private fun getMessageUid(messageWrapper: MessageWrapper): Long ? {
-        if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            return message.uid
-        }
-        return null
-    }
-
     private fun orderInfo(order: MarketOrder) = "market order id: ${order.id}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, straight: ${order.straight}"
 
     private fun parseOld(array: ByteArray): ProtocolMessages.OldMarketOrder {
@@ -255,11 +247,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(order.externalId.toLong())
                     .setRecordId(order.id))
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
             val newResponseBuilder = ProtocolMessages.NewResponse.newBuilder()
-                    .setId(order.externalId)
                     .setMatchingEngineId(order.id)
                     .setStatus(status.type)
 
@@ -271,7 +261,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
         } else {
             val marketOrderResponse = ProtocolMessages.MarketOrderResponse.newBuilder()
-                    .setId(order.externalId)
                     .setStatus(status.type)
 
             if (order.price != null) {
@@ -290,26 +279,25 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid.toString()
         } else {
             val message =  parse(messageWrapper.byteArray)
             messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid
         }
-        LOGGER.info("Parse ${MarketOrderService.javaClass.name} message with messageId: ${messageWrapper.messageId}")
+        LOGGER.info("Parse ${MarketOrderService::class.java.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(getMessageUid(messageWrapper)!!))
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(messageWrapper.messageId!!)
                     .setStatus(status.type))
-        } else{
+        } else {
             messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
-                    .setId(messageWrapper.messageId!!)
                     .setStatus(status.type))
         }
     }

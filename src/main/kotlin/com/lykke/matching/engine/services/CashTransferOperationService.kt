@@ -57,8 +57,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.DISABLED_ASSET.type))
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
@@ -70,7 +68,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val overdraftLimit = if (operation.overdraftLimit != null) -operation.overdraftLimit else 0.0
         if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.id)
                     .setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}"))
             LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance for client ${message.fromClientId}")
@@ -100,8 +97,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
                 .setStatus(OK.type))
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)} processed")
@@ -130,15 +125,14 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
+        messageWrapper.id = message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed message ${CashTransferOperationService.javaClass.name} with messageId: ${messageWrapper.messageId}")
+        LOGGER.info("Parsed message ${CashTransferOperationService::class.java.name} with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setStatus(status.type))
     }
 
@@ -152,11 +146,11 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    status: MessageStatus,
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
-        return
+        LOGGER.info("""Cash transfer operation (${message.id}) from client ${message.fromClientId}
+            | to client ${message.toClientId}, asset ${message.assetId},
+            |  volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage""".trimMargin())
     }
 }

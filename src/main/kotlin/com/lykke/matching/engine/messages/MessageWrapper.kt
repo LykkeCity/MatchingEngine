@@ -16,17 +16,18 @@ class MessageWrapper(
         val startTimestamp: Long = System.nanoTime(),
         var timestamp: Long? = null,
         var messageId: String? = null,
-        var parsedMessage: MessageOrBuilder? = null) {
+        var parsedMessage: MessageOrBuilder? = null,
+        var id: String? = null) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
-        const val MESSAGE_ID_FIELD_NAME = "messageId"
     }
 
     fun writeResponse(responseBuilder: ProtocolMessages.Response.Builder) {
         val resultResponse = responseBuilder
                 .setMessageId(messageId)
+                .setUid(id!!.toLong())
                 .build()
 
         writeClientResponse(resultResponse)
@@ -35,6 +36,7 @@ class MessageWrapper(
     fun writeNewResponse(responseBuilder: ProtocolMessages.NewResponse.Builder) {
         val resultResponse =  responseBuilder
                 .setMessageId(messageId)
+                .setId(id)
                 .build()
 
         writeClientResponse(resultResponse)
@@ -43,6 +45,7 @@ class MessageWrapper(
     fun writeMarketOrderResponse(responseBuilder: ProtocolMessages.MarketOrderResponse.Builder) {
         val resultResponse = responseBuilder
                 .setMessageId(messageId)
+                .setId(id)
                 .build()
 
         writeClientResponse(resultResponse)
@@ -51,6 +54,7 @@ class MessageWrapper(
     fun writeMultiLimitOrderResponse(responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
         val resultResponse = responseBuilder
                 .setMessageId(messageId)
+                .setId(id)
                 .build()
 
         writeClientResponse(resultResponse)
