@@ -55,6 +55,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
+        LOGGER.info("Parsed message ${ReservedBalanceUpdateService.javaClass.name} messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

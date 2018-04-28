@@ -296,6 +296,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
         }
+        LOGGER.info("Parse ${MarketOrderService.javaClass.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

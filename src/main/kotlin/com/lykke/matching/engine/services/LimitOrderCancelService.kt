@@ -113,6 +113,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
         }
+        LOGGER.info("Parsed ${LimitOrderCancelService.javaClass.name} message with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

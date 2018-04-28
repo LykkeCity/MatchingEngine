@@ -81,6 +81,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        LOGGER.info("Parsed message ${MultiLimitOrderCancelService.javaClass.name} with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

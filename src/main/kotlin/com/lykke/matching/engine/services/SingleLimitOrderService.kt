@@ -406,6 +406,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
         }
+        LOGGER.info("Parse message ${SingleLimitOrderService.javaClass.name} message id: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

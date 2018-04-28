@@ -92,6 +92,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        LOGGER.info("Parsed message ${ReservedCashInOutOperationService.javaClass.name} messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

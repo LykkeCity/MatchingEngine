@@ -369,6 +369,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
         }
+        LOGGER.info("Parse message ${MultiLimitOrderService.javaClass.name} with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

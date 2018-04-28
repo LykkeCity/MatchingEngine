@@ -132,6 +132,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        LOGGER.info("Parsed message ${CashTransferOperationService.javaClass.name} with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

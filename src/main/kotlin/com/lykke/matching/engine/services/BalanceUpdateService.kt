@@ -98,6 +98,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
         }
+        LOGGER.info("Parsed ${BalanceUpdateService.javaClass.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

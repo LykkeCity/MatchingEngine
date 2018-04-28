@@ -115,6 +115,7 @@ class CashInOutOperationService(private val walletDatabaseAccessor: WalletDataba
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        LOGGER.info("Parsed ${CashInOutOperationService.javaClass.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
