@@ -73,7 +73,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                     .setId(order.externalId)
                     .setMatchingEngineId(order.id)
                     .setMessageId(messageWrapper.messageId)
-                    .setStatus(messageStatus.type).build())
+                    .setStatus(messageStatus.type))
 
             clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
@@ -140,11 +140,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                     .setId(order.externalId)
                     .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(order.id)
-                    .setStatus(status.type).build())
+                    .setStatus(status.type))
             return
         }
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMessageId(messageWrapper.messageId)
-                .setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+                .setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason))
     }
 }

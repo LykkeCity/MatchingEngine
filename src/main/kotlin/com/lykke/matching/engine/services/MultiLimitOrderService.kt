@@ -460,7 +460,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
             responseBuilder.addStatuses(statusBuilder.build())
         }
-        messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
+        messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
     }
