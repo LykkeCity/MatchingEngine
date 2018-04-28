@@ -20,7 +20,7 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
     private val secondaryBalancesAccessor = balancesDatabaseAccessorsHolder.secondaryAccessor
     private val isRedisBalancesPrimary = primaryBalancesAccessor is RedisWalletDatabaseAccessor
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
-    private val balancesJedis = balancesDatabaseAccessorsHolder.jedis
+    private val balancesJedisPool = balancesDatabaseAccessorsHolder.jedisPool
 
     override fun balancesQueueSize() = updatedWalletsQueue.size
 
@@ -40,7 +40,7 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
             return
         }
 
-        balancesJedis.use { balancesJedis ->
+        balancesJedisPool!!.resource.use { balancesJedis ->
             val transaction = balancesJedis!!.multi()
             var success = false
             try {

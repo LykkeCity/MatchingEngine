@@ -7,10 +7,11 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.HashMap
 
-class RedisWalletDatabaseAccessor(private val jedis: Jedis) : WalletDatabaseAccessor {
+class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisWalletDatabaseAccessor::class.java.name)
@@ -24,7 +25,7 @@ class RedisWalletDatabaseAccessor(private val jedis: Jedis) : WalletDatabaseAcce
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
         var balancesCount = 0
-        jedis.use { jedis ->
+        jedisPool.resource.use { jedis ->
             val keys = balancesKeys(jedis).toList()
 
             val values = if (keys.isNotEmpty())
