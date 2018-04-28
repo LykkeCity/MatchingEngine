@@ -30,7 +30,8 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = ProtocolMessages.LimitOrderMassCancel.parseFrom(messageWrapper.byteArray)
-        messageWrapper.messageId = message.uid
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
+        messageWrapper.id = message.uid
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
     }
