@@ -82,12 +82,14 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             val message = parseOldLimitOrderCancel(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
+            messageWrapper.id = message.uid.toString()
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
         } else {
             val message = parseLimitOrderCancel(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
+            messageWrapper.id = message.uid.toString()
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
         }
