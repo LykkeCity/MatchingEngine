@@ -25,39 +25,52 @@ class MessageWrapper(
     }
 
     fun writeResponse(responseBuilder: ProtocolMessages.Response.Builder) {
-        val resultResponse = responseBuilder
-                .setMessageId(messageId)
-                .setUid(id!!.toLong())
-                .build()
+        if (!responseBuilder.hasMessageId()) {
+            responseBuilder.messageId = messageId
+        }
 
-        writeClientResponse(resultResponse)
+        if (!responseBuilder.hasUid()) {
+            responseBuilder.uid = id!!.toLong()
+        }
+
+        writeClientResponse(responseBuilder.build())
     }
 
     fun writeNewResponse(responseBuilder: ProtocolMessages.NewResponse.Builder) {
-        val resultResponse =  responseBuilder
-                .setMessageId(messageId)
-                .setId(id)
-                .build()
 
-        writeClientResponse(resultResponse)
+        if (!responseBuilder.hasMessageId()) {
+            responseBuilder.messageId = messageId
+        }
+
+        if (!responseBuilder.hasId()) {
+            responseBuilder.id = id
+        }
+
+        writeClientResponse(responseBuilder.build())
     }
 
     fun writeMarketOrderResponse(responseBuilder: ProtocolMessages.MarketOrderResponse.Builder) {
-        val resultResponse = responseBuilder
-                .setMessageId(messageId)
-                .setId(id)
-                .build()
+        if (!responseBuilder.hasMessageId()) {
+            responseBuilder.messageId = messageId
+        }
 
-        writeClientResponse(resultResponse)
+        if (!responseBuilder.hasId()) {
+            responseBuilder.id = id
+        }
+
+        writeClientResponse(responseBuilder.build())
     }
 
     fun writeMultiLimitOrderResponse(responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
-        val resultResponse = responseBuilder
-                .setMessageId(messageId)
-                .setId(id)
-                .build()
+        if (!responseBuilder.hasMessageId()) {
+            responseBuilder.messageId = messageId
+        }
 
-        writeClientResponse(resultResponse)
+        if (!responseBuilder.hasId()) {
+            responseBuilder.id = id
+        }
+
+        writeClientResponse(responseBuilder.build())
     }
 
     private fun writeClientResponse(message: Message) {
