@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
@@ -117,10 +118,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        if (!checkFee(feeInstruction, feeInstructions)) {
-            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} has invalid fee")
-            order.status = OrderStatus.InvalidFee.name
-            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_FEE, now, isCancelOrders)
 
         val orderInfo = getOrderInfo(order)
 
@@ -328,30 +325,30 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
 
         val validations = arrayOf(
                 {isAssetEnabled(order, cancelVolume,
-                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
 
                 {isPriceAccuracyValid(order, cancelVolume,
-                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
 
                 {isPriceValid(order, cancelVolume,
-                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
 
                 {isVolumeValid(order, cancelVolume,
-                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
 
                 {isVolumeAccuracyValid(order, cancelVolume,
-                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
 
                 {isEnoughFunds( cancelVolume, order,
-                clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, orderBook, messageWrapper, now, isCancelOrders)},
 
                 {isSpreadValid(orderBook, order, cancelVolume,
-                clientLimitOrdersReport, messageWrapper, now, isCancelOrders)},
+                        clientLimitOrdersReport, messageWrapper, now, isCancelOrders)},
 
                 {isFeeValid(feeInstruction, feeInstructions,
-                    order, cancelVolume, clientLimitOrdersReport,
-                    orderBook, messageWrapper, now, isCancelOrders)
-        })
+                        order, cancelVolume, clientLimitOrdersReport,
+                        orderBook, messageWrapper, now, isCancelOrders)
+                })
 
         val failedValidation = validations.find { function: () -> Boolean -> !function() }
 
@@ -577,4 +574,3 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
         }
     }
 }
-
