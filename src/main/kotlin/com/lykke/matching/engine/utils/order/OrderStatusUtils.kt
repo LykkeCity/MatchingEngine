@@ -28,6 +28,8 @@ class OrderStatusUtils {
                 OrderStatus.Pending,
                 OrderStatus.Matched,
                 OrderStatus.Cancelled -> MessageStatus.OK
+                OrderStatus.InvalidPriceAccuracy -> MessageStatus.INVALID_PRICE_ACCURACY
+                OrderStatus.InvalidVolumeAccuracy -> MessageStatus.INVALID_VOLUME_ACCURACY
             }
         }
     }

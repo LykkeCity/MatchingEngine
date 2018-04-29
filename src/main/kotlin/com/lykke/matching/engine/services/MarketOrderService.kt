@@ -210,7 +210,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = NoLiquidity.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("No liquidity, no orders in order book, for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(NoLiquidity))
             return false
         }
 
@@ -223,7 +223,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = InvalidFee.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(InvalidFee), order.assetPairId)
             return false
         }
 
@@ -236,7 +236,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = TooSmallVolume.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Too small volume for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.TOO_SMALL_VOLUME)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(TooSmallVolume))
             return false
         }
 
@@ -250,7 +250,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = DisabledAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Disabled asset ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.DISABLED_ASSET)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(DisabledAsset))
             return false
         }
         return true
@@ -264,7 +264,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.warn("Exception fetching asset", e)
             LOGGER.info("Unknown asset: ${order.assetPairId}")
-            writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(UnknownAsset), order.assetPairId)
             return false
         }
 
@@ -283,7 +283,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (!volumeAccuracyValid) {
             order.status = OrderStatus.InvalidVolumeAccuracy.name
             LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy, volume: ${order.volume}")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_VOLUME_ACCURACY, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(OrderStatus.InvalidVolumeAccuracy), order.assetPairId)
         }
 
         return volumeAccuracyValid
@@ -297,7 +297,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (!priceAccuracyValid) {
             order.status = OrderStatus.InvalidPriceAccuracy.name
             LOGGER.info("Invalid order accuracy, ${order.assetPairId}, price: ${order.price}")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_PRICE_ACCURACY, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(OrderStatus.InvalidPriceAccuracy), order.assetPairId)
         }
 
         return priceAccuracyValid

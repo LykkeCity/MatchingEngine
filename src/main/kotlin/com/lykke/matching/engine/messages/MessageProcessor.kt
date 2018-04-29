@@ -231,8 +231,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        this.balanceUpdateService = BalanceUpdateService(balanceHolder)
-        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
+        this.balanceUpdateService = BalanceUpdateService(balanceHolder, assetsHolder)
+        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder, assetsHolder)
 
         if (config.me.cancelMinVolumeOrders) {
             MinVolumeOrderCanceller(dictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory).cancel()

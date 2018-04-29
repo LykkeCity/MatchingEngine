@@ -112,7 +112,7 @@ abstract class AbstractTest {
         cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
         balanceUpdateService = BalanceUpdateService(balancesHolder, assetsHolder)
         minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
+        reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder, assetsHolder)
         cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, applicationSettingsCache, cashInOutQueue, feeProcessor)
         reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashInOutQueue)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
