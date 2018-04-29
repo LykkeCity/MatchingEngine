@@ -82,10 +82,10 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 ", assetPair: ${message.assetPairId}" +
                 ", volume: ${NumberUtils.roundForPrint(message.volume)}" +
                 ", price: ${NumberUtils.roundForPrint(order.price)}" +
-                (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${RoundingUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
-                (if (order.lowerPrice != null) ", lowerPrice: ${RoundingUtils.roundForPrint(order.lowerPrice)}" else "") +
-                (if (order.upperLimitPrice != null) ", upperLimitPrice: ${RoundingUtils.roundForPrint(order.upperLimitPrice)}" else "") +
-                (if (order.upperPrice != null) ", upperPrice: ${RoundingUtils.roundForPrint(order.upperPrice)}" else "") +
+                (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
+                (if (order.lowerPrice != null) ", lowerPrice: ${NumberUtils.roundForPrint(order.lowerPrice)}" else "") +
+                (if (order.upperLimitPrice != null) ", upperLimitPrice: ${NumberUtils.roundForPrint(order.upperLimitPrice)}" else "") +
+                (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
                 ", cancel: ${message.cancelAllPreviousLimitOrders}" +
                 ", fee: ${order.fee}" +
                 ", fees: ${order.fees}"
