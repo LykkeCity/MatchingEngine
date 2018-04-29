@@ -126,7 +126,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                            assetOrderBooks: Map<String, TAssetOrderBook>): TCancelResult
 
     /** Cancels orders, updates balances and sends notifications */
-    open fun applyFull(operationId: String, operationType: String, validateBalances: Boolean) {
+    open fun applyFull(operationId: String, messageId: String, operationType: String, validateBalances: Boolean) {
         val result = apply()
 
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
@@ -152,7 +152,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
             trustedClientsLimitOrdersQueue.put(LimitOrdersReport(operationId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
 
-        walletProcessor.apply(operationId, operationType, operationId)
+        walletProcessor.apply(operationId, operationType, messageId)
     }
 
     @Suppress("unchecked_cast")
