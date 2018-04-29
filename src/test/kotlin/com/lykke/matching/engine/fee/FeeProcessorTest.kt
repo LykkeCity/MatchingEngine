@@ -63,9 +63,6 @@ class FeeProcessorTest {
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
     @Autowired
-    lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
-
-    @Autowired
     lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @TestConfiguration

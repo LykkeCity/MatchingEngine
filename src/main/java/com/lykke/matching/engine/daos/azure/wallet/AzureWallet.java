@@ -25,7 +25,11 @@ public class AzureWallet extends TableServiceEntity {
 
     public AzureWallet(String clientId, List<AssetBalance> balances) {
         super(CLIENT_BALANCE, clientId);
-        balances.forEach( balance -> addBalance(balance.getAsset(), balance.getBalance(), balance.getReserved()) );
+        if (balances.isEmpty()) {
+            this.balances = "[]";
+        } else {
+            balances.forEach(balance -> addBalance(balance.getAsset(), balance.getBalance().doubleValue(), balance.getReserved().doubleValue()));
+        }
     }
 
     public String getClientId() {

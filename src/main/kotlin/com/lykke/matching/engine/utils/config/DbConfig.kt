@@ -9,5 +9,8 @@ data class DbConfig(
     val messageLogConnString: String,
     val matchingEngineConnString: String,
     val monitoringConnString: String,
-    val reservedVolumesConnString: String
+    val reservedVolumesConnString: String,
+    val accountsTableName: String?,
+    /** Table name for async writing of balances in case of primary redis db */
+    val newAccountsTableName: String?
 )

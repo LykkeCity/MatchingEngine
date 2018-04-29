@@ -8,17 +8,7 @@ import java.util.HashMap
 @Component
 class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
-    private val balances = HashMap<String, MutableMap<String, AssetBalance>>()
     private val wallets = HashMap<String, Wallet>()
-
-    override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
-        return balances.mapValues { clientBalanceEntry ->
-            clientBalanceEntry.value.mapValues { assetBalanceEntry ->
-                val assetBalance = assetBalanceEntry.value
-                AssetBalance(assetBalance.asset, assetBalance.balance, assetBalance.reserved)
-            }.toMutableMap()
-        }.toMap(HashMap())
-    }
 
     override fun loadWallets(): HashMap<String, Wallet> {
         return wallets.mapValues { walletEntry ->
@@ -26,7 +16,7 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
             Wallet(wallet.clientId, wallet.balances.map { assetBalanceEntry ->
                 val assetId = assetBalanceEntry.key
                 val assetBalance = assetBalanceEntry.value
-                AssetBalance(assetId, assetBalance.balance, assetBalance.reserved)
+                AssetBalance(wallet.clientId, assetId, assetBalance.balance, assetBalance.reserved)
             })
         }.toMap(HashMap())
     }
@@ -38,10 +28,8 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
         }
 
         wallets.forEach { wallet ->
-            val client = balances.getOrPut(wallet.clientId,  { HashMap<String, AssetBalance>() })
             val updatedWallet = this.wallets.getOrPut(wallet.clientId) { Wallet(wallet.clientId) }
             wallet.balances.values.forEach {
-                client.put(it.asset, AssetBalance(it.asset, it.balance, it.reserved))
                 updatedWallet.setBalance(it.asset, it.balance)
                 updatedWallet.setReservedBalance(it.asset, it.reserved)
             }
@@ -49,11 +37,11 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
     fun getBalance(clientId: String, assetId: String): Double {
-        val client = balances[clientId]
+        val client = wallets[clientId]?.balances
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
-                return wallet.balance
+                return wallet.balance.toDouble()
             }
         }
         return 0.0
@@ -61,25 +49,24 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
 
 
     fun getReservedBalance(clientId: String, assetId: String): Double {
-        val client = balances[clientId]
+        val client = wallets[clientId]?.balances
         if (client != null) {
             val wallet = client[assetId]
             if (wallet != null) {
-                return wallet.reserved
+                return wallet.reserved.toDouble()
             }
         }
         return 0.0
     }
 
     fun clear() {
-        balances.clear()
         wallets.clear()
     }
 
 }
 fun buildWallet(clientId: String, assetId: String, balance: Double, reservedBalance: Double = 0.0): Wallet {
     val wallet = Wallet(clientId)
-    wallet.setBalance(assetId, balance)
-    wallet.setReservedBalance(assetId, reservedBalance)
+    wallet.setBalance(assetId, balance.toBigDecimal())
+    wallet.setReservedBalance(assetId, reservedBalance.toBigDecimal())
     return wallet
 }
