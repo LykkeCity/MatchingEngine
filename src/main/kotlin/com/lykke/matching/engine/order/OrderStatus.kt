@@ -5,8 +5,6 @@ enum class OrderStatus {
     InOrderBook
     //Partially matched
     ,Processing
-    //Stop limit order pending
-    ,Pending
     //Fully matched
     ,Matched
     //Not enough funds on account
@@ -33,4 +31,6 @@ enum class OrderStatus {
     ,NotFoundPrevious
     // Replaced
     ,Replaced
+    ,InvalidPriceAccuracy
+    ,InvalidVolumeAccuracy
 }

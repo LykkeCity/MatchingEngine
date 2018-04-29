@@ -17,7 +17,7 @@ import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
@@ -91,7 +91,7 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
                         order.reservedLimitVolume!!
                     } else {
                         val calculatedReservedVolume = if (order.isBuySide())
-                            RoundingUtils.round(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
+                            NumberUtils.round(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
                             else order.getAbsRemainingVolume() * order.price, asset.accuracy, false)
                         else order.getAbsRemainingVolume()
                         LOGGER.info("Null reserved volume, recalculated: $calculatedReservedVolume")
@@ -100,7 +100,7 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
 
                     val clientAssets = reservedBalances.getOrPut(order.clientId) { HashMap() }
                     val balance = clientAssets.getOrPut(asset.assetId) { ClientOrdersReservedVolume() }
-                    val newBalance = RoundingUtils.parseDouble(balance.volume + reservedVolume, asset.accuracy).toDouble()
+                    val newBalance = NumberUtils.parseDouble(balance.volume + reservedVolume, asset.accuracy).toDouble()
                     balance.volume = newBalance
                     balance.orderIds.add(order.externalId)
                 } catch (e: Exception) {

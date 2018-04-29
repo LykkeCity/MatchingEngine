@@ -239,15 +239,15 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client4", "BTC1", 0.01)
         initServices()
 
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.8722, straight = true)))
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.87, straight = true)))
 
         Assert.assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
         Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(127.8722, marketOrderReport.order.volume, DELTA)
+        Assert.assertEquals(127.87, marketOrderReport.order.volume, DELTA)
         Assert.assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.00999961", marketOrderReport.trades.first().marketVolume)
+        Assert.assertEquals("0.00999944", marketOrderReport.trades.first().marketVolume)
         Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         Assert.assertEquals("127.87", marketOrderReport.trades.first().limitVolume)
