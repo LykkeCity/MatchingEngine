@@ -115,6 +115,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
+
+
         val ordersToCancel = ArrayList<NewLimitOrder>()
 
         if (cancelAllPreviousLimitOrders) {
@@ -311,8 +313,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         if (isOldTypeMessage) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageUid.toLong()))
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
             val response = buildResponse(messageUid, assetPairId, orders)
             messageWrapper.writeMultiLimitOrderResponse(response)
@@ -550,6 +551,20 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         notFoundReplacements.putAll(mutableReplacements)
         return addedToCancel
+    }
+
+    private fun buildResponse(messageUid: String,
+                              assetPairId: String,
+                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse.Builder {
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).assetPairId = assetPairId
+
+        orders.forEach {
+            responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
+                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
+                    .setVolume(it.volume).setPrice(it.price).build())
+        }
+        return responseBuilder
     }
 
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {

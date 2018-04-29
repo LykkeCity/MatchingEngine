@@ -145,19 +145,19 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         when (OrderStatus.valueOf(orderStatus)) {
             NoLiquidity -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             }
             ReservedVolumeGreaterThanBalance -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus), "Reserved volume is higher than available balance")
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             }
             InvalidFee -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(orderStatus))
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             }
             Matched -> {
                 val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
