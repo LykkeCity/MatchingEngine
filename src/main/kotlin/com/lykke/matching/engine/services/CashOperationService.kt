@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -18,7 +19,8 @@ import java.util.UUID
 
 @Service
 class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
-                                                   private val applicationSettingsCache: ApplicationSettingsCache): AbstractService {
+                                                   private val applicationSettingsCache: ApplicationSettingsCache,
+                                                   private val assetsHolder: AssetsHolder): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()

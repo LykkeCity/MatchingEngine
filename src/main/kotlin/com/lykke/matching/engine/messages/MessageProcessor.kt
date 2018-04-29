@@ -211,8 +211,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 orderBooksQueue,
                 rabbitOrderBooksQueue)
 
-        this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder, applicationSettingsCache, assetsHolder)
-        this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor, assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
+        this.cashOperationService = CashOperationService(balanceHolder, applicationSettingsCache, assetsHolder)
+        this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
