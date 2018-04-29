@@ -306,8 +306,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         if (isOldTypeMessage) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(messageUid.toLong()))
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
             val response = buildResponse(messageUid, assetPairId, orders)
             messageWrapper.writeMultiLimitOrderResponse(response)

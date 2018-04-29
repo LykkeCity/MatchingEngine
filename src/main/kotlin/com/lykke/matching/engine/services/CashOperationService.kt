@@ -29,7 +29,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
 
         if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(message.uid)
                     .setBussinesId(message.bussinesId))
             LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: disabled asset")
             return
@@ -40,7 +39,6 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
             if (balance - reservedBalance < Math.abs(message.amount)) {
                 messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                        .setUid(message.uid)
                         .setBussinesId(message.bussinesId))
                 LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance, reserved balance $reservedBalance")
                 return
@@ -58,13 +56,11 @@ class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAcc
         } catch (e: BalanceException) {
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(message.uid)
                     .setBussinesId(message.bussinesId))
             return
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                .setUid(message.uid)
                 .setBussinesId(message.bussinesId)
                 .setRecordId(operation.id))
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)} processed")
