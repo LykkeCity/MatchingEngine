@@ -138,13 +138,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         if (reason == null) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(order.externalId)
-                    .setMessageId(messageWrapper.messageId)
                     .setMatchingEngineId(order.id)
                     .setStatus(status.type))
             return
         }
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMessageId(messageWrapper.messageId)
                 .setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason))
     }
 }

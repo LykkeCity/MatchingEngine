@@ -38,8 +38,7 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
                     MessageType.BALANCE_UPDATE.name, Date(),
                     listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setUid(message.uid))
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
 
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
         } else {

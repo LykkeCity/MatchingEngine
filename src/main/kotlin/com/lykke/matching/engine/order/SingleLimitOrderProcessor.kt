@@ -23,7 +23,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
     fun processLimitOrder(order: NewLimitOrder,
                           isCancelOrders: Boolean,
                           now: Date,
-                          operationId: String,
+                          messageId: String,
                           payBackReserved: Double? = null,
                           messageWrapper: MessageWrapper? = null) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
@@ -57,8 +57,8 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 LOGGER)
 
         matchingEngine.initTransaction()
-        val result = processor.preProcess(operationId, listOf(order))
-                .apply(operationId, order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
+        val result = processor.preProcess(messageId, listOf(order))
+                .apply(messageId, order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 
         if (result.orders.size != 1) {
             throw Exception("Error during limit order process (id: ${order.externalId}): result has invalid orders count: ${result.orders.size}")
