@@ -20,6 +20,8 @@ class OrderStatusUtils {
                 OrderStatus.ReservedVolumeGreaterThanBalance -> MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE
                 OrderStatus.NotEnoughFunds -> MessageStatus.NOT_ENOUGH_FUNDS
                 OrderStatus.UnknownAsset -> MessageStatus.UNKNOWN_ASSET
+                OrderStatus.InvalidPriceAccuracy -> MessageStatus.INVALID_PRICE_ACCURACY
+                OrderStatus.InvalidVolumeAccuracy -> MessageStatus.INVALID_VOLUME_ACCURACY
                 else -> MessageStatus.OK
             }
         }

@@ -285,7 +285,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("${getOrderInfo(order)} invalid price accuracy")
             order.status = OrderStatus.InvalidPriceAccuracy.name
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
-                    orderBook, messageWrapper, MessageStatus.INVALID_PRICE_ACCURACY, now, isCancelOrders)
+                    orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(OrderStatus.InvalidPriceAccuracy), now, isCancelOrders)
         }
 
         return priceAccuracyValid
@@ -302,7 +302,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("${getOrderInfo(order)} invalid volume accuracy")
             order.status = OrderStatus.InvalidVolumeAccuracy.name
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
-                    orderBook, messageWrapper, MessageStatus.INVALID_VOLUME_ACCURACY, now, isCancelOrders)
+                    orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(OrderStatus.InvalidVolumeAccuracy), now, isCancelOrders)
         }
 
         return volumeAccuracyValid
@@ -363,7 +363,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order.status = OrderStatus.LeadToNegativeSpread.name
 
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
-                    orderBook, messageWrapper, MessageStatus.LEAD_TO_NEGATIVE_SPREAD, now, isCancelOrders)
+                    orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(OrderStatus.LeadToNegativeSpread), now, isCancelOrders)
             return false
         }
 
@@ -400,7 +400,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order.status = OrderStatus.TooSmallVolume.name
 
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
-                    orderBook, messageWrapper, MessageStatus.TOO_SMALL_VOLUME, now, isCancelOrders)
+                    orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(OrderStatus.TooSmallVolume), now, isCancelOrders)
             return false
         }
 
@@ -417,7 +417,7 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("${getOrderInfo(order)}: disabled asset")
             order.status = OrderStatus.DisabledAsset.name
             rejectOrder(cancelVolume, order, clientLimitOrdersReport,
-                    orderBook, messageWrapper, MessageStatus.DISABLED_ASSET, now, isCancelOrders)
+                    orderBook, messageWrapper, OrderStatusUtils.toMessageStatus(OrderStatus.DisabledAsset), now, isCancelOrders)
 
             return false
         }
