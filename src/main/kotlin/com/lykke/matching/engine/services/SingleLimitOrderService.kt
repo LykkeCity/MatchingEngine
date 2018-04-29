@@ -25,6 +25,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.LinkedList
@@ -116,6 +117,10 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
+        if (!checkFee(feeInstruction, feeInstructions)) {
+            LOGGER.info("Limit order id: ${order.externalId}, client ${order.clientId}, assetPair: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${RoundingUtils.roundForPrint(order.price)} has invalid fee")
+            order.status = OrderStatus.InvalidFee.name
+            rejectOrder(reservedBalance, cancelVolume, limitAsset, order, balance, clientLimitOrdersReport, orderBook, messageWrapper, MessageStatus.INVALID_FEE, now, isCancelOrders)
 
         val orderInfo = getOrderInfo(order)
 
@@ -131,19 +136,19 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             when (OrderStatus.valueOf(orderCopy.status)) {
                 OrderStatus.NoLiquidity -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
                 }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
                 }
                 OrderStatus.NotEnoughFunds -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.NOT_ENOUGH_FUNDS)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
                 }
                 OrderStatus.InvalidFee -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing-> {
