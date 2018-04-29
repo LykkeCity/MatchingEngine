@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -11,7 +12,8 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.Date
 
-class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) : AbstractService {
+class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder,
+                                   private val assetsHolder: AssetsHolder) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedBalanceUpdateService::class.java.name)
@@ -21,13 +23,11 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
-        val message = messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
+        val message = getMessage(messageWrapper)
         LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-        if (message.reservedAmount > balance) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
-            LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${NumberUtils.roundForPrint(balance)}) is lower that reserved balance ${NumberUtils.roundForPrint(message.reservedAmount)}")
+        if (!performValidation(messageWrapper)) {
             return
         }
 
@@ -38,6 +38,45 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
         LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
     }
+
+    private fun isReservedBalanceValid(messageWrapper: MessageWrapper): Boolean {
+        val message = getMessage(messageWrapper)
+        val balance = balancesHolder.getBalance(message.clientId, message.assetId)
+        if (message.reservedAmount > balance) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
+            LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${NumberUtils.roundForPrint(balance)}) is lower that reserved balance ${NumberUtils.roundForPrint(message.reservedAmount)}")
+            return false
+        }
+
+        return true
+    }
+
+    private fun isAmountAccuracyValid(messageWrapper: MessageWrapper): Boolean {
+        val message = getMessage(messageWrapper)
+        val asset = assetsHolder.getAsset(message.assetId)
+        val accuracyValid = NumberUtils.isScaleSmallerOrEqual(message.reservedAmount, asset.accuracy)
+
+        if (!accuracyValid) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setId(message.uid)
+                    .setStatus(MessageStatus.INVALID_VOLUME_ACCURACY.type)
+                    .build())
+            LOGGER.info("Reserved balance accuracy invalid, client ${message.clientId}, asset ${message.assetId}, reserved amount: ${message.reservedAmount}")
+        }
+
+        return accuracyValid
+    }
+
+    fun performValidation(messageWrapper: MessageWrapper): Boolean {
+        val validations = arrayOf({isReservedBalanceValid(messageWrapper)}, {isAmountAccuracyValid(messageWrapper)})
+
+        val failedValidation = validations.find { function: () -> Boolean -> !function() }
+
+        return failedValidation == null
+    }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedBalanceUpdate {
         return ProtocolMessages.ReservedBalanceUpdate.parseFrom(array)
