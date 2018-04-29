@@ -13,7 +13,6 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
-import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
@@ -71,14 +70,6 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             STATS_LOGGER.info("Total: ${PrintUtils.convertToString(totalTime)}. ")
             totalTime = 0.0
         }
-    }
-
-    private fun getMessageUid(messageWrapper: MessageWrapper): Long? {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
-            return message.uid
-        }
-        return null
     }
 
     private fun incomingMessageInfo(message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
