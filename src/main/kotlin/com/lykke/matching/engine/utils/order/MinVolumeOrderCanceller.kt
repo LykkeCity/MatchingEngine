@@ -29,7 +29,6 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
 
     fun cancel() {
         val operationId = UUID.randomUUID().toString()
-        val messageId = UUID.randomUUID().toString()
         teeLog("Starting order books analyze to cancel min volume orders ($operationId)")
 
         val ordersToCancel = HashMap<AssetPair, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
@@ -67,7 +66,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         try {
             cancellerFactory.create(LOGGER, Date())
                     .preProcessLimitOrders(ordersToCancel, ordersToRemove)
-                    .applyFull(operationId, messageId, MessageType.LIMIT_ORDER.name, true)
+                    .applyFull(operationId, operationId, MessageType.LIMIT_ORDER.name, true)
         } catch (e: BalanceException) {
             teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
             return
