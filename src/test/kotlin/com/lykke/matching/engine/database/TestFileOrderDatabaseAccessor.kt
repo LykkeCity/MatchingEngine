@@ -10,11 +10,11 @@ import java.util.concurrent.PriorityBlockingQueue
 
 class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
 
+    private val orders = HashMap<String, MutableList<NewLimitOrder>>()
+
     override fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
         orders["$asset-$isBuy"] = orderBook.map { copyOfNewLimitOrder(it) }.toMutableList()
     }
-
-    private val orders = HashMap<String, MutableList<NewLimitOrder>>()
 
     fun addLimitOrder(order: NewLimitOrder) {
         orders.getOrPut("${order.assetPairId}-${order.isBuySide()}") { ArrayList() }.add(copyOfNewLimitOrder(order))
@@ -38,20 +38,27 @@ class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
         return copyOfNewLimitOrder(orders["$asset-$isBuy"]?.last() ?: return null)
     }
 
-    private fun copyOfNewLimitOrder(order: NewLimitOrder): NewLimitOrder {
-        return NewLimitOrder(order.id,
-                order.externalId,
-                order.assetPairId,
-                order.clientId,
-                order.volume,
-                order.price,
-                order.status,
-                order.createdAt,
-                order.registered,
-                order.remainingVolume,
-                order.lastMatchTime,
-                order.reservedLimitVolume,
-                order.fee as? LimitOrderFeeInstruction,
-                order.fees?.map { it as NewLimitOrderFeeInstruction })
+    companion object {
+        fun copyOfNewLimitOrder(order: NewLimitOrder): NewLimitOrder {
+            return NewLimitOrder(order.id,
+                    order.externalId,
+                    order.assetPairId,
+                    order.clientId,
+                    order.volume,
+                    order.price,
+                    order.status,
+                    order.createdAt,
+                    order.registered,
+                    order.remainingVolume,
+                    order.lastMatchTime,
+                    order.reservedLimitVolume,
+                    order.fee as? LimitOrderFeeInstruction,
+                    order.fees?.map { it as NewLimitOrderFeeInstruction },
+                    order.type,
+                    order.lowerLimitPrice,
+                    order.lowerPrice,
+                    order.upperLimitPrice,
+                    order.upperPrice)
+        }
     }
 }

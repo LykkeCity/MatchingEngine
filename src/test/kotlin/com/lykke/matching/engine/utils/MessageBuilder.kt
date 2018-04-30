@@ -9,6 +9,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -25,10 +26,16 @@ class MessageBuilder {
                             registered: Date = Date(),
                             status: String = OrderStatus.InOrderBook.name,
                             volume: Double = 1000.0,
+                            type: LimitOrderType = LimitOrderType.LIMIT,
+                            lowerLimitPrice: Double? = null,
+                            lowerPrice: Double? = null,
+                            upperLimitPrice: Double? = null,
+                            upperPrice: Double? = null,
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf()): NewLimitOrder =
-                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, reservedVolume, fee, fees)
+                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, reservedVolume, fee, fees,
+                        type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -135,13 +142,21 @@ class MessageBuilder {
                     .setClientId(order.clientId)
                     .setAssetPairId(order.assetPairId)
                     .setVolume(order.volume)
-                    .setPrice(order.price).setCancelAllPreviousLimitOrders(cancel)
+                    .setCancelAllPreviousLimitOrders(cancel)
+                    .setType(order.type!!.externalId)
+            if (order.type == LimitOrderType.LIMIT) {
+                builder.price = order.price
+            }
             order.fee?.let {
                 builder.setFee(buildLimitOrderFee(it as LimitOrderFeeInstruction))
             }
             order.fees?.forEach {
                 builder.addFees(buildNewLimitOrderFee(it as NewLimitOrderFeeInstruction))
             }
+            order.lowerLimitPrice?.let { builder.setLowerLimitPrice(it) }
+            order.lowerPrice?.let { builder.setLowerPrice(it) }
+            order.upperLimitPrice?.let { builder.setUpperLimitPrice(it) }
+            order.upperPrice?.let { builder.setUpperPrice(it) }
             return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null)
         }
 
@@ -192,6 +207,13 @@ class MessageBuilder {
 
          fun buildLimitOrderCancelWrapper(uid: String): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
                     .setUid(UUID.randomUUID().toString()).setLimitOrderId(uid).build().toByteArray(), null)
+
+        fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
+                .setUid(UUID.randomUUID().toString())
+                .setTimestamp(Date().time)
+                .setClientId(clientId)
+                .setAssetPairId(assetPairId)
+                .setIsBuy(isBuy).build().toByteArray(), null)
 
         fun buildFeeInstructions(type: FeeType? = null,
                                  sizeType: FeeSizeType? = FeeSizeType.PERCENTAGE,

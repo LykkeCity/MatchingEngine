@@ -28,7 +28,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                private val applicationSettingsCache: ApplicationSettingsCache) {
 
     companion object {
-        private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
+        val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
     }
 
     //asset -> orderBook
@@ -62,6 +62,10 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         orders.forEach { order ->
             addOrder(order)
         }
+    }
+
+    fun updateLimitOrder(order: NewLimitOrder) {
+        updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
     fun moveOrdersToDone(orders: List<NewLimitOrder>) {
@@ -113,11 +117,11 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
     fun cancelLimitOrder(uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
-      
+
         if (removeFromClientMap) {
             removeFromClientMap(uid)
         }
-      
+
         getOrderBook(order.assetPairId).removeOrder(order)
         order.status = Cancelled.name
         updateOrderBook(order.assetPairId, order.isBuySide())
