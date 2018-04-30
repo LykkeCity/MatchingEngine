@@ -80,7 +80,10 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null)
 
-            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+            LOGGER.info("""Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId},
+                |assetPair: ${oldMessage.assetPairId},
+                |volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)},
+                |cancel: ${oldMessage.cancelAllPreviousLimitOrders}""".trimMargin())
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
             feeInstruction = null
@@ -94,7 +97,10 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
                     message.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, message.volume, null,
                     fee = feeInstruction, fees = listOfLimitOrderFee(feeInstruction, feeInstructions))
 
-            LOGGER.info("Got limit order id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders}, fee: $feeInstruction, fees: $feeInstructions")
+            LOGGER.info("""Got limit order messageId: ${messageWrapper.messageId} id: ${message.uid}, client ${message.clientId},
+                |assetPair: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)},
+                |price: ${RoundingUtils.roundForPrint(message.price)}, cancel: ${message.cancelAllPreviousLimitOrders},
+                |fee: $feeInstruction, fees: $feeInstructions""".trimMargin())
 
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
@@ -398,7 +404,6 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             messageWrapper.id = message.uid
             messageWrapper.timestamp = message.timestamp
         }
-        LOGGER.info("Parse message ${SingleLimitOrderService::class.java.name} message id: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

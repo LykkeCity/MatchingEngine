@@ -38,13 +38,13 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         }
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
-            LOGGER.debug("Got old limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+            LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
             genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderCancel
-            LOGGER.debug("Got limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+            LOGGER.debug("Got limit order messageId: ${messageWrapper.messageId} (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
             order = genericLimitOrderService.cancelLimitOrder(message.limitOrderId, true)
 
@@ -104,7 +104,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid
         }
-        LOGGER.info("Parsed ${LimitOrderCancelService::class.java.name} message with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

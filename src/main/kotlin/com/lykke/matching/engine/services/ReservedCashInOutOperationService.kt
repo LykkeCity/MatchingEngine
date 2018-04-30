@@ -30,7 +30,10 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
-        LOGGER.debug("Processing reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}")
+        LOGGER.debug(""""Processing reserved cash in/out messageId: ${messageWrapper.messageId}
+            | operation (${message.id})
+            | for client ${message.clientId}, asset ${message.assetId},
+            | amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}""".trimMargin())
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
                 Date(message.timestamp), 0.0, message.reservedVolume)
@@ -89,7 +92,6 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.id
-        LOGGER.info("Parsed message ${ReservedCashInOutOperationService::class.java.name} messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
