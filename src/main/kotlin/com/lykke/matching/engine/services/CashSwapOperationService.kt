@@ -33,8 +33,9 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
-        LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
-                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)}")
+        LOGGER.debug("""Processing cash swap messageId: ${messageWrapper.messageId}, operation (${message.id})
+            |from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)}
+            |to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)}""".trimMargin())
 
         val operation = SwapOperation(UUID.randomUUID().toString(), message.id, Date(message.timestamp)
                 , message.clientId1, message.assetId1, message.volume1
@@ -110,7 +111,6 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = messageWrapper.id
-        LOGGER.info("Parsed ${CashSwapOperationService::class.java.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

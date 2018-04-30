@@ -49,13 +49,16 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null,
                     type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
-            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+            LOGGER.info("""Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId},
+                |assetPair: ${oldMessage.assetPairId},
+                |volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)},
+                |cancel: ${oldMessage.cancelAllPreviousLimitOrders}""".trimMargin())
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrder
             order = createOrder(message, now)
-            LOGGER.info("Got limit order ${incomingMessageInfo(message, order)}")
+            LOGGER.info("""Got limit order messageId: ${messageWrapper.messageId}, ${incomingMessageInfo(message, order)}""")
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
 
@@ -139,7 +142,6 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             messageWrapper.id = message.uid
             messageWrapper.timestamp = message.timestamp
         }
-        LOGGER.info("Parse message ${SingleLimitOrderService::class.java.name} message id: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

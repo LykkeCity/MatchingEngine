@@ -23,7 +23,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
     override fun getOrders(messageWrapper: MessageWrapper): Orders {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
-            LOGGER.debug("Got old limit order (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+            LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
             genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid))
@@ -32,7 +32,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
 
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderCancel
         val orderIds = message.limitOrderIdList.toList()
-        LOGGER.debug("Got limit order cancel request (id: ${message.uid}, orders: $orderIds)")
+        LOGGER.debug("Got limit order cancel request messageId: ${messageWrapper.messageId}, (id: ${message.uid}, orders: $orderIds)")
 
         if (orderIds.isEmpty()) {
             val errorMessage = "Orders ids list is empty (request id: ${message.uid})"

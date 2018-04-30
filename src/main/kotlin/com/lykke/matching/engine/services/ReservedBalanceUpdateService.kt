@@ -22,7 +22,9 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
-        LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
+        LOGGER.debug("""Processing holders update messageId: ${messageWrapper.messageId}
+            | for client ${message.clientId}, asset ${message.assetId},
+            | reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}""".trimMargin())
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
         if (message.reservedAmount > balance) {
@@ -54,7 +56,6 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
-        LOGGER.info("Parsed message ${ReservedBalanceUpdateService::class.java.name} messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

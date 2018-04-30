@@ -26,7 +26,10 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
-        LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+        LOGGER.debug("""Processing cash messageId: ${messageWrapper.messageId},
+            |operation (${message.bussinesId}),
+            |for client ${message.clientId}, asset ${message.assetId},
+            |amount: ${RoundingUtils.roundForPrint(message.amount)}""".trimMargin())
 
         if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
@@ -77,7 +80,6 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid.toString()
-        LOGGER.info("Parsed ${CashOperationService::class.java.name} message with messageId : ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

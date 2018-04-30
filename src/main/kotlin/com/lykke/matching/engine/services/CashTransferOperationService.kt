@@ -47,7 +47,13 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
+
+        LOGGER.debug("""Processing cash transfer operation ${message.id})
+            | messageId: ${messageWrapper.messageId}
+            | from client ${message.fromClientId} to client ${message.toClientId},
+            | asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)},
+            | feeInstruction: $feeInstruction, feeInstructions: $feeInstructions""".trimMargin())
+
         val operationId = UUID.randomUUID().toString()
         if (!checkFee(feeInstruction, feeInstructions)) {
             writeInvalidFeeResponse(messageWrapper, message, operationId)
@@ -128,7 +134,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.id = message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
-        LOGGER.info("Parsed message ${CashTransferOperationService::class.java.name} with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

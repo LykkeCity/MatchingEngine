@@ -17,7 +17,11 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrderCancel
-        LOGGER.debug("Got multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
+        LOGGER.debug("""Got multi limit order cancel
+            |message id: ${messageWrapper.messageId}, id: ${message.uid},
+            | ${message.clientId}, assetPair: ${message.assetPairId},
+            | isBuy: ${message.isBuy}""".trimMargin())
+
         val now = Date()
         val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
         if (ordersToCancel.isNotEmpty()) {
@@ -40,7 +44,6 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
-        LOGGER.info("Parsed message ${MultiLimitOrderCancelService::class.java.name} with messageId ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

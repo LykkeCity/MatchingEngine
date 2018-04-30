@@ -39,7 +39,10 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        LOGGER.debug(""""Processing cash in/out messageId: ${messageWrapper.messageId}
+            | operation (${message.id}) for client ${message.clientId},
+            | asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)},
+            | feeInstructions: $feeInstructions""".trimMargin())
 
         val operationId = UUID.randomUUID().toString()
         if (!checkFee(null, feeInstructions)) {
@@ -111,7 +114,6 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.id
-        LOGGER.info("Parsed ${CashInOutOperationService::class.java.name} message with messageId: ${messageWrapper.messageId}")
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
