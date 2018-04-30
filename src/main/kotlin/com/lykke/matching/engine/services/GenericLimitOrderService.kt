@@ -25,7 +25,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                private val balancesHolder: BalancesHolder,
                                private val tradesInfoQueue: BlockingQueue<TradeInfo>,
                                private val quotesNotificationQueue: BlockingQueue<QuotesUpdate>,
-                               private val applicationSettingsCache: ApplicationSettingsCache) {
+                               applicationSettingsCache: ApplicationSettingsCache): AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
         val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -76,26 +76,21 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     }
 
     fun getAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean): List<NewLimitOrder> {
-        val ordersToRemove = LinkedList<NewLimitOrder>()
-        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide() == isBuy) {
-                ordersToRemove.add(limitOrder)
-            }
-        }
+        val ordersToRemove = searchOrders(clientId, assetPair, isBuy)
         clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
         return ordersToRemove
     }
 
-    fun updateOrderBook(asset: String, isBuy: Boolean) {
-        orderBookDatabaseAccessor.updateOrderBook(asset, isBuy, getOrderBook(asset).getCopyOfOrderBook(isBuy))
+    override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {
+        orderBookDatabaseAccessor.updateOrderBook(assetPairId, isBuy, getOrderBook(assetPairId).getCopyOfOrderBook(isBuy))
     }
 
     fun getAllOrderBooks() = limitOrdersQueues
 
-    fun getOrderBook(assetPair: String) = limitOrdersQueues[assetPair] ?: AssetOrderBook(assetPair)
+    override fun getOrderBook(assetPairId: String) = limitOrdersQueues[assetPairId] ?: AssetOrderBook(assetPairId)
 
-    fun setOrderBook(assetPair: String, book: AssetOrderBook){
-        limitOrdersQueues[assetPair] = book
+    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetOrderBook){
+        limitOrdersQueues[assetPairId] = assetOrderBook
     }
 
     fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<NewLimitOrder>){
@@ -111,6 +106,18 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
         if (result) {
             limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - volume, accuracy).toDouble()
+        }
+        return result
+    }
+
+    fun getOrder(uid: String) = limitOrdersMap[uid]
+
+    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<NewLimitOrder> {
+        val result = LinkedList<NewLimitOrder>()
+        clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
+            if (limitOrder.assetPairId == (assetPair ?: limitOrder.assetPairId) && limitOrder.isBuySide() == (isBuy ?: limitOrder.isBuySide())) {
+                result.add(limitOrder)
+            }
         }
         return result
     }
@@ -133,7 +140,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 
-    fun cancelLimitOrders(orders: List<NewLimitOrder>) {
+    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)

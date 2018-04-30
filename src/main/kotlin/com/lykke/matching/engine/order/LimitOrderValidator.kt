@@ -5,26 +5,26 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.messages.MessageStatus
+import java.math.BigDecimal
 
 class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
                           private val applicationSettingsCache: ApplicationSettingsCache) {
 
     fun validateFee(order: NewLimitOrder) {
-        if (!checkFee(order.fee, order.fees)) {
-            throw OrderValidationException("has invalid fee", OrderStatus.InvalidFee, MessageStatus.INVALID_FEE)
+        if (order.fee != null && order.fees?.size ?: 0 > 1 || !checkFee(null, order.fees)) {
+            throw OrderValidationException("has invalid fee", OrderStatus.InvalidFee)
         }
     }
 
     fun validateAssets(assetPair: AssetPair) {
         if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
-            throw OrderValidationException("disabled asset", OrderStatus.DisabledAsset, MessageStatus.DISABLED_ASSET)
+            throw OrderValidationException("disabled asset", OrderStatus.DisabledAsset)
         }
     }
 
     fun validatePrice(order: NewLimitOrder) {
         if (order.price <= 0.0) {
-            throw OrderValidationException("price is invalid", OrderStatus.InvalidPrice, MessageStatus.INVALID_PRICE)
+            throw OrderValidationException("price is invalid", OrderStatus.InvalidPrice)
         }
     }
 
@@ -38,19 +38,19 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
             if (order.lowerLimitPrice != null && order.upperLimitPrice != null && order.lowerLimitPrice >= order.upperLimitPrice) return
             checked = true
         } finally {
-            if (!checked) throw OrderValidationException("limit prices are invalid", OrderStatus.InvalidPrice, MessageStatus.INVALID_PRICE)
+            if (!checked) throw OrderValidationException("limit prices are invalid", OrderStatus.InvalidPrice)
         }
     }
 
     fun validateVolume(order: NewLimitOrder) {
         if (!order.checkVolume(assetsPairsHolder)) {
-            throw OrderValidationException("volume is too small", OrderStatus.TooSmallVolume, MessageStatus.TOO_SMALL_VOLUME)
+            throw OrderValidationException("volume is too small", OrderStatus.TooSmallVolume)
         }
     }
 
-    fun checkBalance(availableBalance: Double, limitVolume: Double) {
+    fun checkBalance(availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (availableBalance < limitVolume) {
-            throw OrderValidationException("not enough funds to reserve", OrderStatus.NotEnoughFunds, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE)
+            throw OrderValidationException("not enough funds to reserve", OrderStatus.NotEnoughFunds)
         }
     }
 }

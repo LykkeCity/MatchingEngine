@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
@@ -18,7 +19,10 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -36,6 +40,8 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
+                             private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                             private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                              private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
@@ -78,60 +84,33 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
-        if (isOldTypeMessage) {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMultiLimitOrder
-            messageUid = message.uid.toString()
-            clientId = message.clientId
-            assetPairId = message.assetPairId
-            LOGGER.debug("Got old multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
-            orders = ArrayList(message.ordersList.size)
-            cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
-            message.ordersList.forEach { currentOrder ->
-                val uid = UUID.randomUUID().toString()
-                orders.add(NewLimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
-                        currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
-                        type = LimitOrderType.LIMIT,
-                        lowerLimitPrice = null,
-                        lowerPrice = null,
-                        upperLimitPrice = null,
-                        upperPrice = null))
+        if (!isOldTypeMessage) {
+            processMultiOrder(messageWrapper)
+            return
+        }
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMultiLimitOrder
+        messageUid = message.uid.toString()
+        clientId = message.clientId
+        assetPairId = message.assetPairId
+        LOGGER.debug("Got old multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
+        orders = ArrayList(message.ordersList.size)
+        cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
+        message.ordersList.forEach { currentOrder ->
+            val uid = UUID.randomUUID().toString()
+            orders.add(NewLimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
+                    currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
+                    type = LimitOrderType.LIMIT,
+                    lowerLimitPrice = null,
+                    lowerPrice = null,
+                    upperLimitPrice = null,
+                    upperPrice = null,
+                    previousExternalId = null))
 
-                if (cancelAllPreviousLimitOrders) {
-                    if (currentOrder.volume > 0) {
-                        cancelBuySide = true
-                    } else {
-                        cancelSellSide = true
-                    }
-                }
-            }
-        } else {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
-            messageUid = message.uid
-            clientId = message.clientId
-            assetPairId = message.assetPairId
-            LOGGER.debug("Got multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
-            orders = ArrayList(message.ordersList.size)
-            cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
-            message.ordersList.forEach { currentOrder ->
-                val uid = UUID.randomUUID().toString()
-                val feeInstruction = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null
-                val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
-                orders.add(NewLimitOrder(uid, currentOrder.uid, message.assetPairId, message.clientId, currentOrder.volume,
-                        currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
-                        fee = feeInstruction,
-                        fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
-                        type = LimitOrderType.LIMIT,
-                        lowerLimitPrice = null,
-                        lowerPrice = null,
-                        upperLimitPrice = null,
-                        upperPrice = null))
-
-                if (cancelAllPreviousLimitOrders) {
-                    if (currentOrder.volume > 0) {
-                        cancelBuySide = true
-                    } else {
-                        cancelSellSide = true
-                    }
+            if (cancelAllPreviousLimitOrders) {
+                if (currentOrder.volume > 0) {
+                    cancelBuySide = true
+                } else {
+                    cancelSellSide = true
                 }
             }
         }
@@ -360,6 +339,195 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     .setVolume(it.volume).setPrice(it.price).build())
         }
         return responseBuilder.build()
+    }
+
+    private fun processMultiOrder(messageWrapper: MessageWrapper) {
+        val multiLimitOrder = readMultiLimitOrder(messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder)
+        val isTrustedClient = balancesHolder.isTrustedClient(multiLimitOrder.clientId)
+        if (isTrustedClient) {
+            LOGGER.debug("Got multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}")
+        } else {
+            LOGGER.debug("Got client multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}, cancelPrevious: ${multiLimitOrder.cancelAllPreviousLimitOrders}, cancelMode: ${multiLimitOrder.cancelMode}")
+        }
+        val now = Date()
+
+        var buySideOrderBookChanged = false
+        var sellSideOrderBookChanged = false
+
+        var previousBuyOrders: Collection<NewLimitOrder>? = null
+        var previousSellOrders: Collection<NewLimitOrder>? = null
+        val ordersToReplace = mutableListOf<NewLimitOrder>()
+
+        val ordersToCancel = ArrayList<NewLimitOrder>()
+        if (multiLimitOrder.cancelAllPreviousLimitOrders) {
+            if (multiLimitOrder.cancelBuySide) {
+                previousBuyOrders = limitOrderService.getAllPreviousOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, true)
+                ordersToCancel.addAll(previousBuyOrders)
+                buySideOrderBookChanged = true
+            }
+            if (multiLimitOrder.cancelSellSide) {
+                previousSellOrders = limitOrderService.getAllPreviousOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, false)
+                ordersToCancel.addAll(previousSellOrders)
+                sellSideOrderBookChanged = true
+            }
+        }
+
+
+
+        val notFoundReplacements = mutableMapOf<String, NewLimitOrder>()
+
+        buySideOrderBookChanged = processReplacements(multiLimitOrder,
+                true,
+                notFoundReplacements,
+                previousBuyOrders,
+                ordersToCancel,
+                ordersToReplace) || buySideOrderBookChanged
+
+        sellSideOrderBookChanged = processReplacements(multiLimitOrder,
+                false,
+                notFoundReplacements,
+                previousSellOrders,
+                ordersToCancel,
+                ordersToReplace) || sellSideOrderBookChanged
+
+
+        val assetPair = assetsPairsHolder.getAssetPair(multiLimitOrder.assetPairId)
+        val cancelResult = genericLimitOrdersCancellerFactory.create(LOGGER, now)
+                .preProcessLimitOrders(ordersToCancel)
+                .apply().limitOrdersCancelResult
+
+        limitOrderService.cancelLimitOrders(ordersToCancel)
+        val orderBook = cancelResult.assetOrderBooks[multiLimitOrder.assetPairId] ?: limitOrderService.getOrderBook(multiLimitOrder.assetPairId).copy()
+        val cancelBaseVolume = cancelResult.walletOperations.filter { it.assetId == assetPair.baseAssetId }.sumByDouble { -it.reservedAmount }
+        val cancelQuotingVolume = cancelResult.walletOperations.filter { it.assetId == assetPair.quotingAssetId }.sumByDouble { -it.reservedAmount }
+
+        notFoundReplacements.values.forEach {
+            it.status = OrderStatus.NotFoundPrevious.name
+        }
+        ordersToReplace.forEach {
+            LOGGER.info("Order (${it.externalId}) is replaced by (${(multiLimitOrder.buyReplacements[it.externalId]
+                    ?: multiLimitOrder.sellReplacements[it.externalId])?.externalId})")
+            it.status = OrderStatus.Replaced.name
+        }
+
+        val processor = limitOrdersProcessorFactory.create(matchingEngine,
+                now,
+                multiLimitOrder.clientId,
+                assetPair,
+                orderBook,
+                cancelBaseVolume,
+                cancelQuotingVolume,
+                cancelResult.clientsOrdersWithTrades,
+                cancelResult.trustedClientsOrdersWithTrades,
+                LOGGER)
+
+        val result = processor.preProcess(multiLimitOrder.orders)
+                .apply(multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
+
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        responseBuilder.setId(multiLimitOrder.messageUid)
+                .setStatus(MessageStatus.OK.type).assetPairId = multiLimitOrder.assetPairId
+
+        result.orders.forEach {processedOrder ->
+            val order = processedOrder.order
+            val statusBuilder = ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder()
+                    .setId(order.externalId)
+                    .setMatchingEngineId(order.id)
+                    .setStatus(OrderStatusUtils.toMessageStatus(order.status).type)
+                    .setVolume(order.volume)
+                    .setPrice(order.price)
+            processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
+            responseBuilder.addStatuses(statusBuilder.build())
+        }
+        messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
+
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+    }
+
+    private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder): MultiLimitOrder {
+        val clientId = message.clientId
+        val messageUid = message.uid
+        val assetPairId = message.assetPairId
+        val cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
+        val cancelMode = if (message.hasCancelMode()) OrderCancelMode.getByExternalId(message.cancelMode) else OrderCancelMode.NOT_EMPTY_SIDE
+        val orders = ArrayList<NewLimitOrder>(message.ordersList.size)
+        val now = Date()
+        var cancelBuySide = cancelMode == OrderCancelMode.BUY_SIDE || cancelMode == OrderCancelMode.BOTH_SIDES
+        var cancelSellSide = cancelMode == OrderCancelMode.SELL_SIDE || cancelMode == OrderCancelMode.BOTH_SIDES
+
+        val buyReplacements = mutableMapOf<String, NewLimitOrder>()
+        val sellReplacements = mutableMapOf<String, NewLimitOrder>()
+
+        message.ordersList.forEach { currentOrder ->
+
+            val feeInstruction = if (currentOrder.hasFee()) LimitOrderFeeInstruction.create(currentOrder.fee) else null
+            val feeInstructions = NewLimitOrderFeeInstruction.create(currentOrder.feesList)
+            val previousExternalId = if (currentOrder.hasOldUid()) currentOrder.oldUid else null
+
+            val order = NewLimitOrder(UUID.randomUUID().toString(),
+                    currentOrder.uid,
+                    message.assetPairId,
+                    message.clientId,
+                    currentOrder.volume,
+                    currentOrder.price,
+                    OrderStatus.InOrderBook.name,
+                    Date(message.timestamp),
+                    now,
+                    currentOrder.volume,
+                    null,
+                    fee = feeInstruction,
+                    fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
+                    type = LimitOrderType.LIMIT,
+                    upperPrice = null,
+                    upperLimitPrice = null,
+                    lowerPrice = null,
+                    lowerLimitPrice = null,
+                    previousExternalId = previousExternalId)
+
+            previousExternalId?.let {
+                (if (order.isBuySide()) buyReplacements else sellReplacements).put(it, order)
+            }
+
+            orders.add(order)
+
+            if (cancelAllPreviousLimitOrders && cancelMode == OrderCancelMode.NOT_EMPTY_SIDE) {
+                if (currentOrder.volume > 0) {
+                    cancelBuySide = true
+                } else {
+                    cancelSellSide = true
+                }
+            }
+        }
+
+        return MultiLimitOrder(messageUid, clientId, assetPairId, orders, cancelAllPreviousLimitOrders, cancelBuySide, cancelSellSide, cancelMode, buyReplacements, sellReplacements)
+    }
+
+    private fun processReplacements(multiLimitOrder: MultiLimitOrder,
+                                    isBuy: Boolean,
+                                    notFoundReplacements: MutableMap<String, NewLimitOrder>,
+                                    previousOrders: Collection<NewLimitOrder>?,
+                                    ordersToCancel: MutableCollection<NewLimitOrder>,
+                                    ordersToReplace: MutableCollection<NewLimitOrder>): Boolean {
+        var addedToCancel = false
+        val replacements = if (isBuy) multiLimitOrder.buyReplacements else multiLimitOrder.sellReplacements
+        if (replacements.isEmpty()) {
+            return addedToCancel
+        }
+        val mutableReplacements = replacements.toMutableMap()
+        val isAlreadyCancelled = isBuy && multiLimitOrder.cancelBuySide || !isBuy && multiLimitOrder.cancelSellSide
+        val ordersToCheck = previousOrders ?: limitOrderService.searchOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, isBuy)
+        ordersToCheck.forEach {
+            if (mutableReplacements.containsKey(it.externalId)) {
+                mutableReplacements.remove(it.externalId)
+                if (!isAlreadyCancelled) {
+                    ordersToCancel.add(it)
+                    addedToCancel = true
+                }
+                ordersToReplace.add(it)
+            }
+        }
+        notFoundReplacements.putAll(mutableReplacements)
+        return addedToCancel
     }
 
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {

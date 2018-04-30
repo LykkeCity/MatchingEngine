@@ -49,7 +49,7 @@ class MarketStateCache(private val historyTicksDatabaseAccessor: HistoryTicksDat
         val ticks = historyTicksDatabaseAccessor.loadHistoryTicks()
         ticks.forEach {
             val assetPairToTick = assetPairToIntervalTickHolder.getOrPut(it.assetPair) {HashMap()}
-            assetPairToTick!![it.tickUpdateInterval] = it
+            assetPairToTick[it.tickUpdateInterval] = it
         }
     }
 

@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.order
 
-import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -9,8 +8,8 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
@@ -19,28 +18,18 @@ import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                  private val stopLimitOrderService: GenericStopLimitOrderService,
-                                 trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                                 limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                  clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                                 orderBookQueue: BlockingQueue<OrderBook>,
-                                 rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                                  assetsHolder: AssetsHolder,
                                  assetsPairsHolder: AssetsPairsHolder,
                                  balancesHolder: BalancesHolder,
                                  applicationSettingsCache: ApplicationSettingsCache,
-                                 lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                  matchingEngine: MatchingEngine,
                                  private val LOGGER: Logger) {
 
-    private val limitOrderProcessor = LimitOrderProcessor(limitOrderService,
-            trustedClientLimitOrderReportQueue,
-            clientLimitOrderReportQueue,
-            orderBookQueue,
-            rabbitOrderBookQueue,
-            assetsHolder,
+    private val limitOrderProcessor = SingleLimitOrderProcessor(limitOrderService,
+            limitOrdersProcessorFactory,
             assetsPairsHolder,
-            balancesHolder,
-            applicationSettingsCache,
-            lkkTradesQueue,
             matchingEngine,
             LOGGER)
 
@@ -64,7 +53,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     }
 
     private fun processLimitOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
-        limitOrderProcessor.processLimitOrder(messageWrapper, order, isCancelOrders, now, null)
+        limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, messageWrapper = messageWrapper)
         checkAndProcessStopOrder(order.assetPairId, now)
     }
 
@@ -76,7 +65,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     }
 
     fun processLimitOrder(order: NewLimitOrder, now: Date, payBackReserved: Double) {
-        limitOrderProcessor.processLimitOrder(null, order, false, now, payBackReserved)
+        limitOrderProcessor.processLimitOrder(order, false, now, payBackReserved)
         checkAndProcessStopOrder(order.assetPairId, now)
     }
 
