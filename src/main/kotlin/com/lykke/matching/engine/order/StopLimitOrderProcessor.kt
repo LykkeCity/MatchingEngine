@@ -18,7 +18,9 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 
@@ -37,10 +39,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
     fun processStopOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
-        val limitVolume = if (order.isBuySide())
+        val limitVolume = BigDecimal.valueOf(if (order.isBuySide())
             RoundingUtils.round(order.volume * (order.upperPrice ?: order.lowerPrice)!!, limitAsset.accuracy, true)
         else
-            order.getAbsVolume()
+            order.getAbsVolume())
 
         val balance = balancesHolder.getBalance(order.clientId, limitAsset.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
@@ -54,13 +56,13 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        val availableBalance = RoundingUtils.parseDouble(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy).toDouble()
+        val availableBalance = RoundingUtils.parseDouble(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
         try {
             validateOrder(order, assetPair, availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
-            val messageStatus = e.messageStatus
+            val messageStatus = OrderStatusUtils.Companion.toMessageStatus(e.orderStatus)
             if (cancelVolume > 0) {
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
@@ -96,12 +98,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
-        order.reservedLimitVolume = limitVolume
+        order.reservedLimitVolume = limitVolume.toDouble()
         stopLimitOrderService.addStopOrder(order)
 
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
-        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy).toDouble()
+        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
         balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
         balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
 
@@ -113,7 +115,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
     }
 
-    private fun validateOrder(order: NewLimitOrder, assetPair: AssetPair, availableBalance: Double, limitVolume: Double) {
+    private fun validateOrder(order: NewLimitOrder, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
         validator.validateFee(order)
         validator.validateAssets(assetPair)
         validator.validateLimitPrices(order)
