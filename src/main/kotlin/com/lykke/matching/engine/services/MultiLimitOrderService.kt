@@ -172,12 +172,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
+                        order.status = OrderStatus.NoLiquidity.name
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.NotEnoughFunds -> {
+                        order.status = OrderStatus.NotEnoughFunds.name
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.InvalidFee -> {
+                        order.status = OrderStatus.InvalidFee.name
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.Matched,

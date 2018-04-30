@@ -177,19 +177,19 @@ class SingleLimitOrderService(private val limitOrderService: GenericLimitOrderSe
             when (OrderStatus.valueOf(orderCopy.status)) {
                 OrderStatus.NoLiquidity -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
                 }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
                 }
                 OrderStatus.NotEnoughFunds -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.NOT_ENOUGH_FUNDS)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
                 }
                 OrderStatus.InvalidFee -> {
                     clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                    writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
                 }
                 OrderStatus.Matched,
                 OrderStatus.Processing-> {
