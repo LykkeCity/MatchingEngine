@@ -7,7 +7,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -20,6 +20,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildTransferWra
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -33,6 +34,9 @@ import kotlin.test.assertEquals
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class InvalidBalanceTest : AbstractTest() {
 
+    @Autowired
+    private
+    lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -188,14 +192,14 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
-        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        testConfigDatabaseAccessor.addTrustedClient("Client1")
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
                 VolumePrice(-0.1, 1000.0),
                 VolumePrice(-0.05, 1010.0),
                 VolumePrice(-0.1, 1100.0)
         ), emptyList(), emptyList(), ordersUid = listOf("1", "2", "3")))
-        testSettingsDatabaseAccessor.clear()
+        testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
         clientsLimitOrdersQueue.clear()
@@ -225,11 +229,11 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
-        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        testConfigDatabaseAccessor.addTrustedClient("Client1")
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(VolumePrice(-0.05, 1010.0)), emptyList(), emptyList(), ordersUid = listOf("1")))
-        testSettingsDatabaseAccessor.clear()
+        testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
         clientsLimitOrdersQueue.clear()

@@ -1,9 +1,12 @@
+
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -11,22 +14,48 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import java.util.UUID
 import kotlin.test.assertEquals
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MultiLimitOrderCancelServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MultiLimitOrderCancelServiceTest : AbstractTest() {
+
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
-        testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+        testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0, 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  1.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "BTC", 1.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.4, price = 10000.0, reservedVolume = 0.4))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.6, price = 11000.0, reservedVolume = 0.6))
@@ -52,7 +81,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         assertEquals(1, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
 
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(1, tradesInfoQueue.size)
         assertEquals(1, orderBookQueue.size)
         assertEquals(1, rabbitOrderBookQueue.size)
@@ -70,7 +99,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(2, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
         assertEquals(0, trustedClientsLimitOrdersQueue.size)
 
-        assertEquals(1, balanceUpdateQueue.size)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(1, tradesInfoQueue.size)
         assertEquals(1, orderBookQueue.size)
         assertEquals(1, rabbitOrderBookQueue.size)

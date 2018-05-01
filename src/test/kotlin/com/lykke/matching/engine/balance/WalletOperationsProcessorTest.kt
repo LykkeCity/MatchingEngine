@@ -43,10 +43,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-
     @Test
     fun testPreProcessWalletOperations() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)

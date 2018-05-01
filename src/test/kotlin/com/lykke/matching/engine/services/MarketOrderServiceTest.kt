@@ -41,9 +41,6 @@ class MarketOrderServiceTest: AbstractTest() {
         private const val DELTA = 1e-9
     }
 
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
     @TestConfiguration
     open class Config {
         @Bean

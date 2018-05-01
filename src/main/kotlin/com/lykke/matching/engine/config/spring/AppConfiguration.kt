@@ -23,7 +23,8 @@ open class AppConfiguration {
     open fun socketServer(): Runnable {
         return SocketServer { appInitialData ->
             MetricsLogger.getLogger().logWarning("""Spot.${config.me.name} ${AppVersion.VERSION}
-                |: Started : ${appInitialData.ordersCount} orders, ${appInitialData.balancesCount}
+                |: Started : ${appInitialData.ordersCount} orders, ${appInitialData.stopOrdersCount} stop orders,
+                | ${appInitialData.balancesCount}
                 |balances for ${appInitialData.clientsCount} clients""".trimMargin())
         }
     }

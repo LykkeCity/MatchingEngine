@@ -6,9 +6,9 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -35,10 +35,6 @@ import kotlin.test.assertNull
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     private lateinit var canceller: MinVolumeOrderCanceller
-
-    @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
 
     @TestConfiguration
     open class Config {
@@ -229,8 +225,12 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
-        val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
-                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(), TestStopOrderBookDatabaseAccessor(), applicationContext)
+        val recalculator = ReservedVolumesRecalculator(testDictionariesDatabaseAccessor,
+                testBackOfficeDatabaseAccessor,
+                testOrderDatabaseAccessor,
+                TestStopOrderBookDatabaseAccessor(),
+                TestReservedVolumesDatabaseAccessor(),
+                applicationContext)
 
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))

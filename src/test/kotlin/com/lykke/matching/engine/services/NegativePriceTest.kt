@@ -5,10 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -30,6 +27,9 @@ import kotlin.test.assertEquals
 @SpringBootTest(classes = [(TestApplicationContext::class), (NegativePriceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class NegativePriceTest : AbstractTest() {
+
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -68,7 +68,7 @@ class NegativePriceTest : AbstractTest() {
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
-        testSettingsDatabaseAccessor.addTrustedClient("Client")
+        testConfigDatabaseAccessor.addTrustedClient("Client")
 
         initServices()
 

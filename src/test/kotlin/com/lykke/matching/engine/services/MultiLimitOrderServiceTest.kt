@@ -13,7 +13,7 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -41,10 +41,7 @@ import kotlin.test.assertTrue
 class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
-    private lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-    @Autowired
-    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -431,7 +428,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.addTrustedClient("Client3")
+        testConfigDatabaseAccessor.addTrustedClient("Client3")
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -665,8 +662,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     private fun setOrder() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 3000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3000.0)
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "Client1", listOf(
@@ -732,10 +729,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testReplaceOrders() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 3000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 3000.0)
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1, 0.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.1)
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "ClientOrder", clientId = "Client2", assetId = "BTCEUR", volume = -0.1, price = 8000.0))
         initServices()
 

@@ -5,12 +5,7 @@ import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
+import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -113,6 +108,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
     private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
 
+    private val walletDatabaseAccessor: WalletDatabaseAccessor
     private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
     private val cashTransferOperationService: CashTransferOperationService
@@ -151,9 +147,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
+        this.walletDatabaseAccessor = applicationContext.getBean(WalletDatabaseAccessor::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        val persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
 
         val cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
@@ -212,8 +208,11 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 orderBooksQueue,
                 rabbitOrderBooksQueue)
 
-        this.cashOperationService = CashOperationService(balanceHolder, applicationSettingsCache)
-        this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
+        this.cashOperationService = CashOperationService(walletDatabaseAccessor, balanceHolder, applicationSettingsCache)
+        this.cashInOutOperationService = CashInOutOperationService(walletDatabaseAccessor,
+                assetsHolder, balanceHolder,
+                applicationSettingsCache, rabbitCashInOutQueue,
+                feeProcessor)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
@@ -305,7 +304,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
 
 
-            val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, persistenceManager, config.me.queueSizeLimit)
+            val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, config.me.queueSizeLimit)
             fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
                 queueSizeLogger.log()
             }

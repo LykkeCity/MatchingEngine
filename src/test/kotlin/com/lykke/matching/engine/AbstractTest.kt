@@ -15,6 +15,7 @@ import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.*
@@ -45,6 +46,9 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+
+    @Autowired
+    protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
@@ -118,6 +122,7 @@ abstract class AbstractTest {
     }
 
     protected fun clearMessageQueues() {
+        balanceUpdateHandlerTest.clear()
         quotesNotificationQueue.clear()
         tradesInfoQueue.clear()
         orderBookQueue.clear()
