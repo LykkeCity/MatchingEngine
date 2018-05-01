@@ -16,8 +16,8 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletData
     companion object {
         private val LOGGER = Logger.getLogger(RedisWalletDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private const val KEY_PREFIX_BALANCE = "Balance_"
-        private const val KEY_SEPARATOR = "_"
+        private const val KEY_PREFIX_BALANCE = "Balances:"
+        private const val KEY_SEPARATOR = ":"
     }
 
     private val conf = FSTConfiguration.createDefaultConfiguration()
