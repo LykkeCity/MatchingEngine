@@ -67,7 +67,11 @@ class NegativePriceTest : AbstractTest() {
     }
 
     @Test
-    fun testMultiLimitOrder() {
+    fun testTrustedClientMultiLimitOrder() {
+        testSettingsDatabaseAccessor.addTrustedClient("Client")
+
+        initServices()
+
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD",
                 "Client",
                 listOf(

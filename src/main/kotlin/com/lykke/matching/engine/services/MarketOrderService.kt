@@ -18,6 +18,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.DisabledAsset
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
@@ -54,7 +55,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
+                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory ?= null): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -66,14 +68,15 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
-
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
+        val now = Date()
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
@@ -82,7 +85,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
+                    Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume)
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
@@ -90,7 +93,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
+                    Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
         val assetPair = try {
@@ -223,6 +226,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             else -> {
             }
         }
+
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
 
         val endTime = System.nanoTime()
 

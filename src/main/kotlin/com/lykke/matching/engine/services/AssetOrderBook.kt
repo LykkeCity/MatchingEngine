@@ -1,10 +1,11 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.util.Comparator
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetOrderBook(val assetId: String) {
+class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
 
     val SELL_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
         var result = o1.price.compareTo(o2.price)
@@ -33,7 +34,7 @@ class AssetOrderBook(val assetId: String) {
 
     fun addOrder(order: NewLimitOrder) = getOrderBook(order.isBuySide()).add(order)
 
-    fun removeOrder(order: NewLimitOrder) = getOrderBook(order.isBuySide()).remove(order)
+    override fun removeOrder(order: NewLimitOrder) = getOrderBook(order.isBuySide()).remove(order)
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: 0.0
     fun getBidPrice() = bidOrderBook.peek()?.price ?: 0.0
@@ -86,7 +87,7 @@ class AssetOrderBook(val assetId: String) {
         return false
     }
 
-    fun copy() : AssetOrderBook {
+    override fun copy() : AssetOrderBook {
         val book = AssetOrderBook(assetId)
 
         askOrderBook.forEach {

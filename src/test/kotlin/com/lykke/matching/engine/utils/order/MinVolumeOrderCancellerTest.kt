@@ -5,7 +5,9 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -90,7 +92,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     override fun initServices() {
         super.initServices()
-        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
+        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
     @Test
@@ -228,7 +230,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         // recalculate reserved volumes to reset locked reservedAmount
         val recalculator = ReservedVolumesRecalculator(testWalletDatabaseAccessor, testDictionariesDatabaseAccessor,
-                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(), applicationContext)
+                testBackOfficeDatabaseAccessor, testOrderDatabaseAccessor, TestReservedVolumesDatabaseAccessor(), TestStopOrderBookDatabaseAccessor(), applicationContext)
 
         recalculator.recalculate()
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))

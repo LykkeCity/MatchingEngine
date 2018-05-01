@@ -188,11 +188,15 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
+        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
                 VolumePrice(-0.1, 1000.0),
                 VolumePrice(-0.05, 1010.0),
                 VolumePrice(-0.1, 1100.0)
         ), emptyList(), emptyList(), ordersUid = listOf("1", "2", "3")))
+        testSettingsDatabaseAccessor.clear()
+        applicationSettingsCache.update()
 
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))
@@ -221,8 +225,12 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
+        testSettingsDatabaseAccessor.addTrustedClient("Client1")
+        applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(VolumePrice(-0.05, 1010.0)), emptyList(), emptyList(), ordersUid = listOf("1")))
+        testSettingsDatabaseAccessor.clear()
+        applicationSettingsCache.update()
 
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))
