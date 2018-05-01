@@ -7,7 +7,7 @@ class PerformanceStatsHolder {
     private var statsMap = HashMap<Byte, PerformanceStats>()
 
     fun addMessage(type: Byte, totalTime: Long, processingTime: Long) {
-        val stats = statsMap.getOrPut(type) { PerformanceStats(type, totalTime, processingTime, 0) }
+        val stats = statsMap.getOrPut(type) { PerformanceStats(type, 0, 0, 0) }
         stats.totalTime += totalTime
         stats.processingTime += processingTime
         stats.count++
