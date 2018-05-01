@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
@@ -8,7 +9,7 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -22,33 +23,65 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderW
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MultiLimitOrderServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MultiLimitOrderServiceTest: AbstractTest() {
-    
+
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("TIME", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+
+        @Bean
+        @Primary
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
+            testSettingsDatabaseAccessor.addTrustedClient("Client1")
+            testSettingsDatabaseAccessor.addTrustedClient("Client5")
+            return testSettingsDatabaseAccessor
+        }
+    }
+
     @Before
     fun setUp() {
-        testSettingsDatabaseAccessor.addTrustedClient("Client1")
-        testSettingsDatabaseAccessor.addTrustedClient("Client5")
-
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("TIME", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
-
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
 
         initServices()
     }
@@ -260,9 +293,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchLimitOrder3() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "USD", 18.6))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "TIME", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "TIME", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client5", "USD", 18.6)
+        testBalanceHolderWrapper.updateBalance("Client5", "TIME", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "TIME", 1000.0)
 
         initServices()
 
@@ -316,8 +349,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchLimitOrderZeroVolumes() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "BTC", 1000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client5", "BTC", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
 
         initServices()
 
@@ -395,10 +428,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.addTrustedClient("Client3")
+        testConfigDatabaseAccessor.addTrustedClient("Client3")
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
+        testBalanceHolderWrapper.updateBalance("Client3", "CHF", 1000.0)
 
         initServices()
 
@@ -434,8 +468,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testBalance() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 100.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
+        testBalanceHolderWrapper.updateBalance("Client3", "CHF", 100.0)
 
         initServices()
 
@@ -465,8 +500,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val marketMaker = "Client1"
         val client = "Client2"
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "EUR", 700.04, reservedBalance = 700.04))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "BTC", 2.0))
+        testBalanceHolderWrapper.updateBalance(client, "EUR", 700.04)
+        testBalanceHolderWrapper.updateReservedBalance(client, "EUR",  700.04)
+        testBalanceHolderWrapper.updateBalance(marketMaker, "BTC", 2.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
         initServices()
@@ -488,9 +524,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val client = "Client2"
         val feeHolder = "Client3"
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "EUR", 200.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "USD", 200.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "EUR", 0.0))
+        testBalanceHolderWrapper.updateBalance(client, "EUR", 200.0)
+        testBalanceHolderWrapper.updateBalance(marketMaker, "USD", 200.0)
+        testBalanceHolderWrapper.updateBalance(marketMaker, "EUR", 0.0)
 
         initServices()
 
@@ -517,8 +553,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testMatchWithNotEnoughFundsTrustedOrders() {
         val marketMaker = "Client1"
         val client = "Client2"
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "USD", 6.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 2.0))
+        testBalanceHolderWrapper.updateBalance(marketMaker, "USD", 6.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 2.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 1.0))
 
@@ -540,7 +576,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         clientsLimitOrdersQueue.clear()
         trustedClientsLimitOrdersQueue.clear()
-        balanceUpdateQueue.clear()
+        balanceUpdateHandlerTest.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.13, volume = -100.0)))
 
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
@@ -554,15 +590,16 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val result = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.filter { it.order.clientId == marketMaker }.size)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        assertEquals(0, (balanceUpdateQueue.poll() as BalanceUpdate).balances.filter { it.id == marketMaker }.size)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        assertEquals(0, (balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate).balances.filter { it.id == marketMaker }.size)
     }
 
     @Test
     fun testMatchWithNotEnoughFundsOrder1() {
         val marketMaker = "Client1"
         val client = "Client2"
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "USD", 1000.0, 1.19))
+        testBalanceHolderWrapper.updateBalance(client, "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(client, "USD",  1.19)
 
         val order = buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
         order.reservedLimitVolume = 1.19
@@ -589,8 +626,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(1, clientOrderReport.size)
         assertEquals(client, clientOrderReport.first().order.clientId)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
 
         assertEquals(1, balanceUpdate.balances.size)
         assertEquals(client, balanceUpdate.balances.first().id)
@@ -625,8 +662,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     private fun setOrder() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 3000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3000.0)
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "Client1", listOf(
@@ -692,10 +729,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testReplaceOrders() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 3000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 3000.0)
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.1, 0.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.1)
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "ClientOrder", clientId = "Client2", assetId = "BTCEUR", volume = -0.1, price = 8000.0))
         initServices()
 

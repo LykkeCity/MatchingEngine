@@ -1,10 +1,14 @@
+
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -13,11 +17,35 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderCancelServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderCancelServiceTest : AbstractTest() {
+
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+    }
 
     @Before
     fun setUp() {
@@ -27,14 +55,12 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = 300.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = 400.0))
 
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0, reservedBalance = 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "EUR",  1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
         initServices()
     }
 
@@ -47,11 +73,11 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         assertEquals(OrderStatus.Cancelled.name, (clientsLimitOrdersQueue.poll() as LimitOrdersReport).orders.first().order.status)
-        assertEquals(1, balanceNotificationQueue.size)
-        assertEquals("Client1", balanceNotificationQueue.poll().clientId)
-        assertEquals(1, balanceUpdateQueue.size)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
+        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateQueueNotification.poll().clientId)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(1, balanceUpdate.balances.size)
         assertEquals("Client1", balanceUpdate.balances.first().id)
         assertEquals("EUR", balanceUpdate.balances.first().asset)
@@ -75,7 +101,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
     fun testMultiCancel() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "10", clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = -0.5)))
@@ -102,8 +128,8 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "11" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "13" }.order.status)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(MessageType.LIMIT_ORDER_CANCEL.name, balanceUpdate.type)
         assertEquals(2, balanceUpdate.balances.size)
 

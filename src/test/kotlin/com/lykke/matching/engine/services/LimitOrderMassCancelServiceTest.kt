@@ -1,10 +1,14 @@
+
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -15,26 +19,56 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderM
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 
+
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderMassCancelServiceTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderMassCancelServiceTest : AbstractTest() {
 
+    
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
+
+            return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testConfig(): TestConfigDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
+            testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+            return testSettingsDatabaseAccessor
+        }
+    }
+    
     @Before
     fun setUp() {
-        testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
-
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2))
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 100.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "EUR", 10.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "USD", 10.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("TrustedClient", "BTC", 1.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 100.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "EUR", 10.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "USD", 10.0)
+        testBalanceHolderWrapper.updateBalance("TrustedClient", "BTC", 1.0)
 
         initServices()
     }
@@ -83,8 +117,8 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "2" }.order.status)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, balanceUpdate.type)
         assertEquals(1, balanceUpdate.balances.size)
         assertEquals("Client1", balanceUpdate.balances.first().id)
@@ -116,8 +150,8 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "3" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "4" }.order.status)
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, balanceUpdate.type)
         assertEquals(2, balanceUpdate.balances.size)
 
@@ -153,7 +187,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "m1" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "m2" }.order.status)
 
-        assertEquals(0, balanceUpdateQueue.size)
+        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 
 }

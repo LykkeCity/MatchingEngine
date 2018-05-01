@@ -12,13 +12,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
 
-class AzureMonitoringDatabaseAccessor(connString: String): MonitoringDatabaseAccessor{
+class AzureMonitoringDatabaseAccessor(connString: String, monitoringTable: String, performanceTable: String): MonitoringDatabaseAccessor{
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureMonitoringDatabaseAccessor::class.java.name)
     }
 
-    private val monitoringTable: CloudTable = getOrCreateTable(connString, "MatchingEngineMonitoring")
-    private val performanceStatsTable: CloudTable = getOrCreateTable(connString, "MatchingEnginePerformance")
+    private val monitoringTable: CloudTable = getOrCreateTable(connString, monitoringTable)
+    private val performanceStatsTable: CloudTable = getOrCreateTable(connString, performanceTable)
 
     private val DATE_FORMAT_PARTITION_KEY = initTimeFormatter("yyyyMMdd")
     private val DATE_FORMAT_ROW_KEY = initTimeFormatter("yyyy-MM-dd HH:mm:ss")

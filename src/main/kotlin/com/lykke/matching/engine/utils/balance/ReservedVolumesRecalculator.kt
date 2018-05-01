@@ -1,22 +1,14 @@
+
 package com.lykke.matching.engine.utils.balance
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -24,33 +16,39 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationContext
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.concurrent.LinkedBlockingQueue
 
-fun correctReservedVolumesIfNeed(config: Config, applicationSettingsCache: ApplicationSettingsCache) {
+fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext) {
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val walletDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString)
     val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
-    val backOfficeDatabaseAccessor = AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
-    val orderBookPath = config.me.orderBookPath
+    val backOfficeDatabaseAccessor =  applicationContext.getBean(BackOfficeDatabaseAccessor::class.java)
+    val filePath = config.me.orderBookPath
     val stopOrderBookPath = config.me.stopOrderBookPath
-    ReservedVolumesRecalculator.teeLog("Starting order books analyze, limit orders: $orderBookPath, stop limit orders: $stopOrderBookPath")
-    val orderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(orderBookPath)
     val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
-    val reservedVolumesDatabaseAccessor = AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString)
-    ReservedVolumesRecalculator(walletDatabaseAccessor, dictionariesDatabaseAccessor, backOfficeDatabaseAccessor, orderBookDatabaseAccessor, stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationSettingsCache).recalculate()
+    ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
+    val orderBookDatabaseAccessor = applicationContext.getBean(OrderBookDatabaseAccessor::class.java)
+    val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)
+    ReservedVolumesRecalculator(dictionariesDatabaseAccessor,
+            backOfficeDatabaseAccessor,
+            orderBookDatabaseAccessor,
+            stopOrderBookDatabaseAccessor,
+            reservedVolumesDatabaseAccessor,
+            applicationContext).recalculate()
 }
 
-class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                  private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+
+class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                                   private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                   private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
-                                  private val applicationSettingsCache: ApplicationSettingsCache) {
+                                  private val applicationContext: ApplicationContext) {
+
+
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
 
@@ -63,30 +61,34 @@ class ReservedVolumesRecalculator(private val walletDatabaseAccessor: WalletData
     fun recalculate() {
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
-        val balanceHolder = BalancesHolder(walletDatabaseAccessor, assetsHolder, LinkedBlockingQueue(), LinkedBlockingQueue(), applicationSettingsCache)
+        val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
+        val walletDatabaseAccessor = applicationContext.getBean(WalletDatabaseAccessor::class.java)
+        val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
 
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
-        val handleOrder: ( order : NewLimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
-            if (!applicationSettingsCache.isTrustedClient(order.clientId)) {try {
-                if (isStopOrder) {
-                    LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, lowerLimitPrice:${order.lowerLimitPrice}, lowerPrice:${order.lowerPrice}, upperLimitPrice:${order.upperLimitPrice}, upperPrice:${order.upperPrice}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
-                } else {
-                    LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
-                }
-                val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-                val asset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+
+        val handleOrder: (order: NewLimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
+            if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
+                try {
+                    if (isStopOrder) {
+                        LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, lowerLimitPrice:${order.lowerLimitPrice}, lowerPrice:${order.lowerPrice}, upperLimitPrice:${order.upperLimitPrice}, upperPrice:${order.upperPrice}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                    } else {
+                        LOGGER.info("${count++} Client:${order.clientId}, id: ${order.externalId}, asset:${order.assetPairId}, price:${order.price}, volume:${order.volume}, date:${order.registered}, status:${order.status}, reserved: ${order.reservedLimitVolume}}")
+                    }
+                    val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+                    val asset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
 
                     val reservedVolume = if (order.reservedLimitVolume != null) {
                         order.reservedLimitVolume!!
                     } else {
                         val calculatedReservedVolume = if (order.isBuySide())
-                        RoundingUtils.round(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
-                        else order.getAbsRemainingVolume() * order.price, asset.accuracy, false)
-                    else order.getAbsRemainingVolume()
+                            RoundingUtils.round(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
+                            else order.getAbsRemainingVolume() * order.price, asset.accuracy, false)
+                        else order.getAbsRemainingVolume()
                         LOGGER.info("Null reserved volume, recalculated: $calculatedReservedVolume")
                         calculatedReservedVolume
                     }
