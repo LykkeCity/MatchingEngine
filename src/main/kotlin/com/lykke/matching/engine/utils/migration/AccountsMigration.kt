@@ -11,7 +11,6 @@ import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
 import redis.clients.jedis.JedisPool
-import java.net.URI
 import java.util.Date
 import java.util.LinkedList
 
@@ -41,7 +40,7 @@ class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder
     private val redisUri = config.redis.balancesUri
 
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, azureAccountsTableName)
-    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor = RedisWalletDatabaseAccessor(JedisPool(URI(redisUri)))
+    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor = RedisWalletDatabaseAccessor(JedisPool(redisUri))
 
     fun fromDbToRedis() {
         if (redisDatabaseAccessor.loadWallets().isNotEmpty()) {
