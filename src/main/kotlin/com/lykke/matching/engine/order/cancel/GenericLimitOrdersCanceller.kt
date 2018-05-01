@@ -73,9 +73,9 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return GenericLimitOrdersCancelResult(limitOrdersCanceller.apply(), stopLimitOrdersCanceller.apply())
     }
 
-    fun applyFull(operationId: String, operationType: String, validateBalances: Boolean) {
-        limitOrdersCanceller.applyFull(operationId, operationType, validateBalances)
-        stopLimitOrdersCanceller.applyFull(operationId, operationType, validateBalances)
+    fun applyFull(operationId: String, messageId: String,  operationType: String, validateBalances: Boolean) {
+        limitOrdersCanceller.applyFull(operationId, messageId, operationType, validateBalances)
+        stopLimitOrdersCanceller.applyFull(operationId, messageId, operationType, validateBalances)
     }
 
 }

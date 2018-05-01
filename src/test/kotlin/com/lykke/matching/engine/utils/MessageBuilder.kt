@@ -160,7 +160,7 @@ class MessageBuilder {
             order.lowerPrice?.let { builder.setLowerPrice(it) }
             order.upperLimitPrice?.let { builder.setUpperLimitPrice(it) }
             order.upperPrice?.let { builder.setUpperPrice(it) }
-            return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null)
+            return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, id = "test")
         }
 
         @Deprecated("Use buildMultiLimitOrderWrapper(5)")
@@ -193,7 +193,7 @@ class MessageBuilder {
             return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER.type, buildMultiLimitOrder(pair, clientId,
                     orders,
                     cancel,
-                    cancelMode).toByteArray(), null)
+                    cancelMode).toByteArray(), null, messageId = "test", id = "test")
         }
 
         private fun buildMultiLimitOrder(assetPairId: String,

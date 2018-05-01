@@ -7,6 +7,7 @@ message Response {
     required int64 uid = 1;
     optional string bussinesId = 2;
     optional string recordId = 3;
+    required string messageId = 4;
 }
 
 message NewResponse {
@@ -14,6 +15,7 @@ message NewResponse {
     optional string matchingEngineId = 2;
     required int32 status = 3;
     optional string statusReason = 4;
+    required string messageId = 5;
 }
 
 message MarketOrderResponse {
@@ -21,6 +23,7 @@ message MarketOrderResponse {
     required int32 status = 2;
     optional string statusReason = 3;
     optional double price = 4;
+    required string messageId = 5;
 }
 
 message MultiLimitOrderResponse {
@@ -37,8 +40,8 @@ message MultiLimitOrderResponse {
         required double volume = 5;
         required double price = 6;
     }
-
     repeated OrderStatus statuses = 5;
+    required string messageId = 6;
 }
 
 message CashOperation {
@@ -49,6 +52,7 @@ message CashOperation {
     required double amount = 5;
     required string bussinesId = 6;
     required bool sendToBitcoin = 7;
+    optional string messageId = 8;
 }
 
 message CashInOutOperation {
@@ -58,6 +62,7 @@ message CashInOutOperation {
     required string assetId = 4;
     required double volume = 5;
     repeated Fee fees = 6;
+    optional string messageId = 7;
 }
 
 message CashTransferOperation {
@@ -70,6 +75,7 @@ message CashTransferOperation {
     optional Fee fee = 7;
     optional double overdraftLimit = 8;
     repeated Fee fees = 9;
+    optional string messageId = 10;
 }
 
 message CashSwapOperation {
@@ -81,6 +87,7 @@ message CashSwapOperation {
     required string assetId2 = 6;
     required double volume2 = 7;
     required int64 timestamp = 8;
+    optional string messageId = 9;
 }
 
 message OldLimitOrder {
@@ -91,6 +98,7 @@ message OldLimitOrder {
     required double volume = 5;
     required double price = 6;
     optional bool cancelAllPreviousLimitOrders = 7;
+    optional string messageId = 8;
 }
 
 message LimitOrder {
@@ -108,6 +116,7 @@ message LimitOrder {
     optional double lowerPrice = 12;
     optional double upperLimitPrice = 13;
     optional double upperPrice = 14;
+    optional string messageId = 15;
 }
 
 enum LimitOrderType {
@@ -123,6 +132,7 @@ message OldMarketOrder {
     required double volume = 5;
     required bool straight = 6;
     optional double reservedLimitVolume = 7;
+    optional string messageId = 8;
 }
 
 message MarketOrder {
@@ -135,11 +145,13 @@ message MarketOrder {
     optional double reservedLimitVolume = 7;
     optional Fee fee = 8;
     repeated Fee fees = 9;
+    optional string messageId = 10;
 }
 
 message LimitOrderCancel {
     required string uid = 1;
     repeated string limitOrderId = 2;
+    optional string messageId = 3;
 }
 
 message MultiLimitOrderCancel {
@@ -148,11 +160,13 @@ message MultiLimitOrderCancel {
     required string clientId = 3;
     required string assetPairId = 4;
     required bool isBuy = 5;
+    optional string messageId = 6;
 }
 
 message OldLimitOrderCancel {
     required int64 uid = 1;
     required int64 limitOrderId = 2;
+    optional string messageId = 3;
 }
 
 message LimitOrderMassCancel {
@@ -160,6 +174,7 @@ message LimitOrderMassCancel {
     required string clientId = 2;
     optional string assetPairId = 3;
     optional bool isBuy = 4;
+    optional string messageId = 5;
 }
 
 message BalanceUpdate {
@@ -167,6 +182,7 @@ message BalanceUpdate {
     required string clientId = 2;
     required string assetId = 3;
     required double amount = 4;
+    optional string messageId = 5;
 }
 
 message OldBalanceUpdate {
@@ -174,6 +190,7 @@ message OldBalanceUpdate {
     required string clientId = 2;
     required string assetId = 3;
     required double amount = 4;
+    optional string messageId = 5;
 }
 
 message OldMultiLimitOrder {
@@ -190,6 +207,7 @@ message OldMultiLimitOrder {
     repeated Order orders = 5;
 
     optional bool cancelAllPreviousLimitOrders = 6;
+    optional string messageId = 7;
 }
 
 message MultiLimitOrder {
@@ -210,6 +228,7 @@ message MultiLimitOrder {
     repeated Order orders = 5;
     optional bool cancelAllPreviousLimitOrders = 6;
     optional int32 cancelMode = 7;
+    optional string messageId = 8;
 }
 
 enum CancelMode {
@@ -258,6 +277,7 @@ message ReservedBalanceUpdate {
     required string clientId = 2;
     required string assetId = 3;
     required double reservedAmount = 4;
+    optional string messageId = 5;
 }
 
 message ReservedCashInOutOperation {
@@ -266,6 +286,7 @@ message ReservedCashInOutOperation {
     required int64 timestamp = 3;
     required string assetId = 4;
     required double reservedVolume = 5;
+    optional string messageId = 6;
 }
 
 enum FeeType {

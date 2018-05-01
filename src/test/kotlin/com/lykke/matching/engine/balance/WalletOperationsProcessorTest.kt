@@ -72,7 +72,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        walletOperationsProcessor.apply("id", "type")
+        walletOperationsProcessor.apply("id", "type", "test")
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
         assertBalance("Client2", "ETH", 3.0, 0.3)
@@ -113,7 +113,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         walletOperationsProcessor.preProcess(
                 listOf(
                         WalletOperation("1", null, "Client1", "BTC", Date(), 0.0, -0.1)
-                ), true).apply("id", "type")
+                ), true).apply("id", "type","test")
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
     }
