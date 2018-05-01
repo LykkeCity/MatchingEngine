@@ -116,7 +116,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
-        //LOGGER.info(balanceUpdate.toString())
+        LOGGER.info(balanceUpdate.toString())
 
         applicationEventPublisher.publishEvent(balanceUpdate)
     }
