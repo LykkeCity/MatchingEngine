@@ -3,6 +3,7 @@ package com.lykke.matching.engine.socket
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.socket.impl.ClientHandlerImpl
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -39,7 +40,7 @@ class SocketServer(private val config: Config, private val initializationComplet
             while (true) {
                 val clientConnection = socket.accept()
                 if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
-                    val handler = ClientHandler(messagesQueue, clientConnection, this)
+                    val handler = ClientHandlerImpl(messagesQueue, clientConnection, this)
                     clientHandlerThreadPool.submit(handler)
                     connect(handler)
                 } else {
