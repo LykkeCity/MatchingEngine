@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
@@ -53,6 +54,9 @@ class LimitOrderCancelServiceTest {
     @Autowired
     private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
+    @Autowired
+    private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+
     @TestConfiguration
     open class Config {
         @Bean
@@ -63,21 +67,14 @@ class LimitOrderCancelServiceTest {
 
             return testBackOfficeDatabaseAccessor
         }
-
-        @Bean
-        @Primary
-        open fun testWalledDatabaseAccessor(): WalletDatabaseAccessor {
-            val testWalletDatabaseAccessor = TestWalletDatabaseAccessor()
-
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
-            testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
-
-            return testWalletDatabaseAccessor
-        }
     }
 
     @Before
     fun setUp() {
+
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = -100.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0))
         testFileDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = -200.0))

@@ -49,7 +49,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testPreProcessWalletOperations() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0, 0.1))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  0.1)
         initServices()
 
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
