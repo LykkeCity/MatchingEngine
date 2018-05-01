@@ -5,7 +5,6 @@ import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import redis.clients.jedis.JedisPool
-import java.net.URI
 
 class WalletDatabaseAccessorFactory(private val config: MatchingEngineConfig) {
 
@@ -24,7 +23,7 @@ class WalletDatabaseAccessorFactory(private val config: MatchingEngineConfig) {
             }
 
             WalletsStorage.Redis -> {
-                jedisPool = JedisPool(URI(config.redis.balancesUri))
+                jedisPool = JedisPool(config.redis.balancesUri)
                 primaryAccessor = RedisWalletDatabaseAccessor(jedisPool)
 
                 secondaryAccessor = if (config.writeBalancesToSecondaryDb)
