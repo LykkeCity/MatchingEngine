@@ -58,7 +58,7 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.utils.QueueSizeLogger
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -211,7 +211,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 orderBooksQueue,
                 rabbitOrderBooksQueue)
 
-        this.cashOperationService = CashOperationService(balanceHolder, applicationSettingsCache)
+        this.cashOperationService = CashOperationService(balanceHolder, applicationSettingsCache, assetsHolder)
         this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
@@ -231,8 +231,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        this.balanceUpdateService = BalanceUpdateService(balanceHolder)
-        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
+        this.balanceUpdateService = BalanceUpdateService(balanceHolder, assetsHolder)
+        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder, assetsHolder)
 
         if (config.me.cancelMinVolumeOrders) {
             MinVolumeOrderCanceller(dictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory).cancel()
@@ -314,7 +314,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
                 val result = healthService.collectMonitoringResult()
                 if (result != null) {
-                    MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
+                    MONITORING_LOGGER.info("CPU: ${NumberUtils.roundForPrint2(result.vmCpuLoad)}/${NumberUtils.roundForPrint2(result.totalCpuLoad)}, " +
                             "RAM: ${result.freeMemory}/${result.totalMemory}, " +
                             "heap: ${result.freeHeap}/${result.totalHeap}/${result.maxHeap}, " +
                             "swap: ${result.freeSwap}/${result.totalSwap}, " +

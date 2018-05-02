@@ -22,4 +22,6 @@ enum class MessageStatus(val type: Int){
     INVALID_PRICE(420),
     NO_LIQUIDITY(411),
     NOT_ENOUGH_FUNDS(412),
+    INVALID_VOLUME_ACCURACY(431),
+    INVALID_PRICE_ACCURACY(432),
 }
