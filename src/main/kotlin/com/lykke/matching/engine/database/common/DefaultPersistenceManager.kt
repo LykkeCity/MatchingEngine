@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.concurrent.LinkedBlockingQueue
@@ -34,26 +35,37 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         }
     }
 
+    private var t = System.nanoTime()
+    private fun fix(msg: String) {
+        LOGGER.info("**** $msg: ${PrintUtils.convertToString2((System.nanoTime() - t).toDouble())}")
+        t = System.nanoTime()
+    }
+
     private fun persistData(data: PersistenceData) {
         if (!isRedisBalancesPrimary) {
             primaryBalancesAccessor.insertOrUpdateWallets(data.wallets.toList())
             return
         }
 
+        t = System.nanoTime()
         balancesJedisPool!!.resource.use { balancesJedis ->
+            fix("resource")
             val transaction = balancesJedis!!.multi()
             var success = false
             try {
                 primaryBalancesAccessor as RedisWalletDatabaseAccessor
                 primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
+                fix("save")
                 success = true
             } finally {
                 if (success) transaction.exec() else balancesJedis.resetState()
+                fix("commit")
             }
         }
         if (secondaryBalancesAccessor != null) {
             updatedWalletsQueue.put(data.wallets)
         }
+        fix("publish")
     }
 
     private fun init() {
