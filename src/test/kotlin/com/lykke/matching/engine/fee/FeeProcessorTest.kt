@@ -611,8 +611,10 @@ class FeeProcessorTest {
     }
 
     @Test
-    fun testExternalMultipleFeeNotEnoughFundsAndMoreThanOperationVolume() {
-        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 11.0)
+    fun testExternalFeeGreaterThanOperationVolume() {
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 11.0)
+
+        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
