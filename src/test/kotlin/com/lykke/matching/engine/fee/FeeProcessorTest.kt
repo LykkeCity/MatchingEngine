@@ -613,6 +613,7 @@ class FeeProcessorTest {
     @Test
     fun testExternalFeeGreaterThanOperationVolume() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 11.0)
+
         initServices()
 
         val operations = LinkedList<WalletOperation>()
