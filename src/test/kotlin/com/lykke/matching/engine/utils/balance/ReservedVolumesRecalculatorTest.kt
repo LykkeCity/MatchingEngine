@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.utils.balance
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
@@ -7,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Before
 import org.junit.Test
@@ -31,8 +31,6 @@ class ReservedVolumesRecalculatorTest {
     private val stopOrderBookDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
 
-    @Autowired
-    private lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -60,6 +58,8 @@ class ReservedVolumesRecalculatorTest {
     @Autowired
     lateinit var applicationContext: ApplicationContext
 
+    @Autowired
+    protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -118,6 +118,7 @@ class ReservedVolumesRecalculatorTest {
                 stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext)
         recalculator.recalculate()
 
+        val testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient2", "BTC"))
         assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client3", "BTC"))
