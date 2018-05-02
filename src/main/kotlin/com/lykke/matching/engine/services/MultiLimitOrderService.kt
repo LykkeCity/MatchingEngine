@@ -219,7 +219,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
 
                             trades.addAll(matchingResult.lkkTrades)
-                            var limitOrderWithTrades = clientLimitOrdersReport.orders.find { it.order.externalId == order.externalId }
+                            var limitOrderWithTrades = clientLimitOrdersReport.orders.find { it.order.id == order.id }
                             if (limitOrderWithTrades == null) {
                                 limitOrderWithTrades = LimitOrderWithTrades(order)
                                 clientLimitOrdersReport.orders.add(limitOrderWithTrades)
@@ -230,7 +230,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             })
 
                             matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
-                                var trustedOrder = clientLimitOrdersReport.orders.find { it.order.externalId == orderReport.order.externalId }
+                                var trustedOrder = clientLimitOrdersReport.orders.find { it.order.id == orderReport.order.id }
                                 if (trustedOrder == null) {
                                     trustedOrder = LimitOrderWithTrades(orderReport.order)
                                     clientLimitOrdersReport.orders.add(trustedOrder)

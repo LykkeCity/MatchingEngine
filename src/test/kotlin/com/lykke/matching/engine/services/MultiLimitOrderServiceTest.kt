@@ -804,6 +804,48 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     }
 
+    @Test
+    fun testCancelPreviousOrderWithSameUidAndMatch() {
+        val order = buildLimitOrder(uid = "1",
+                assetId = "EURUSD",
+                clientId = "Client1",
+                volume = 10.0,
+                price = 1.2,
+                status = OrderStatus.Processing.name)
+        order.remainingVolume = 9.0 // partially matched
+        testOrderDatabaseAccessor.addLimitOrder(order)
+
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURUSD",
+                clientId = "Client2",
+                volume = -10.0,
+                price = 1.3,
+                status = OrderStatus.Processing.name))
+
+        initServices()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD",
+                "Client1",
+                listOf(VolumePrice(10.0, 1.3)),
+                emptyList(),
+                emptyList(),
+                listOf("1"),
+                true))
+
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        val result = clientsLimitOrdersQueue.first() as LimitOrdersReport
+        assertEquals(3, result.orders.size)
+
+        val orders = result.orders.filter { it.order.externalId == "1" }
+        assertEquals(2, orders.size)
+
+        val previousOrderWithTrades = orders.first { it.order.status == OrderStatus.Cancelled.name }
+        val newOrderWithTrades = orders.first { it.order.status != OrderStatus.Cancelled.name }
+
+        assertTrue(previousOrderWithTrades.order.id != newOrderWithTrades.order.id)
+        assertEquals(0, previousOrderWithTrades.trades.size)
+        assertEquals(1, newOrderWithTrades.trades.size)
+    }
+
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
         return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
     }
