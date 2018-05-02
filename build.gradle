@@ -26,37 +26,56 @@ apply plugin: 'io.spring.dependency-management'
 
 compileKotlin.dependsOn ':generateProto'
 
-repositories {
-    mavenCentral()
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+
+allprojects {
+    repositories {
+        mavenCentral()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    }
+}
+
+ext {
+    kotlin_utils_version = '0.0.5-SNAPSHOT'
+    log4j_version = '1.2.17'
+    protobuf_version = '3.0.0-beta-2'
+    azure_storage_version = '4.0.0'
+    gson_version = '2.6.2'
+    http_client_version = '4.5.2'
+    rabbit_mq_version = '3.6.5'
+    fst_version = '2.52'
+    junit_version = '4.12'
+    mockito_kotlin_version = '1.5.0'
 }
 
 dependencies {
     // internal libs
-    compile "org.bitbucket.lykke:kotlin-utils:0.0.5-SNAPSHOT"
+    compile "org.bitbucket.lykke:kotlin-utils:$kotlin_utils_version"
 
     // external libs
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    compile 'log4j:log4j:1.2.17'
-    compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'
-    compile 'com.microsoft.azure:azure-storage:4.0.0'
-    compile 'com.google.code.gson:gson:2.6.2'
-    compile 'org.apache.httpcomponents:httpclient:4.5.2'
-    compile 'com.rabbitmq:amqp-client:3.6.5'
-    compile 'de.ruedigermoeller:fst:2.52'
+
+    compile "log4j:log4j:$log4j_version"
+    compile "com.google.protobuf:protobuf-java:$protobuf_version"
+    compile "com.microsoft.azure:azure-storage:$azure_storage_version"
+    compile "com.google.code.gson:gson:$gson_version"
+    compile "org.apache.httpcomponents:httpclient:$http_client_version"
+    compile "com.rabbitmq:amqp-client:$rabbit_mq_version"
+    compile "de.ruedigermoeller:fst:$fst_version"
 
     compile('org.springframework.boot:spring-boot-starter')
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile  'junit:junit:4.12'
-    testCompile "com.nhaarman:mockito-kotlin:1.5.0"
+    testCompile  "junit:junit:$junit_version"
+    testCompile "com.nhaarman:mockito-kotlin:$mockito_kotlin_version"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
-compileKotlin {
-    kotlinOptions {
-        apiVersion = "1.2"
+allprojects {
+    compileKotlin {
+        kotlinOptions {
+            apiVersion = "1.2"
+        }
     }
 }
 

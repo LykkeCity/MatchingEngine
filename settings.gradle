@@ -1,2 +1,5 @@
 rootProject.name = 'lykke-me-prototype'
 
+if(System.getProperty("perf") == "true"){
+    include 'performanceTests'
+}
