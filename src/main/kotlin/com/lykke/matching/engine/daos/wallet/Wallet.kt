@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos.wallet
 
+import java.math.BigDecimal
 import java.util.HashMap
 
 class Wallet {
@@ -17,19 +18,19 @@ class Wallet {
         }
     }
 
-    fun setBalance(asset: String, balance: Double) {
+    fun setBalance(asset: String, balance: BigDecimal) {
         val oldBalance = balances[asset]
         if (oldBalance == null) {
-            balances[asset] = AssetBalance(asset, balance)
+            balances[asset] = AssetBalance(clientId, asset, balance)
         } else {
             oldBalance.balance = balance
         }
     }
 
-    fun setReservedBalance(asset: String, reservedBalance: Double) {
+    fun setReservedBalance(asset: String, reservedBalance: BigDecimal) {
         val oldBalance = balances[asset]
         if (oldBalance == null) {
-            balances[asset] = AssetBalance(asset, reservedBalance, reservedBalance)
+            balances[asset] = AssetBalance(clientId, asset, reservedBalance, reservedBalance)
         } else {
             oldBalance.reserved = reservedBalance
         }

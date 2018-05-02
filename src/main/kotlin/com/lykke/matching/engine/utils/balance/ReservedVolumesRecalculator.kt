@@ -1,10 +1,14 @@
-
 package com.lykke.matching.engine.utils.balance
 
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
@@ -17,6 +21,7 @@ import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
+import java.math.BigDecimal
 import java.util.HashMap
 import java.util.LinkedList
 
@@ -62,7 +67,7 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
         val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
         val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
-        val walletDatabaseAccessor = applicationContext.getBean(WalletDatabaseAccessor::class.java)
+
         val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
@@ -117,29 +122,33 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
         LOGGER.info("---------------------------------------------------------------------------------------------------")
 
         val corrections = LinkedList<ReservedVolumeCorrection>()
+        val updatedWallets = mutableSetOf<Wallet>()
         balanceHolder.wallets.forEach {
             val wallet = it.value
             val id = wallet.clientId
             wallet.balances.values.forEach {
-                val oldBalance = it.reserved
+                val oldBalance = it.reserved.toDouble()
                 val newBalance = reservedBalances[id]?.get(it.asset)
                 if (newBalance != null && newBalance.volume > 0.0) {
                     if (oldBalance != newBalance.volume) {
                         val correction = ReservedVolumeCorrection(id, it.asset, newBalance.orderIds.joinToString(","), oldBalance, newBalance.volume)
                         corrections.add(correction)
                         teeLog("1 $id, ${it.asset} : Old $oldBalance New $newBalance")
-                        wallet.setReservedBalance(it.asset, newBalance.volume)
-                        walletDatabaseAccessor.insertOrUpdateWallet(wallet)
+                        wallet.setReservedBalance(it.asset, newBalance.volume.toBigDecimal())
+                        updatedWallets.add(wallet)
                     }
                 } else if (oldBalance != 0.0) {
                     val orderIds = if (newBalance != null) newBalance.orderIds.joinToString(",") else null
                     val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: 0.0)
                     corrections.add(correction)
                     teeLog("2 $id, ${it.asset} : Old $oldBalance New ${newBalance ?: 0.0}")
-                    wallet.setReservedBalance(it.asset, 0.0)
-                    walletDatabaseAccessor.insertOrUpdateWallet(wallet)
+                    wallet.setReservedBalance(it.asset, BigDecimal.ZERO)
+                    updatedWallets.add(wallet)
                 }
             }
+        }
+        if (updatedWallets.isNotEmpty()) {
+            balanceHolder.insertOrUpdateWallets(updatedWallets)
         }
         reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
     }
