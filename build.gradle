@@ -16,13 +16,16 @@ buildscript {
     }
 }
 
-apply plugin: "idea"
-apply plugin: "kotlin"
-apply plugin: "kotlin-spring"
-apply plugin: "application"
-apply plugin: "com.google.protobuf"
-apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
+allprojects {
+    apply plugin: "idea"
+    apply plugin: "kotlin"
+    apply plugin: "kotlin-spring"
+    apply plugin: "application"
+    apply plugin: "com.google.protobuf"
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+}
+
 
 compileKotlin.dependsOn ':generateProto'
 

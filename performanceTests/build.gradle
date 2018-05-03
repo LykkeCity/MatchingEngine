@@ -14,6 +14,10 @@ buildscript {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    testCompile rootProject
 
     testImplementation "junit:junit:$junit_version"
 }
+
+bootJar.enabled = false
+startScripts.enabled = false
