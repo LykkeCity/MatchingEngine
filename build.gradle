@@ -16,25 +16,19 @@ buildscript {
     }
 }
 
-allprojects {
-    apply plugin: "idea"
-    apply plugin: "kotlin"
-    apply plugin: "kotlin-spring"
-    apply plugin: "application"
-    apply plugin: "com.google.protobuf"
-    apply plugin: 'org.springframework.boot'
-    apply plugin: 'io.spring.dependency-management'
-}
-
+apply plugin: "idea"
+apply plugin: "kotlin"
+apply plugin: "kotlin-spring"
+apply plugin: "application"
+apply plugin: "com.google.protobuf"
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
 
 compileKotlin.dependsOn ':generateProto'
 
-
-allprojects {
-    repositories {
-        mavenCentral()
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-    }
+repositories {
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
 ext {
@@ -74,11 +68,9 @@ dependencies {
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
-allprojects {
-    compileKotlin {
-        kotlinOptions {
-            apiVersion = "1.2"
-        }
+compileKotlin {
+    kotlinOptions {
+        apiVersion = "1.2"
     }
 }
 
