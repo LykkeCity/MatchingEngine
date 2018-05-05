@@ -2,7 +2,6 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -12,12 +11,14 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 import java.util.Date
 import java.util.UUID
 
-class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val balancesHolder: BalancesHolder,
-                           private val applicationSettingsCache: ApplicationSettingsCache): AbstractService {
+@Service
+class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
+                                                   private val applicationSettingsCache: ApplicationSettingsCache): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()

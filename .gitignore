@@ -2,6 +2,7 @@
 .idea
 *.iml
 out
+generalsettings.json
 
 *.class
 
@@ -9,6 +10,7 @@ out
 *.war
 *.ear
 ProtocolMessages.java
+generalsettings.json
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*

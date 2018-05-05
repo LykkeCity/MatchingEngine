@@ -7,6 +7,9 @@ import com.lykke.matching.engine.socket.impl.ClientHandlerImpl
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.stereotype.Component
 import java.net.ServerSocket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
@@ -14,7 +17,14 @@ import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 
-class SocketServer(private val config: Config, private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+@Component
+class SocketServer(private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+
+    @Autowired
+    private lateinit var config: Config
+
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
@@ -28,7 +38,8 @@ class SocketServer(private val config: Config, private val initializationComplet
         val maxConnections = config.me.socket.maxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
-        val messageProcessor = MessageProcessor(config, messagesQueue)
+        val messageProcessor = MessageProcessor(config, messagesQueue, applicationContext)
+
         messageProcessor.start()
 
         initializationCompleteCallback(messageProcessor.appInitialData)
@@ -69,10 +80,7 @@ class SocketServer(private val config: Config, private val initializationComplet
     }
 
     private fun getWhiteList() : List<String>? {
-        if (config.me.whiteList != null) {
-            return config.me.whiteList.split(";")
-        }
-        return null
+        return config.me.whiteList?.split(";")
     }
 
     private fun connect(handler: ClientHandler) {

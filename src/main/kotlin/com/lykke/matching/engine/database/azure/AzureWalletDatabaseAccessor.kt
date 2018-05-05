@@ -11,41 +11,18 @@ import com.microsoft.azure.storage.table.TableQuery
 import java.util.HashMap
 
 
-class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccessor {
-
+class AzureWalletDatabaseAccessor (val connectionString: String,
+                                   tableName: String) : WalletDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureWalletDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
+        const val DEFAULT_BALANCES_TABLE_NAME = "Accounts"
     }
 
-    private val accountTable: CloudTable = getOrCreateTable(balancesConfig, "Accounts")
+    private val accountTable: CloudTable = getOrCreateTable(connectionString, tableName)
 
     private val PARTITION_KEY = "PartitionKey"
     private val CLIENT_BALANCE = "ClientBalance"
-
-    override fun loadBalances(): HashMap<String, MutableMap<String, AssetBalance>> {
-        val result = HashMap<String, MutableMap<String, AssetBalance>>()
-        var balancesCount = 0
-        try {
-            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, CLIENT_BALANCE)
-            val partitionQuery = TableQuery.from(AzureWallet::class.java).where(partitionFilter)
-
-            accountTable.execute(partitionQuery).forEach { wallet ->
-                val map = result.getOrPut(wallet.rowKey) { HashMap() }
-                wallet.balancesList.forEach { balance ->
-                    if (balance.balance != null) {
-                        map.put(balance.asset, AssetBalance(balance.asset, balance.balance, balance.reserved ?: 0.0))
-                        balancesCount++
-                    }
-                }
-            }
-        } catch(e: Exception) {
-            LOGGER.error("Unable to load balances", e)
-            METRICS_LOGGER.logError( "Unable to load balances", e)
-        }
-        LOGGER.info("Loaded $balancesCount balances for ${result.size} clients")
-        return result
-    }
 
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
@@ -54,7 +31,12 @@ class AzureWalletDatabaseAccessor(balancesConfig: String) : WalletDatabaseAccess
             val partitionQuery = TableQuery.from(AzureWallet::class.java).where(partitionFilter)
 
             accountTable.execute(partitionQuery).forEach { wallet ->
-                result.put(wallet.rowKey, Wallet(wallet.clientId, wallet.balancesList.map { AssetBalance(it.asset, it.balance, it.reserved ?: 0.0)}))
+                result.put(wallet.rowKey, Wallet(wallet.clientId, wallet.balancesList.map {
+                    AssetBalance(wallet.clientId,
+                            it.asset,
+                            it.balance.toBigDecimal(),
+                            (it.reserved ?: 0.0).toBigDecimal())
+                }))
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load accounts", e)

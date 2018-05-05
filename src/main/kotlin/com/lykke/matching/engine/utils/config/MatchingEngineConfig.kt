@@ -1,12 +1,14 @@
 package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
+import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.utils.alivestatus.config.AliveStatusConfig
 import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
 import com.lykke.utils.keepalive.http.KeepAliveConfig
 
 data class MatchingEngineConfig(
         val db: DbConfig,
+        val redis: RedisConfig,
         @SerializedName("IpEndpoint")
         val socket: IpEndpoint,
         val serverOrderBookPort: Int?,
@@ -22,6 +24,7 @@ data class MatchingEngineConfig(
         val correctReservedVolumes: Boolean,
         val cancelMinVolumeOrders: Boolean,
         val orderBookPath: String,
+        val stopOrderBookPath: String,
         val queueSizeLimit: Int,
         val name: String,
         val trustedClients: Set<String>,
@@ -30,5 +33,8 @@ data class MatchingEngineConfig(
         val processedMessagesInterval: Long,
         val performanceStatsInterval: Long,
         val keepAlive: KeepAliveConfig,
-        val logFilesCleaner: LogFilesCleanerConfig
+        val logFilesCleaner: LogFilesCleanerConfig,
+        val walletsStorage: WalletsStorage,
+        val walletsMigration: Boolean,
+        val writeBalancesToSecondaryDb: Boolean
 )

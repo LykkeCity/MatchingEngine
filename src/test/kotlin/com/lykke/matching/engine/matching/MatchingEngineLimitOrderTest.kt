@@ -3,17 +3,24 @@ package com.lykke.matching.engine.matching
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
@@ -34,7 +41,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderWithSameOrderBookSide() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
         initService()
 
@@ -68,7 +75,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderWithAnotherAssetPair() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 100.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 100.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 1.2, volume = -100.0))
         initService()
 
@@ -80,7 +87,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderWithOwnLimitOrder() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 100.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = -100.0))
         initService()
 
@@ -93,7 +100,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellNotEnoughFundsOpposite() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 119.99))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 119.99)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
@@ -105,7 +112,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyNotEnoughFundsOpposite() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 99.99))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.99)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
@@ -117,7 +124,9 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyNotEnoughFundsOpposite2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 100.00, reservedBalance = 99.99))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 99.99)
+
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
@@ -129,7 +138,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellNotEnoughFundsOpposite2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 120.00, reservedBalance = 119.99))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 119.99)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
@@ -141,7 +151,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyNotEnoughFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 110.00))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 110.00)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
@@ -153,7 +163,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellNotEnoughFunds() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 99.00))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.00)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
@@ -165,7 +175,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyNotEnoughFunds2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 120.00, reservedBalance = 10.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 10.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
@@ -177,7 +188,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellNotEnoughFunds2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 100.00, reservedBalance = 1.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 1.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
@@ -243,7 +255,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyOneToOne2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 89.1))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",  89.1)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.19, volume = -89.1, reservedVolume = 89.1))
         initService()
 
@@ -282,7 +295,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellOneToOne2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 110.24))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  110.24)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.21, volume = 91.1, reservedVolume = 110.24))
         initService()
 
@@ -382,8 +396,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyWithSeveral2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 40.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 40.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 40.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 40.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.1, volume = -40.0, reservedVolume = 40.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.15, volume = -40.0, reservedVolume = 40.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = -40.0, reservedVolume = 40.0))
@@ -412,8 +426,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellWithSeveral2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 60.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 60.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 60.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 60.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = 40.0, reservedVolume = 52.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 40.0, reservedVolume = 50.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = 40.0, reservedVolume = 48.0))
@@ -442,9 +456,13 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchWithSeveralLimitOrdersOfSameClient1() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 100.00, reservedBalance = 29.99))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 190000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 100.00, reservedBalance = 0.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",   29.99)
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",   29.99)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 190000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC",  0.0)
 
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
@@ -481,9 +499,11 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchWithSeveralLimitOrdersOfSameClient2() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 100.00, reservedBalance = 29.98))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 190000.0))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "BTC", 100.00, reservedBalance = 0.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  29.98)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 190000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 100.00)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC",  0.0)
 
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
@@ -511,7 +531,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testTradesAfterMatching() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 52.33))
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 52.33)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25677, volume = -51.21, reservedVolume = 51.21))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.30001, volume = -52.33, reservedVolume = 52.33))
         initService()
@@ -539,8 +559,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKK1YLKK", "LKK1Y", "LKK", 4))
 
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "LKK1Y", 5495.03))
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "LKK", 10000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "LKK1Y", 5495.03)
+        testBalanceHolderWrapper.updateBalance("Client2", "LKK", 10000.0)
 
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))

@@ -107,11 +107,21 @@ message LimitOrder {
     required string clientId = 3;
     required string assetPairId = 4;
     required double volume = 5;
-    required double price = 6;
+    optional double price = 6;
     optional bool cancelAllPreviousLimitOrders = 7;
     optional LimitOrderFee fee = 8;
     repeated LimitOrderFee fees = 9;
-    optional string messageId = 10;
+    optional int32 type = 10;
+    optional double lowerLimitPrice = 11;
+    optional double lowerPrice = 12;
+    optional double upperLimitPrice = 13;
+    optional double upperPrice = 14;
+    optional string messageId = 15;
+}
+
+enum LimitOrderType {
+    LIMIT = 0;
+    STOP_LIMIT = 1;
 }
 
 message OldMarketOrder {
@@ -140,7 +150,7 @@ message MarketOrder {
 
 message LimitOrderCancel {
     required string uid = 1;
-    required string limitOrderId = 2;
+    repeated string limitOrderId = 2;
     optional string messageId = 3;
 }
 
@@ -157,6 +167,13 @@ message OldLimitOrderCancel {
     required int64 uid = 1;
     required int64 limitOrderId = 2;
     optional string messageId = 3;
+}
+
+message LimitOrderMassCancel {
+    required string uid = 1;
+    required string clientId = 2;
+    optional string assetPairId = 3;
+    optional bool isBuy = 4;
 }
 
 message BalanceUpdate {
@@ -204,11 +221,20 @@ message MultiLimitOrder {
         required double price = 3;
         optional LimitOrderFee fee = 4;
         repeated LimitOrderFee fees = 5;
+        optional string oldUid = 6;
     }
 
     repeated Order orders = 5;
     optional bool cancelAllPreviousLimitOrders = 6;
-    optional string messageId = 7;
+    optional int32 cancelMode = 7;
+    optional string messageId = 8;
+}
+
+enum CancelMode {
+    NOT_EMPTY_SIDE = 0;
+    BOTH_SIDES = 1;
+    SELL_SIDE = 2;
+    BUY_SIDE = 3;
 }
 
 message WalletCredentialsReload {

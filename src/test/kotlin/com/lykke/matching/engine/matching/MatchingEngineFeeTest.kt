@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.buildWallet
@@ -9,12 +10,20 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderF
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (MatchingEngineTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testSellLimitOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 121.12))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "USD", 121.12)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.21111, volume = 100.0,
                 fee = buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -66,7 +75,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testBuyLimitOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -108,7 +118,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testSellMarketOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0, 120.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 120.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -150,7 +161,8 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
     @Test
     fun testBuyMarketOrderFee() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0, 100.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)
         testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
