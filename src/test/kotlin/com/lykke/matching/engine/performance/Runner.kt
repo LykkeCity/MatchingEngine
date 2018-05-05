@@ -3,15 +3,14 @@ package com.lykke.matching.engine.performance
 
 class Runner {
     companion object {
-        fun runTests(times: Int, vararg testCases:  () -> Unit): Double {
-            val startTime = System.currentTimeMillis()
+        fun runTests(times: Int, vararg testCases:  () -> Double): Double {
+            var totalTime = 0.0
             testCases.forEach {
                 val testCase = it
-                repeat(times) {testCase.invoke()}
+                repeat(times) {totalTime += testCase.invoke()}
             }
-            val endTime = System.currentTimeMillis()
 
-            return (endTime - startTime) / (times * 1.0 * testCases.size)
+            return totalTime / (times * 1.0 * testCases.size)
         }
     }
 }
