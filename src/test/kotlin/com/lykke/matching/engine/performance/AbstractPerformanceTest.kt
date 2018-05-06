@@ -13,11 +13,13 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
@@ -35,9 +37,11 @@ abstract class AbstractPerformanceTest {
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
+    protected lateinit var multiLimitOrderService: MultiLimitOrderService
 
     protected lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
     protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
+    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
 
     protected lateinit var assetsHolder: AssetsHolder
     protected lateinit var balancesHolder: BalancesHolder
@@ -126,5 +130,24 @@ abstract class AbstractPerformanceTest {
                 applicationSettingsCache)
 
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
+
+        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder,
+                balancesHolder, genericLimitOrderService, genericStopLimitOrderService,
+                genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue,
+                clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
+
+
+        multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService,
+                genericLimitOrdersCancellerFactory,
+                limitOrdersProcessorFactory,
+                trustedClientsLimitOrdersQueue,
+                clientsLimitOrdersQueue,
+                orderBookQueue,
+                rabbitOrderBookQueue,
+                assetsHolder,
+                assetsPairsHolder,
+                balancesHolder,
+                lkkTradesQueue,
+                genericLimitOrderProcessorFactory)
     }
 }
