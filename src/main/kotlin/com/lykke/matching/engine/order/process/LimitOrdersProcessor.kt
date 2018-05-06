@@ -94,17 +94,21 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         walletOperationsProcessor.preProcess(payBackReservedOperations, true)
     }
 
-    fun preProcess(orders: Collection<NewLimitOrder>): LimitOrdersProcessor {
-        orders.forEach { preProcess(it) }
+    fun preProcess(messageId: String, orders: Collection<NewLimitOrder>): LimitOrdersProcessor {
+        orders.forEach { preProcess(messageId, it) }
         return this
     }
 
-    fun apply(operationId: String, operationType: String, pBuySideOrderBookChanged: Boolean, pSellSideOrderBookChanged: Boolean): OrderProcessResult {
+    fun apply(messageId: String,
+              operationId: String,
+              operationType: String,
+              pBuySideOrderBookChanged: Boolean,
+              pSellSideOrderBookChanged: Boolean): OrderProcessResult {
 
         buySideOrderBookChanged = buySideOrderBookChanged || pBuySideOrderBookChanged
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
-        walletOperationsProcessor.apply(operationId, operationType)
+        walletOperationsProcessor.apply(operationId, operationType, messageId)
 
         genericLimitOrderService.moveOrdersToDone(completedOrders)
         genericLimitOrderService.cancelLimitOrders(ordersToCancel)
@@ -132,17 +136,17 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(trustedClientsLimitOrdersWithTrades))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(clientsLimitOrdersWithTrades))
+            clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
         }
 
         return OrderProcessResult(processedOrders)
     }
 
-    private fun preProcess(order: NewLimitOrder) {
+    private fun preProcess(messageId: String, order: NewLimitOrder) {
 
         val limitAsset = if (order.isBuySide()) quotingAsset else baseAsset
         val limitVolume = BigDecimal.valueOf(if (order.isBuySide()) RoundingUtils.round(order.getAbsVolume() * order.price, limitAsset.accuracy, true) else order.getAbsVolume())
@@ -161,7 +165,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), availableBalance.toDouble())
+            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageId, availableBalance.toDouble())
             val orderCopy = matchingResult.order as NewLimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {

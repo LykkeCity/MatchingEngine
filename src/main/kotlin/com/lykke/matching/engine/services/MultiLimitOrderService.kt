@@ -7,8 +7,8 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
-import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -25,6 +25,7 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
@@ -82,14 +83,16 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             parseMessage(messageWrapper)
         }
         if (!isOldTypeMessage) {
-            processMultiOrder(messageWrapper)
+            processClientOrders(messageWrapper)
             return
         }
+        val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
+        val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMultiLimitOrder
         messageUid = message.uid.toString()
         clientId = message.clientId
         assetPairId = message.assetPairId
-        LOGGER.debug("Got old multi limit order id: $messageUid, client $clientId, assetPair: $assetPairId")
+        LOGGER.debug("Got old multi limit order  messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
         orders = ArrayList(message.ordersList.size)
         cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
         message.ordersList.forEach { currentOrder ->
@@ -160,10 +163,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 order.status = OrderStatus.LeadToNegativeSpread.name
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             } else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(originOrder = order,
-                        orderBook = orderBook.getOrderBook(!order.isBuySide()),
-                        messageId = messageWrapper.messageId!!,
-                        balance =  balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
+                        messageWrapper.messageId!!, balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.status = OrderStatus.NoLiquidity.name
@@ -341,24 +342,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
     }
 
-    private fun buildResponse(messageUid: String,
-                              assetPairId: String,
-                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse.Builder {
-        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
-        responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).assetPairId = assetPairId
-
-        orders.forEach {
-            responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
-                    .setVolume(it.volume).setPrice(it.price).build())
-        }
-        return responseBuilder
-    }
-
-    private fun processMultiOrder(messageWrapper: MessageWrapper) {
+    private fun processClientOrders(messageWrapper: MessageWrapper) {
         val multiLimitOrder = readMultiLimitOrder(messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder)
         val isTrustedClient = balancesHolder.isTrustedClient(multiLimitOrder.clientId)
         if (isTrustedClient) {
@@ -439,8 +426,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 LOGGER)
 
         matchingEngine.initTransaction()
-        val result = processor.preProcess(multiLimitOrder.orders)
-                .apply(multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
+        val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
+                .apply(multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name, messageWrapper.messageId!!,
+                        buySideOrderBookChanged, sellSideOrderBookChanged)
 
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
         responseBuilder.setId(multiLimitOrder.messageUid)
@@ -457,9 +445,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
             responseBuilder.addStatuses(statusBuilder.build())
         }
-        messageWrapper.writeMultiLimitOrderResponse(responseBuilder.build())
+        messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
     }
 
     private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder): MultiLimitOrder {
@@ -548,6 +536,20 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         return addedToCancel
     }
 
+    private fun buildResponse(messageUid: String,
+                              assetPairId: String,
+                              orders: List<NewLimitOrder>): ProtocolMessages.MultiLimitOrderResponse.Builder {
+        val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+        responseBuilder.setId(messageUid).setStatus(MessageStatus.OK.type).assetPairId = assetPairId
+
+        orders.forEach {
+            responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
+                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
+                    .setVolume(it.volume).setPrice(it.price).build())
+        }
+        return responseBuilder
+    }
+
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
         return ProtocolMessages.OldMultiLimitOrder.parseFrom(array)
     }
@@ -559,13 +561,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
             val message =  parseOldMultiLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid.toString()
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid.toString()
         } else {
             val message =  parseMultiLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid

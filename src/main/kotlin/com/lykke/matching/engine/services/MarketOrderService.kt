@@ -234,7 +234,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
 
         val endTime = System.nanoTime()
 

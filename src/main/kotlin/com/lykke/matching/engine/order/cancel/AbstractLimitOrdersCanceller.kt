@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.AssetPair
@@ -126,7 +127,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                            assetOrderBooks: Map<String, TAssetOrderBook>): TCancelResult
 
     /** Cancels orders, updates balances and sends notifications */
-    open fun applyFull(operationId: String, operationType: String, validateBalances: Boolean) {
+    open fun applyFull(operationId: String, messageId: String, operationType: String, validateBalances: Boolean) {
         val result = apply()
 
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
@@ -146,13 +147,13 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         }
 
         if (result.clientsOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(result.clientsOrdersWithTrades.toMutableList()))
+            clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(result.trustedClientsOrdersWithTrades.toMutableList()))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
 
-        walletProcessor.apply(operationId, operationType)
+        walletProcessor.apply(operationId, operationType, messageId)
     }
 
     @Suppress("unchecked_cast")
