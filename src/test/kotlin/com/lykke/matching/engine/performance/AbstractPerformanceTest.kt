@@ -17,10 +17,7 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.services.MultiLimitOrderService
-import com.lykke.matching.engine.services.SingleLimitOrderService
+import com.lykke.matching.engine.services.*
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
@@ -38,6 +35,8 @@ abstract class AbstractPerformanceTest {
     protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
+    protected lateinit var marketOrderService: MarketOrderService
+
 
     protected lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
     protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
@@ -59,6 +58,9 @@ abstract class AbstractPerformanceTest {
     protected lateinit var lkkTradesQueue: LinkedBlockingQueue<List<LkkTrade>>
     protected lateinit var orderBookQueue: LinkedBlockingQueue<OrderBook>
     protected lateinit var rabbitOrderBookQueue: LinkedBlockingQueue<JsonSerializable>
+    protected lateinit var rabbitSwapQueue: LinkedBlockingQueue<JsonSerializable>
+
+
 
     open fun initServices() {
         walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
@@ -149,5 +151,21 @@ abstract class AbstractPerformanceTest {
                 balancesHolder,
                 lkkTradesQueue,
                 genericLimitOrderProcessorFactory)
+
+        rabbitSwapQueue = LinkedBlockingQueue()
+        marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor,
+                genericLimitOrderService,
+                assetsHolder,
+                assetsPairsHolder,
+                balancesHolder,
+                applicationSettingsCache,
+                trustedClientsLimitOrdersQueue,
+                clientsLimitOrdersQueue,
+                orderBookQueue,
+                rabbitOrderBookQueue,
+                rabbitSwapQueue,
+                lkkTradesQueue,
+                genericLimitOrderProcessorFactory)
+
     }
 }
