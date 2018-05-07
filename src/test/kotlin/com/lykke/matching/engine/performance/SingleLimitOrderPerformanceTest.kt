@@ -14,6 +14,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
 
     override fun initServices() {
         super.initServices()
+
         walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
         walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
         walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
