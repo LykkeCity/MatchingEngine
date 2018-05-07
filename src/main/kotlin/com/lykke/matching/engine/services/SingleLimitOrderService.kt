@@ -76,6 +76,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
     private fun incomingMessageInfo(message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
         return "id: ${message.uid}" +
+                ", messageId: ${message.messageId}" +
                 ", type: ${order.type}" +
                 ", client: ${message.clientId}" +
                 ", assetPair: ${message.assetPairId}" +

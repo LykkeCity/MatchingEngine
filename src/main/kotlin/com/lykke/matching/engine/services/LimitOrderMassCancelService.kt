@@ -23,7 +23,7 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
         val assetPairId = if (message.hasAssetPairId()) message.assetPairId else null
         val isBuy = if (message.hasIsBuy()) message.isBuy else null
 
-        LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
+        LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, messageId: ${messageWrapper.messageId}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
 
         return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy), emptyList())
     }

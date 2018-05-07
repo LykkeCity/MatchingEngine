@@ -92,7 +92,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         messageUid = message.uid.toString()
         clientId = message.clientId
         assetPairId = message.assetPairId
-        LOGGER.debug("Got old multi limit order  messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
+        LOGGER.debug("Got old multi limit order messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
         orders = ArrayList(message.ordersList.size)
         cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
         message.ordersList.forEach { currentOrder ->
@@ -349,9 +349,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val multiLimitOrder = readMultiLimitOrder(messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder)
         val isTrustedClient = balancesHolder.isTrustedClient(multiLimitOrder.clientId)
         if (isTrustedClient) {
-            LOGGER.debug("Got multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}")
+            LOGGER.debug("Got multi limit order id: ${multiLimitOrder.messageUid}, messageId: ${messageWrapper.messageId}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}")
         } else {
-            LOGGER.debug("Got client multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}, cancelPrevious: ${multiLimitOrder.cancelAllPreviousLimitOrders}, cancelMode: ${multiLimitOrder.cancelMode}")
+            LOGGER.debug("Got client multi limit order id: ${multiLimitOrder.messageUid}, messageId: ${messageWrapper.messageId}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}, cancelPrevious: ${multiLimitOrder.cancelAllPreviousLimitOrders}, cancelMode: ${multiLimitOrder.cancelMode}")
         }
         val now = Date()
 

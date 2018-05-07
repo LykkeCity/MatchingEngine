@@ -48,7 +48,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
         val feeInstructions = NewFeeInstruction.create(message.feesList)
 
-        LOGGER.debug("Processing cash transfer operation ${message.id}) messageId: ${messageWrapper.messageId}" +
+        LOGGER.debug("Processing cash transfer operation (${message.id}) messageId: ${messageWrapper.messageId}" +
                 " from client ${message.fromClientId} to client ${message.toClientId}, " +
                 "asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, " +
                 "feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
