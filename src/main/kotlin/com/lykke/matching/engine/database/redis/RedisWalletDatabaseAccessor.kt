@@ -8,7 +8,7 @@ import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-import redis.clients.jedis.Transaction
+import redis.clients.jedis.Pipeline
 import java.util.HashMap
 
 class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletDatabaseAccessor {
@@ -67,9 +67,9 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletData
         // Nothing to do
     }
 
-    fun insertOrUpdateBalances(transaction: Transaction, balances: Collection<AssetBalance>) {
+    fun insertOrUpdateBalances(pipeline: Pipeline, balances: Collection<AssetBalance>) {
         balances.forEach { clientAssetBalance ->
-            transaction.set(key(clientAssetBalance).toByteArray(), serializeClientAssetBalance(clientAssetBalance))
+            pipeline.set(key(clientAssetBalance).toByteArray(), serializeClientAssetBalance(clientAssetBalance))
         }
     }
 

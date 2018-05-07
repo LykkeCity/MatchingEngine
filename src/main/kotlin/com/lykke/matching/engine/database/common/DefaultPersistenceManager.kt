@@ -53,22 +53,15 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         val details = data.details()
         balancesJedisPool!!.resource.use { balancesJedis ->
             fixPerformanceTime("Resource")
-            val transaction = balancesJedis!!.multi()
-            var success = false
-            try {
-                primaryBalancesAccessor as RedisWalletDatabaseAccessor
-                primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
-                fixPerformanceTime("Persist ($details)")
-                success = true
-            } finally {
-                if (success) {
-                    transaction.exec()
-                    fixPerformanceTime("Commit")
-                } else {
-                    balancesJedis.resetState()
-                    fixPerformanceTime("Reset")
-                }
-            }
+            val pipeline = balancesJedis.pipelined()
+            pipeline.multi()
+
+            primaryBalancesAccessor as RedisWalletDatabaseAccessor
+            primaryBalancesAccessor.insertOrUpdateBalances(pipeline, data.balances)
+            fixPerformanceTime("Persist ($details)")
+
+            pipeline.exec()
+            fixPerformanceTime("Commit")
         }
         if (secondaryBalancesAccessor != null) {
             updatedWalletsQueue.put(data.wallets)
