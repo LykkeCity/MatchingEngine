@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.performance
 
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
@@ -11,6 +10,7 @@ import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -59,7 +59,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var orderBookQueue: LinkedBlockingQueue<OrderBook>
     protected lateinit var rabbitOrderBookQueue: LinkedBlockingQueue<JsonSerializable>
     protected lateinit var rabbitSwapQueue: LinkedBlockingQueue<JsonSerializable>
-
+    protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
 
     open fun initServices() {
@@ -69,6 +69,7 @@ abstract class AbstractPerformanceTest {
         testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
         applicationSettingsCache = ApplicationSettingsCache(testConfigDatabaseAccessor, 60000)
 
+
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
         balancesHolder = BalancesHolder(walletDatabaseAccessor,
@@ -76,6 +77,7 @@ abstract class AbstractPerformanceTest {
                 applicationEventPublicher,
                 applicationSettingsCache)
 
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 

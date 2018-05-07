@@ -20,10 +20,10 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     override fun initServices() {
         super.initServices()
 
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 1000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
@@ -151,9 +151,9 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchLimitOrder3(): Double {
         val counter = ActionTimeCounter()
 
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "USD", 18.6))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "TIME", 1000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "TIME", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client5", "USD", 18.6)
+        testBalanceHolderWrapper.updateBalance("Client5", "TIME", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "TIME", 1000.0)
 
         initServices()
 
@@ -170,8 +170,8 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchLimitOrderZeroVolumes(): Double {
         val counter = ActionTimeCounter()
 
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client5", "BTC", 1000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client5", "BTC", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
 
         initServices()
 
@@ -198,8 +198,9 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         testConfigDatabaseAccessor.addTrustedClient("Client3")
 
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "BTC", 0.26170853, 0.001))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "CHF", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
+        testBalanceHolderWrapper.updateBalance("Client3", "CHF", 1000.0)
 
         initServices()
 
@@ -220,9 +221,9 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         val marketMaker = "Client1"
         val client = "Client2"
 
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "EUR", 700.04))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "EUR", 700.04))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet(marketMaker, "BTC", 2.0))
+        testBalanceHolderWrapper.updateBalance(client, "EUR", 700.04)
+        testBalanceHolderWrapper.updateBalance(client, "EUR", 700.04)
+        testBalanceHolderWrapper.updateBalance(marketMaker, "BTC", 2.0)
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
         initServices()
@@ -238,7 +239,8 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         val marketMaker = "Client1"
         val client = "Client2"
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet(client, "USD", 1000.0, 1.19))
+        testBalanceHolderWrapper.updateBalance(client, "USD", 1000.0)
+        testBalanceHolderWrapper.updateBalance(client, "USD", 1.19)
 
         val order = MessageBuilder.buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
         order.reservedLimitVolume = 1.19

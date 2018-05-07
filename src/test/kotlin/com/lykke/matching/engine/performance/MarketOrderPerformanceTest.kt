@@ -91,8 +91,8 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client2"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client2", "USD", 1500.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 2000.0))
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1500.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 2000.0)
         initServices()
 
         counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -2000.0))) }
@@ -128,8 +128,9 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0, 1500.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD",1500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
         initServices()
 
         counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))}
@@ -141,10 +142,10 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "EURJPY", price = 122.512, volume = 1000000.0, clientId = "Client3"))
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "EURJPY", price = 122.524, volume = -1000000.0, clientId = "Client3"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "JPY", 5000000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 5000000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 0.1))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "JPY", 100.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "JPY", 5000000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 5000000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client4", "JPY", 100.0)
         initServices()
 
         counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 10.0, straight = false)))}
@@ -156,7 +157,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client3"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 1500.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 1500.0)
         initServices()
 
         counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0))) }
@@ -169,9 +170,10 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = 100.0, clientId = "Client3"))
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.4, volume = 1000.0, clientId = "Client1"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "USD", 1560.0, 1400.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "USD", 150.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "EUR", 1000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 1560.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",1400.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 150.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1000.0)
         initServices()
 
         counter.executeAction {marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))}
@@ -188,8 +190,8 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "SLRBTC", price = 0.00008897, volume = -4000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "SLRBTC", price = 0.00008914, volume = -4000.0, clientId = "Client1"))
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "SLRBTC", price = 0.00008932, volume = -4000.0, clientId = "Client1"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "SLR", 100000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "BTC", 31.95294))
+        testBalanceHolderWrapper.updateBalance("Client1", "SLR", 100000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 31.95294)
         initServices()
 
         counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "SLRBTC", volume = 25000.0, straight = true))) }
@@ -201,8 +203,8 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = -500.0, assetId = "EURUSD", clientId = "Client3"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 500.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 750.0))
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 500.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 750.0)
         initServices()
 
         counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -750.0, straight = false))) }
@@ -214,9 +216,9 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
 
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.4, volume = -100.0, clientId = "Client3"))
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(price = 1.5, volume = -1000.0, clientId = "Client1"))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "EUR", 3000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client3", "EUR", 3000.0))
-        walletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client4", "USD", 2000.0))
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 2000.0)
         initServices()
 
         counter.executeAction { marketOrderService.processMessage(MessageBuilder.buildMarketOrderWrapper(MessageBuilder.buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1490.0, straight = false))) }

@@ -58,7 +58,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testBalanceHolderWrapper(): TestBalanceHolderWrapper {
-        return TestBalanceHolderWrapper()
+    open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest,
+                                      balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
+        return TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder)
     }
 }
