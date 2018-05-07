@@ -42,7 +42,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
                 ::testAddAndMatchLimitOrderWithSamePrice, ::testAddAndMatchLimitSellDustOrder,
                 ::testAddAndMatchBuyLimitDustOrder, ::testAddAndPartiallyMatchLimitOrder, ::testAddAndMatchWithLimitOrder,
                 ::testMatchWithLimitOrderForAllFunds, ::testMatchWithOwnLimitOrder, ::testOverflowedRemainingVolume)
-        println("Single limit order average processing time is: $averageOrderProcessionTime ms")
+        println("Single limit order average processing time is: $averageOrderProcessionTime nanoseconds")
     }
 
 

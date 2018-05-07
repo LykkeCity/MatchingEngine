@@ -49,7 +49,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
                 ::testMatchOneToMany, ::testMatchOneToOneEURJPY, ::testMatchOneToMany2016Dec12, ::testNotStraight,
                 ::testNotStraightMatchOneToMany)
 
-        println("Multilimit order average processing time is: $averageOrderProcessionTime ms")
+        println("Multilimit order average processing time is: $averageOrderProcessionTime nanoseconds")
     }
 
     fun testNoLiqudity(): Double {

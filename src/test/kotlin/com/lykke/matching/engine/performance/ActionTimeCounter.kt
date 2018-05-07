@@ -7,11 +7,11 @@ class ActionTimeCounter {
     fun executeAction(action: () -> Unit) {
         totalCount++
 
-        val start = System.currentTimeMillis()
+        val start = System.nanoTime()
         action.invoke()
-        val end = System.currentTimeMillis()
+        val end = System.nanoTime()
 
-        totalTime += end - start
+        totalTime += Math.abs(end - start)
     }
 
     fun getAverageTime(): Double {

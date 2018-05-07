@@ -45,7 +45,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
                 ::testAddAndMatchLimitOrder, ::testAddAndMatchLimitOrder2, ::testAddAndMatchLimitOrder3,
                 ::testAddAndMatchAndCancel, ::testAddAndMatchLimitOrderZeroVolumes, ::testMatchWithLimitOrderForAllFunds,
                 ::testCancelPreviousOrderWithSameUid, ::testMatchWithNotEnoughFundsOrder1)
-        println("Multilimit order average processing time is: $averageOrderProcessionTime ms")
+        println("Multilimit order average processing time is: $averageOrderProcessionTime nanoseconds")
     }
 
     fun testSmallVolume(): Double {
