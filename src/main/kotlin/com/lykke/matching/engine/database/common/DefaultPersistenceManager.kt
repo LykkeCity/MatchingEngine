@@ -38,10 +38,10 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         }
     }
 
-    private fun fixTime(): Long {
+    private fun fixTime(): String {
         val result = System.nanoTime() - time!!
         time = System.nanoTime()
-        return result
+        return PrintUtils.convertToString2(result.toDouble())
     }
 
     private fun persistData(data: PersistenceData) {
@@ -51,21 +51,27 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         }
 
         time = System.nanoTime()
+        var resourceTime: String? = null
+        var persistenceTime: String? = null
+        var commitTime: String? = null
         balancesJedisPool!!.resource.use { balancesJedis ->
-            val resourceTime = fixTime()
+            resourceTime = fixTime()
             val pipeline = balancesJedis.pipelined()
             pipeline.multi()
 
             primaryBalancesAccessor as RedisWalletDatabaseAccessor
             primaryBalancesAccessor.insertOrUpdateBalances(pipeline, data.balances)
-            val persistenceTime = fixTime()
+            persistenceTime = fixTime()
 
             pipeline.exec()
-            val commitTime = fixTime()
-            REDIS_PERFORMANCE_LOGGER.debug("Resource: ${PrintUtils.convertToString2(resourceTime.toDouble())}" +
-                    ", persist: ${PrintUtils.convertToString2(persistenceTime.toDouble())}" +
-                    ", commit: ${PrintUtils.convertToString2(commitTime.toDouble())} (${data.details()})")
+            commitTime = fixTime()
         }
+        val closeTime = fixTime()
+
+        REDIS_PERFORMANCE_LOGGER.debug("Resource: $resourceTime" +
+                ", persist: $persistenceTime" +
+                ", commit: $commitTime (${data.details()})" +
+                ", closeTime: $closeTime")
         if (secondaryBalancesAccessor != null) {
             updatedWalletsQueue.put(data.wallets)
         }
