@@ -81,10 +81,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            LOGGER.debug("""Got old market order messageId: ${messageWrapper.messageId},
-                |id: ${message.uid}, client: ${message.clientId},
-                |asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)},
-                |straight: ${message.straight}""".trimMargin())
+            LOGGER.debug("Got old market order messageId: ${messageWrapper.messageId}, " +
+                    "id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
+                    "volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
 
             feeInstruction = null
             feeInstructions = null
@@ -94,10 +93,10 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
             feeInstructions = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("""Got market order messageId: ${messageWrapper.messageId}, id: ${message.uid},
-                |client: ${message.clientId}, asset: ${message.assetPairId},
-                |volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight},
-                |fee: $feeInstruction, fees: $feeInstructions""".trimMargin())
+            LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
+                    "id: ${message.uid}, client: ${message.clientId}, " +
+                    "asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, " +
+                    "straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))

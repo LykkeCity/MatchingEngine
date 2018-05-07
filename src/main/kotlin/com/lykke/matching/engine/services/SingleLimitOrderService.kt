@@ -48,10 +48,10 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null,
                     type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
-            LOGGER.info("""Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId},
-                |assetPair: ${oldMessage.assetPairId},
-                |volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)},
-                |cancel: ${oldMessage.cancelAllPreviousLimitOrders}""".trimMargin())
+            LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
+                    "assetPair: ${oldMessage.assetPairId}, " +
+                    "volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, " +
+                    "cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
         } else {

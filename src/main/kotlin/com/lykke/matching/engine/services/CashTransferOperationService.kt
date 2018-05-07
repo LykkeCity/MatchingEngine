@@ -48,11 +48,10 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
         val feeInstructions = NewFeeInstruction.create(message.feesList)
 
-        LOGGER.debug("""Processing cash transfer operation ${message.id})
-            | messageId: ${messageWrapper.messageId}
-            | from client ${message.fromClientId} to client ${message.toClientId},
-            | asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)},
-            | feeInstruction: $feeInstruction, feeInstructions: $feeInstructions""".trimMargin())
+        LOGGER.debug("Processing cash transfer operation ${message.id}) messageId: ${messageWrapper.messageId}" +
+                " from client ${message.fromClientId} to client ${message.toClientId}, " +
+                "asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, " +
+                "feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
 
         val operationId = UUID.randomUUID().toString()
         if (!checkFee(feeInstruction, feeInstructions)) {
@@ -154,8 +153,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("""Cash transfer operation (${message.id}) from client ${message.fromClientId}
-            | to client ${message.toClientId}, asset ${message.assetId},
-            |  volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage""".trimMargin())
+        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} " +
+                "to client ${message.toClientId}, asset ${message.assetId}," +
+                " volume: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
     }
 }

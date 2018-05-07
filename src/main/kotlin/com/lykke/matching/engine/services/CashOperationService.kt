@@ -26,10 +26,9 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
-        LOGGER.debug("""Processing cash messageId: ${messageWrapper.messageId},
-            |operation (${message.bussinesId}),
-            |for client ${message.clientId}, asset ${message.assetId},
-            |amount: ${RoundingUtils.roundForPrint(message.amount)}""".trimMargin())
+        LOGGER.debug("Processing cash messageId: ${messageWrapper.messageId}," +
+                " operation (${message.bussinesId}),for client ${message.clientId}, " +
+                "asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
 
         if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()

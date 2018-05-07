@@ -39,10 +39,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug(""""Processing cash in/out messageId: ${messageWrapper.messageId}
-            | operation (${message.id}) for client ${message.clientId},
-            | asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)},
-            | feeInstructions: $feeInstructions""".trimMargin())
+        LOGGER.debug("Processing cash in/out messageId: ${messageWrapper.messageId} operation (${message.id})" +
+                " for client ${message.clientId}, asset ${message.assetId}," +
+                " amount: ${RoundingUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
 
         val operationId = UUID.randomUUID().toString()
         if (!checkFee(null, feeInstructions)) {

@@ -22,9 +22,9 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
-        LOGGER.debug("""Processing holders update messageId: ${messageWrapper.messageId}
-            | for client ${message.clientId}, asset ${message.assetId},
-            | reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}""".trimMargin())
+        LOGGER.debug("Processing holders update messageId: ${messageWrapper.messageId} " +
+                "for client ${message.clientId}, asset ${message.assetId}, " +
+                "reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
         if (message.reservedAmount > balance) {

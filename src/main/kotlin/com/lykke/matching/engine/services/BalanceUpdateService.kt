@@ -27,9 +27,8 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
         }
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
-            LOGGER.debug("""Processing holders update messageId: ${messageWrapper.messageId}
-                |for client ${message.clientId},
-                |asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}""".trimMargin())
+            LOGGER.debug("Processing holders update messageId: ${messageWrapper.messageId} for client ${message.clientId}, " +
+                    "asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
 
 
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)

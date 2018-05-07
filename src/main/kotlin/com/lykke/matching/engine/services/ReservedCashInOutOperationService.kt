@@ -30,10 +30,9 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
-        LOGGER.debug(""""Processing reserved cash in/out messageId: ${messageWrapper.messageId}
-            | operation (${message.id})
-            | for client ${message.clientId}, asset ${message.assetId},
-            | amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}""".trimMargin())
+        LOGGER.debug("Processing reserved cash in/out messageId: ${messageWrapper.messageId} " +
+                "operation (${message.id}) for client ${message.clientId}, " +
+                "asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}")
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
                 Date(message.timestamp), 0.0, message.reservedVolume)
