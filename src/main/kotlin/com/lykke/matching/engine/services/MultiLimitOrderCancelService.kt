@@ -17,15 +17,19 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrderCancel
-        LOGGER.debug("Got multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
+        LOGGER.debug("Got multi limit order cancel " +
+                "message id: ${messageWrapper.messageId}, id: ${message.uid}, ${message.clientId}, " +
+                "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
+
         val now = Date()
         val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
         if (ordersToCancel.isNotEmpty()) {
             genericLimitOrdersCancellerFactory.create(LOGGER, now)
                     .preProcessLimitOrders(ordersToCancel)
-                    .applyFull(message.uid, MessageType.MULTI_LIMIT_ORDER_CANCEL.name, false)
+                    .applyFull(message.uid, messageWrapper.messageId!!, MessageType.MULTI_LIMIT_ORDER_CANCEL.name, false)
         }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(MessageStatus.OK.type))
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
 
@@ -35,12 +39,14 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.uid
+        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        messageWrapper.id = message.uid
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId).setStatus(status.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type))
     }
 }

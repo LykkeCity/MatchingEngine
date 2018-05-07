@@ -48,7 +48,10 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                     oldMessage.price, OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, oldMessage.volume, null,
                     type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
-            LOGGER.info("Got old limit order id: ${oldMessage.uid}, client ${oldMessage.clientId}, assetPair: ${oldMessage.assetPairId}, volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+            LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
+                    "assetPair: ${oldMessage.assetPairId}, " +
+                    "volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, " +
+                    "cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
         } else {
@@ -73,6 +76,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
     private fun incomingMessageInfo(message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
         return "id: ${message.uid}" +
+                ", messageId: ${message.messageId}" +
                 ", type: ${order.type}" +
                 ", client: ${message.clientId}" +
                 ", assetPair: ${message.assetPairId}" +
@@ -127,22 +131,25 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             val message =  parseOldLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
             messageWrapper.timestamp = message.timestamp
+            messageWrapper.id = message.uid.toString()
             messageWrapper.parsedMessage = message
         } else {
             val message =  parseLimitOrder(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
-            messageWrapper.timestamp = message.timestamp
+            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid
+            messageWrapper.timestamp = message.timestamp
         }
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setStatus(status.type))
         }
     }
 }

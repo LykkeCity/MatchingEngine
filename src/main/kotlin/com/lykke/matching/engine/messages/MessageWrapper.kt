@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.messages
 
+import com.google.protobuf.Message
 import com.google.protobuf.MessageOrBuilder
 import com.lykke.matching.engine.socket.ClientHandler
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
@@ -15,53 +16,70 @@ class MessageWrapper(
         val startTimestamp: Long = System.nanoTime(),
         var timestamp: Long? = null,
         var messageId: String? = null,
-        var parsedMessage: MessageOrBuilder? = null) {
+        var parsedMessage: MessageOrBuilder? = null,
+        var id: String? = null) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    fun writeResponse(response: ProtocolMessages.Response) {
-        if (clientHandler != null) {
-            try {
-                clientHandler.writeOutput(toByteArray(MessageType.RESPONSE.type, response.serializedSize, response.toByteArray()))
-            } catch (exception: IOException){
-                LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
-                METRICS_LOGGER.logError( "[$sourceIp]: Unable to write response", exception)
-            }
+    fun writeResponse(responseBuilder: ProtocolMessages.Response.Builder) {
+        if (!responseBuilder.hasMessageId() && messageId != null) {
+            responseBuilder.messageId = messageId
         }
+
+        if (!responseBuilder.hasUid() && id != null) {
+            responseBuilder.uid = id!!.toLong()
+        }
+
+        writeClientResponse(responseBuilder.build(), MessageType.RESPONSE)
     }
 
-    fun writeNewResponse(response: ProtocolMessages.NewResponse) {
-        if (clientHandler != null) {
-            try {
-                clientHandler.writeOutput(toByteArray(MessageType.NEW_RESPONSE.type, response.serializedSize, response.toByteArray()))
-            } catch (exception: IOException){
-                LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
-                METRICS_LOGGER.logError( "[$sourceIp]: Unable to write response", exception)
-            }
+    fun writeNewResponse(responseBuilder: ProtocolMessages.NewResponse.Builder) {
+
+        if (!responseBuilder.hasMessageId() && messageId != null) {
+            responseBuilder.messageId = messageId
         }
+
+        if (!responseBuilder.hasId() && id != null) {
+            responseBuilder.id = id
+        }
+
+        writeClientResponse(responseBuilder.build(), MessageType.NEW_RESPONSE)
     }
 
-    fun writeMarketOrderResponse(response: ProtocolMessages.MarketOrderResponse) {
-        if (clientHandler != null) {
-            try {
-                clientHandler.writeOutput(toByteArray(MessageType.MARKER_ORDER_RESPONSE.type, response.serializedSize, response.toByteArray()))
-            } catch (exception: IOException){
-                LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
-                METRICS_LOGGER.logError( "[$sourceIp]: Unable to write response", exception)
-            }
+    fun writeMarketOrderResponse(responseBuilder: ProtocolMessages.MarketOrderResponse.Builder) {
+        if (!responseBuilder.hasMessageId() && messageId != null) {
+            responseBuilder.messageId = messageId
         }
+
+        if (!responseBuilder.hasId() && id != null) {
+            responseBuilder.id = id
+        }
+
+        writeClientResponse(responseBuilder.build(), MessageType.MARKER_ORDER_RESPONSE)
     }
 
-    fun writeMultiLimitOrderResponse(response: ProtocolMessages.MultiLimitOrderResponse) {
+    fun writeMultiLimitOrderResponse(responseBuilder: ProtocolMessages.MultiLimitOrderResponse.Builder) {
+        if (!responseBuilder.hasMessageId() && messageId != null) {
+            responseBuilder.messageId = messageId
+        }
+
+        if (!responseBuilder.hasId() && id != null) {
+            responseBuilder.id = id
+        }
+
+        writeClientResponse(responseBuilder.build(), MessageType.MULTI_LIMIT_ORDER_RESPONSE)
+    }
+
+    private fun writeClientResponse(message: Message, messageType: MessageType) {
         if (clientHandler != null) {
             try {
-                clientHandler.writeOutput(toByteArray(MessageType.MULTI_LIMIT_ORDER_RESPONSE.type, response.serializedSize, response.toByteArray()))
+                clientHandler.writeOutput(toByteArray(messageType.type, message.serializedSize, message.toByteArray()))
             } catch (exception: IOException){
-                LOGGER.error("[$sourceIp]: Unable to write response: ${exception.message}", exception)
-                METRICS_LOGGER.logError("[$sourceIp]: Unable to write response", exception)
+                LOGGER.error("[$sourceIp]: Unable to write for message with id $messageId response: ${exception.message}", exception)
+                METRICS_LOGGER.logError( "[$sourceIp]: Unable to write response", exception)
             }
         }
     }

@@ -23,21 +23,21 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
         val assetPairId = if (message.hasAssetPairId()) message.assetPairId else null
         val isBuy = if (message.hasIsBuy()) message.isBuy else null
 
-        LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
+        LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, messageId: ${messageWrapper.messageId}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
 
         return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy), emptyList())
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = ProtocolMessages.LimitOrderMassCancel.parseFrom(messageWrapper.byteArray)
-        messageWrapper.messageId = message.uid
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
+        messageWrapper.id = message.uid
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderMassCancel
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(status.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
 }
