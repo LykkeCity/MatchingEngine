@@ -6,6 +6,6 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 class PersistenceData(val wallets: Collection<Wallet>,
                       val balances: Collection<AssetBalance>) {
 
-    fun details() = "wallets: ${wallets.size}, balances: ${balances.size}"
+    fun details() = "w: ${wallets.size}, b: ${balances.size}"
 
 }

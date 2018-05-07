@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.util.concurrent.LinkedBlockingQueue
@@ -13,6 +14,7 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
 
     companion object {
         private val LOGGER = Logger.getLogger(DefaultPersistenceManager::class.java.name)
+        private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${DefaultPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -21,6 +23,8 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
     private val isRedisBalancesPrimary = primaryBalancesAccessor is RedisWalletDatabaseAccessor
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
     private val balancesJedisPool = balancesDatabaseAccessorsHolder.jedisPool
+
+    private var time: Long? = null
 
     override fun balancesQueueSize() = updatedWalletsQueue.size
 
@@ -34,21 +38,36 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         }
     }
 
+    private fun fixPerformanceTime(message: String) {
+        REDIS_PERFORMANCE_LOGGER.debug("$message: ${PrintUtils.convertToString2((System.nanoTime() - time!!).toDouble())}")
+        time = System.nanoTime()
+    }
+
     private fun persistData(data: PersistenceData) {
         if (!isRedisBalancesPrimary) {
             primaryBalancesAccessor.insertOrUpdateWallets(data.wallets.toList())
             return
         }
 
+        time = System.nanoTime()
+        val details = data.details()
         balancesJedisPool!!.resource.use { balancesJedis ->
+            fixPerformanceTime("Resource")
             val transaction = balancesJedis!!.multi()
             var success = false
             try {
                 primaryBalancesAccessor as RedisWalletDatabaseAccessor
                 primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
+                fixPerformanceTime("Persist ($details)")
                 success = true
             } finally {
-                if (success) transaction.exec() else balancesJedis.resetState()
+                if (success) {
+                    transaction.exec()
+                    fixPerformanceTime("Commit")
+                } else {
+                    balancesJedis.resetState()
+                    fixPerformanceTime("Reset")
+                }
             }
         }
         if (secondaryBalancesAccessor != null) {
