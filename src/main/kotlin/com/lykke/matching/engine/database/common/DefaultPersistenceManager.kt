@@ -38,9 +38,10 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         }
     }
 
-    private fun fixPerformanceTime(message: String) {
-        REDIS_PERFORMANCE_LOGGER.debug("$message: ${PrintUtils.convertToString2((System.nanoTime() - time!!).toDouble())}")
+    private fun fixTime(): Long {
+        val result = System.nanoTime() - time!!
         time = System.nanoTime()
+        return result
     }
 
     private fun persistData(data: PersistenceData) {
@@ -50,25 +51,20 @@ class DefaultPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabas
         }
 
         time = System.nanoTime()
-        val details = data.details()
         balancesJedisPool!!.resource.use { balancesJedis ->
-            fixPerformanceTime("Resource")
-            val transaction = balancesJedis!!.multi()
-            var success = false
-            try {
-                primaryBalancesAccessor as RedisWalletDatabaseAccessor
-                primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
-                fixPerformanceTime("Persist ($details)")
-                success = true
-            } finally {
-                if (success) {
-                    transaction.exec()
-                    fixPerformanceTime("Commit")
-                } else {
-                    balancesJedis.resetState()
-                    fixPerformanceTime("Reset")
-                }
-            }
+            val resourceTime = fixTime()
+            val pipeline = balancesJedis.pipelined()
+            pipeline.multi()
+
+            primaryBalancesAccessor as RedisWalletDatabaseAccessor
+            primaryBalancesAccessor.insertOrUpdateBalances(pipeline, data.balances)
+            val persistenceTime = fixTime()
+
+            pipeline.exec()
+            val commitTime = fixTime()
+            REDIS_PERFORMANCE_LOGGER.debug("Resource: ${PrintUtils.convertToString2(resourceTime.toDouble())}" +
+                    ", persist: ${PrintUtils.convertToString2(persistenceTime.toDouble())}" +
+                    ", commit: ${PrintUtils.convertToString2(commitTime.toDouble())} (${data.details()})")
         }
         if (secondaryBalancesAccessor != null) {
             updatedWalletsQueue.put(data.wallets)
