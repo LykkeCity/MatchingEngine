@@ -3,6 +3,7 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
 import org.junit.Test
 
@@ -39,7 +40,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
                 ::testAddAndMatchLimitOrderWithSamePrice, ::testAddAndMatchLimitSellDustOrder,
                 ::testAddAndMatchBuyLimitDustOrder, ::testAddAndPartiallyMatchLimitOrder, ::testAddAndMatchWithLimitOrder,
                 ::testMatchWithLimitOrderForAllFunds, ::testMatchWithOwnLimitOrder, ::testOverflowedRemainingVolume)
-        println("Single limit order average processing time is: $averageOrderProcessionTime nanoseconds")
+        println("Single limit order average processing time is:  ${PrintUtils.convertToString2(averageOrderProcessionTime)}")
     }
 
 

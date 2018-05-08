@@ -7,6 +7,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
 import org.junit.Test
 import java.util.*
@@ -42,7 +43,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
                 ::testAddAndMatchLimitOrder, ::testAddAndMatchLimitOrder2, ::testAddAndMatchLimitOrder3,
                 ::testAddAndMatchAndCancel, ::testAddAndMatchLimitOrderZeroVolumes, ::testMatchWithLimitOrderForAllFunds,
                 ::testCancelPreviousOrderWithSameUid, ::testMatchWithNotEnoughFundsOrder1)
-        println("Multilimit order average processing time is: $averageOrderProcessionTime nanoseconds")
+        println("Multilimit order average processing time is:  ${PrintUtils.convertToString2(averageOrderProcessionTime)}")
     }
 
     fun testSmallVolume(): Double {

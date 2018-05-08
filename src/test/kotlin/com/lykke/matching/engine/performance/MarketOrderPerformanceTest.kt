@@ -3,6 +3,7 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
 import org.junit.Test
 
@@ -43,7 +44,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
                 ::testMatchOneToMany, ::testMatchOneToOneEURJPY, ::testMatchOneToMany2016Dec12, ::testNotStraight,
                 ::testNotStraightMatchOneToMany)
 
-        println("Multilimit order average processing time is: $averageOrderProcessionTime nanoseconds")
+        println("Market order average processing time is: ${PrintUtils.convertToString2(averageOrderProcessionTime)}")
     }
 
     fun testNoLiqudity(): Double {
