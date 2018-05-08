@@ -2,19 +2,13 @@ package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.services.MarketOrderServiceTest
 import com.lykke.matching.engine.utils.MessageBuilder
-import org.junit.Assert
+import org.junit.Ignore
 import org.junit.Test
 
+@Ignore
 class MarketOrderPerformanceTest: AbstractPerformanceTest() {
 
-    companion object {
-        val REPEAT_TIMES = 100
-    }
 
     override fun initServices() {
         super.initServices()
@@ -43,7 +37,7 @@ class MarketOrderPerformanceTest: AbstractPerformanceTest() {
 
     @Test
     fun testPerformance() {
-        val averageOrderProcessionTime = Runner.runTests(MultiLimitOrderServicePerformanceTest.REPEAT_TIMES, ::testNoLiqudity,
+        val averageOrderProcessionTime = Runner.runTests(REPEAT_TIMES, ::testNoLiqudity,
                 ::testNotEnoughFundsClientOrder, ::testNotEnoughFundsClientMultiOrder, ::testNoLiqudityToFullyFill,
                 ::testNotEnoughFundsMarketOrder, ::testSmallVolume, ::testMatchOneToOne, ::testMatchOneToOneAfterNotEnoughFunds,
                 ::testMatchOneToMany, ::testMatchOneToOneEURJPY, ::testMatchOneToMany2016Dec12, ::testNotStraight,

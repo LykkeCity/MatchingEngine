@@ -24,9 +24,13 @@ import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
+
+    companion object {
+        val REPEAT_TIMES = 100
+    }
+
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val walletDatabaseAccessor = TestWalletDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
     protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
