@@ -151,6 +151,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
+        matchingEngine.initTransaction()
         orders.forEach { order ->
             if (order.price <= 0) {
                 order.status = OrderStatus.InvalidPrice.name
@@ -226,7 +227,23 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             }
 
                             limitOrderWithTrades.trades.addAll(matchingResult.marketOrderTrades.map { it ->
-                                LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, matchingResult.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.feeInstruction, it.feeTransfer, it.fees, it.absoluteSpread, it.relativeSpread)
+                                LimitTradeInfo(it.tradeId,
+                                        it.marketClientId,
+                                        it.marketAsset,
+                                        it.marketVolume,
+                                        it.price,
+                                        matchingResult.timestamp,
+                                        it.limitOrderId,
+                                        it.limitOrderExternalId,
+                                        it.limitAsset,
+                                        it.limitClientId,
+                                        it.limitVolume,
+                                        it.index,
+                                        it.feeInstruction,
+                                        it.feeTransfer,
+                                        it.fees,
+                                        it.absoluteSpread,
+                                        it.relativeSpread)
                             })
 
                             matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
@@ -421,6 +438,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 cancelResult.trustedClientsOrdersWithTrades,
                 LOGGER)
 
+        matchingEngine.initTransaction()
         val result = processor.preProcess(multiLimitOrder.orders)
                 .apply(multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 

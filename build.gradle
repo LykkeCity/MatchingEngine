@@ -42,6 +42,7 @@ ext {
     fst_version = '2.52'
     junit_version = '4.12'
     mockito_kotlin_version = '1.5.0'
+    jedis_version = '2.9.0'
 }
 
 dependencies {
@@ -59,6 +60,7 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient:$http_client_version"
     compile "com.rabbitmq:amqp-client:$rabbit_mq_version"
     compile "de.ruedigermoeller:fst:$fst_version"
+    compile "redis.clients:jedis:$jedis_version"
 
     compile('org.springframework.boot:spring-boot-starter')
 

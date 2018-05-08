@@ -15,6 +15,7 @@ import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -24,12 +25,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 
-
 abstract class AbstractTest {
     @Autowired
     lateinit var balancesHolder: BalancesHolder
 
     @Autowired
+    protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
+
     protected lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
 
     @Autowired
@@ -51,8 +53,8 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+    protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
@@ -93,6 +95,7 @@ abstract class AbstractTest {
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     protected open fun initServices() {
+        testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
         clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
@@ -110,7 +113,7 @@ abstract class AbstractTest {
         minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
         balanceUpdateService = BalanceUpdateService(balancesHolder)
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(testWalletDatabaseAccessor, assetsHolder, balancesHolder, applicationSettingsCache, cashInOutQueue, feeProcessor)
+        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, applicationSettingsCache, cashInOutQueue, feeProcessor)
         reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashInOutQueue)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue, genericLimitOrderProcessorFactory)

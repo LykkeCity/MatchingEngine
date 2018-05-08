@@ -56,12 +56,6 @@ open class AzureDatabaseAccessorConfig {
     }
 
     @Bean
-    open  fun azureWalletDatabaseAccessor(@Value("\${azure.wallet.table}") tableName: String)
-            : WalletDatabaseAccessor {
-       return AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
-    }
-
-    @Bean
     open  fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
             : ConfigDatabaseAccessor {
        return AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)

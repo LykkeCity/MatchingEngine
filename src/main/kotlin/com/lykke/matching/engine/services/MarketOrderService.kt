@@ -140,7 +140,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             return
         }
 
-        val matchingResult = matchingEngine.match(order, orderBook)
+        val matchingResult = matchingEngine.initTransaction().match(order, orderBook)
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))

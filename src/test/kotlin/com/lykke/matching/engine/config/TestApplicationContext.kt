@@ -5,6 +5,7 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import org.springframework.context.ApplicationEventPublisher
@@ -15,10 +16,11 @@ import org.springframework.context.annotation.Configuration
 open class TestApplicationContext {
 
     @Bean
-    open fun balanceHolder(walletDatabaseAccessor: WalletDatabaseAccessor,
+    open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
+                           persistenceManager: PersistenceManager,
                            applicationEventPublisher: ApplicationEventPublisher, applicationSettingsCache: ApplicationSettingsCache,
                            backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): BalancesHolder {
-        return BalancesHolder(walletDatabaseAccessor, assetHolder(backOfficeDatabaseAccessor),
+        return BalancesHolder(balancesDatabaseAccessorsHolder, persistenceManager, assetHolder(backOfficeDatabaseAccessor),
                 applicationEventPublisher, applicationSettingsCache)
     }
 
@@ -35,11 +37,6 @@ open class TestApplicationContext {
     @Bean
     open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
         return TestBackOfficeDatabaseAccessor()
-    }
-
-    @Bean
-    open fun testWalletDatabaseAccessor(): TestWalletDatabaseAccessor {
-        return TestWalletDatabaseAccessor()
     }
 
     @Bean
@@ -61,5 +58,15 @@ open class TestApplicationContext {
     open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest,
                                       balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
         return TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder)
+    }
+
+    @Bean
+    open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
+        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, null)
+    }
+
+    @Bean
+    open fun persistenceManager(): PersistenceManager {
+        return TestPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
     }
 }

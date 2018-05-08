@@ -37,6 +37,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (FeeProcessorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -60,9 +61,6 @@ class FeeProcessorTest {
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
-
-    @Autowired
-    lateinit var testWalletDatabaseAccessor: WalletDatabaseAccessor
 
     @Autowired
     lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -400,7 +398,7 @@ class FeeProcessorTest {
 
     @Test
     fun testExternalPercentageFeeNotEnoughFunds() {
-        testBalanceHolderWrapper.updateReservedBalance("Client3", "USD", 0.1)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 0.1)
         initServices()
 
         val operations = LinkedList<WalletOperation>()
