@@ -13,13 +13,16 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 import java.util.Date
 import java.util.UUID
 
-class CashOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                           private val balancesHolder: BalancesHolder,
-                           private val applicationSettingsCache: ApplicationSettingsCache,
-                           private val assetsHolder: AssetsHolder): AbstractService {
+@Service
+class CashOperationService @Autowired constructor (private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                                   private val balancesHolder: BalancesHolder,
+                                                   private val applicationSettingsCache: ApplicationSettingsCache,
+                                                   private val assetsHolder: AssetsHolder): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()

@@ -7,14 +7,14 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 
-class AzureMarketOrderDatabaseAccessor(tradesConfig: String) : MarketOrderDatabaseAccessor {
-
+class AzureMarketOrderDatabaseAccessor  constructor(connectionString: String,
+                                                    tableName: String): MarketOrderDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(AzureMarketOrderDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val lkkTradesTable: CloudTable = getOrCreateTable(tradesConfig, "LkkTrades")
+    private val lkkTradesTable: CloudTable = getOrCreateTable(connectionString, tableName)
 
     override fun addLkkTrades(trades: List<LkkTrade>) {
         try {

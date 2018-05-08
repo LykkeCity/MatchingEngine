@@ -5,11 +5,13 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.socket.ClientHandler
 import com.lykke.matching.engine.utils.ByteHelper
 import org.apache.log4j.Logger
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 import java.util.LinkedList
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArrayList
 
-class BalanceUpdateHandler(private val notificationQueue: BlockingQueue<BalanceUpdateNotification>): Thread(BalanceUpdateHandler::class.java.name) {
+@Component
+class BalanceUpdateHandler {
 
     companion object {
         val LOGGER = Logger.getLogger(BalanceUpdateHandler::class.java.name)
@@ -17,9 +19,8 @@ class BalanceUpdateHandler(private val notificationQueue: BlockingQueue<BalanceU
 
     private val connections = CopyOnWriteArrayList<ClientHandler>()
 
-    override fun run() {
-        while (true) {
-            val notification = notificationQueue.take()
+    @EventListener
+    fun processBalanceUpdate(notification: BalanceUpdateNotification) {
             if (connections.size > 0) {
                 val protoNotification = ProtocolMessages.BalanceNotification.newBuilder().setClientId(notification.clientId).build()
                 val disconnected = LinkedList<ClientHandler>()
@@ -35,7 +36,6 @@ class BalanceUpdateHandler(private val notificationQueue: BlockingQueue<BalanceU
                     connections.removeAll(disconnected)
                 }
             }
-        }
     }
 
     fun subscribe(handler: ClientHandler) {

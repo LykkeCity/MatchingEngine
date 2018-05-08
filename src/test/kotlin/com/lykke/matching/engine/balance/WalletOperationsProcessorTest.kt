@@ -1,12 +1,23 @@
 package com.lykke.matching.engine.balance
 
 import com.lykke.matching.engine.AbstractTest
+import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -14,17 +25,28 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@RunWith(SpringRunner::class)
+@SpringBootTest(classes = [(TestApplicationContext::class), (WalletOperationsProcessorTest.Config::class)])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class WalletOperationsProcessorTest : AbstractTest() {
 
-    @Before
-    fun setUp() {
-        testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
-        testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
+    @TestConfiguration
+    open class Config {
+        @Bean
+        @Primary
+        open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+            val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
+            testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
+
+            return testBackOfficeDatabaseAccessor
+        }
     }
 
     @Test
     fun testPreProcessWalletOperations() {
-        testWalletDatabaseAccessor.insertOrUpdateWallet(buildWallet("Client1", "BTC", 1.0, 0.1))
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  0.1)
         initServices()
 
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(null, true)
@@ -55,11 +77,11 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertBalance("Client2", "ETH", 3.0, 0.3)
         assertBalance("Client3", "BTC", 0.0, 0.0)
 
-        assertEquals(2, balanceNotificationQueue.size)
-        assertTrue(setOf("Client1", "Client2").containsAll(balanceNotificationQueue.map { it.clientId }))
+        assertEquals(2, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
+        assertTrue(setOf("Client1", "Client2").containsAll(balanceUpdateHandlerTest.balanceUpdateQueueNotification.map { it.clientId }))
 
-        assertEquals(1, balanceUpdateQueue.size)
-        val balanceUpdate = balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(2, balanceUpdate.balances.size)
         assertEquals("id", balanceUpdate.id)
         assertEquals("type", balanceUpdate.type)

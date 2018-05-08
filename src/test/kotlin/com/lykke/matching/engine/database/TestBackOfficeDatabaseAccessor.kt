@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.Asset
+import org.springframework.stereotype.Component
 import java.util.HashMap
 
+@Component
 class TestBackOfficeDatabaseAccessor: BackOfficeDatabaseAccessor {
     val assets = HashMap<String, Asset>()
 

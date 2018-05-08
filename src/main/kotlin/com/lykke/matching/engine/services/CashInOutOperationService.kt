@@ -3,7 +3,6 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -24,8 +23,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class CashInOutOperationService(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                private val assetsHolder: AssetsHolder,
+class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
                                 private val applicationSettingsCache: ApplicationSettingsCache,
                                 private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,

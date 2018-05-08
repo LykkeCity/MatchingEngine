@@ -38,6 +38,10 @@ public class NumberUtils {
         return new BigDecimal(value).setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
     }
 
+    public static BigDecimal parseDouble(BigDecimal value, int accuracy) {
+        return value.setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
+    }
+
     public static boolean isScaleSmallerOrEqual(double number, int expectedScale) {
         return BigDecimal.valueOf(number).stripTrailingZeros().scale() <= expectedScale;
     }

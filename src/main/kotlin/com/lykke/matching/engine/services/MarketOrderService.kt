@@ -15,6 +15,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.DisabledAsset
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
@@ -33,6 +34,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
 import java.util.*
 import java.util.concurrent.BlockingQueue
@@ -48,7 +50,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>): AbstractService {
+                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory ?= null): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -60,14 +63,15 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var totalTime: Double = 0.0
 
     private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
-
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
+        val now = Date()
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
@@ -77,7 +81,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume)
+                    Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume)
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
@@ -87,8 +91,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 | fee: $feeInstruction, fees: $feeInstructions""".trimMargin())
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), Date(), null, message.straight,
-                    message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
+                    Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume,
+                    feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
         if (!performValidation(messageWrapper, order, feeInstruction, feeInstructions)) {
@@ -98,23 +102,23 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val assetPair = getAssetPair(order)
         val orderBook = getOrderBook(order)
 
-        val matchingResult = matchingEngine.match(order, orderBook)
+        val matchingResult = matchingEngine.initTransaction().match(order, orderBook)
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             }
             ReservedVolumeGreaterThanBalance -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, "Reserved volume is higher than available balance")
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, MessageStatus.NOT_ENOUGH_FUNDS)
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             }
-            OrderStatus.InvalidFee -> {
+            InvalidFee -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE)
+                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             }
             Matched -> {
                 val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
@@ -141,7 +145,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     order.status = OrderStatus.NotEnoughFunds.name
                     rabbitSwapQueue.put(MarketOrderWithTrades(order))
                     LOGGER.error("${orderInfo(order)}: Unable to process wallet operations after matching: ${e.message}")
-                    writeResponse(messageWrapper, order, MessageStatus.LOW_BALANCE, e.message)
+                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), e.message)
                     false
                 }
 
@@ -185,6 +189,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         }
 
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+
         val endTime = System.nanoTime()
 
         messagesCount++
@@ -218,7 +224,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = InvalidFee.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_FEE, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
             return false
         }
 
@@ -231,7 +237,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = TooSmallVolume.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Too small volume for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.TOO_SMALL_VOLUME)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             return false
         }
 
@@ -245,7 +251,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = DisabledAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Disabled asset ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.DISABLED_ASSET)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
             return false
         }
         return true
@@ -259,7 +265,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.warn("Exception fetching asset", e)
             LOGGER.info("Unknown asset: ${order.assetPairId}")
-            writeResponse(messageWrapper, order, MessageStatus.UNKNOWN_ASSET, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
             return false
         }
 
@@ -278,7 +284,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (!volumeAccuracyValid) {
             order.status = OrderStatus.InvalidVolumeAccuracy.name
             LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy, volume: ${order.volume}")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_VOLUME_ACCURACY, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
         }
 
         return volumeAccuracyValid
@@ -292,7 +298,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (!priceAccuracyValid) {
             order.status = OrderStatus.InvalidPriceAccuracy.name
             LOGGER.info("Invalid order accuracy, ${order.assetPairId}, price: ${order.price}")
-            writeResponse(messageWrapper, order, MessageStatus.INVALID_PRICE_ACCURACY, order.assetPairId)
+            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
         }
 
         return priceAccuracyValid
