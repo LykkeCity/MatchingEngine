@@ -3,19 +3,16 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.MessageBuilder
+import org.junit.Ignore
 import org.junit.Test
 import java.util.*
 
+@Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
-
-    companion object {
-        val REPEAT_TIMES = 100
-    }
 
     override fun initServices() {
         super.initServices()
@@ -38,7 +35,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
     }
 
-        @Test
+    @Test
     fun testPerformance() {
         val averageOrderProcessionTime = Runner.runTests(REPEAT_TIMES, ::testSmallVolume,
                 ::testAddLimitOrder, ::testAdd2LimitOrder, ::testAddAndCancelLimitOrder,
