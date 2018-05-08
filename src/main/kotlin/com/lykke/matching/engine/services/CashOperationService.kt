@@ -19,8 +19,7 @@ import java.util.Date
 import java.util.UUID
 
 @Service
-class CashOperationService @Autowired constructor (private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                                   private val balancesHolder: BalancesHolder,
+class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                    private val applicationSettingsCache: ApplicationSettingsCache,
                                                    private val assetsHolder: AssetsHolder): AbstractService {
     companion object {
