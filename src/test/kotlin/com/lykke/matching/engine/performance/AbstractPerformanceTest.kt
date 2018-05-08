@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -46,10 +47,12 @@ abstract class AbstractPerformanceTest {
     protected lateinit var balancesHolder: BalancesHolder
     protected lateinit var assetsPairsHolder: AssetsPairsHolder
     protected lateinit var assetCache: AssetsCache
+    protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
     protected val applicationEventPublicher = Mockito.mock(ApplicationEventPublisher::class.java)
+    protected lateinit var persistenceManager: PersistenceManager
 
     protected lateinit var tradesInfoQueue: LinkedBlockingQueue<TradeInfo>
     protected lateinit var quotesNotificationQueue: LinkedBlockingQueue<QuotesUpdate>
@@ -72,7 +75,10 @@ abstract class AbstractPerformanceTest {
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
-        balancesHolder = BalancesHolder(walletDatabaseAccessor,
+        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, null)
+        persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor)
+        balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
+                persistenceManager,
                 assetsHolder,
                 applicationEventPublicher,
                 applicationSettingsCache)
