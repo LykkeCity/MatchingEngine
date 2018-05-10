@@ -20,7 +20,7 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.impl.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue

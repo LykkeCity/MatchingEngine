@@ -57,7 +57,7 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.services.validators.impl.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config

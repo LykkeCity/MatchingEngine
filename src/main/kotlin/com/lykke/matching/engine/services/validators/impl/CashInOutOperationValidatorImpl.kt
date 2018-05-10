@@ -6,15 +6,16 @@ import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 
 @Component
-class CashInOutOperationValidator constructor(private val balancesHolder: BalancesHolder,
-                                              private val assetsHolder: AssetsHolder,
-                                              private val applicationSettingsCache: ApplicationSettingsCache) {
+class CashInOutOperationValidatorImpl constructor(private val balancesHolder: BalancesHolder,
+                                                  private val assetsHolder: AssetsHolder,
+                                                  private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationValidator {
 
-    fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
+    override fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
         val feeInstructions = NewFeeInstruction.create(cashInOutOperation.feesList)
         isFeeValid(feeInstructions)
         isAssetEnabled(cashInOutOperation)

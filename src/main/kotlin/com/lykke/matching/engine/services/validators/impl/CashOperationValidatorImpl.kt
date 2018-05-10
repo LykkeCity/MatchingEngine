@@ -4,16 +4,17 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validators.CashOperationValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class CashOperationValidator @Autowired constructor (private val balancesHolder: BalancesHolder,
-                                                     private val assetsHolder: AssetsHolder,
-                                                     private val applicationSettingsCache: ApplicationSettingsCache){
+class CashOperationValidatorImpl @Autowired constructor (private val balancesHolder: BalancesHolder,
+                                                         private val assetsHolder: AssetsHolder,
+                                                         private val applicationSettingsCache: ApplicationSettingsCache) : CashOperationValidator {
 
-    fun performValidation(cashOperation: ProtocolMessages.CashOperation){
+    override fun performValidation(cashOperation: ProtocolMessages.CashOperation){
         isAssetEnabled(cashOperation)
         isBalanceValid(cashOperation)
         isAccuracyValid(cashOperation)

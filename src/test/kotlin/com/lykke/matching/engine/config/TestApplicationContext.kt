@@ -8,8 +8,10 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.services.validators.impl.CashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.impl.CashOperationValidator
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashOperationValidator
+import com.lykke.matching.engine.services.validators.impl.CashInOutOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.CashOperationValidatorImpl
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -75,13 +77,13 @@ open class TestApplicationContext {
     open fun cashOperationValidator(balancesHolder: BalancesHolder,
                                     assetsHolder: AssetsHolder,
                                     applicationSettingsCache: ApplicationSettingsCache): CashOperationValidator {
-        return CashOperationValidator(balancesHolder, assetsHolder, applicationSettingsCache)
+        return CashOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
     }
 
     @Bean
     open fun cashInOutOperationValidator(balancesHolder: BalancesHolder,
                                          assetsHolder: AssetsHolder,
                                          applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationValidator {
-        return CashInOutOperationValidator(balancesHolder, assetsHolder, applicationSettingsCache)
+        return CashInOutOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
     }
 }

@@ -8,7 +8,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.impl.CashOperationValidator
+import com.lykke.matching.engine.services.validators.CashOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import org.junit.Before
 import org.junit.Test
