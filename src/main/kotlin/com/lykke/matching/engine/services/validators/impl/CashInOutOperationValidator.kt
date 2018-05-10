@@ -14,8 +14,8 @@ class CashInOutOperationValidator constructor(private val balancesHolder: Balanc
                                               private val assetsHolder: AssetsHolder,
                                               private val applicationSettingsCache: ApplicationSettingsCache) {
 
-    fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation,
-                           feeInstructions: List<NewFeeInstruction>) {
+    fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
+        val feeInstructions = NewFeeInstruction.create(cashInOutOperation.feesList)
         isFeeValid(feeInstructions)
         isAssetEnabled(cashInOutOperation)
         isBalanceValid(cashInOutOperation)
@@ -54,7 +54,7 @@ class CashInOutOperationValidator constructor(private val balancesHolder: Balanc
 
     private fun isFeeValid(feeInstructions: List<NewFeeInstruction>) {
         if (!checkFee(null, feeInstructions)) {
-            throw ValidationException("invalid fee for client", ValidationException.Validation.DISABLED_ASSET)
+            throw ValidationException("invalid fee for client", ValidationException.Validation.INVALID_FEE)
         }
     }
 }
