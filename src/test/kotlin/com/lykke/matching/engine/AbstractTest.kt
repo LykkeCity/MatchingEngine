@@ -21,6 +21,7 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
@@ -55,6 +56,9 @@ abstract class AbstractTest {
 
     @Autowired
     private lateinit var cashInOutOperationValidator: CashInOutOperationValidator
+
+    @Autowired
+    private lateinit var cashTransferOperationValidator: CashTransferOperationValidator
 
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
@@ -113,7 +117,7 @@ abstract class AbstractTest {
         val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrdersProcessorFactory, clientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache)
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService), cashTransferOperationValidator)
         balanceUpdateService = BalanceUpdateService(balancesHolder, assetsHolder)
         minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
         balanceUpdateService = BalanceUpdateService(balancesHolder, assetsHolder)

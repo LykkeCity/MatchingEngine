@@ -25,10 +25,10 @@ class CashOperationValidatorImpl @Autowired constructor (private val balancesHol
             val balance = balancesHolder.getBalance(cashOperation.clientId, cashOperation.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashOperation.clientId, cashOperation.assetId)
             if (balance - reservedBalance < Math.abs(cashOperation.amount)) {
-                throw ValidationException("Cash out operation (${cashOperation.uid})" +
+                throw ValidationException(ValidationException.Validation.LOW_BALANCE, "Cash out operation (${cashOperation.uid})" +
                         "for client ${cashOperation.clientId} asset ${cashOperation.assetId}, " +
                         "volume: ${NumberUtils.roundForPrint(cashOperation.amount)}: " +
-                        "low balance $balance, reserved balance $reservedBalance", ValidationException.Validation.LOW_BALANCE)
+                        "low balance $balance, reserved balance $reservedBalance")
             }
         }
     }
@@ -38,15 +38,16 @@ class CashOperationValidatorImpl @Autowired constructor (private val balancesHol
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(cashOperation.amount, assetsHolder.getAsset(cashOperation.assetId).accuracy)
 
         if (!volumeValid) {
-            throw ValidationException("Amount accuracy is invalid clientId: ${cashOperation.clientId}, amount  $cashOperation.amount",
-                    ValidationException.Validation.INVALID_VOLUME_ACCURACY)
+            throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY,
+                    "Amount accuracy is invalid clientId: ${cashOperation.clientId}, amount  $cashOperation.amount")
         }
     }
 
     private fun isAssetEnabled(cashOperation: ProtocolMessages.CashOperation){
         if (cashOperation.amount < 0 && applicationSettingsCache.isAssetDisabled(cashOperation.assetId)) {
-            throw ValidationException ("Cash out operation (${cashOperation.uid}) for client ${cashOperation.clientId} asset ${cashOperation.assetId}, " +
-                    "volume: ${NumberUtils.roundForPrint(cashOperation.amount)}: disabled asset", ValidationException.Validation.DISABLED_ASSET)
+            throw ValidationException (ValidationException.Validation.DISABLED_ASSET,
+                    "Cash out operation (${cashOperation.uid}) for client ${cashOperation.clientId} asset ${cashOperation.assetId}, " +
+                    "volume: ${NumberUtils.roundForPrint(cashOperation.amount)}: disabled asset")
         }
     }
 }

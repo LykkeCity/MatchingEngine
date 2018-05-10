@@ -8,12 +8,17 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.utils.NumberUtils
+import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 
 @Component
 class CashInOutOperationValidatorImpl constructor(private val balancesHolder: BalancesHolder,
                                                   private val assetsHolder: AssetsHolder,
                                                   private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationValidator {
+
+    companion object {
+        private val LOGGER = Logger.getLogger(CashInOutOperationValidatorImpl::class.java.name)
+    }
 
     override fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
         val feeInstructions = NewFeeInstruction.create(cashInOutOperation.feesList)
@@ -28,10 +33,11 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
             val balance = balancesHolder.getBalance(cashInOutOperation.clientId, cashInOutOperation.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashInOutOperation.clientId, cashInOutOperation.assetId)
             if (NumberUtils.parseDouble(balance - reservedBalance + cashInOutOperation.volume, assetsHolder.getAsset(cashInOutOperation.assetId).accuracy).toDouble() < 0.0) {
-                throw ValidationException("Cash out operation (${cashInOutOperation.id}) " +
+                LOGGER.info("Cash out operation (${cashInOutOperation.id}) " +
                         "for client ${cashInOutOperation.clientId} asset ${cashInOutOperation.assetId}, " +
                         "volume: ${NumberUtils.roundForPrint(cashInOutOperation.volume)}: low balance $balance, " +
-                        "reserved balance $reservedBalance", ValidationException.Validation.LOW_BALANCE)
+                        "reserved balance $reservedBalance")
+                throw ValidationException(ValidationException.Validation.LOW_BALANCE)
             }
         }
 
@@ -41,21 +47,23 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(cashInOutOperation.volume, assetsHolder.getAsset(cashInOutOperation.assetId).accuracy)
 
         if (!volumeValid) {
-            throw ValidationException("Volume accuracy is invalid  client: ${cashInOutOperation.clientId}, " +
-                    "asset: ${cashInOutOperation.assetId}, volume: $cashInOutOperation.volume", ValidationException.Validation.INVALID_VOLUME_ACCURACY)
+            LOGGER.info("Volume accuracy is invalid  client: ${cashInOutOperation.clientId}, " +
+                    "asset: ${cashInOutOperation.assetId}, volume: $cashInOutOperation.volume")
+            throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }
 
     private fun isAssetEnabled(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
          if (cashInOutOperation.volume < 0 && applicationSettingsCache.isAssetDisabled(cashInOutOperation.assetId)) {
-             throw ValidationException ("Cash out operation (${cashInOutOperation.id}) for client ${cashInOutOperation.clientId} asset ${cashInOutOperation.assetId}, " +
-                     "volume: ${NumberUtils.roundForPrint(cashInOutOperation.volume)}: disabled asset", ValidationException.Validation.DISABLED_ASSET)
+             LOGGER.info("Cash out operation (${cashInOutOperation.id}) for client ${cashInOutOperation.clientId} asset ${cashInOutOperation.assetId}, " +
+                     "volume: ${NumberUtils.roundForPrint(cashInOutOperation.volume)}: disabled asset")
+             throw ValidationException (ValidationException.Validation.DISABLED_ASSET)
         }
     }
 
     private fun isFeeValid(feeInstructions: List<NewFeeInstruction>) {
         if (!checkFee(null, feeInstructions)) {
-            throw ValidationException("invalid fee for client", ValidationException.Validation.INVALID_FEE)
+            throw ValidationException(ValidationException.Validation.INVALID_FEE, "invalid fee for client")
         }
     }
 }

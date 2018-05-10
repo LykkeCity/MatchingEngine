@@ -58,6 +58,7 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
@@ -216,7 +217,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
         this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, rabbitCashInOutQueue, feeProcessor, cashInOutOperationValidator)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)
+        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor, cashTransferOperationValidator)
         this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 

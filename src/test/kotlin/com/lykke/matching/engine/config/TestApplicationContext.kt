@@ -10,8 +10,10 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.CashOperationValidator
+import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.impl.CashInOutOperationValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.CashOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.CashTransferOperationValidatorImpl
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -85,5 +87,12 @@ open class TestApplicationContext {
                                          assetsHolder: AssetsHolder,
                                          applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationValidator {
         return CashInOutOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashTransferOperationValidator(balancesHolder: BalancesHolder,
+                                            assetsHolder: AssetsHolder,
+                                            applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationValidator {
+        return CashTransferOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
     }
 }

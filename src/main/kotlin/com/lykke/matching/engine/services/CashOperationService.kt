@@ -33,7 +33,6 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         try {
             cashOperationValidator.performValidation(message)
         } catch (e: ValidationException) {
-            LOGGER.info(e.message)
             writeErrorResponse(messageWrapper)
             return
         }

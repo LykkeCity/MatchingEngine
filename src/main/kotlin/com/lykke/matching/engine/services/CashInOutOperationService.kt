@@ -9,6 +9,7 @@ import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -20,6 +21,7 @@ import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.UUID
@@ -49,15 +51,14 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         try {
             cashInOutOperationValidator.performValidation(message)
         } catch (e: ValidationException) {
-            LOGGER.info(e.message)
-            writeErrorResponse(messageWrapper, walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType))
+            writeErrorResponse(messageWrapper, walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return
         }
 
         val fees = try {
             feeProcessor.processFee(feeInstructions, walletOperation, operations)
         } catch (e: FeeException) {
-            writeInvalidFeeResponse(messageWrapper, walletOperation.id, e.message)
+            writeErrorResponse(messageWrapper, walletOperation.id, INVALID_FEE, e.message)
             return
         }
 
@@ -123,17 +124,10 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setStatus(status.type).build())
     }
 
-    private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, operationId: String, errorMessage: String = "invalid fee for client") {
-        writeErrorResponse(messageWrapper,
-                operationId,
-                MessageStatus.INVALID_FEE,
-                errorMessage)
-    }
-
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    operationId: String,
                                    status: MessageStatus,
-                                   errorMessage: String = "") {
+                                   errorMessage: String = StringUtils.EMPTY) {
         val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setId(message.id)
