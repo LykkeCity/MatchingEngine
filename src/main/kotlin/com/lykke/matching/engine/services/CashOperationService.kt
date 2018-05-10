@@ -58,49 +58,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         return failedValidation == null
     }
 
-    private fun isBalanceValid(messageWrapper: MessageWrapper): Boolean {
-        val message = getMessage(messageWrapper)
-        if (message.amount < 0) {
-            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (balance - reservedBalance < Math.abs(message.amount)) {
-                LOGGER.info("""Cash out operation (${message.uid})
-                        for client ${message.clientId} asset ${message.assetId},
-                        volume: ${NumberUtils.roundForPrint(message.amount)}:
-                        low balance $balance, reserved balance $reservedBalance""")
-                writeErrorResponse(messageWrapper)
-                return false
-            }
-        }
 
-        return true
-    }
-
-    private fun isAccuracyValid(messageWrapper: MessageWrapper): Boolean {
-        val message = getMessage(messageWrapper)
-
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(message.amount, assetsHolder.getAsset(message.assetId).accuracy)
-
-        if (!volumeValid) {
-            LOGGER.info("amount accuracy is invalid clientId: ${message.clientId}, amount  $message.amount")
-            writeErrorResponse(messageWrapper)
-        }
-
-        return volumeValid
-    }
-
-    private fun isAssetEnabled(messageWrapper: MessageWrapper): Boolean {
-        val message = getMessage(messageWrapper)
-        if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            LOGGER.info("""Cash out operation (${message.uid})
-                    |for client ${message.clientId} asset ${message.assetId},
-                    |volume: ${NumberUtils.roundForPrint(message.amount)}: disabled asset""".trimMargin())
-            writeErrorResponse(messageWrapper)
-            return false
-        }
-
-        return true
-    }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
         return ProtocolMessages.CashOperation.parseFrom(array)
