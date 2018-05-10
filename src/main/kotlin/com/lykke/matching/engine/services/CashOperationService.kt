@@ -30,13 +30,15 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = getMessage(messageWrapper)
-        LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
+        LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, " +
+                "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
         try {
-            cashOperationValidator.performValidation(messageWrapper)
+            cashOperationValidator.performValidation(message)
         } catch (e: ValidationException) {
             LOGGER.info(e.message)
             writeErrorResponse(messageWrapper)
+            return
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,

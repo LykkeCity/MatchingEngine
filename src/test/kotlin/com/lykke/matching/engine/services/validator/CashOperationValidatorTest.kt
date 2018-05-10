@@ -7,8 +7,6 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.CashOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -76,9 +74,9 @@ class CashOperationValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(buildMessageWrapper(cashOperationBuilder.build()))
+            cashOperationValidator.performValidation(cashOperationBuilder.build())
         } catch (e: ValidationException) {
-            assertEquals(ValidationException.Validation.INVALID_BALANCE, e.validationType)
+            assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
         }
     }
@@ -93,7 +91,7 @@ class CashOperationValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(buildMessageWrapper(cashOperationBuilder.build()))
+            cashOperationValidator.performValidation(cashOperationBuilder.build())
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -111,19 +109,18 @@ class CashOperationValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(buildMessageWrapper(cashOperationBuilder.build()))
+            cashOperationValidator.performValidation(cashOperationBuilder.build())
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
         }
     }
 
-    fun buildMessageWrapper(cashOperation:  ProtocolMessages.CashOperation): MessageWrapper {
-        return MessageWrapper("Test",
-                MessageType.CASH_OPERATION.type,
-                cashOperation.toByteArray(),
-                parsedMessage = cashOperation,
-                clientHandler = null)
+
+    @Test
+    fun testValidData() {
+        //when
+        cashOperationValidator.performValidation(getDefaultCashOperationBuilder().build())
     }
 
     fun getDefaultCashOperationBuilder(): ProtocolMessages.CashOperation.Builder {

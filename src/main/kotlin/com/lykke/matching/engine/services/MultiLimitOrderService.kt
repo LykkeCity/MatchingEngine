@@ -26,7 +26,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.order.OrderStatusUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
 import java.util.Date
@@ -341,7 +341,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         orders.forEach {
             responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
+                    .setMatchingEngineId(it.id).setStatus(MessageStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
                     .setVolume(it.volume).setPrice(it.price).build())
         }
         return responseBuilder.build()
@@ -440,7 +440,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             val statusBuilder = ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder()
                     .setId(order.externalId)
                     .setMatchingEngineId(order.id)
-                    .setStatus(OrderStatusUtils.toMessageStatus(order.status).type)
+                    .setStatus(MessageStatusUtils.toMessageStatus(order.status).type)
                     .setVolume(order.volume)
                     .setPrice(order.price)
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }

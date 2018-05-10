@@ -10,7 +10,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.utils.order.OrderStatusUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.util.Date
 
@@ -62,7 +62,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         if (processedOrder.accepted) {
             writeResponse(messageWrapper, order, MessageStatus.OK)
         } else {
-            writeResponse(messageWrapper, processedOrder.order, OrderStatusUtils.toMessageStatus(processedOrder.order.status), processedOrder.reason)
+            writeResponse(messageWrapper, processedOrder.order, MessageStatusUtils.toMessageStatus(processedOrder.order.status), processedOrder.reason)
         }
     }
 

@@ -34,7 +34,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.matching.engine.utils.order.OrderStatusUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.util.*
 import java.util.concurrent.BlockingQueue
@@ -106,19 +106,19 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
+                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             ReservedVolumeGreaterThanBalance -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
+                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
+                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             InvalidFee -> {
                 rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
+                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             Matched -> {
                 val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
@@ -145,7 +145,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     order.status = OrderStatus.NotEnoughFunds.name
                     rabbitSwapQueue.put(MarketOrderWithTrades(order))
                     LOGGER.error("${orderInfo(order)}: Unable to process wallet operations after matching: ${e.message}")
-                    writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), e.message)
+                    writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), e.message)
                     false
                 }
 
@@ -224,7 +224,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = InvalidFee.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
-            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
             return false
         }
 
@@ -237,7 +237,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = TooSmallVolume.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Too small volume for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             return false
         }
 
@@ -251,7 +251,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             order.status = DisabledAsset.name
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.info("Disabled asset ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status))
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             return false
         }
         return true
@@ -265,7 +265,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             rabbitSwapQueue.put(MarketOrderWithTrades(order))
             LOGGER.warn("Exception fetching asset", e)
             LOGGER.info("Unknown asset: ${order.assetPairId}")
-            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
             return false
         }
 
@@ -284,7 +284,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (!volumeAccuracyValid) {
             order.status = OrderStatus.InvalidVolumeAccuracy.name
             LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy, volume: ${order.volume}")
-            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
         }
 
         return volumeAccuracyValid
@@ -298,7 +298,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         if (!priceAccuracyValid) {
             order.status = OrderStatus.InvalidPriceAccuracy.name
             LOGGER.info("Invalid order accuracy, ${order.assetPairId}, price: ${order.price}")
-            writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), order.assetPairId)
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
         }
 
         return priceAccuracyValid
