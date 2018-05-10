@@ -211,7 +211,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 orderBooksQueue,
                 rabbitOrderBooksQueue)
 
-        this.cashOperationService = CashOperationService(balanceHolder, applicationSettingsCache, assetsHolder)
+        this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor)

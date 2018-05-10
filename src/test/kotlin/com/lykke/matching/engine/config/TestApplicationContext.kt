@@ -8,6 +8,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.services.validators.impl.CashOperationValidator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -67,5 +68,12 @@ open class TestApplicationContext {
     @Bean
     open fun persistenceManager(): PersistenceManager {
         return TestPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
+    }
+
+    @Bean
+    open fun cashOperationValidator(balancesHolder: BalancesHolder,
+                                    assetsHolder: AssetsHolder,
+                                    applicationSettingsCache: ApplicationSettingsCache): CashOperationValidator {
+        return CashOperationValidator(balancesHolder, assetsHolder, applicationSettingsCache)
     }
 }
