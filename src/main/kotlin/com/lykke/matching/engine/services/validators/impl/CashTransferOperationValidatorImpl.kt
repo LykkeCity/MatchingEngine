@@ -40,10 +40,10 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
     }
 
     private fun isBalanceValid(cashTransferOperation: ProtocolMessages.CashTransferOperation, operation: TransferOperation) {
-        val fromBalance = balancesHolder.getBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
-        val reservedBalance = balancesHolder.getReservedBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
+        val balanceOfFromClient = balancesHolder.getBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
+        val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
         val overdraftLimit = if (operation.overdraftLimit != null) - operation.overdraftLimit else 0.0
-        if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
+        if (balanceOfFromClient - reservedBalanceOfFromClient - operation.volume < overdraftLimit) {
             LOGGER.info("Cash transfer operation (${cashTransferOperation.id}) from client ${cashTransferOperation.fromClientId} " +
                     "to client ${cashTransferOperation.toClientId}, asset ${cashTransferOperation.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(cashTransferOperation.volume)}: " +
