@@ -39,7 +39,7 @@ class CashInOutOperationValidatorTest {
         @Primary
         open fun testBackOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
             val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset(ASSET_ID, 2))
             return testBackOfficeDatabaseAccessor
         }
     }
