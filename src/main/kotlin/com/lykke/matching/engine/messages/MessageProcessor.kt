@@ -99,7 +99,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    private val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitReservedCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -219,7 +218,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
         val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor, cashTransferOperationValidator)
-        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
+        this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, rabbitTrustedClientsLimitOrdersQueue,
@@ -280,9 +279,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)), rabbitMqService)
-
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineSwapOperations", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)), rabbitMqService)
