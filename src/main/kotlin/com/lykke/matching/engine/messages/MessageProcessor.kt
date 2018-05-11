@@ -100,7 +100,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    private val rabbitReservedCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -215,7 +214,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
         this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, rabbitCashInOutQueue, feeProcessor, cashInOutOperationValidator)
-        this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
+        this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitTransferQueue, feeProcessor, cashTransferOperationValidator)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
@@ -273,9 +272,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)), rabbitMqService)
-
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.reservedCashOperations, rabbitReservedCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineReservedCashOperations", logContainer)), rabbitMqService)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)), rabbitMqService)

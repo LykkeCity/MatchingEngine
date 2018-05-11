@@ -8,6 +8,7 @@ class ValidationException(val validationType: Validation, message: String = Stri
         INVALID_VOLUME_ACCURACY,
         LOW_BALANCE,
         DISABLED_ASSET,
-        INVALID_FEE
+        INVALID_FEE,
+        RESERVED_VOLUME_HIGHER_THAN_BALANCE
     }
 }

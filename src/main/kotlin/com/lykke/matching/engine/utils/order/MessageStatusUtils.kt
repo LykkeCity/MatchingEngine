@@ -39,8 +39,8 @@ class MessageStatusUtils {
                 ValidationException.Validation.DISABLED_ASSET -> MessageStatus.DISABLED_ASSET
                 ValidationException.Validation.INVALID_VOLUME_ACCURACY -> MessageStatus.INVALID_VOLUME_ACCURACY
                 ValidationException.Validation.LOW_BALANCE -> MessageStatus.LOW_BALANCE
-                ValidationException.Validation.DISABLED_ASSET -> MessageStatus.DISABLED_ASSET
                 ValidationException.Validation.INVALID_FEE -> MessageStatus.INVALID_FEE
+                ValidationException.Validation.RESERVED_VOLUME_HIGHER_THAN_BALANCE -> MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE
             }
         }
     }

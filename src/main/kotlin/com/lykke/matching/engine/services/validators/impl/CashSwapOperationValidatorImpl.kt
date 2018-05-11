@@ -16,7 +16,7 @@ class CashSwapOperationValidatorImpl @Autowired constructor(private val balances
                                                             private val assetsHolder: AssetsHolder) : CashSwapOperationValidator {
 
     companion object {
-        private val LOGGER = Logger.getLogger(CashTransferOperationValidatorImpl::class.java.name)
+        private val LOGGER = Logger.getLogger(CashSwapOperationValidatorImpl::class.java.name)
     }
 
     override fun performValidation(message: ProtocolMessages.CashSwapOperation, operationId: String) {

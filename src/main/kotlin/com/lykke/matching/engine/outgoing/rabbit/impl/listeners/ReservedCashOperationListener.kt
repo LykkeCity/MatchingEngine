@@ -4,7 +4,7 @@ import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
-import com.lykke.matching.engine.outgoing.rabbit.events.CashSwapEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.ReservedCashOperationEvent
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -15,9 +15,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
-class CashSwapListener {
-
-    private val  queue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+class ReservedCashOperationListener {
+    private val queue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService
@@ -28,17 +27,17 @@ class CashSwapListener {
     @Value("\${azure.logs.blob.container}")
     private lateinit var logBlobName: String
 
-    @Value("\${azure.logs.swap.operations.table}")
+    @Value("\${azure.logs.reserved.cash.operations.table}")
     private lateinit var logTable: String
 
     @EventListener
-    fun process(cashSwapEvent: CashSwapEvent) {
-        queue.put(cashSwapEvent.cashSwapOperation)
+    fun process(reservedCashOperationEvent: ReservedCashOperationEvent) {
+        queue.put(reservedCashOperationEvent.reservedCashOperation)
     }
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.cashOperations, queue,
+        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.reservedCashOperations, queue,
                 MessageDatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
                                 logTable, logBlobName)))
