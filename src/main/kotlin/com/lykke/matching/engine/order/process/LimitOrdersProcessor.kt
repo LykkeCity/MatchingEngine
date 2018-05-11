@@ -52,7 +52,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            private val LOGGER: Logger) {
 
-    private val validator = LimitOrderValidator(assetsPairsHolder, applicationSettingsCache)
+    private val validator = LimitOrderValidator(assetsPairsHolder, assetsHolder, applicationSettingsCache)
 
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
     private val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
@@ -320,6 +320,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
         validator.validatePrice(order)
         validator.validateVolume(order)
+        validator.validatePriceAccuracy(order)
+        validator.validateVolumeAccuracy(order)
 
         if (orderBook.leadToNegativeSpreadForClient(order)) {
             throw OrderValidationException("${orderInfo(order)} lead to negative spread", OrderStatus.LeadToNegativeSpread)

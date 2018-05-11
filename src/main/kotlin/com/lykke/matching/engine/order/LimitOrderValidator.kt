@@ -4,10 +4,13 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
 class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
+                          private val assetsHolder: AssetsHolder,
                           private val applicationSettingsCache: ApplicationSettingsCache) {
 
     fun validateFee(order: NewLimitOrder) {
@@ -45,6 +48,22 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
     fun validateVolume(order: NewLimitOrder) {
         if (!order.checkVolume(assetsPairsHolder)) {
             throw OrderValidationException("volume is too small", OrderStatus.TooSmallVolume)
+        }
+    }
+
+    fun validateVolumeAccuracy(order: NewLimitOrder) {
+        val baseAssetAccuracy = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(order.assetPairId).baseAssetId).accuracy
+
+        val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetAccuracy)
+        if (!volumeAccuracyValid) {
+            throw OrderValidationException("volume accuracy is invalid", OrderStatus.InvalidVolumeAccuracy)
+        }
+    }
+
+    fun validatePriceAccuracy(order: NewLimitOrder) {
+        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.price, assetsPairsHolder.getAssetPair(order.assetPairId).accuracy)
+        if (!priceAccuracyValid) {
+            throw OrderValidationException("price accuracy is invalid", OrderStatus.InvalidPriceAccuracy)
         }
     }
 

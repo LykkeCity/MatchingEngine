@@ -34,7 +34,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               applicationSettingsCache: ApplicationSettingsCache,
                               private val LOGGER: Logger) {
 
-    private val validator = LimitOrderValidator(assetsPairsHolder, applicationSettingsCache)
+    private val validator = LimitOrderValidator(assetsPairsHolder, assetsHolder, applicationSettingsCache)
 
     fun processStopOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
@@ -121,6 +121,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         validator.validateLimitPrices(order)
         validator.validateVolume(order)
         validator.checkBalance(availableBalance, limitVolume)
+        validator.validateVolumeAccuracy(order)
+        validator.validatePriceAccuracy(order)
     }
 
     private fun orderInfo(order: NewLimitOrder): String {
