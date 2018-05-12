@@ -4,8 +4,6 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -17,21 +15,20 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderStatus.DisabledAsset
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
-import com.lykke.matching.engine.order.OrderStatus.TooSmallVolume
-import com.lykke.matching.engine.order.OrderStatus.UnknownAsset
+import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
@@ -41,17 +38,17 @@ import java.util.concurrent.BlockingQueue
 
 class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
                          private val genericLimitOrderService: GenericLimitOrderService,
-                         private val assetsHolder: AssetsHolder,
+                         assetsHolder: AssetsHolder,
                          private val assetsPairsHolder: AssetsPairsHolder,
                          private val balancesHolder: BalancesHolder,
-                         private val assetSettingsCache: ApplicationSettingsCache,
                          private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                          private val orderBookQueue: BlockingQueue<OrderBook>,
                          private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                          private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
                          private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory ?= null): AbstractService {
+                         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory ?= null,
+                         private val marketOrderValidator: MarketOrderValidator): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -76,8 +73,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            LOGGER.debug("""Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId},
-                |volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}""".trimMargin())
+            LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
+                    "volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
@@ -86,16 +83,21 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
             feeInstructions = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("""Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId},
-                | volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight},
-                | fee: $feeInstruction, fees: $feeInstructions""".trimMargin())
+            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
+                    "volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}, " +
+                    "fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume,
                     feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
-        if (!performValidation(messageWrapper, order, feeInstruction, feeInstructions)) {
+        try {
+            marketOrderValidator.performValidation(order, getOrderBook(order))
+        } catch (e: OrderValidationException) {
+            order.status = e.orderStatus.name
+            rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
             return
         }
 
@@ -138,13 +140,13 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     try {
                         walletOperationsProcessor.preProcess(cancelledOrdersWalletOperations)
                     } catch (e: BalanceException) {
-                        LOGGER.error("${orderInfo(order)}: Unable to process cancelled orders wallet operations after matching: ${e.message}")
+                        LOGGER.error("$order: Unable to process cancelled orders wallet operations after matching: ${e.message}")
                     }
                     true
                 } catch (e: BalanceException) {
                     order.status = OrderStatus.NotEnoughFunds.name
                     rabbitSwapQueue.put(MarketOrderWithTrades(order))
-                    LOGGER.error("${orderInfo(order)}: Unable to process wallet operations after matching: ${e.message}")
+                    LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
                     writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), e.message)
                     false
                 }
@@ -205,124 +207,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private fun getOrderBook(order: MarketOrder) =
             genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
 
-    private fun isOrderBookValid(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
-        val orderBook = getOrderBook(order)
-        if (orderBook.size == 0) {
-            order.status = NoLiquidity.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
-            LOGGER.info("No liquidity, no orders in order book, for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatus.NO_LIQUIDITY)
-            return false
-        }
-
-        return true
-    }
-
-    private fun isFeeValid(messageWrapper: MessageWrapper, feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?,
-                           order: MarketOrder): Boolean {
-        if (!checkFee(feeInstruction, feeInstructions)) {
-            order.status = InvalidFee.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
-            LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
-            return false
-        }
-
-        return true
-    }
-
-    private fun isVolumeValid(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
-        val assetPair = getAssetPair(order)
-        if (!order.checkVolume(assetPair)) {
-            order.status = TooSmallVolume.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
-            LOGGER.info("Too small volume for ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
-            return false
-        }
-
-        return true
-    }
-
-    private fun isAssetEnabled(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
-        val assetPair = getAssetPair(order)
-        if (assetSettingsCache.isAssetDisabled(assetPair.baseAssetId)
-                || assetSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
-            order.status = DisabledAsset.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
-            LOGGER.info("Disabled asset ${orderInfo(order)}")
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
-            return false
-        }
-        return true
-    }
-
-    private fun isAssetKnown(order: MarketOrder, messageWrapper: MessageWrapper): Boolean {
-        try {
-            getAssetPair(order)
-        } catch (e: Exception) {
-            order.status = UnknownAsset.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
-            LOGGER.warn("Exception fetching asset", e)
-            LOGGER.info("Unknown asset: ${order.assetPairId}")
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
-            return false
-        }
-
-        return true
-    }
-
-    private fun getBaseAsset(order: MarketOrder): String {
-        val assetPair = getAssetPair(order)
-        return if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId
-    }
-
-    private fun isVolumeAccuracyValid(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
-        val baseAssetVolumeAccuracy = assetsHolder.getAsset(getBaseAsset(order)).accuracy
-        val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetVolumeAccuracy)
-
-        if (!volumeAccuracyValid) {
-            order.status = OrderStatus.InvalidVolumeAccuracy.name
-            LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy, volume: ${order.volume}")
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
-        }
-
-        return volumeAccuracyValid
-    }
-
-    private fun isPriceAccuracyValid(messageWrapper: MessageWrapper, order: MarketOrder): Boolean {
-        val price = order.price ?: return true
-
-        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(price, getAssetPair(order).accuracy)
-
-        if (!priceAccuracyValid) {
-            order.status = OrderStatus.InvalidPriceAccuracy.name
-            LOGGER.info("Invalid order accuracy, ${order.assetPairId}, price: ${order.price}")
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), order.assetPairId)
-        }
-
-        return priceAccuracyValid
-    }
-
-    fun performValidation(messageWrapper: MessageWrapper, order: MarketOrder, feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?): Boolean {
-        val validations = arrayOf({isAssetKnown(order, messageWrapper)},
-                {isAssetEnabled(messageWrapper, order)},
-                {isVolumeValid(messageWrapper, order)},
-                {isFeeValid(messageWrapper, feeInstruction, feeInstructions, order)},
-                {isOrderBookValid(messageWrapper, order)},
-                {isVolumeAccuracyValid(messageWrapper, order)},
-                {isPriceAccuracyValid(messageWrapper, order)})
-
-        val failedValidation = validations.find { function: () -> Boolean -> !function() }
-
-        return failedValidation == null
-    }
-
     private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
-
-    private fun orderInfo(order: MarketOrder) = """market order id: ${order.id}}, client: ${order.clientId},
-        |asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)},
-        |straight: ${order.straight}""".trimMargin()
 
     private fun parseOld(array: ByteArray): ProtocolMessages.OldMarketOrder {
         return ProtocolMessages.OldMarketOrder.parseFrom(array)

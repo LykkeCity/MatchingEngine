@@ -304,13 +304,13 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
 
     private fun validateLimitOrder(order: NewLimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (order.clientId != clientId) {
-            throw OrderValidationException("${orderInfo(order)} has invalid clientId: ${order.clientId}", OrderStatus.Cancelled)
+            throw OrderValidationException(OrderStatus.Cancelled, "${orderInfo(order)} has invalid clientId: ${order.clientId}")
         }
         if (order.assetPairId != assetPair.assetPairId) {
-            throw OrderValidationException("${orderInfo(order)} has invalid assetPairId: ${order.assetPairId}", OrderStatus.Cancelled)
+            throw OrderValidationException(OrderStatus.Cancelled, "${orderInfo(order)} has invalid assetPairId: ${order.assetPairId}")
         }
         if (order.status == OrderStatus.NotFoundPrevious.name) {
-            throw OrderValidationException("${orderInfo(order)} has not found previous order (${order.previousExternalId})", OrderStatus.NotFoundPrevious)
+            throw OrderValidationException(OrderStatus.NotFoundPrevious, "${orderInfo(order)} has not found previous order (${order.previousExternalId})")
         }
 
         if (!isTrustedClient) {
@@ -324,7 +324,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         validator.validateVolumeAccuracy(order)
 
         if (orderBook.leadToNegativeSpreadForClient(order)) {
-            throw OrderValidationException("${orderInfo(order)} lead to negative spread", OrderStatus.LeadToNegativeSpread)
+            throw OrderValidationException(OrderStatus.LeadToNegativeSpread, "${orderInfo(order)} lead to negative spread")
         }
     }
 

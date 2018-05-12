@@ -6,9 +6,13 @@ import org.apache.commons.lang3.StringUtils
 class ValidationException(val validationType: Validation, message: String = StringUtils.EMPTY): MatchingEngineException(message) {
     enum class Validation {
         INVALID_VOLUME_ACCURACY,
+        INVALID_PRICE_ACCURACY,
         LOW_BALANCE,
         DISABLED_ASSET,
         INVALID_FEE,
-        RESERVED_VOLUME_HIGHER_THAN_BALANCE
+        RESERVED_VOLUME_HIGHER_THAN_BALANCE,
+        NO_LIQUIDITY,
+        TOO_SMALL_VOLUME,
+        UNKNOWN_ASSET
     }
 }
