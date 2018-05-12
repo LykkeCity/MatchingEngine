@@ -16,6 +16,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -24,6 +25,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
+import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
@@ -41,11 +43,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                             private val assetsHolder: AssetsHolder,
+                             assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                             genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory?= null): AbstractService {
+                             genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory?= null,
+                             private val multiLimitOrderValidator: MultiLimitOrderValidator): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -148,10 +151,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         matchingEngine.initTransaction()
         orders.forEach { order ->
-            if(!performValidation(order, assetPair, orderBook)){
-                LOGGER.info("order is invalid order id: ${order.id}")
+            var orderValid = true
+            try {
+                multiLimitOrderValidator.performValidation(order, assetPair, orderBook)
+            } catch (e: OrderValidationException) {
+                orderValid = false
+                order.status = e.orderStatus.name
             }
-            else if (orderBook.leadToNegativeSpreadByOtherClient(order)) {
+
+            if (orderValid && orderBook.leadToNegativeSpreadByOtherClient(order)) {
                 val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
@@ -262,14 +270,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     else -> {
                     }
                 }
-            } else {
+            } else if(orderValid) {
                 ordersToAdd.add(order)
                 orderBook.addOrder(order)
                 trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 if (order.isBuySide()) buySide = true else sellSide = true
             }
-
-
         }
 
         val startPersistTime = System.nanoTime()
@@ -535,76 +541,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         notFoundReplacements.putAll(mutableReplacements)
         return addedToCancel
-    }
-
-    private fun isSpreadValid(orderBook: AssetOrderBook, order: NewLimitOrder): Boolean {
-        if (orderBook.leadToNegativeSpreadForClient(order)) {
-            order.status = OrderStatus.LeadToNegativeSpread.name
-            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
-            return false
-        }
-
-        return true
-    }
-
-    private fun isPriceAccuracyValid(order: NewLimitOrder, assetPair: AssetPair): Boolean {
-        val priceAccuracy = assetPair.accuracy
-
-        val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.price, priceAccuracy)
-
-        if (!priceAccuracyValid) {
-            order.status = OrderStatus.InvalidPriceAccuracy.name
-            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price accuracy")
-        }
-
-        return priceAccuracyValid
-    }
-
-    private fun isVolumeAccuracyValid(order: NewLimitOrder, assetPair: AssetPair): Boolean {
-        val baseAssetId = assetPair.baseAssetId
-        val volumeAccuracy = assetsHolder.getAsset(baseAssetId).accuracy
-
-        val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, volumeAccuracy)
-
-        if (!volumeAccuracyValid) {
-            order.status = OrderStatus.InvalidVolumeAccuracy.name
-            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid volume accuracy")
-        }
-
-        return volumeAccuracyValid
-
-    }
-
-    private fun isVolumeValid(order: NewLimitOrder, assetPair: AssetPair): Boolean {
-        if (!order.checkVolume(assetPair)) {
-            order.status = OrderStatus.TooSmallVolume.name
-            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
-            return false
-        }
-
-        return true
-    }
-
-    private fun isPriceValid(order: NewLimitOrder): Boolean {
-        if (order.price <= 0) {
-            order.status = OrderStatus.InvalidPrice.name
-            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
-            return false
-        }
-
-        return true
-    }
-
-    private fun performValidation(order: NewLimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook): Boolean {
-        val validations = arrayOf({isPriceValid(order)},
-                {isVolumeValid(order, assetPair)},
-                {isSpreadValid(orderBook, order)},
-                {isVolumeAccuracyValid(order, assetPair)},
-                {isPriceAccuracyValid(order, assetPair)})
-
-        val failedValidation = validations.find { function: () -> Boolean -> !function() }
-
-        return failedValidation == null
     }
 
     private fun parseOldMultiLimitOrder(array: ByteArray): ProtocolMessages.OldMultiLimitOrder {
