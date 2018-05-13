@@ -144,4 +144,8 @@ open class TestApplicationContext {
         return ReservedCashInOutOperationService(assetsHolder, balancesHolder, applicationEventPublisher, reservedCashInOutOperationValidator)
     }
 
+    @Bean
+    open fun multiLimitOrderValidator(assetsHolder: AssetsHolder): MultiLimitOrderValidator {
+        return MultiLimitOrderValidatorImpl(assetsHolder)
+    }
 }
