@@ -67,7 +67,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
 
         applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id, operation.clientId,
-                operation.dateTime, operation.reservedAmount.round(accuracy), operation.assetId)) )
+                operation.dateTime, operation.reservedAmount.round(accuracy), operation.assetId, messageWrapper.messageId!!)) )
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setMatchingEngineId(operation.id).setStatus(MessageStatus.OK.type))
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, " +

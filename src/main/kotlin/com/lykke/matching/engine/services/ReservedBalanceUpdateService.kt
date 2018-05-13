@@ -26,7 +26,8 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
         if (message.reservedAmount > balance) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type))
             LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${NumberUtils.roundForPrint(balance)}) is lower that reserved balance ${NumberUtils.roundForPrint(message.reservedAmount)}")
             return
         }

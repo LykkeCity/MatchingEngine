@@ -94,7 +94,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             marketOrderValidator.performValidation(order, getOrderBook(order))
         } catch (e: OrderValidationException) {
             order.status = e.orderStatus.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
             writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
             return
         }

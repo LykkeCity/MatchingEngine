@@ -76,7 +76,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         cashOperationsDatabaseAccessor.insertTransferOperation(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId,
                 operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy),
-                operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
+                operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees, messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(operation.id)

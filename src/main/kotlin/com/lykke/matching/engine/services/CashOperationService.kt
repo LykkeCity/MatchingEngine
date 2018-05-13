@@ -55,7 +55,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                 .setBussinesId(message.bussinesId)
                 .setRecordId(operation.id))
-        LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)} processed")
+        LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)} processed")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
