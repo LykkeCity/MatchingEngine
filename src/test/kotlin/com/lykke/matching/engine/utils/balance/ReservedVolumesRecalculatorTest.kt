@@ -25,8 +25,6 @@ import kotlin.test.assertEquals
 @SpringBootTest(classes = [(TestApplicationContext::class), (ReservedVolumesRecalculatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ReservedVolumesRecalculatorTest {
-
-    private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private val orderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val stopOrderBookDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
@@ -43,6 +41,16 @@ class ReservedVolumesRecalculatorTest {
             testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
             return testBackOfficeDatabaseAccessor
+        }
+
+        @Bean
+        @Primary
+        open fun testDictionariesDatabaseAccessor(): TestDictionariesDatabaseAccessor {
+            val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+            testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
+            testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+
+            return testDictionariesDatabaseAccessor
         }
 
         @Bean
@@ -70,8 +78,6 @@ class ReservedVolumesRecalculatorTest {
     @Before
     fun setUp() {
 
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "trustedClient", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
@@ -114,7 +120,7 @@ class ReservedVolumesRecalculatorTest {
 
     @Test
     fun testRecalculate() {
-        val recalculator = ReservedVolumesRecalculator(testDictionariesDatabaseAccessor, testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
+        val recalculator = ReservedVolumesRecalculator(testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
                 stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext)
         recalculator.recalculate()
 

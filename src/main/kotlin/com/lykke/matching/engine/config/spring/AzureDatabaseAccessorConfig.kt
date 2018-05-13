@@ -17,24 +17,24 @@ open class AzureDatabaseAccessorConfig {
     private lateinit var config: Config
 
     @Bean
-    open  fun backOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
+    open fun backOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
         return AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
     }
 
     @Bean
-    open  fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
+    open fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
             : CashOperationsDatabaseAccessor {
        return AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
     }
 
     @Bean
-    open  fun azureHistoryTicksDatabaseAccessor(@Value("\${application.tick.frequency}") frequency: Long)
+    open fun azureHistoryTicksDatabaseAccessor(@Value("\${application.tick.frequency}") frequency: Long)
             : HistoryTicksDatabaseAccessor {
        return AzureHistoryTicksDatabaseAccessor(config.me.db.hLiquidityConnString, frequency)
     }
 
     @Bean
-    open  fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
+    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
                                               @Value("\${azure.candles.table}")candlesTable: String,
                                               @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
@@ -43,42 +43,45 @@ open class AzureDatabaseAccessorConfig {
     }
 
     @Bean
-    open  fun azureMarketOrderDatabaseAccessor(@Value("\${azure.market.order.table}") tableName: String)
+    open fun azureMarketOrderDatabaseAccessor(@Value("\${azure.market.order.table}") tableName: String)
             : MarketOrderDatabaseAccessor {
        return AzureMarketOrderDatabaseAccessor(config.me.db.hTradesConnString, tableName)
     }
 
 
     @Bean
-    open  fun azureReservedVolumesDatabaseAccessor(@Value("\${azure.reserved.volumes.table}") tableName: String)
+    open fun azureReservedVolumesDatabaseAccessor(@Value("\${azure.reserved.volumes.table}") tableName: String)
             : ReservedVolumesDatabaseAccessor {
        return AzureReservedVolumesDatabaseAccessor(config.me.db.reservedVolumesConnString, tableName)
     }
 
     @Bean
-    open  fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
+    open fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
             : ConfigDatabaseAccessor {
        return AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
     }
 
     @Bean
-    open  fun azureMonitoringDatabaseAccessor(@Value("\${azure.monitoring.table}") monitoringTable: String,
+    open fun azureMonitoringDatabaseAccessor(@Value("\${azure.monitoring.table}") monitoringTable: String,
                                               @Value("\${azure.performance.table}") performanceTable: String)
             : MonitoringDatabaseAccessor {
        return AzureMonitoringDatabaseAccessor(config.me.db.monitoringConnString, monitoringTable, performanceTable)
     }
 
     @Bean
-    open  fun fileOrderBookDatabaseAccessor()
+    open fun azureDictionariesDatabaseAccessor(): DictionariesDatabaseAccessor {
+        return AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
+    }
+
+    @Bean
+    open fun fileOrderBookDatabaseAccessor()
             : OrderBookDatabaseAccessor {
        return FileOrderBookDatabaseAccessor(config.me.orderBookPath)
     }
 
     @Bean
-    open  fun fileProcessedMessagesDatabaseAccessor()
+    open fun fileProcessedMessagesDatabaseAccessor()
             : ProcessedMessagesDatabaseAccessor {
        return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
     }
-
-
 }

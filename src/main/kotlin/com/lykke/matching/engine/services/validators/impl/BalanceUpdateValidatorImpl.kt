@@ -7,7 +7,9 @@ import com.lykke.matching.engine.services.validators.BalanceUpdateValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 
+@Component
 class BalanceUpdateValidatorImpl @Autowired constructor(private val balancesHolder: BalancesHolder,
                                                         private val assetsHolder: AssetsHolder): BalanceUpdateValidator {
 
