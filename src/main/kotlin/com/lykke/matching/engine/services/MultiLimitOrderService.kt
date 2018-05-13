@@ -160,7 +160,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
 
             if (orderValid && orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageWrapper.messageId!!,
+                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.status = OrderStatus.NoLiquidity.name
@@ -538,7 +539,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         orders.forEach {
             responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
-                    .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
+                    .setMatchingEngineId(it.id).setStatus(MessageStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
                     .setVolume(it.volume).setPrice(it.price).build())
         }
         return responseBuilder
