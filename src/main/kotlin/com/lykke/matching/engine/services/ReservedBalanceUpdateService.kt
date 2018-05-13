@@ -7,7 +7,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.Date
 
@@ -22,15 +22,12 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
-        LOGGER.debug("Processing holders update messageId: ${messageWrapper.messageId} " +
-                "for client ${message.clientId}, asset ${message.assetId}, " +
-                "reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
+        LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
         if (message.reservedAmount > balance) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type))
-            LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(balance)}) is lower that reserved balance ${RoundingUtils.roundForPrint(message.reservedAmount)}")
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
+            LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${NumberUtils.roundForPrint(balance)}) is lower that reserved balance ${NumberUtils.roundForPrint(message.reservedAmount)}")
             return
         }
 
@@ -41,9 +38,8 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
                 Date(),
                 listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount)), messageWrapper.messageId!!))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setStatus(MessageStatus.OK.type))
-        LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${RoundingUtils.roundForPrint(message.reservedAmount)}")
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.OK.type))
+        LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedBalanceUpdate {

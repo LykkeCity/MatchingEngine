@@ -15,10 +15,8 @@ class ApplicationSettingsCache @Autowired constructor (private val configDatabas
 
     init {
         update()
-        if (updateInterval != null) {
-            fixedRateTimer(name = "Application Properties Updater", initialDelay = updateInterval, period = updateInterval, daemon = true) {
-                update()
-            }
+        fixedRateTimer(name = "Application Properties Updater", initialDelay = updateInterval, period = updateInterval, daemon = true) {
+            update()
         }
     }
 

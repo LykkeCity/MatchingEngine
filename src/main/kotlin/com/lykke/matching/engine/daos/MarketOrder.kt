@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.utils.NumberUtils
 import java.util.Date
 
 class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String, volume: Double,
@@ -49,5 +50,10 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
         origin as MarketOrder
         origin.price = price
         origin.matchedAt = matchedAt
+    }
+
+    override fun toString(): String {
+        return "market order id: $id}, client: $clientId, asset: $assetPairId, " +
+                "volume: ${NumberUtils.roundForPrint(volume)}, straight: $straight"
     }
 }
