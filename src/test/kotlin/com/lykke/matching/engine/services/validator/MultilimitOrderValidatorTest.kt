@@ -104,7 +104,40 @@ class MultilimitOrderValidatorTest {
         }
     }
 
+    @Test(expected = OrderValidationException::class)
+    fun testInvalidVolumeAccuracy() {
+        //given
+        val order = getOrder(1.111)
 
+        //when
+        try {
+            multiLimitOrderValidator.performValidation(order, assetsPairsHolder.getAssetPair(ASSET_PAIR_ID), getOrderBook())
+        } catch (e: OrderValidationException) {
+            assertEquals(OrderStatus.InvalidVolumeAccuracy, e.orderStatus)
+            throw e
+        }
+    }
+
+    @Test(expected = OrderValidationException::class)
+    fun testInvalidPriceAccuracy() {
+        //given
+        val order = getOrder()
+        order.price = 1.111
+
+        //when
+        try {
+            multiLimitOrderValidator.performValidation(order, assetsPairsHolder.getAssetPair(ASSET_PAIR_ID), getOrderBook())
+        } catch (e: OrderValidationException) {
+            assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
+            throw e
+        }
+    }
+
+    @Test
+    fun testValidData() {
+        //when
+        multiLimitOrderValidator.performValidation(getOrder(), assetsPairsHolder.getAssetPair(ASSET_PAIR_ID), getOrderBook())
+    }
 
     private fun getOrder(volume: Double = 1.0): NewLimitOrder {
         return NewLimitOrder("test", "test", ASSET_PAIR_ID, CLIENT_NAME, volume, 1.0, "TEST",
