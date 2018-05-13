@@ -76,9 +76,9 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(cashTransferOperation.volume, assetsHolder.getAsset(cashTransferOperation.assetId).accuracy)
 
         if (!volumeValid) {
-            throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
             LOGGER.info("Volume accuracy invalid fromClient  ${cashTransferOperation.fromClientId}, " +
                     "to client ${cashTransferOperation.toClientId} assetId: ${cashTransferOperation.assetId}, volume: $cashTransferOperation.volume")
+            throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }
 }

@@ -248,7 +248,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
                 genericLimitOrderService,
-                applicationContext.environment.getProperty("application.tick.frequency").toLong())
+                applicationContext.environment.getProperty("application.tick.frequency")!!.toLong())
 
         if (!isLocalProfile) {
             marketStateCache.refresh()
