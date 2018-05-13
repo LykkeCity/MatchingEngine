@@ -13,6 +13,7 @@ class ValidationException(val validationType: Validation, message: String = Stri
         RESERVED_VOLUME_HIGHER_THAN_BALANCE,
         NO_LIQUIDITY,
         TOO_SMALL_VOLUME,
-        UNKNOWN_ASSET
+        UNKNOWN_ASSET,
+        BALANCE_LOWER_THAN_RESERVED
     }
 }

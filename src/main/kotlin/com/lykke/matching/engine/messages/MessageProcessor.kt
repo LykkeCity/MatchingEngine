@@ -237,7 +237,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        this.balanceUpdateService = BalanceUpdateService(balanceHolder, assetsHolder)
+        this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         if (config.me.cancelMinVolumeOrders) {

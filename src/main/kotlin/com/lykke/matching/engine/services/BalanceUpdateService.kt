@@ -8,19 +8,24 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
+import com.lykke.matching.engine.services.validators.BalanceUpdateValidator
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 import java.util.Date
 
-class BalanceUpdateService(private val balancesHolder: BalancesHolder, private val assetsHolder: AssetsHolder): AbstractService {
+@Service
+class BalanceUpdateService @Autowired constructor (private val balancesHolder: BalancesHolder,
+                                                   private val balanceUpdateValidator: BalanceUpdateValidator): AbstractService {
 
     companion object {
-        val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
+        private val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
@@ -46,7 +51,11 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder, private v
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            if (!performValidation(messageWrapper, message)) {
+            try {
+                balanceUpdateValidator.performValidation(message)
+            } catch (e: ValidationException) {
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setId(message.uid).setStatus(MessageStatusUtils.toMessageStatus(e.validationType).type).build())
                 return
             }
 
@@ -56,45 +65,6 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder, private v
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
         }
-    }
-
-    private fun performValidation(messageWrapper: MessageWrapper, message: ProtocolMessages.BalanceUpdate): Boolean {
-        val validations = arrayOf({isBalanceValid(messageWrapper, message)},
-                {isAmountAccuracyValid(messageWrapper, message)})
-
-        val failedValidation = validations.find { function: () -> Boolean -> !function() }
-
-        return failedValidation == null
-    }
-
-    private fun isBalanceValid(messageWrapper: MessageWrapper, message: ProtocolMessages.BalanceUpdate): Boolean {
-        val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-
-        if (reservedBalance > message.amount) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
-            LOGGER.info("""Balance (client ${message.clientId},
-                |asset ${message.assetId}, ${NumberUtils.roundForPrint(message.amount)})
-                |is lower that reserved balance ${NumberUtils.roundForPrint(reservedBalance)}""".trimMargin())
-            return false
-        }
-
-        return true
-    }
-
-    private fun isAmountAccuracyValid(messageWrapper: MessageWrapper, message: ProtocolMessages.BalanceUpdate): Boolean {
-        val amount = message.amount
-        val assetId = message.assetId
-        val amountAccuracyValid = NumberUtils.isScaleSmallerOrEqual(amount, assetsHolder.getAsset(assetId).accuracy)
-
-        if (!amountAccuracyValid) {
-            LOGGER.info("Amount accuracy invalid client: ${message.clientId}, asset: $assetId, amount $amount")
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(message.uid)
-                    .setStatus(MessageStatus.INVALID_VOLUME_ACCURACY.type).build())
-            return false
-        }
-
-        return true
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.BalanceUpdate {

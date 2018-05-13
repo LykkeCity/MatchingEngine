@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
- import kotlin.test.assertEquals
+import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (ReservedCashInOutOperationValidatorTest.Config::class)])

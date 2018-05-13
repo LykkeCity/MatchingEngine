@@ -80,6 +80,9 @@ abstract class AbstractTest {
     @Autowired
     private lateinit var multiLimitOrderValidator: MultiLimitOrderValidator
 
+    @Autowired
+    protected lateinit var balanceUpdateService: BalanceUpdateService
+
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
@@ -96,22 +99,21 @@ abstract class AbstractTest {
 
     protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
-
-    protected lateinit var genericLimitOrderService: GenericLimitOrderService
-
-    protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
     protected lateinit var feeProcessor: FeeProcessor
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
 
+    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
     protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
     protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
+
+    protected lateinit var genericLimitOrderService: GenericLimitOrderService
+    protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
     protected lateinit var marketOrderService: MarketOrderService
-    protected lateinit var balanceUpdateService: BalanceUpdateService
+
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
@@ -133,9 +135,7 @@ abstract class AbstractTest {
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
         cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService), cashTransferOperationValidator)
-        balanceUpdateService = BalanceUpdateService(balancesHolder, assetsHolder)
         minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        balanceUpdateService = BalanceUpdateService(balancesHolder, assetsHolder)
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)

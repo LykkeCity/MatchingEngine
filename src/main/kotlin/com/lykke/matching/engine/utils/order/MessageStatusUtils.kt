@@ -45,6 +45,7 @@ class MessageStatusUtils {
                 ValidationException.Validation.NO_LIQUIDITY -> MessageStatus.NO_LIQUIDITY
                 ValidationException.Validation.TOO_SMALL_VOLUME -> MessageStatus.TOO_SMALL_VOLUME
                 ValidationException.Validation.UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
+                ValidationException.Validation.BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
             }
         }
     }

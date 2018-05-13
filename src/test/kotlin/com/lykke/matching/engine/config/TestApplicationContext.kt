@@ -11,6 +11,7 @@ import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
+import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
@@ -147,5 +148,15 @@ open class TestApplicationContext {
     @Bean
     open fun multiLimitOrderValidator(assetsHolder: AssetsHolder): MultiLimitOrderValidator {
         return MultiLimitOrderValidatorImpl(assetsHolder)
+    }
+
+    @Bean
+    open fun balanceUpdateValidator (balancesHolder: BalancesHolder, assetsHolder: AssetsHolder): BalanceUpdateValidator {
+        return BalanceUpdateValidatorImpl(balancesHolder, assetsHolder)
+    }
+
+    @Bean
+    open fun balance(balancesHolder: BalancesHolder, balanceUpdateValidator: BalanceUpdateValidator): BalanceUpdateService {
+        return BalanceUpdateService(balancesHolder, balanceUpdateValidator)
     }
 }
