@@ -17,7 +17,7 @@ class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val
     }
 
     override fun performValidation(message: ProtocolMessages.ReservedCashInOutOperation) {
-        isAccuracyValid(message)
+        isVolumeAccuracyValid(message)
 
         if (message.reservedVolume < 0) {
             isBalanceValid(message)
@@ -50,7 +50,7 @@ class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val
         }
     }
 
-    private fun isAccuracyValid(message: ProtocolMessages.ReservedCashInOutOperation) {
+    private fun isVolumeAccuracyValid(message: ProtocolMessages.ReservedCashInOutOperation) {
         val assetId = message.assetId
         val volume = message.reservedVolume
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)

@@ -90,7 +90,6 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.parsedMessage = message
     }
 
-
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
