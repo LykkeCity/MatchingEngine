@@ -82,6 +82,11 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
                 .setBussinesId(message.bussinesId))
     }
 
-    private fun getMessage(messageWrapper: MessageWrapper) =
-            messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashOperation {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
+        return messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+    }
+
 }

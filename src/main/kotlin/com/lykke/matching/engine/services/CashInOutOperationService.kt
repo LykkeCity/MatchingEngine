@@ -44,8 +44,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         LOGGER.debug("Processing cash in/out operation (${message.id}) " +
                 "for client ${message.clientId}, asset ${message.assetId}, " +
                 "amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        val operationId = UUID.randomUUID().toString()
 
-        val  walletOperation = getWalletOperation(message)
+        val walletOperation = getWalletOperation(operationId, message)
         val operations = mutableListOf(walletOperation)
 
         try {
@@ -93,8 +94,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         ))
     }
 
-    private fun getWalletOperation(message: ProtocolMessages.CashInOutOperation): WalletOperation {
-        val operationId = UUID.randomUUID().toString()
+    private fun getWalletOperation(operationId: String, message: ProtocolMessages.CashInOutOperation): WalletOperation {
         return WalletOperation(operationId, message.id, message.clientId, message.assetId,
                 Date(message.timestamp), message.volume, 0.0)
     }

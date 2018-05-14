@@ -114,6 +114,9 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
     }
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashSwapOperation {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         return messageWrapper.parsedMessage!! as ProtocolMessages.CashSwapOperation
     }
 }

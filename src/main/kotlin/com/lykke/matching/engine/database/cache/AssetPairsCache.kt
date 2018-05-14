@@ -11,7 +11,7 @@ import kotlin.concurrent.fixedRateTimer
 @Component
 class AssetPairsCache @Autowired constructor (
         private val databaseAccessor: DictionariesDatabaseAccessor,
-        @Value("\${application.assets.pair.cache.interval}") updateInterval: Long? = null) : DataCache() {
+        @Value("\${application.assets.pair.cache.update.interval}") updateInterval: Long? = null) : DataCache() {
 
     companion object {
         private val LOGGER = Logger.getLogger(AssetPairsCache::class.java)

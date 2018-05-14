@@ -118,8 +118,14 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 .setStatus(status.type))
     }
 
-    private fun getMessage(messageWrapper: MessageWrapper) =
-            messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashTransferOperation {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
+
+        return messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
+    }
+
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    operationId: String,

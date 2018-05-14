@@ -164,7 +164,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
-        val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor, 60000))
+        val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
         val dictionariesDatabaseAccessor = applicationContext.getBean(DictionariesDatabaseAccessor::class.java)
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
