@@ -96,6 +96,9 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
     }
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.ReservedCashInOutOperation {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
         return messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
     }
 
