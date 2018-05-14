@@ -38,7 +38,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             parseMessage(messageWrapper)
         }
         val message = getMessage(messageWrapper)
-        LOGGER.debug("Processing reserved cash in/out operation (${message.id}) " +
+        LOGGER.debug("Processing reserved cash in/out operation messageId: ${messageWrapper.messageId}, id: (${message.id}) " +
                 "for client ${message.clientId}, asset ${message.assetId}, " +
                 "amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
 
@@ -59,7 +59,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         try {
             balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
         } catch (e: BalanceException) {
-            LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
+            LOGGER.info("Reserved cash in/out operation messageId: ${messageWrapper.messageId}, id: (${message.id}) " +
+                    "failed due to invalid balance: ${e.message}")
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message))
