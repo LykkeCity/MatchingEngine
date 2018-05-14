@@ -41,7 +41,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val message = getMessage(messageWrapper)
 
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) " +
+        LOGGER.debug("Processing cash in/out operation messageId: ${messageWrapper.messageId} id: (${message.id}) " +
                 "for client ${message.clientId}, asset ${message.assetId}, " +
                 "amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
         val operationId = UUID.randomUUID().toString()

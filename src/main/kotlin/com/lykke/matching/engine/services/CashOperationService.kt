@@ -27,7 +27,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = getMessage(messageWrapper)
-        LOGGER.debug("Processing cash operation (${message.bussinesId}) for client ${message.clientId}, " +
+        LOGGER.debug("Processing cash operation messageId: ${messageWrapper.messageId}, businessId: (${message.bussinesId}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
         try {

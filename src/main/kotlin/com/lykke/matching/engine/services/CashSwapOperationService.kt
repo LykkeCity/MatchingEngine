@@ -40,7 +40,8 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = getMessage(messageWrapper)
-        LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
+        LOGGER.debug("Processing cash swap operation  messageId: ${messageWrapper.messageId} id: (${message.id}) from client ${message.clientId1}, " +
+                "asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
                 "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)}")
 
         val operationId = UUID.randomUUID().toString()
