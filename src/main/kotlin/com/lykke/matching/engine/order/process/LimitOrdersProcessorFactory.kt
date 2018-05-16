@@ -13,6 +13,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 
@@ -32,8 +33,8 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                clientId: String,
                assetPair: AssetPair,
                orderBook: AssetOrderBook,
-               payBackBaseReserved: Double,
-               payBackQuotingReserved: Double,
+               payBackBaseReserved: BigDecimal,
+               payBackQuotingReserved: BigDecimal,
                clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                LOGGER: Logger) =

@@ -12,6 +12,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 
 class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
@@ -20,33 +21,34 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                                 private val matchingEngine: MatchingEngine,
                                 private val LOGGER: Logger) {
 
-    fun processLimitOrder(order: NewLimitOrder, isCancelOrders: Boolean, now: Date, payBackReserved: Double? = null, messageWrapper: MessageWrapper? = null) {
+    fun processLimitOrder(order: NewLimitOrder, isCancelOrders: Boolean, now: Date, payBackReserved: BigDecimal? = null, messageWrapper: MessageWrapper? = null) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
         val clientsLimitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
         var buySideOrderBookChanged = false
         var sellSideOrderBookChanged = false
-        var cancelVolume = 0.0
+        var cancelVolume = BigDecimal.ZERO
         if (isCancelOrders) {
             limitOrderService.getAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
                 limitOrderService.cancelLimitOrder(orderToCancel.externalId)
                 orderBook.removeOrder(orderToCancel)
                 clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(orderToCancel))
-                cancelVolume += if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.getAbsRemainingVolume()
+                val cancelVol = if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.getAbsRemainingVolume()
+                cancelVolume = cancelVolume.plus(cancelVol)
                 buySideOrderBookChanged = buySideOrderBookChanged || order.isBuySide()
                 sellSideOrderBookChanged = sellSideOrderBookChanged || !order.isBuySide()
             }
         }
-        val totalPayBackReserved = cancelVolume + (payBackReserved ?: 0.0)
+        val totalPayBackReserved = cancelVolume + (payBackReserved ?: BigDecimal.ZERO)
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
                 now,
                 order.clientId,
                 assetPair,
                 orderBook,
-                if (limitAsset == assetPair.baseAssetId) totalPayBackReserved else 0.0,
-                if (limitAsset == assetPair.quotingAssetId) totalPayBackReserved else 0.0,
+                if (limitAsset == assetPair.baseAssetId) totalPayBackReserved else BigDecimal.ZERO,
+                if (limitAsset == assetPair.quotingAssetId) totalPayBackReserved else BigDecimal.ZERO,
                 clientsLimitOrdersWithTrades,
                 emptyList(),
                 LOGGER)

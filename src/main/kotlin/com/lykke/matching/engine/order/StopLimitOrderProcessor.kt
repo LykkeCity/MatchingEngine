@@ -39,15 +39,15 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
     fun processStopOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
-        val limitVolume = BigDecimal.valueOf(if (order.isBuySide())
-            RoundingUtils.round(order.volume * (order.upperPrice ?: order.lowerPrice)!!, limitAsset.accuracy, true)
+        val limitVolume = if (order.isBuySide())
+            RoundingUtils.setScaleRoundUp(order.volume * (order.upperPrice ?: order.lowerPrice)!!, limitAsset.accuracy)
         else
-            order.getAbsVolume())
+            order.getAbsVolume()
 
         val balance = balancesHolder.getBalance(order.clientId, limitAsset.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
         val clientLimitOrdersReport = LimitOrdersReport()
-        var cancelVolume = 0.0
+        var cancelVolume = BigDecimal.ZERO
         if (isCancelOrders) {
             stopLimitOrderService.getAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
                 stopLimitOrderService.cancelStopLimitOrder(orderToCancel.externalId)
@@ -63,10 +63,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
             val messageStatus = OrderStatusUtils.Companion.toMessageStatus(e.orderStatus)
-            if (cancelVolume > 0) {
-                val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
+            if (cancelVolume > BigDecimal.ZERO) {
+                val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy)
                 balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
+                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
+                        listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
             }
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(messageStatus.type).build())
@@ -80,9 +81,9 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val bestBidPrice = orderBook.getBidPrice()
         val bestAskPrice = orderBook.getAskPrice()
 
-        var price: Double? = null
-        if (order.lowerLimitPrice != null && (order.isBuySide() && bestAskPrice > 0 && bestAskPrice <= order.lowerLimitPrice ||
-                        !order.isBuySide() && bestBidPrice > 0 && bestBidPrice <= order.lowerLimitPrice)) {
+        var price: BigDecimal? = null
+        if (order.lowerLimitPrice != null && (order.isBuySide() && bestAskPrice > BigDecimal.ZERO && bestAskPrice <= order.lowerLimitPrice ||
+                        !order.isBuySide() && bestBidPrice > BigDecimal.ZERO && bestBidPrice <= order.lowerLimitPrice)) {
             price = order.lowerPrice
         } else if(order.upperLimitPrice != null && (order.isBuySide() && bestAskPrice >= order.upperLimitPrice ||
                         !order.isBuySide() && bestBidPrice >= order.upperLimitPrice)) {
@@ -94,16 +95,16 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.status = OrderStatus.InOrderBook.name
             order.price = price
 
-            genericLimitOrderProcessor.processLimitOrder(order, now, 0.0)
+            genericLimitOrderProcessor.processLimitOrder(order, now, BigDecimal.ZERO)
             return
         }
 
-        order.reservedLimitVolume = limitVolume.toDouble()
+        order.reservedLimitVolume = limitVolume
         stopLimitOrderService.addStopOrder(order)
 
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
-        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
+        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy).toDouble()
         balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
         balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
 

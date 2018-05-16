@@ -9,6 +9,7 @@ import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
 import com.google.gson.JsonSyntaxException
 import java.lang.reflect.Type
+import java.math.BigDecimal
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -20,6 +21,17 @@ import java.util.TimeZone
 open class JsonSerializable {
     fun toJson():String {
         return GsonBuilder().registerTypeAdapter(Date::class.java, GmtDateTypeAdapter()).create().toJson(this)
+    }
+
+    class BigDecimalTypeAdapter : JsonSerializer<BigDecimal>, JsonDeserializer<BigDecimal> {
+        override fun serialize(src: BigDecimal?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): BigDecimal {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
     }
 
     class GmtDateTypeAdapter: JsonSerializer<Date>, JsonDeserializer<Date> {

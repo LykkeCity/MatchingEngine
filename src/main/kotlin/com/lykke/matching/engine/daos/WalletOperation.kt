@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import java.math.BigDecimal
 import java.util.Date
 
 data class WalletOperation(
@@ -8,7 +9,7 @@ data class WalletOperation(
         val clientId: String,
         val assetId: String,
         val dateTime: Date,
-        val amount: Double,
-        val reservedAmount: Double = 0.0,
+        val amount: BigDecimal,
+        val reservedAmount: BigDecimal = BigDecimal.ZERO,
         val isFee: Boolean = false
 )

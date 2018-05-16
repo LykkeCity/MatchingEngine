@@ -13,6 +13,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 
@@ -64,7 +65,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         }
     }
 
-    fun processLimitOrder(order: NewLimitOrder, now: Date, payBackReserved: Double) {
+    fun processLimitOrder(order: NewLimitOrder, now: Date, payBackReserved: BigDecimal) {
         limitOrderProcessor.processLimitOrder(order, false, now, payBackReserved)
         checkAndProcessStopOrder(order.assetPairId, now)
     }

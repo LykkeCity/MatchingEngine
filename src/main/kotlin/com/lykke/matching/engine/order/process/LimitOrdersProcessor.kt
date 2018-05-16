@@ -46,8 +46,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            private val clientId: String,
                            private val assetPair: AssetPair,
                            private val orderBook: AssetOrderBook,
-                           payBackBaseReserved: Double,
-                           payBackQuotingReserved: Double,
+                           payBackBaseReserved: BigDecimal,
+                           payBackQuotingReserved: BigDecimal,
                            clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            private val LOGGER: Logger) {
@@ -80,15 +80,15 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             throw IllegalArgumentException("Invalid order book asset pair: ${orderBook.assetId}")
         }
 
-        availableBalances[assetPair.baseAssetId] = RoundingUtils.parseDouble(balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId, payBackBaseReserved), baseAsset.accuracy)
-        availableBalances[assetPair.quotingAssetId] = RoundingUtils.parseDouble(balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId, payBackQuotingReserved), quotingAsset.accuracy)
+        availableBalances[assetPair.baseAssetId] = RoundingUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId, payBackBaseReserved), baseAsset.accuracy)
+        availableBalances[assetPair.quotingAssetId] = RoundingUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId, payBackQuotingReserved), quotingAsset.accuracy)
         val payBackReservedOperations = ArrayList<WalletOperation>(2)
         if (!isTrustedClient) {
-            if (payBackBaseReserved > 0) {
-                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.baseAssetId, date, 0.0, -payBackBaseReserved))
+            if (payBackBaseReserved > BigDecimal.ZERO) {
+                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.baseAssetId, date, BigDecimal.ZERO, -payBackBaseReserved))
             }
-            if (payBackQuotingReserved > 0) {
-                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.quotingAssetId, date, 0.0, -payBackQuotingReserved))
+            if (payBackQuotingReserved > BigDecimal.ZERO) {
+                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.quotingAssetId, date, BigDecimal.ZERO, -payBackQuotingReserved))
             }
         }
         walletOperationsProcessor.preProcess(payBackReservedOperations, true)
@@ -145,7 +145,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private fun preProcess(order: NewLimitOrder) {
 
         val limitAsset = if (order.isBuySide()) quotingAsset else baseAsset
-        val limitVolume = BigDecimal.valueOf(if (order.isBuySide()) RoundingUtils.round(order.getAbsVolume() * order.price, limitAsset.accuracy, true) else order.getAbsVolume())
+        val limitVolume = if (order.isBuySide()) RoundingUtils.setScaleRoundUp(order.getAbsVolume() * order.price, limitAsset.accuracy) else order.getAbsVolume()
 
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
@@ -200,10 +200,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                             LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${RoundingUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
                             orderCopy.status = OrderStatus.Cancelled.name
                         } else {
-                            orderCopy.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy, false) else orderCopy.getAbsRemainingVolume()
+                            orderCopy.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.setScaleRoundUp(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                             if (!isTrustedClient) {
-                                val newReservedBalance = RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy).toDouble()
-                                ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, 0.0, newReservedBalance))
+                                val newReservedBalance = RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
+                                ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
                             }
                         }
                     }
@@ -280,7 +280,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
 
-        order.reservedLimitVolume = limitVolume.toDouble()
+        order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
         ordersToAdd.add(order)
         addToReport(order)
@@ -289,7 +289,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume
         if (!isTrustedClient) {
             walletOperationsProcessor.preProcess(listOf(
-                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, 0.0, RoundingUtils.parseDouble(limitVolume.toDouble(), limitAsset.accuracy).toDouble())
+                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, BigDecimal.ZERO, RoundingUtils.parseDouble(limitVolume, limitAsset.accuracy))
             ), true)
         }
 

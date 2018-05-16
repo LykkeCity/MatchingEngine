@@ -45,9 +45,9 @@ import java.util.Date
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
-            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount.toBigDecimal(), asset.accuracy)
+            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount, asset.accuracy)
             changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
-                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount.toBigDecimal(), asset.accuracy)
+                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
             else
                 changedAssetBalance.reserved
         }

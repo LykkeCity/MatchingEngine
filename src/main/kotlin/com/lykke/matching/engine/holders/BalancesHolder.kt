@@ -10,6 +10,7 @@ import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
@@ -36,59 +37,59 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         initialBalancesCount = wallets.values.sumBy { it.balances.size }
     }
 
-    fun getBalance(clientId: String, assetId: String): Double {
+    fun getBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return balance.balance.toDouble()
+                return balance.balance
             }
         }
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun getReservedBalance(clientId: String, assetId: String): Double {
+    fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return balance.reserved.toDouble()
+                return balance.reserved
             }
         }
 
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: Double = 0.0): Double {
+    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: BigDecimal = BigDecimal.ZERO): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return (if (balance.reserved.compareTo(reservedAdjustment.toBigDecimal()) == 1)
-                    balance.balance - balance.reserved + reservedAdjustment.toBigDecimal()
-                else balance.balance).toDouble()
+                return (if (balance.reserved > reservedAdjustment)
+                    balance.balance - balance.reserved + reservedAdjustment
+                else balance.balance)
             }
         }
 
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun getAvailableReservedBalance(clientId: String, assetId: String): Double {
+    fun getAvailableReservedBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
                 // reserved can be greater than base balance due to transfer with overdraft
-                return (if (balance.reserved.signum() == 1 && balance.reserved <= balance.balance) balance.reserved else balance.balance).toDouble()
+                return if (balance.reserved.signum() == 1 && balance.reserved <= balance.balance) balance.reserved else balance.balance
             }
         }
 
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: Double) {
+    fun updateBalance(clientId: String, assetId: String, balance: BigDecimal) {
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setBalance(assetId, balance.toBigDecimal())
+        wallet.setBalance(assetId, balance)
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
                 listOf(wallet.balances[assetId]!!)
@@ -96,13 +97,13 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true) {
+    fun updateReservedBalance(clientId: String, assetId: String, balance: BigDecimal, skipForTrustedClient: Boolean = true) {
         if (skipForTrustedClient && applicationSettingsCache.isTrustedClient(clientId)) {
             return
         }
 
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setReservedBalance(assetId, balance.toBigDecimal())
+        wallet.setReservedBalance(assetId, balance)
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
                 listOf(wallet.balances[assetId]!!)

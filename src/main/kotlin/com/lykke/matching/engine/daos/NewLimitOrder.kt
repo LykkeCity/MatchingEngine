@@ -4,27 +4,28 @@ import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
+import java.math.BigDecimal
 import java.util.Date
 
-class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, var price: Double,
-                    status: String, createdAt: Date, registered: Date, var remainingVolume: Double, var lastMatchTime: Date?,
-                    reservedLimitVolume: Double? = null, fee: LimitOrderFeeInstruction? = null, fees: List<NewLimitOrderFeeInstruction>? = null,
+class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: BigDecimal, var price: BigDecimal,
+                    status: String, createdAt: Date, registered: Date, var remainingVolume: BigDecimal, var lastMatchTime: Date?,
+                    reservedLimitVolume: BigDecimal? = null, fee: LimitOrderFeeInstruction? = null, fees: List<NewLimitOrderFeeInstruction>? = null,
                     @Version(3)
                     val type: LimitOrderType?,
                     @Version(3)
-                    val lowerLimitPrice: Double?,
+                    val lowerLimitPrice: BigDecimal?,
                     @Version(3)
-                    val lowerPrice: Double?,
+                    val lowerPrice: BigDecimal?,
                     @Version(3)
-                    val upperLimitPrice: Double?,
+                    val upperLimitPrice: BigDecimal?,
                     @Version(3)
-                    val upperPrice: Double?,
+                    val upperPrice: BigDecimal?,
                     @Transient
                     val previousExternalId: String?)
     : NewOrder(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees), Serializable {
 
-    fun getAbsRemainingVolume(): Double {
-        return Math.abs(remainingVolume)
+    fun getAbsRemainingVolume(): BigDecimal {
+        return remainingVolume.abs()
     }
 
     fun isPartiallyMatched(): Boolean {
@@ -39,7 +40,7 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
         return true
     }
 
-    override fun calculateReservedVolume(): Double {
+    override fun calculateReservedVolume(): BigDecimal {
         return if (isBuySide()) remainingVolume * price else getAbsRemainingVolume()
     }
 
@@ -47,15 +48,15 @@ class NewLimitOrder(id: String, externalId: String, assetPairId: String, clientI
         lastMatchTime = time
     }
 
-    override fun takePrice(): Double {
+    override fun takePrice(): BigDecimal {
         return price
     }
 
-    override fun updatePrice(price: Double) {
+    override fun updatePrice(price: BigDecimal) {
         //price is fixed
     }
 
-    override fun updateRemainingVolume(volume: Double) {
+    override fun updateRemainingVolume(volume: BigDecimal) {
         this.remainingVolume = volume
     }
 
