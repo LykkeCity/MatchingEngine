@@ -1,19 +1,22 @@
 package com.lykke.matching.engine.fee
 
-class MakerFeeCoefCalculator(private val relativeSpread: Double?) : FeeCoefCalculator {
+import java.math.BigDecimal
+import java.math.BigInteger
 
-    var feeModificator: Double? = null
+class MakerFeeCoefCalculator(private val relativeSpread: BigDecimal?) : FeeCoefCalculator {
 
-    override fun calculate(): Double? {
+    var feeModificator: BigDecimal? = null
+
+    override fun calculate(): BigDecimal? {
         val defaultValue = null
         val feeModificator = this.feeModificator ?: return defaultValue
-        if (feeModificator <= 0.0) {
+        if (feeModificator <= BigDecimal.ZERO) {
             throw FeeException("makerFeeModificator should be greater than 0 (actual value: $feeModificator)")
         }
         val spread = relativeSpread ?: return defaultValue
-        if (spread <= 0.0) {
+        if (spread <= BigDecimal.ZERO) {
             throw FeeException("Spread should be greater than 0 (actual value: $spread)")
         }
-        return 1 - Math.exp(-spread * feeModificator)
+        return BigDecimal.valueOf(1 - Math.exp(-spread.toDouble() * feeModificator.toDouble()))
     }
 }

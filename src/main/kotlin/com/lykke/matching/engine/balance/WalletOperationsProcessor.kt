@@ -71,13 +71,13 @@ import java.util.Date
             val update = updates.getOrPut(key(transactionChangedAssetBalance)) {
                 ClientBalanceUpdate(transactionChangedAssetBalance.clientId,
                         transactionChangedAssetBalance.assetId,
-                        transactionChangedAssetBalance.changedAssetBalance.originBalance.toDouble(),
-                        transactionChangedAssetBalance.balance.toDouble(),
-                        transactionChangedAssetBalance.changedAssetBalance.originReserved.toDouble(),
-                        transactionChangedAssetBalance.reserved.toDouble())
+                        transactionChangedAssetBalance.changedAssetBalance.originBalance,
+                        transactionChangedAssetBalance.balance,
+                        transactionChangedAssetBalance.changedAssetBalance.originReserved,
+                        transactionChangedAssetBalance.reserved)
             }
-            update.newBalance = transactionChangedAssetBalance.balance.toDouble()
-            update.newReserved = transactionChangedAssetBalance.reserved.toDouble()
+            update.newBalance = transactionChangedAssetBalance.balance
+            update.newReserved = transactionChangedAssetBalance.reserved
             it.value.apply()
         })
         return this
@@ -148,22 +148,22 @@ private fun key(assetBalance: TransactionChangedAssetBalance) = "${assetBalance.
 private fun validateBalanceChange(assetBalance: TransactionChangedAssetBalance) =
         validateBalanceChange(assetBalance.clientId,
                 assetBalance.assetId,
-                assetBalance.originBalance.toDouble(),
-                assetBalance.originReserved.toDouble(),
-                assetBalance.balance.toDouble(),
-                assetBalance.reserved.toDouble())
+                assetBalance.originBalance,
+                assetBalance.originReserved,
+                assetBalance.balance,
+                assetBalance.reserved)
 
 @Throws(BalanceException::class)
-fun validateBalanceChange(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double) {
+fun validateBalanceChange(clientId: String, assetId: String, oldBalance: BigDecimal, oldReserved: BigDecimal, newBalance: BigDecimal, newReserved: BigDecimal) {
     val balanceInfo = "Invalid balance (client=$clientId, asset=$assetId, oldBalance=$oldBalance, oldReserved=$oldReserved, newBalance=$newBalance, newReserved=$newReserved)"
 
     // Balance can become negative earlier due to transfer operation with overdraftLimit > 0.
     // In this case need to check only difference of reserved & main balance.
     // It shouldn't be greater than previous one.
-    if (newBalance < 0.0 && !(oldBalance < 0.0 && (oldBalance >= newBalance || oldReserved + newBalance >= newReserved + oldBalance))) {
+    if (newBalance < BigDecimal.ZERO && !(oldBalance < BigDecimal.ZERO && (oldBalance >= newBalance || oldReserved + newBalance >= newReserved + oldBalance))) {
         throw BalanceException(balanceInfo)
     }
-    if (newReserved < 0.0 && oldReserved > newReserved) {
+    if (newReserved < BigDecimal.ZERO && oldReserved > newReserved) {
         throw BalanceException(balanceInfo)
     }
 

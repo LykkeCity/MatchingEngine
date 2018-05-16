@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import java.math.BigDecimal
 import java.util.Date
 
 data class FeeTransfer(
@@ -7,7 +8,7 @@ data class FeeTransfer(
         val fromClientId: String,
         val toClientId: String,
         val dateTime: Date,
-        val volume: Double,
+        val volume: BigDecimal,
         val asset: String,
-        val feeCoef: Double?
+        val feeCoef: BigDecimal?
 )

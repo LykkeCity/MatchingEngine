@@ -104,7 +104,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
-        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy).toDouble()
+        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy)
         balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
         balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
 

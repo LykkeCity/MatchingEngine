@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.outgoing.messages
 
 import com.lykke.matching.engine.daos.NewLimitOrder
+import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
@@ -30,9 +31,9 @@ class OrderBook: JsonSerializable {
         }
     }
 
-    fun addVolumePrice(id: String, clientId: String, volume: Double, price: Double) {
+    fun addVolumePrice(id: String, clientId: String, volume: BigDecimal, price: BigDecimal) {
         prices.add(Order(id, clientId, volume, price))
     }
 }
 
-class Order(val id: String, val clientId: String, val volume: Double, val price: Double)
+class Order(val id: String, val clientId: String, val volume: BigDecimal, val price: BigDecimal)

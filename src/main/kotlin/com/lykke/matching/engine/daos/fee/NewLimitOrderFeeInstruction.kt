@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.daos.fee
 
+import java.math.BigDecimal
+
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -8,14 +10,14 @@ import org.nustaq.serialization.annotations.Version
 class NewLimitOrderFeeInstruction(
         type: FeeType,
         takerSizeType: FeeSizeType?,
-        takerSize: Double?,
+        takerSize: BigDecimal?,
         val makerSizeType: FeeSizeType?,
-        val makerSize: Double?,
+        val makerSize: BigDecimal?,
         sourceClientId: String?,
         targetClientId: String?,
         assetIds: List<String>,
         @Version(1)
-        val makerFeeModificator: Double?
+        val makerFeeModificator: BigDecimal?
 ) : NewFeeInstruction(type, takerSizeType, takerSize, sourceClientId, targetClientId, assetIds) {
 
     companion object {
