@@ -208,10 +208,10 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 marketOrderTrades.add(TradeInfo(traderId,
                         order.clientId,
-                        Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy),
+                        RoundingUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
                         asset.assetId,
                         limitOrder.clientId,
-                        Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy),
+                        RoundingUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
                         limitAsset.assetId,
                         limitOrder.price,
                         limitOrder.id,
@@ -228,14 +228,14 @@ class MatchingEngine(private val LOGGER: Logger,
                         mutableListOf(LimitTradeInfo(traderId,
                                 limitOrder.clientId,
                                 limitAsset.assetId,
-                                Math.abs(if (isBuy) marketRoundedVolume else oppositeRoundedVolume).round(limitAsset.accuracy),
+                                RoundingUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
                                 limitOrder.price,
                                 now,
                                 order.id,
                                 order.externalId,
                                 asset.assetId,
                                 order.clientId,
-                                Math.abs(if (isBuy) oppositeRoundedVolume else marketRoundedVolume).round(asset.accuracy),
+                                RoundingUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
                                 tradeIndex,
                                 limitOrder.fee,
                                 singleFeeTransfer(limitOrder.fee, makerFees),
@@ -246,7 +246,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 totalVolume += volume
                 totalLimitPrice += volume * limitOrder.price
-                totalLimitVolume += BigDecimal.valueOf(Math.abs(if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume))
+                totalLimitVolume += (if (order.isStraight()) marketRoundedVolume else oppositeRoundedVolume).abs()
                 matchedOrders.add(limitOrderCopyWrapper)
             }
         }
