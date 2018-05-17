@@ -7,11 +7,10 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.Pipeline
+import redis.clients.jedis.Transaction
 import java.util.HashMap
 
-class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletDatabaseAccessor {
+class RedisWalletDatabaseAccessor(private val jedis: Jedis) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisWalletDatabaseAccessor::class.java.name)
@@ -25,36 +24,36 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletData
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
         var balancesCount = 0
-        jedisPool.resource.use { jedis ->
-            val keys = balancesKeys(jedis).toList()
 
-            val values = if (keys.isNotEmpty())
-                jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
-            else emptyList()
+        val keys = balancesKeys(jedis).toList()
 
-            values.forEachIndexed { index, value ->
-                val key = keys[index]
-                try {
-                    if (value == null) {
-                        throw Exception("Balance is not exist, key: $key")
-                    }
-                    val balance = deserializeClientAssetBalance(value)
-                    if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
-                        throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
-                    }
-                    if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.asset) {
-                        throw Exception("Invalid assetId: ${balance.asset}, balance key: $key")
-                    }
-                    val clientBalances = result.getOrPut(balance.clientId) { Wallet(balance.clientId) }
-                    clientBalances.balances[balance.asset] = balance
-                    balancesCount++
-                } catch (e: Exception) {
-                    val message = "Unable to load, balanceKey: $key"
-                    LOGGER.error(message, e)
-                    METRICS_LOGGER.logError(message, e)
+        val values = if (keys.isNotEmpty())
+            jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
+        else emptyList()
+
+        values.forEachIndexed { index, value ->
+            val key = keys[index]
+            try {
+                if (value == null) {
+                    throw Exception("Balance is not exist, key: $key")
                 }
+                val balance = deserializeClientAssetBalance(value)
+                if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
+                    throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
+                }
+                if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.asset) {
+                    throw Exception("Invalid assetId: ${balance.asset}, balance key: $key")
+                }
+                val clientBalances = result.getOrPut(balance.clientId) { Wallet(balance.clientId) }
+                clientBalances.balances[balance.asset] = balance
+                balancesCount++
+            } catch (e: Exception) {
+                val message = "Unable to load, balanceKey: $key"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
+
         LOGGER.info("Loaded ${result.size} wallets, $balancesCount balances")
         return result
     }
@@ -67,9 +66,9 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool) : WalletData
         // Nothing to do
     }
 
-    fun insertOrUpdateBalances(pipeline: Pipeline, balances: Collection<AssetBalance>) {
+    fun insertOrUpdateBalances(transaction: Transaction, balances: Collection<AssetBalance>) {
         balances.forEach { clientAssetBalance ->
-            pipeline.set(key(clientAssetBalance).toByteArray(), serializeClientAssetBalance(clientAssetBalance))
+            transaction.set(key(clientAssetBalance).toByteArray(), serializeClientAssetBalance(clientAssetBalance))
         }
     }
 
