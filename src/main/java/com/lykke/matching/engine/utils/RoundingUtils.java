@@ -52,6 +52,10 @@ public class RoundingUtils {
                 .setScale(accuracy, ROUND_DOWN);
     }
 
+    public static BigDecimal setScale(BigDecimal value, int accuracy, boolean roundUp) {
+        return roundUp ? setScaleRoundUp(value, accuracy) : setScaleRoundDown(value, accuracy);
+    }
+
     public static BigDecimal setScaleRoundHalfUp(BigDecimal value, int accuracy) {
         return value.setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
     }
@@ -66,5 +70,9 @@ public class RoundingUtils {
 
     public static Boolean isNegative(BigDecimal number) {
         return number.compareTo(BigDecimal.ZERO) < 0;
+    }
+
+    public static Boolean equalsIgnoreScale(BigDecimal first, BigDecimal second) {
+        return first.compareTo(second) == 0;
     }
 }

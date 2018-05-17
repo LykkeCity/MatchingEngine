@@ -12,6 +12,7 @@ import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.LinkedList
@@ -97,7 +98,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
     }
 
-    fun checkAndReduceBalance(order: NewLimitOrder, volume: Double, limitBalances: MutableMap<String, Double>): Boolean {
+    fun checkAndReduceBalance(order: NewLimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
@@ -105,7 +106,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         val result = availableBalance >= volume
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
         if (result) {
-            limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - volume, accuracy).toDouble()
+            limitBalances[order.clientId] = RoundingUtils.parseDouble(availableBalance - volume, accuracy)
         }
         return result
     }
@@ -160,7 +161,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         limitOrdersQueues.values.forEach { book ->
             val askPrice = book.getAskPrice()
             val bidPrice = book.getBidPrice()
-            if (askPrice > 0 || bidPrice > 0) {
+            if (askPrice > BigDecimal.ZERO || bidPrice > BigDecimal.ZERO) {
                 result.add(BestPrice(book.assetId, askPrice, bidPrice))
             }
         }

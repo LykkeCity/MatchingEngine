@@ -40,13 +40,13 @@ class NewLimitOrderFeeInstruction(
             return NewLimitOrderFeeInstruction(
                     feeType,
                     takerSizeType,
-                    if (fee.hasTakerSize()) fee.takerSize else null,
+                    if (fee.hasTakerSize()) BigDecimal.valueOf(fee.takerSize) else null,
                     makerSizeType,
-                    if (fee.hasMakerSize()) fee.makerSize else null,
+                    if (fee.hasMakerSize()) BigDecimal.valueOf(fee.makerSize) else null,
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null,
                     fee.assetIdList.toList(),
-                    if (fee.hasMakerFeeModificator() && fee.makerFeeModificator != 0.0) fee.makerFeeModificator else null)
+                    if (fee.hasMakerFeeModificator() && fee.makerFeeModificator != 0.0)  BigDecimal.valueOf(fee.makerFeeModificator) else null)
         }
     }
 

@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.NewOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
+import java.math.BigDecimal
 import java.util.Date
 import java.util.HashSet
 import java.util.LinkedList
@@ -29,7 +30,7 @@ data class MatchingResult(
         val marketOrderTrades: List<TradeInfo> = LinkedList(),
         val limitOrdersReport: LimitOrdersReport? = null,
         val orderBook: PriorityBlockingQueue<NewLimitOrder> = PriorityBlockingQueue(),
-        val marketBalance: Double? = null,
+        val marketBalance: BigDecimal? = null,
         private val autoApply: Boolean = true
 ) {
 
