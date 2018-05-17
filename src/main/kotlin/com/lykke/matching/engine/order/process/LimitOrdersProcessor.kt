@@ -161,7 +161,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), availableBalance.toDouble())
+            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), availableBalance)
             val orderCopy = matchingResult.order as NewLimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
@@ -265,7 +265,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                         ordersToAdd.add(order)
                     }
 
-                    availableBalances[limitAsset.assetId] = BigDecimal.valueOf(matchingResult.marketBalance!!)
+                    availableBalances[limitAsset.assetId] = matchingResult.marketBalance!!
 
                     buySideOrderBookChanged = true
                     sellSideOrderBookChanged = true

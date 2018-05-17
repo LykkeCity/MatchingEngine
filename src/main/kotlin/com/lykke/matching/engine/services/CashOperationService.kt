@@ -13,6 +13,7 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
@@ -37,7 +38,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         if (message.amount < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (balance - reservedBalance < Math.abs(message.amount)) {
+            if (balance - reservedBalance < BigDecimal.valueOf(message.amount).abs()) {
                 messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
                 LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance, reserved balance $reservedBalance")
                 return
@@ -45,7 +46,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
-                Date(message.timestamp), message.amount, 0.0)
+                Date(message.timestamp), BigDecimal.valueOf(message.amount), BigDecimal.ZERO)
 
         try {
             balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.uid.toString(), MessageType.CASH_OPERATION.name)

@@ -39,6 +39,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -84,16 +85,16 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
             feeInstruction = null
             feeInstructions = null
-            MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume)
+            MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
+                    Processing.name, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume))
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
             feeInstructions = NewFeeInstruction.create(message.feesList)
             LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, volume: ${RoundingUtils.roundForPrint(message.volume)}, straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
-            MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume, feeInstruction, listOfFee(feeInstruction, feeInstructions))
+            MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
+                    Processing.name, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume), feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
         val assetPair = try {
@@ -261,7 +262,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         } else {
             if (order.price != null) {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setPrice(order.price!!).setStatus(status.type).build())
+                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setPrice(order.price!!.toDouble()).setStatus(status.type).build())
             } else if (reason == null) {
                 messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setStatus(status.type).build())
             } else {

@@ -10,9 +10,9 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
@@ -33,12 +33,12 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         LOGGER.debug("Processing reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}")
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
-                Date(message.timestamp), 0.0, message.reservedVolume)
+                Date(message.timestamp), BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
 
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
         val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
         if (message.reservedVolume < 0) {
-            if (RoundingUtils.parseDouble(reservedBalance + message.reservedVolume, accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.parseDouble(reservedBalance + BigDecimal.valueOf(message.reservedVolume), accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
                 LOGGER.info("Reserved cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low reserved balance $reservedBalance")
@@ -46,7 +46,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             }
         } else {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            if (RoundingUtils.parseDouble(balance - reservedBalance - message.reservedVolume, accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.parseDouble(balance - reservedBalance - BigDecimal.valueOf(message.reservedVolume), accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type).build())
                 LOGGER.info("Reserved cash in operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low balance $balance, current reserved balance $reservedBalance")
@@ -63,7 +63,8 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             return
         }
 
-        rabbitCashInOutQueue.put(ReservedCashOperation(message.id, operation.clientId, operation.dateTime, operation.reservedAmount.round(accuracy), operation.assetId))
+        rabbitCashInOutQueue.put(ReservedCashOperation(message.id, operation.clientId, operation.dateTime,
+                RoundingUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(), operation.assetId))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(MessageStatus.OK.type).build())
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)} processed")

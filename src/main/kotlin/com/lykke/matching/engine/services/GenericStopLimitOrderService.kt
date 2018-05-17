@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
+import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.LinkedList
@@ -94,13 +95,13 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
                 ?: getStopOrderForProcess(assetPairId, orderBook.getAskPrice(), true)
     }
 
-    private fun getStopOrderForProcess(assetPairId: String, price: Double, isBuySide: Boolean): NewLimitOrder? {
-        if (price <= 0) {
+    private fun getStopOrderForProcess(assetPairId: String, price: BigDecimal, isBuySide: Boolean): NewLimitOrder? {
+        if (price <= BigDecimal.ZERO) {
             return null
         }
         val stopOrderBook = getOrderBook(assetPairId)
         var order: NewLimitOrder?
-        var orderPrice: Double? = null
+        var orderPrice: BigDecimal? = null
         order = stopOrderBook.getOrder(price, isBuySide, true)
         if (order != null) {
             orderPrice = order.lowerPrice!!

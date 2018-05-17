@@ -13,6 +13,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 
@@ -49,7 +50,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
 
         orderBooks.values.forEach { orderBook ->
             genericLimitOrderService.putTradeInfo(TradeInfo(orderBook.assetPair, orderBook.isBuy, orderBook.prices.firstOrNull()?.price
-                    ?: 0.0, date))
+                    ?: BigDecimal.ZERO, date))
             orderBookQueue.put(orderBook)
             rabbitOrderBookQueue.put(orderBook)
         }
@@ -62,7 +63,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         }
     }
 
-    override fun getOrderLimitVolume(order: NewLimitOrder): Double {
+    override fun getOrderLimitVolume(order: NewLimitOrder): BigDecimal {
         return order.reservedLimitVolume
                 ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
     }

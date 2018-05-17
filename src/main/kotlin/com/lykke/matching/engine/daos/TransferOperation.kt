@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import java.math.BigDecimal
 import java.util.Date
 
 data class TransferOperation(
@@ -9,6 +10,6 @@ data class TransferOperation(
         val toClientId: String,
         val asset: String,
         val dateTime: Date,
-        val volume: Double,
-        val overdraftLimit: Double?,
+        val volume: BigDecimal,
+        val overdraftLimit: BigDecimal?,
         val fees: List<FeeInstruction>?)

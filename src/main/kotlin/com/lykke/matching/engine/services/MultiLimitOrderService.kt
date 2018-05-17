@@ -33,6 +33,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.order.OrderStatusUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
 import java.util.LinkedList
@@ -97,8 +98,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
         message.ordersList.forEach { currentOrder ->
             val uid = UUID.randomUUID().toString()
-            orders.add(NewLimitOrder(uid, uid, message.assetPairId, message.clientId, currentOrder.volume,
-                    currentOrder.price, OrderStatus.InOrderBook.name, Date(message.timestamp), now, currentOrder.volume, null,
+            orders.add(NewLimitOrder(uid, uid, message.assetPairId, message.clientId, BigDecimal.valueOf(currentOrder.volume),
+                    BigDecimal.valueOf(currentOrder.price), OrderStatus.InOrderBook.name, Date(message.timestamp), now, BigDecimal.valueOf(currentOrder.volume), null,
                     type = LimitOrderType.LIMIT,
                     lowerLimitPrice = null,
                     lowerPrice = null,
@@ -153,7 +154,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         matchingEngine.initTransaction()
         orders.forEach { order ->
-            if (order.price <= 0) {
+            if (order.price <= BigDecimal.ZERO) {
                 order.status = OrderStatus.InvalidPrice.name
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
             } else if (!order.checkVolume(assetPair)) {
@@ -322,8 +323,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         messagesCount++
         ordersCount += orders.size
-        totalPersistTime += (endPersistTime - startPersistTime).toDouble() / logCount
-        totalTime += (endTime - startTime).toDouble() / logCount
+        totalPersistTime += (endPersistTime - startPersistTime) / logCount.toLong()
+        totalTime += (endTime - startTime) / logCount.toLong()
 
         if (messagesCount % logCount == 0L) {
             STATS_LOGGER.info("Orders: $ordersCount/$logCount messages. Total: ${PrintUtils.convertToString(totalTime)}. " +
@@ -353,7 +354,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         orders.forEach {
             responseBuilder.addStatuses(ProtocolMessages.MultiLimitOrderResponse.OrderStatus.newBuilder().setId(it.externalId)
                     .setMatchingEngineId(it.id).setStatus(OrderStatusUtils.toMessageStatus(OrderStatus.valueOf(it.status)).type)
-                    .setVolume(it.volume).setPrice(it.price).build())
+                    .setVolume(it.volume.toDouble()).setPrice(it.price.toDouble()).build())
         }
         return responseBuilder.build()
     }
@@ -415,8 +416,18 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         limitOrderService.cancelLimitOrders(ordersToCancel)
         val orderBook = cancelResult.assetOrderBooks[multiLimitOrder.assetPairId] ?: limitOrderService.getOrderBook(multiLimitOrder.assetPairId).copy()
-        val cancelBaseVolume = cancelResult.walletOperations.filter { it.assetId == assetPair.baseAssetId }.sumByDouble { -it.reservedAmount }
-        val cancelQuotingVolume = cancelResult.walletOperations.filter { it.assetId == assetPair.quotingAssetId }.sumByDouble { -it.reservedAmount }
+
+        val cancelBaseVolume = cancelResult.walletOperations
+                .stream()
+                .filter { it.assetId == assetPair.baseAssetId }
+                .map({ t ->  -t.reservedAmount })
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+
+        val cancelQuotingVolume = cancelResult.walletOperations
+                .stream()
+                .filter { it.assetId == assetPair.quotingAssetId }
+                .map({ t ->  -t.reservedAmount})
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
 
         notFoundReplacements.values.forEach {
             it.status = OrderStatus.NotFoundPrevious.name
@@ -452,8 +463,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     .setId(order.externalId)
                     .setMatchingEngineId(order.id)
                     .setStatus(OrderStatusUtils.toMessageStatus(order.status).type)
-                    .setVolume(order.volume)
-                    .setPrice(order.price)
+                    .setVolume(order.volume.toDouble())
+                    .setPrice(order.price.toDouble())
             processedOrder.reason?.let { statusBuilder.statusReason = processedOrder.reason }
             responseBuilder.addStatuses(statusBuilder.build())
         }
@@ -486,12 +497,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     currentOrder.uid,
                     message.assetPairId,
                     message.clientId,
-                    currentOrder.volume,
-                    currentOrder.price,
+                    BigDecimal.valueOf(currentOrder.volume),
+                    BigDecimal.valueOf(currentOrder.price),
                     OrderStatus.InOrderBook.name,
                     Date(message.timestamp),
                     now,
-                    currentOrder.volume,
+                    BigDecimal.valueOf(currentOrder.volume),
                     null,
                     fee = feeInstruction,
                     fees = listOfLimitOrderFee(feeInstruction, feeInstructions),

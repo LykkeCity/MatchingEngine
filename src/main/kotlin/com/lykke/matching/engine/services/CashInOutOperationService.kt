@@ -19,6 +19,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
@@ -48,7 +49,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         }
 
         val operation = WalletOperation(operationId, message.id, message.clientId, message.assetId,
-                Date(message.timestamp), message.volume, 0.0)
+                Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO)
         val operations = mutableListOf(operation)
 
         if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
@@ -61,7 +62,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (RoundingUtils.parseDouble(balance - reservedBalance + message.volume, assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.parseDouble(balance - reservedBalance + BigDecimal.valueOf(message.volume), assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
                 LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
@@ -87,7 +88,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 message.id,
                 operation.clientId,
                 operation.dateTime,
-                operation.amount.round(assetsHolder.getAsset(operation.assetId).accuracy),
+                RoundingUtils.setScaleRoundHalfUp(operation.amount, assetsHolder.getAsset(operation.assetId).accuracy).toPlainString(),
                 operation.assetId,
                 fees
         ))

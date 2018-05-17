@@ -27,6 +27,7 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -53,7 +54,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             writeInvalidFeeResponse(messageWrapper, message, operationId)
             return
         }
-        val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
+        val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId, message.assetId, Date(message.timestamp),
+                BigDecimal.valueOf(message.volume), BigDecimal.valueOf(message.overdraftLimit), listOfFee(feeInstruction, feeInstructions))
 
         if (applicationSettingsCache.isAssetDisabled(message.assetId)) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
@@ -64,7 +66,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fromBalance = balancesHolder.getBalance(message.fromClientId, message.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(message.fromClientId, message.assetId)
-        val overdraftLimit = if (operation.overdraftLimit != null) -operation.overdraftLimit else 0.0
+        val overdraftLimit = if (operation.overdraftLimit != null) -operation.overdraftLimit else BigDecimal.ZERO
         if (fromBalance - reservedBalance - operation.volume < overdraftLimit) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.fromClientId},asset:${message.assetId}, volume:${message.volume}").build())
@@ -82,7 +84,9 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             return
         }
         cashOperationsDatabaseAccessor.insertTransferOperation(operation)
-        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
+        notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId,
+                operation.dateTime, RoundingUtils.setScaleRoundHalfUp(operation.volume, assetsHolder.getAsset(operation.asset).accuracy).toPlainString(),
+                operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}, asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)} processed")

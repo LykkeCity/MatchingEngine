@@ -11,6 +11,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
+import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -83,9 +84,9 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                 val limitVolume = getOrderLimitVolume(order)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
 
-                if (reservedBalance > 0.0) {
+                if (reservedBalance > BigDecimal.ZERO) {
                     walletOperations.add(
-                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, 0.0,
+                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, BigDecimal.ZERO,
                                     if (limitVolume > reservedBalance) -reservedBalance else -limitVolume)
                     )
                 }
@@ -94,7 +95,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         return walletOperations
     }
 
-    protected abstract fun getOrderLimitVolume(order: NewLimitOrder): Double
+    protected abstract fun getOrderLimitVolume(order: NewLimitOrder): BigDecimal
 
     open fun apply(): TCancelResult {
         val clientsLimitOrders = LinkedList<LimitOrderWithTrades>()

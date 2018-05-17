@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
@@ -140,7 +141,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
         return book;
     }
 
-    fun getOrder(price: Double, isBuySide: Boolean, isLowerSide: Boolean): NewLimitOrder? {
+    fun getOrder(price: BigDecimal, isBuySide: Boolean, isLowerSide: Boolean): NewLimitOrder? {
         val order = (if (isBuySide) {
             if (isLowerSide) lowerBidOrderBook else upperBidOrderBook
         } else {

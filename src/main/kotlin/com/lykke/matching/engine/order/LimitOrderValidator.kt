@@ -23,7 +23,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
     }
 
     fun validatePrice(order: NewLimitOrder) {
-        if (order.price <= 0.0) {
+        if (order.price <= BigDecimal.ZERO) {
             throw OrderValidationException("price is invalid", OrderStatus.InvalidPrice)
         }
     }
@@ -33,8 +33,8 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
         try {
             if ((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) return
             if ((order.upperLimitPrice == null).xor(order.upperPrice == null)) return
-            if (order.lowerLimitPrice != null && (order.lowerLimitPrice <= 0.0 || order.lowerPrice!! <= 0.0)) return
-            if (order.upperLimitPrice != null && (order.upperLimitPrice <= 0.0 || order.upperPrice!! <= 0.0)) return
+            if (order.lowerLimitPrice != null && (order.lowerLimitPrice <= BigDecimal.ZERO || order.lowerPrice!! <= BigDecimal.ZERO)) return
+            if (order.upperLimitPrice != null && (order.upperLimitPrice <= BigDecimal.ZERO || order.upperPrice!! <= BigDecimal.ZERO)) return
             if (order.lowerLimitPrice != null && order.upperLimitPrice != null && order.lowerLimitPrice >= order.upperLimitPrice) return
             checked = true
         } finally {

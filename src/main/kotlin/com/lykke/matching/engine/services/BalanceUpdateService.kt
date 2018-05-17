@@ -10,6 +10,7 @@ import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 
 class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService {
@@ -33,8 +34,9 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(), MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            balancesHolder.updateBalance(message.clientId, message.assetId, BigDecimal.valueOf(message.amount))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(), MessageType.BALANCE_UPDATE.name, Date(),
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, BigDecimal.valueOf(message.amount), reservedBalance, reservedBalance))))
 
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
@@ -44,14 +46,15 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
 
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (reservedBalance > message.amount) {
+            if (reservedBalance >  BigDecimal.valueOf(message.amount)) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
                 LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
                 return
             }
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            balancesHolder.updateBalance(message.clientId, message.assetId, BigDecimal.valueOf(message.amount))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.BALANCE_UPDATE.name, Date(),
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, BigDecimal.valueOf( message.amount), reservedBalance, reservedBalance))))
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
