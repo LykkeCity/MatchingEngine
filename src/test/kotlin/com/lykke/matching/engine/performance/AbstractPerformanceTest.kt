@@ -19,6 +19,8 @@ import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
@@ -133,7 +135,7 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue,
                 clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
-
+        val multiLimitOrderValidatorImpl = MultiLimitOrderValidatorImpl(assetsHolder)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService,
                 genericLimitOrdersCancellerFactory,
                 limitOrdersProcessorFactory,
@@ -145,22 +147,22 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 lkkTradesQueue,
-                genericLimitOrderProcessorFactory)
+                genericLimitOrderProcessorFactory, multiLimitOrderValidatorImpl)
 
         rabbitSwapQueue = LinkedBlockingQueue()
+        val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor,
                 genericLimitOrderService,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache,
                 trustedClientsLimitOrdersQueue,
                 clientsLimitOrdersQueue,
                 orderBookQueue,
                 rabbitOrderBookQueue,
                 rabbitSwapQueue,
                 lkkTradesQueue,
-                genericLimitOrderProcessorFactory)
+                genericLimitOrderProcessorFactory, marketOrderValidator)
 
     }
 }

@@ -45,10 +45,11 @@ class FeeProcessorTest {
 
     private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    private val assetsPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
-    private val assetsPairsHolder = AssetsPairsHolder(assetsPairsCache)
     private lateinit var feeProcessor: FeeProcessor
     private lateinit var genericLimitOrderService: GenericLimitOrderService
+
+    @Autowired
+    private lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Autowired
     private lateinit var assetsHolder: AssetsHolder
@@ -85,7 +86,6 @@ class FeeProcessorTest {
     }
 
     private fun initServices() {
-        assetsPairsCache.update()
         genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,

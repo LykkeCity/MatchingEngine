@@ -9,7 +9,7 @@ class OrderStatusTest {
 
     @Test
     fun testOrderStatusConvertToMessageStatus() {
-        val messageStatus = OrderStatusUtils.toMessageStatus(OrderStatus.ReservedVolumeGreaterThanBalance)
+        val messageStatus = MessageStatusUtils.toMessageStatus(OrderStatus.ReservedVolumeGreaterThanBalance)
 
         assertEquals(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE, messageStatus)
     }

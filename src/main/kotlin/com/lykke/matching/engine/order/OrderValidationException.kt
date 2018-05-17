@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.exception.MatchingEngineException
+import org.apache.commons.lang3.StringUtils
 
-class OrderValidationException(message: String,
-                               val orderStatus: OrderStatus) : MatchingEngineException(message)
+class OrderValidationException(val orderStatus: OrderStatus, message: String = StringUtils.EMPTY) : MatchingEngineException(message)

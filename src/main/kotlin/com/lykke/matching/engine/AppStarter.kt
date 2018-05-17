@@ -16,11 +16,11 @@ val LOGGER = Logger.getLogger("AppStarter")
 open class AppStarter
 
 fun main(args: Array<String>) {
-    val context = SpringApplication.run(AppStarter::class.java, *args)
-    val spotName = context.getBean(Config::class.java).me.name
-    Runtime.getRuntime().addShutdownHook(ShutdownHook(spotName))
-    addCommandLinePropertySource(args, context)
     try {
+        val context = SpringApplication.run(AppStarter::class.java, *args)
+        val spotName = context.getBean(Config::class.java).me.name
+        Runtime.getRuntime().addShutdownHook(ShutdownHook(spotName))
+        addCommandLinePropertySource(args, context)
         context.getBean(Application::class.java).run()
     } catch (e: Exception) {
         AppInitializer.teeLog(e.message ?: "Unable to start app")

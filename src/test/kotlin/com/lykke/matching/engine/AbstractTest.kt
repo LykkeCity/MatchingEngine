@@ -20,6 +20,10 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
@@ -52,8 +56,34 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
+    @Autowired
+    private lateinit var cashInOutOperationValidator: CashInOutOperationValidator
+
+    @Autowired
+    private lateinit var cashTransferOperationValidator: CashTransferOperationValidator
+
+    @Autowired
+    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
+
+    @Autowired
+    protected lateinit var marketOrderValidator: MarketOrderValidator
+
+    @Autowired
+    protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
+
+    @Autowired
+    protected lateinit var assetsPairsHolder: AssetsPairsHolder
+
+    @Autowired
+    protected lateinit var assetPairsCache: AssetPairsCache
+
+    @Autowired
+    private lateinit var multiLimitOrderValidator: MultiLimitOrderValidator
+
+    @Autowired
+    protected lateinit var balanceUpdateService: BalanceUpdateService
+
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
@@ -67,28 +97,23 @@ abstract class AbstractTest {
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    protected val reservedCashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    protected val assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
-    protected val assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
+    protected lateinit var feeProcessor: FeeProcessor
 
+    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
+    protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
+    protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
 
     protected lateinit var genericLimitOrderService: GenericLimitOrderService
     protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
-    protected lateinit var feeProcessor: FeeProcessor
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
-    protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
-
-    protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
     protected lateinit var cashInOutOperationService: CashInOutOperationService
-    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var multiLimitOrderService: MultiLimitOrderService
     protected lateinit var marketOrderService: MarketOrderService
-    protected lateinit var balanceUpdateService: BalanceUpdateService
+
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
@@ -109,15 +134,16 @@ abstract class AbstractTest {
         val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrdersProcessorFactory, clientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache)
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService), cashTransferOperationValidator)
         minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        balanceUpdateService = BalanceUpdateService(balancesHolder)
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, applicationSettingsCache, cashInOutQueue, feeProcessor)
-        reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashInOutQueue)
+        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
-        multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue, genericLimitOrderProcessorFactory)
-        marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory)
+        multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, trustedClientsLimitOrdersQueue,
+                clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue, genericLimitOrderProcessorFactory, multiLimitOrderValidator)
+        marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder,
+                trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue,
+                lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
