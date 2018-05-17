@@ -1,7 +1,14 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestPersistenceManager
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -13,8 +20,23 @@ import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
-import com.lykke.matching.engine.services.validators.*
-import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.BalanceUpdateValidator
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashOperationValidator
+import com.lykke.matching.engine.services.validators.CashSwapOperationValidator
+import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
+import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.impl.BalanceUpdateValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.CashInOutOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.CashOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.CashSwapOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.CashTransferOperationValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
+import com.lykke.matching.engine.utils.config.RedisConfig
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -79,7 +101,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
-        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, null)
+        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("",0,0,false,null,0))
     }
 
     @Bean
