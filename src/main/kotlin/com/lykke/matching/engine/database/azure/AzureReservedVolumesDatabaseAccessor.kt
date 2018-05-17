@@ -6,7 +6,6 @@ import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
-import org.springframework.beans.factory.annotation.Value
 import java.util.Date
 
 class AzureReservedVolumesDatabaseAccessor constructor(val connectionString: String,
@@ -22,7 +21,9 @@ class AzureReservedVolumesDatabaseAccessor constructor(val connectionString: Str
     override fun addCorrectionsInfo(corrections: List<ReservedVolumeCorrection>) {
         try {
             val now = Date()
-            batchInsertOrMerge(reservedVolumesTable, corrections.map { AzureReservedVolumeCorrection(now, it.clientId, it.assetId, it.orderIds, it.oldReserved, it.newReserved) })
+            batchInsertOrMerge(reservedVolumesTable, corrections.map {
+                AzureReservedVolumeCorrection(now, it.clientId, it.assetId, it.orderIds, it.oldReserved.toDouble(), it.newReserved.toDouble())
+            })
         } catch (e: Exception) {
             val message = "Unable to save reserved volumes corrections, size: ${corrections.size}"
             LOGGER.error(message, e)

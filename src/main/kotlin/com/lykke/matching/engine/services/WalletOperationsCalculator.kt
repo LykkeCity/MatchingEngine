@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -37,9 +38,9 @@ class WalletOperationsCalculator(
                 val limitVolume = order.reservedLimitVolume ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
 
-                if (reservedBalance > 0.0) {
+                if (reservedBalance > BigDecimal.ZERO) {
                     walletOperation.add(
-                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, now, 0.0,
+                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, now, BigDecimal.ZERO,
                                     if (limitVolume > reservedBalance) -reservedBalance else -limitVolume)
                     )
                 }

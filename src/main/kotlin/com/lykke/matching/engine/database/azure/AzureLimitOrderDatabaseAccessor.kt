@@ -13,7 +13,9 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
-import java.util.ArrayList
+import java.math.BigDecimal
+import java.util.*
+import java.util.stream.Collectors
 
 class AzureLimitOrderDatabaseAccessor constructor (connectionString: String,
                                                    bestPricesTable: String,
@@ -31,7 +33,7 @@ class AzureLimitOrderDatabaseAccessor constructor (connectionString: String,
 
     override fun updateBestPrices(prices: List<BestPrice>) {
         try {
-            batchInsertOrMerge(bestPricesTable, prices.map { AzureBestPrice(it.asset, it.ask, it.bid) })
+            batchInsertOrMerge(bestPricesTable, prices.map { AzureBestPrice(it.asset, it.ask.toDouble(), it.bid.toDouble()) })
         } catch(e: Exception) {
             LOGGER.error("Unable to update best prices, size: ${prices.size}", e)
             METRICS_LOGGER.logError( "Unable to update best prices, size: ${prices.size}", e)
@@ -54,7 +56,10 @@ class AzureLimitOrderDatabaseAccessor constructor (connectionString: String,
             val partitionQuery = TableQuery.from(AzureHourCandle::class.java)
                     .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, MICRO))
 
-            hourCandlesTable.execute(partitionQuery).mapTo(result) { HourCandle(it.asset, it.pricesList) }
+            hourCandlesTable.execute(partitionQuery)
+                    .mapTo(result) {
+                        HourCandle(it.asset, it.pricesList.stream().map(BigDecimal::valueOf).collect(Collectors.toCollection(::LinkedList)))
+                    }
         } catch(e: Exception) {
             LOGGER.error("Unable to load hour candles", e)
             METRICS_LOGGER.logError( "Unable to load hour candles", e)
@@ -65,7 +70,9 @@ class AzureLimitOrderDatabaseAccessor constructor (connectionString: String,
 
     override fun writeHourCandles(candles: List<HourCandle>) {
         try {
-            batchInsertOrMerge(hourCandlesTable, candles.map { AzureHourCandle(it.asset, it.prices) })
+            batchInsertOrMerge(hourCandlesTable, candles.map {
+                AzureHourCandle(it.asset, it.prices.stream().map(BigDecimal::toDouble).collect(Collectors.toCollection(::LinkedList)))
+            })
         } catch(e: Exception) {
             LOGGER.error("Unable to save hour candles, size: ${candles.size}", e)
             METRICS_LOGGER.logError( "Unable to save hour candles, size: ${candles.size}", e)

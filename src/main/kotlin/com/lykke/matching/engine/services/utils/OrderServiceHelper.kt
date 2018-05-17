@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.matching.MatchingResult
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.utils.number.RoundingUtils
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 
 class OrderServiceHelper(private val genericLimitOrderService: GenericLimitOrderService,
@@ -15,7 +15,9 @@ class OrderServiceHelper(private val genericLimitOrderService: GenericLimitOrder
         if (assetPair.minVolume != null && uncompletedLimitOrder.getAbsRemainingVolume() < assetPair.minVolume) {
             val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(listOf(uncompletedLimitOrder))
             walletOperations.addAll(result.walletOperations)
-            LOGGER.info("Order (id: ${uncompletedLimitOrder.externalId}) is cancelled due to min remaining volume (${RoundingUtils.roundForPrint(uncompletedLimitOrder.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
+            LOGGER.info("Order (id: ${uncompletedLimitOrder.externalId}) " +
+                    "is cancelled due to min remaining volume " +
+                    "(${RoundingUtils.roundForPrint(uncompletedLimitOrder.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
             return false
         }
         return true
