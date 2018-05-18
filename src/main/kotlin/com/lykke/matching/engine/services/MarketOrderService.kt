@@ -75,6 +75,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
             LOGGER.debug("Got old market order messageId: ${messageWrapper.messageId}, id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
                     "volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+            feeInstruction = null
+            feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume)
         } else {
@@ -91,7 +93,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
 
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order))
+            marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {
             order.status = e.orderStatus.name
             rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
