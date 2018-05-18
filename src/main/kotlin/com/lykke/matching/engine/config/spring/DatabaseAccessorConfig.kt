@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
