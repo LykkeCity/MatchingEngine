@@ -1,7 +1,9 @@
 package com.lykke.matching.engine.services.validators.impl
 
+import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -25,11 +27,12 @@ class MarketOrderValidatorImpl
         private val LOGGER = Logger.getLogger(MarketOrderValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(order: MarketOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
+    override fun performValidation(order: MarketOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>,
+                                   feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?) {
         isAssetKnown(order)
         isAssetEnabled(order)
         isVolumeValid(order)
-        isFeeValid(order)
+        isFeeValid(feeInstruction, feeInstructions, order)
         isOrderBookValid(order, orderBook)
         isVolumeAccuracyValid(order)
         isPriceAccuracyValid(order)
@@ -42,9 +45,7 @@ class MarketOrderValidatorImpl
         }
     }
 
-    private fun isFeeValid(order: MarketOrder) {
-        val feeInstruction = order.fee
-        val feeInstructions = order.fees
+    private fun isFeeValid(feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?, order: MarketOrder) {
 
         if (!checkFee(feeInstruction, feeInstructions)) {
             LOGGER.error("Invalid fee (order id: ${order.id}, order externalId: ${order.externalId})")
