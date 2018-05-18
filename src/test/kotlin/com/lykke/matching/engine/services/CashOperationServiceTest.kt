@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
@@ -252,9 +253,9 @@ class CashOperationServiceTest: AbstractTest() {
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.05, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
 
-        assertEquals(0.01, balancesHolder.getBalance("Client1", "Asset4"), DELTA)
-        assertEquals(0.05, balancesHolder.getBalance("Client3", "Asset4"), DELTA)
-        assertEquals(10.0, balancesHolder.getBalance("Client1", "Asset5"), DELTA)
+        assertEquals(BigDecimal.valueOf(0.01), balancesHolder.getBalance("Client1", "Asset4"))
+        assertEquals(BigDecimal.valueOf(0.05), balancesHolder.getBalance("Client3", "Asset4"))
+        assertEquals(BigDecimal.valueOf(10.0), balancesHolder.getBalance("Client1", "Asset5"))
     }
 
     @Test
@@ -267,8 +268,8 @@ class CashOperationServiceTest: AbstractTest() {
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -1.0,
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.1, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")))
 
-        assertEquals(3.0, balancesHolder.getBalance("Client1", "Asset5"), DELTA)
-        assertEquals(0.0, balancesHolder.getBalance("Client3", "Asset5"), DELTA)
+        assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
+        assertEquals(BigDecimal.valueOf(0.0), balancesHolder.getBalance("Client3", "Asset5"))
 
         // Fee amount is more than operation amount
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -0.9,
@@ -279,8 +280,8 @@ class CashOperationServiceTest: AbstractTest() {
                 fees = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.5, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!,
                         buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.51, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!)))
 
-        assertEquals(3.0, balancesHolder.getBalance("Client1", "Asset5"), DELTA)
-        assertEquals(0.0, balancesHolder.getBalance("Client3", "Asset5"), DELTA)
+        assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
+        assertEquals(BigDecimal.valueOf(0.0), balancesHolder.getBalance("Client3", "Asset5"))
     }
 
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString(),
