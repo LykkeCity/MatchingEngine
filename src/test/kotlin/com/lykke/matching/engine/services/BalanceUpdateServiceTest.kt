@@ -113,10 +113,10 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
         assertEquals(1, balanceUpdate.balances.size)
         val clientBalanceUpdate = balanceUpdate.balances.first()
-        assertEquals(oldBalance, clientBalanceUpdate.oldBalance, DELTA)
-        assertEquals(balance, clientBalanceUpdate.newBalance, DELTA)
-        assertEquals(oldReserved, clientBalanceUpdate.oldReserved, DELTA)
-        assertEquals(reserved, clientBalanceUpdate.newReserved, DELTA)
+        assertEquals(oldBalance, clientBalanceUpdate.oldBalance)
+        assertEquals(balance, clientBalanceUpdate.newBalance)
+        assertEquals(oldReserved, clientBalanceUpdate.oldReserved)
+        assertEquals(reserved, clientBalanceUpdate.newReserved)
     }
 
     private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: Double, reserved: Double) {
@@ -133,8 +133,8 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
         val cacheBalance = balancesHolder.getBalance(clientId, assetId)
         val cacheReserved = balancesHolder.getReservedBalance(clientId, assetId)
-        assertEquals(cacheBalance, dbBalance, DELTA)
-        assertEquals(cacheReserved, dbReserved, DELTA)
+        assertEquals(cacheBalance, dbBalance)
+        assertEquals(cacheReserved, dbReserved)
     }
 
     private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {

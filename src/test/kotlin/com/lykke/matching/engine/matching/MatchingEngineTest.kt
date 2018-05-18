@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
+import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
@@ -97,16 +98,16 @@ abstract class MatchingEngineTest {
                 assertEquals("completed", completedOrder.id)
             }
             assertEquals(OrderStatus.Matched.name, completedOrder.status)
-            assertEquals(0.0, completedOrder.remainingVolume, DELTA)
+            assertEquals(BigDecimal.ZERO, completedOrder.remainingVolume)
             assertNotNull(completedOrder.reservedLimitVolume)
-            assertEquals(0.0, completedOrder.reservedLimitVolume!!, DELTA)
+            assertEquals(BigDecimal.ZERO, completedOrder.reservedLimitVolume!!)
         }
     }
 
     protected fun assertMarketOrderMatchingResult(
             matchingResult: MatchingResult,
-            marketBalance: Double? = null,
-            marketPrice: Double? = null,
+            marketBalance: BigDecimal? = null,
+            marketPrice: BigDecimal? = null,
             status: OrderStatus = OrderStatus.NoLiquidity,
             skipSize: Int = 0,
             cancelledSize: Int = 0,
@@ -120,13 +121,14 @@ abstract class MatchingEngineTest {
         matchingResult.apply()
         assertTrue { matchingResult.order is MarketOrder }
         assertEquals(marketPrice, matchingResult.order.takePrice())
-        assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize, cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
+        assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize,
+                lkkTradesSize, cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
     }
 
     protected fun assertLimitOrderMatchingResult(
             matchingResult: MatchingResult,
-            remainingVolume: Double = 100.0,
-            marketBalance: Double? = 1000.0,
+            remainingVolume: BigDecimal = BigDecimal.valueOf(100.0),
+            marketBalance: BigDecimal? = BigDecimal.valueOf(1000.0),
             status: OrderStatus = OrderStatus.Processing,
             skipSize: Int = 0,
             cancelledSize: Int = 0,
@@ -140,13 +142,14 @@ abstract class MatchingEngineTest {
         matchingResult.apply()
         assertTrue { matchingResult.order is NewLimitOrder }
         val matchedOrder = matchingResult.order as NewLimitOrder
-        assertEquals(remainingVolume, matchedOrder.remainingVolume, DELTA)
-        assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize, cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
+        assertEquals(remainingVolume, matchedOrder.remainingVolume)
+        assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize,
+                cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
     }
 
     private fun assertMatchingResult(
             matchingResult: MatchingResult,
-            marketBalance: Double? = 1000.0,
+            marketBalance: BigDecimal? = BigDecimal.valueOf(1000.0),
             status: OrderStatus = OrderStatus.Processing,
             skipSize: Int = 0,
             cancelledSize: Int = 0,
@@ -162,7 +165,7 @@ abstract class MatchingEngineTest {
             assertNull(matchingResult.marketBalance)
         } else {
             assertNotNull(matchingResult.marketBalance)
-            assertEquals(marketBalance, matchingResult.marketBalance!!, DELTA)
+            assertEquals(marketBalance, matchingResult.marketBalance!!)
         }
         assertEquals(lkkTradesSize, matchingResult.lkkTrades.size)
         assertEquals(cancelledSize, matchingResult.cancelledLimitOrders.size)
