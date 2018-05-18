@@ -82,7 +82,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.UnknownAsset, e.orderStatus)
             throw e
@@ -99,7 +99,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.DisabledAsset, e.orderStatus)
             throw e
@@ -115,7 +115,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order,  getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order,  getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.TooSmallVolume, e.orderStatus)
             throw e
@@ -126,14 +126,12 @@ class MarketOrderValidatorTest {
     fun testInvalidFee() {
         //given
         val marketOrderBuilder = getDefaultMarketOrderBuilder()
-        marketOrderBuilder.fee = ProtocolMessages.Fee.newBuilder()
-                .setType(FeeType.EXTERNAL_FEE.externalId)
-                .build()
         val order = toMarketOrder(marketOrderBuilder.build())
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()),
+                    NewFeeInstruction.create(getInvalidFee()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidFee, e.orderStatus)
             throw e
@@ -148,7 +146,8 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order,  AssetOrderBook(ASSET_PAIR_ID).getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order,  AssetOrderBook(ASSET_PAIR_ID).getOrderBook(order.isBuySide()),
+                    NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.NoLiquidity, e.orderStatus)
             throw e
@@ -164,7 +163,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidVolumeAccuracy, e.orderStatus)
             throw e
@@ -180,7 +179,7 @@ class MarketOrderValidatorTest {
 
         //when
         try {
-            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()))
+            marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
         } catch (e: OrderValidationException) {
             assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
             throw e
@@ -194,14 +193,14 @@ class MarketOrderValidatorTest {
         val order = toMarketOrder(marketOrderBuilder.build())
 
         //when
-        marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()))
+        marketOrderValidator.performValidation(order, getOrderBook(order.isBuySide()), NewFeeInstruction.create(getFeeInstruction()), null)
     }
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
 
         return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
                 OrderStatus.Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume,
-                NewFeeInstruction.create(message.fee), null)
+                NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
     }
 
     private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<NewLimitOrder> {
@@ -228,6 +227,12 @@ class MarketOrderValidatorTest {
     private fun getFeeInstruction(): ProtocolMessages.Fee {
         return  ProtocolMessages.Fee.newBuilder()
                 .setType(FeeType.NO_FEE.externalId)
+                .build()
+    }
+
+    private fun getInvalidFee(): ProtocolMessages.Fee {
+        return  ProtocolMessages.Fee.newBuilder()
+                .setType(FeeType.EXTERNAL_FEE.externalId)
                 .build()
     }
 }
