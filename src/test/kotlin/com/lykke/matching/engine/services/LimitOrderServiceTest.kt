@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import java.util.HashMap
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
