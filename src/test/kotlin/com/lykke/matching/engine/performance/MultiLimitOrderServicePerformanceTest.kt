@@ -10,6 +10,7 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
 import org.junit.Test
+import java.math.BigDecimal
 import java.util.*
 
 @Ignore
@@ -51,7 +52,8 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5,
+                BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2)))
 
         initServices()
 
@@ -241,7 +243,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance(client, "USD", 1.19)
 
         val order = MessageBuilder.buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
-        order.reservedLimitVolume = 1.19
+        order.reservedLimitVolume = BigDecimal.valueOf(1.19)
         testOrderDatabaseAccessor.addLimitOrder(order)
 
         initServices()

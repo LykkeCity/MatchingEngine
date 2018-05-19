@@ -22,6 +22,7 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.beans.factory.annotation.Autowired
+import java.math.BigDecimal
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 
@@ -147,12 +148,12 @@ abstract class AbstractTest {
 
     protected fun assertBalance(clientId: String, assetId: String, balance: Double? = null, reserved: Double? = null) {
         if (balance != null) {
-            assertEquals(balance, balancesHolder.getBalance(clientId, assetId))
-            assertEquals(balance, testWalletDatabaseAccessor.getBalance(clientId, assetId))
+            assertEquals(BigDecimal.valueOf(balance), balancesHolder.getBalance(clientId, assetId))
+            assertEquals(BigDecimal.valueOf(balance), testWalletDatabaseAccessor.getBalance(clientId, assetId))
         }
         if (reserved != null) {
-            assertEquals(reserved, balancesHolder.getReservedBalance(clientId, assetId))
-            assertEquals(reserved, testWalletDatabaseAccessor.getReservedBalance(clientId, assetId))
+            assertEquals(BigDecimal.valueOf(reserved), balancesHolder.getReservedBalance(clientId, assetId))
+            assertEquals(BigDecimal.valueOf(reserved), testWalletDatabaseAccessor.getReservedBalance(clientId, assetId))
         }
     }
 }

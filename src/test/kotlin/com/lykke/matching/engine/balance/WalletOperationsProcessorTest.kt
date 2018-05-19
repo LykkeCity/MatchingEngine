@@ -6,18 +6,16 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -53,21 +51,21 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         walletOperationsProcessor.preProcess(
                 listOf(
-                        WalletOperation("1", null, "Client1", "BTC", Date(), -0.5, -0.1),
-                        WalletOperation("2", null, "Client2", "ETH", Date(), 2.0, 0.1)
+                        WalletOperation("1", null, "Client1", "BTC", Date(), BigDecimal.valueOf( -0.5), BigDecimal.valueOf(-0.1)),
+                        WalletOperation("2", null, "Client2", "ETH", Date(), BigDecimal.valueOf(2.0), BigDecimal.valueOf(0.1))
 
                 )
         )
 
         walletOperationsProcessor.preProcess(
-                listOf(WalletOperation("3", null, "Client2", "ETH", Date(), 1.0, 0.2))
+                listOf(WalletOperation("3", null, "Client2", "ETH", Date(), BigDecimal.valueOf(1.0), BigDecimal.valueOf(0.2)))
         )
 
         assertFailsWith(BalanceException::class) {
             walletOperationsProcessor.preProcess(
                     listOf(
-                            WalletOperation("4", null, "Client1", "BTC", Date(), 0.0, -0.1),
-                            WalletOperation("5", null, "Client3", "BTC", Date(), 1.0, 0.0)
+                            WalletOperation("4", null, "Client1", "BTC", Date(), BigDecimal.ZERO, BigDecimal.valueOf(-0.1)),
+                            WalletOperation("5", null, "Client3", "BTC", Date(), BigDecimal.valueOf(1.0), BigDecimal.ZERO)
                     )
             )
         }
@@ -89,18 +87,18 @@ class WalletOperationsProcessorTest : AbstractTest() {
         val clientBalanceUpdate1 = balanceUpdate.balances.first { it.id == "Client1" }
         assertNotNull(clientBalanceUpdate1)
         assertEquals("BTC", clientBalanceUpdate1.asset)
-        assertEquals(1.0, clientBalanceUpdate1.oldBalance)
-        assertEquals(0.5, clientBalanceUpdate1.newBalance)
-        assertEquals(0.1, clientBalanceUpdate1.oldReserved)
-        assertEquals(0.0, clientBalanceUpdate1.newReserved)
+        assertEquals(BigDecimal.valueOf(1.0), clientBalanceUpdate1.oldBalance)
+        assertEquals(BigDecimal.valueOf(0.5), clientBalanceUpdate1.newBalance)
+        assertEquals(BigDecimal.valueOf(0.1), clientBalanceUpdate1.oldReserved)
+        assertEquals(BigDecimal.ZERO, clientBalanceUpdate1.newReserved)
 
         val clientBalanceUpdate2 = balanceUpdate.balances.first { it.id == "Client2" }
         assertNotNull(clientBalanceUpdate2)
         assertEquals("ETH", clientBalanceUpdate2.asset)
-        assertEquals(0.0, clientBalanceUpdate2.oldBalance)
-        assertEquals(3.0, clientBalanceUpdate2.newBalance)
-        assertEquals(0.0, clientBalanceUpdate2.oldReserved)
-        assertEquals(0.3, clientBalanceUpdate2.newReserved)
+        assertEquals(BigDecimal.ZERO, clientBalanceUpdate2.oldBalance)
+        assertEquals(BigDecimal.valueOf(3.0), clientBalanceUpdate2.newBalance)
+        assertEquals(BigDecimal.ZERO, clientBalanceUpdate2.oldReserved)
+        assertEquals(BigDecimal.valueOf(0.3), clientBalanceUpdate2.newReserved)
     }
 
     @Test
@@ -111,7 +109,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         walletOperationsProcessor.preProcess(
                 listOf(
-                        WalletOperation("1", null, "Client1", "BTC", Date(), 0.0, -0.1)
+                        WalletOperation("1", null, "Client1", "BTC", Date(), BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
                 ), true).apply("id", "type")
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
@@ -141,7 +139,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     private fun validate(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double): Boolean {
         return try {
-            validateBalanceChange(clientId, assetId, oldBalance, oldReserved, newBalance, newReserved)
+            validateBalanceChange(clientId, assetId, BigDecimal.valueOf(oldBalance), BigDecimal.valueOf(oldReserved),
+                    BigDecimal.valueOf(newBalance),BigDecimal.valueOf(newReserved))
             true
         } catch (e: BalanceException) {
             false
@@ -149,9 +148,9 @@ class WalletOperationsProcessorTest : AbstractTest() {
     }
 
     private fun assertBalance(clientId: String, assetId: String, balance: Double, reserved: Double) {
-        assertEquals(balance, balancesHolder.getBalance(clientId, assetId))
-        assertEquals(reserved, balancesHolder.getReservedBalance(clientId, assetId))
-        assertEquals(balance, testWalletDatabaseAccessor.getBalance(clientId, assetId))
-        assertEquals(reserved, testWalletDatabaseAccessor.getReservedBalance(clientId, assetId))
+        assertEquals(BigDecimal.valueOf(balance), balancesHolder.getBalance(clientId, assetId))
+        assertEquals(BigDecimal.valueOf(reserved), balancesHolder.getReservedBalance(clientId, assetId))
+        assertEquals(BigDecimal.valueOf(balance), testWalletDatabaseAccessor.getBalance(clientId, assetId))
+        assertEquals(BigDecimal.valueOf(reserved), testWalletDatabaseAccessor.getReservedBalance(clientId, assetId))
     }
 }
