@@ -269,7 +269,7 @@ class CashOperationServiceTest: AbstractTest() {
                 fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.1, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")))
 
         assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
-        assertEquals(BigDecimal.valueOf(0.0), balancesHolder.getBalance("Client3", "Asset5"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client3", "Asset5"))
 
         // Fee amount is more than operation amount
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset5", -0.9,
@@ -281,7 +281,7 @@ class CashOperationServiceTest: AbstractTest() {
                         buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.51, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!)))
 
         assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
-        assertEquals(BigDecimal.valueOf(0.0), balancesHolder.getBalance("Client3", "Asset5"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client3", "Asset5"))
     }
 
     private fun buildBalanceWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString(),

@@ -76,7 +76,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val marketOrderTrades = LinkedList<TradeInfo>()
 
         val limitOrdersReport = LimitOrdersReport()
-        var totalLimitVolume = BigDecimal.valueOf(0.0)
+        var totalLimitVolume = BigDecimal.ZERO
 
         if (checkOrderBook(order, workingOrderBook)) {
             while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO && workingOrderBook.size > 0 && remainingVolume > BigDecimal.ZERO && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {

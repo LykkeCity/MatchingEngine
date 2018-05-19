@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -81,12 +82,12 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, balanceUpdate.balances.size)
         assertEquals("Client1", balanceUpdate.balances.first().id)
         assertEquals("EUR", balanceUpdate.balances.first().asset)
-        assertEquals(1000.0, balanceUpdate.balances.first().oldBalance)
-        assertEquals(1000.0, balanceUpdate.balances.first().newBalance)
-        assertEquals(1.0, balanceUpdate.balances.first().oldReserved)
-        assertEquals(0.0, balanceUpdate.balances.first().newReserved)
+        assertEquals(BigDecimal.valueOf(1000.0), balanceUpdate.balances.first().oldBalance)
+        assertEquals(BigDecimal.valueOf(1000.0), balanceUpdate.balances.first().newBalance)
+        assertEquals(BigDecimal.valueOf(1.0), balanceUpdate.balances.first().oldReserved)
+        assertEquals(BigDecimal.ZERO, balanceUpdate.balances.first().newReserved)
 
-        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "EUR"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("Client1", "EUR"))
 
         val order = testOrderDatabaseAccessor.loadLimitOrders().find { it.id == "3" }
         assertNull(order)
@@ -135,12 +136,12 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
         val btc = balanceUpdate.balances.first { it.asset == "BTC" }
         assertEquals("Client2", btc.id)
-        assertEquals(1.0, btc.oldReserved)
-        assertEquals(0.2, btc.newReserved)
+        assertEquals(BigDecimal.valueOf(1.0), btc.oldReserved)
+        assertEquals(BigDecimal.valueOf(0.2), btc.newReserved)
 
         val usd = balanceUpdate.balances.first { it.asset == "USD" }
         assertEquals("Client2", usd.id)
-        assertEquals(800.0, usd.oldReserved)
-        assertEquals(0.0, usd.newReserved)
+        assertEquals(BigDecimal.valueOf(800.0), usd.oldReserved)
+        assertEquals(BigDecimal.ZERO, usd.newReserved)
     }
 }

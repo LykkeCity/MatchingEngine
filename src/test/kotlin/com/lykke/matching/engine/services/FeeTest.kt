@@ -165,7 +165,7 @@ class FeeTest: AbstractTest() {
 
         assertEquals(BigDecimal.valueOf(25.00), balancesHolder.getBalance("Client2", "USD"))
         assertEquals(BigDecimal.valueOf(0.005), balancesHolder.getBalance("Client2", "BTC"))
-        assertEquals(BigDecimal.valueOf(0.0), balancesHolder.getBalance("Client2", "EUR"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client2", "EUR"))
     }
 
     @Test
