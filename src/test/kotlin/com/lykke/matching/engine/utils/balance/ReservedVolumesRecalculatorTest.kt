@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -119,18 +120,18 @@ class ReservedVolumesRecalculatorTest {
         recalculator.recalculate()
 
         val testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("trustedClient2", "BTC"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client3", "BTC"))
-        assertEquals(0.5, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
-        assertEquals(0.7, testWalletDatabaseAccessor.getReservedBalance("Client1", "EUR"))
-        assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
-        assertEquals(2080.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("trustedClient2", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client3", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.5), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(0.7), testWalletDatabaseAccessor.getReservedBalance("Client1", "EUR"))
+        assertEquals(BigDecimal.valueOf(1.0), testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
+        assertEquals(BigDecimal.valueOf(2080.0), testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
         assertEquals(7, reservedVolumesDatabaseAccessor.corrections.size)
-        assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == 0.7 }.orderIds)
-        assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == 2080.0 }.orderIds)
+        assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == BigDecimal.valueOf( 0.7) }.orderIds)
+        assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == BigDecimal.valueOf(2080.0) }.orderIds)
     }
 }
