@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -59,7 +60,7 @@ class MinRemainingVolumeTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
 
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, 0.01))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8, BigDecimal.valueOf(0.01)))
         initServices()
     }
 
@@ -77,8 +78,8 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
         assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
 
-        assertEquals(0.1, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
-        assertEquals(0.1, balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
 
@@ -102,10 +103,10 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
         assertEquals(0, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
 
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
-        assertEquals(0.0, balancesHolder.getReservedBalance("Client2", "BTC"))
-        assertEquals(0.1, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(0.1, balancesHolder.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf( 0.1), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getBalance("Client2", "BTC"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
 
@@ -130,8 +131,8 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
 
-        assertEquals(680.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
-        assertEquals(680.0, balancesHolder.getReservedBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(680.0), testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(680.0), balancesHolder.getReservedBalance("Client1", "USD"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
 
@@ -157,8 +158,8 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
         assertEquals(1, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
 
-        assertEquals(0.1, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
-        assertEquals(0.1, balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
 
@@ -183,8 +184,8 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
         assertEquals(0, genericLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
 
-        assertEquals(0.1, testWalletDatabaseAccessor.getBalance("TrustedClient", "BTC"))
-        assertEquals(0.1, balancesHolder.getBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), testWalletDatabaseAccessor.getBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getBalance("TrustedClient", "BTC"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
 

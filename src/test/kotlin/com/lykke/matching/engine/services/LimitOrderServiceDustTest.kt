@@ -6,8 +6,6 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -21,6 +19,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -78,10 +77,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(1000 - 0.04997355, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(1159.92, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(1000 + 0.04997355, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(840.08, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(1000 - 0.04997355), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(1159.92), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(1000 + 0.04997355), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(840.08), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
     @Test
@@ -99,10 +98,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
-        assertEquals(999.95, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(1160.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(1000.05, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(840.0, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(999.95), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(1160.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(1000.05), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(840.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
     @Test
@@ -120,10 +119,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(1000 + 0.04997355, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(840.09, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(1000 - 0.04997355, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(1159.91, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(1000 + 0.04997355), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(840.09), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(1000 - 0.04997355), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(1159.91), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
     @Test
@@ -141,10 +140,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
 
-        assertEquals(1000.05, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(840.0, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(999.95, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(1160.0, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(1000.05), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(840.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(999.95), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(1160.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
     @Test
@@ -162,10 +161,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(999.9500273, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(1159.92, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(1000.0499727, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(840.08, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(999.9500273), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(1159.92), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(1000.0499727), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(840.08), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
     @Test
@@ -183,10 +182,10 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 
-        assertEquals(1000.0499727, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(840.09, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(999.9500273, testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
-        assertEquals(1159.91, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(1000.0499727), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(840.09), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(999.9500273), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(1159.91), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
 }

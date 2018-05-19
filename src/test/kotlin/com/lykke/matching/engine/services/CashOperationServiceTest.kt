@@ -35,10 +35,6 @@ import java.util.UUID
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class CashOperationServiceTest: AbstractTest() {
 
-    companion object {
-        private const val DELTA = 1e-15
-    }
-
     @TestConfiguration
     open class Config {
         @Bean
@@ -72,7 +68,7 @@ class CashOperationServiceTest: AbstractTest() {
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset1", 50.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(150.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(150.0), balance)
 
         val cashInTransaction = cashInOutQueue.take() as CashOperation
         assertEquals("Client1", cashInTransaction.clientId)
@@ -85,8 +81,8 @@ class CashOperationServiceTest: AbstractTest() {
         reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", 50.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client3", "Asset1")
         val reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
-        assertEquals(100.0, balance, DELTA)
-        assertEquals(100.0, reservedBalance, DELTA)
+        assertEquals(BigDecimal.valueOf(100.0), balance)
+        assertEquals(BigDecimal.valueOf(100.0), reservedBalance)
 
         val operation = reservedCashInOutQueue.take() as ReservedCashOperation
         assertEquals("Client3", operation.clientId)
@@ -99,7 +95,7 @@ class CashOperationServiceTest: AbstractTest() {
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset1", 0.01))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(100.01, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(100.01), balance)
 
         val cashInTransaction = cashInOutQueue.take() as CashOperation
         assertEquals("Client1", cashInTransaction.clientId)
@@ -111,7 +107,7 @@ class CashOperationServiceTest: AbstractTest() {
     fun testSmallReservedCashIn() {
         reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", 0.01))
         val reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
-        assertEquals(50.01, reservedBalance, DELTA)
+        assertEquals(BigDecimal.valueOf(50.01), reservedBalance)
 
         val operation = reservedCashInOutQueue.take() as ReservedCashOperation
         assertEquals("Client3", operation.clientId)
@@ -124,7 +120,7 @@ class CashOperationServiceTest: AbstractTest() {
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(50.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(50.0), balance)
 
         val cashOutTransaction = cashInOutQueue.take() as CashOperation
         assertEquals("Client1", cashOutTransaction.clientId)
@@ -136,9 +132,9 @@ class CashOperationServiceTest: AbstractTest() {
     fun testReservedCashOut() {
         reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", -49.0))
         val reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
-        assertEquals(1.0, reservedBalance, DELTA)
+        assertEquals(BigDecimal.valueOf(1.0), reservedBalance)
         val balance = testWalletDatabaseAccessor.getBalance("Client3", "Asset1")
-        assertEquals(100.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(100.0), balance)
 
         val operation = reservedCashInOutQueue.poll() as ReservedCashOperation
         assertEquals("Client3", operation.clientId)
@@ -151,7 +147,7 @@ class CashOperationServiceTest: AbstractTest() {
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset1", -50.0))
         var balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(50.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(50.0), balance)
 
         val cashOutTransaction = cashInOutQueue.take() as CashOperation
         assertEquals("Client1", cashOutTransaction.clientId)
@@ -160,14 +156,14 @@ class CashOperationServiceTest: AbstractTest() {
 
         cashInOutOperationService.processMessage(buildBalanceWrapper("Client1", "Asset1", -60.0))
         balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
-        assertEquals(50.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(50.0), balance)
     }
 
     @Test
     fun testReservedCashOutNegative() {
         reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", -24.0))
         var reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
-        assertEquals(26.0, reservedBalance, DELTA)
+        assertEquals(BigDecimal.valueOf(26.0), reservedBalance)
 
         val operation = reservedCashInOutQueue.take() as ReservedCashOperation
         assertEquals("Client3", operation.clientId)
@@ -176,14 +172,14 @@ class CashOperationServiceTest: AbstractTest() {
 
         reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", -30.0))
         reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
-        assertEquals(26.0, reservedBalance, DELTA)
+        assertEquals(BigDecimal.valueOf(26.0), reservedBalance)
     }
 
     @Test
     fun testReservedCashInHigherThanBalance() {
         reservedCashInOutOperationService.processMessage(buildReservedCashInOutWrapper("Client3", "Asset1", 50.01))
         val reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
-        assertEquals(50.0, reservedBalance, DELTA)
+        assertEquals(BigDecimal.valueOf(50.0), reservedBalance)
     }
 
     @Test
@@ -192,7 +188,7 @@ class CashOperationServiceTest: AbstractTest() {
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset4")
 
         assertNotNull(balance)
-        assertEquals(100.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(100.0), balance)
     }
 
     @Test
@@ -201,7 +197,7 @@ class CashOperationServiceTest: AbstractTest() {
         val balance = testWalletDatabaseAccessor.getBalance("Client3", "Asset2")
 
         assertNotNull(balance)
-        assertEquals(100.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(100.0), balance)
     }
 
     @Test
@@ -210,7 +206,7 @@ class CashOperationServiceTest: AbstractTest() {
 
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
-        assertEquals(999.0, balance, DELTA)
+        assertEquals(BigDecimal.valueOf(999.0), balance)
 
     }
 

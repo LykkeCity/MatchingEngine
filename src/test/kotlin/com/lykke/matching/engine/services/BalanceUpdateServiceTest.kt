@@ -12,15 +12,12 @@ import org.junit.runner.RunWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BalanceUpdateServiceTest: AbstractTest() {
-    companion object {
-        private const val DELTA = 1e-15
-    }
-
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
@@ -43,7 +40,7 @@ class BalanceUpdateServiceTest: AbstractTest() {
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "Client1", "Asset1", 999.0, 1000.0, 0.0, 0.0)
-        assertUpdateResult("Client1", "Asset2", 2000.0, 500.0)
+        assertUpdateResult("Client1", "Asset2", BigDecimal.valueOf(2000.0), BigDecimal.valueOf(500.0))
     }
 
     @Test
@@ -61,7 +58,7 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
-        assertUnsuccessfulUpdate("Client1", "Asset1", 1000.0, 1000.0)
+        assertUnsuccessfulUpdate("Client1", "Asset1", BigDecimal.valueOf(1000.0), BigDecimal.valueOf(1000.0))
     }
 
     @Test
@@ -80,25 +77,26 @@ class BalanceUpdateServiceTest: AbstractTest() {
         reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 999.0))
 
         assertSuccessfulUpdate(MessageType.RESERVED_BALANCE_UPDATE, "Client1", "Asset1", 1000.0, 1000.0, 999.0, 0.0)
-        assertUpdateResult("Client1", "Asset2", 2000.0, 500.0)
+        assertUpdateResult("Client1", "Asset2", BigDecimal.valueOf( 2000.0), BigDecimal.valueOf(500.0))
     }
 
     @Test
     fun testUpdateReservedBalanceOfNewClient() {
         reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("ClientNew", "Asset1", 999.0))
 
-        assertUnsuccessfulUpdate("ClientNew", "Asset1", 0.0, 0.0)
+        assertUnsuccessfulUpdate("ClientNew", "Asset1", BigDecimal.ZERO, BigDecimal.ZERO)
     }
 
     @Test
     fun testUpdateReservedBalanceHigherThanBalance() {
         reservedBalanceUpdateService.processMessage(buildReservedBalanceUpdateWrapper("Client1", "Asset1", 1001.0))
 
-        assertUnsuccessfulUpdate("Client1", "Asset1", 1000.0, 0.0)
+        assertUnsuccessfulUpdate("Client1", "Asset1",  BigDecimal.valueOf(1000.0), BigDecimal.ZERO)
     }
 
-    private fun assertSuccessfulUpdate(messageType: MessageType, clientId: String, assetId: String, balance: Double, oldBalance: Double, reserved: Double, oldReserved: Double) {
-        assertUpdateResult(clientId, assetId, balance, reserved)
+    private fun assertSuccessfulUpdate(messageType: MessageType, clientId: String, assetId: String,
+                                       balance: Double, oldBalance: Double, reserved: Double, oldReserved: Double) {
+        assertUpdateResult(clientId, assetId, BigDecimal.valueOf(balance), BigDecimal.valueOf(reserved))
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
         val notification = balanceUpdateHandlerTest.balanceUpdateQueueNotification.poll()
@@ -116,17 +114,17 @@ class BalanceUpdateServiceTest: AbstractTest() {
         assertEquals(reserved, clientBalanceUpdate.newReserved)
     }
 
-    private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: Double, reserved: Double) {
+    private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: BigDecimal, reserved: BigDecimal) {
         assertUpdateResult(clientId, assetId, balance, reserved)
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 
-    private fun assertUpdateResult(clientId: String, assetId: String, balance: Double, reserved: Double) {
+    private fun assertUpdateResult(clientId: String, assetId: String, balance: BigDecimal, reserved: BigDecimal) {
         val dbBalance = testWalletDatabaseAccessor.getBalance(clientId, assetId)
         val dbReserved = testWalletDatabaseAccessor.getReservedBalance(clientId, assetId)
-        assertEquals(balance, dbBalance, DELTA)
-        assertEquals(reserved, dbReserved, DELTA)
+        assertEquals(balance, dbBalance)
+        assertEquals(reserved, dbReserved)
 
         val cacheBalance = balancesHolder.getBalance(clientId, assetId)
         val cacheReserved = balancesHolder.getReservedBalance(clientId, assetId)

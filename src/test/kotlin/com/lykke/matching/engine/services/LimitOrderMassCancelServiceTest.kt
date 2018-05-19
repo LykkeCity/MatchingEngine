@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 
@@ -122,8 +123,8 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, balanceUpdate.type)
         assertEquals(1, balanceUpdate.balances.size)
         assertEquals("Client1", balanceUpdate.balances.first().id)
-        assertEquals(0.6, balanceUpdate.balances.first().oldReserved)
-        assertEquals(0.0, balanceUpdate.balances.first().newReserved)
+        assertEquals(BigDecimal.valueOf(0.6), balanceUpdate.balances.first().oldReserved)
+        assertEquals(BigDecimal.ZERO, balanceUpdate.balances.first().newReserved)
     }
 
     @Test
@@ -157,13 +158,13 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
 
         val btc = balanceUpdate.balances.first { it.asset == "BTC" }
         assertEquals("Client1", btc.id)
-        assertEquals(0.6, btc.oldReserved)
-        assertEquals(0.0, btc.newReserved)
+        assertEquals(BigDecimal.valueOf(0.6), btc.oldReserved)
+        assertEquals(BigDecimal.ZERO, btc.newReserved)
 
         val usd = balanceUpdate.balances.first { it.asset == "USD" }
         assertEquals("Client1", usd.id)
-        assertEquals(81.0, usd.oldReserved)
-        assertEquals(0.0, usd.newReserved)
+        assertEquals(BigDecimal.valueOf(81.0), usd.oldReserved)
+        assertEquals(BigDecimal.ZERO, usd.newReserved)
     }
 
     @Test
