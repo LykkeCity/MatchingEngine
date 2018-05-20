@@ -10,6 +10,8 @@ import static java.math.BigDecimal.*;
 public class RoundingUtils {
     private static final DecimalFormat FORMAT = initFormat(8);
     private static final DecimalFormat FORMAT2 = initFormat(2);
+    private static final int MAX_SCALE = 16;
+    private static final BigDecimal DELTA = BigDecimal.valueOf(0.0000000001);
 
     private static DecimalFormat initFormat(int accuracy) {
         DecimalFormat df = new DecimalFormat("#.#");
@@ -43,7 +45,7 @@ public class RoundingUtils {
     }
 
     public static BigDecimal setScaleRoundUp(BigDecimal value, int accuracy) {
-        return value.setScale(Math.min(16, accuracy + 10), ROUND_HALF_UP)
+        return value.setScale(Math.min(MAX_SCALE, accuracy + 10), ROUND_HALF_UP)
                 .setScale(accuracy, ROUND_UP);
     }
 
@@ -74,5 +76,13 @@ public class RoundingUtils {
 
     public static Boolean equalsIgnoreScale(BigDecimal first, BigDecimal second) {
         return first.compareTo(second) == 0;
+    }
+
+    public static BigDecimal divideWithMaxScale(BigDecimal dividend, BigDecimal divisor) {
+        return dividend.divide(divisor, MAX_SCALE, ROUND_HALF_UP);
+    }
+
+    public static boolean equalsWithDefaultDelta(BigDecimal first, BigDecimal second) {
+        return first.subtract(second).abs().compareTo(DELTA) < 0;
     }
 }

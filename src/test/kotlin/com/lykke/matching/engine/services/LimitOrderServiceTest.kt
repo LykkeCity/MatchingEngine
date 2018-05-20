@@ -241,7 +241,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         assertTrue { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(price = 2.0, volume =-1000.0),
                 BigDecimal.valueOf(1000.0), balances) }
-        assertEquals(BigDecimal.ZERO, balances["Client1"])
+        assertEquals(BigDecimal.ZERO, balances["Client1"] as BigDecimal)
 
         balances.clear()
         assertFalse { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder( price = 2.0, volume = -1001.0), BigDecimal.valueOf(1001.0), balances) }
@@ -249,7 +249,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         balances.clear()
         assertTrue { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 500.0), BigDecimal.valueOf(1000.0), balances) }
-        assertEquals(BigDecimal.ZERO, balances["Client2"])
+        assertEquals(BigDecimal.ZERO, balances["Client2"] as BigDecimal)
 
         balances.clear()
         assertFalse { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 501.0), BigDecimal.valueOf(1001.0), balances) }
@@ -264,7 +264,7 @@ class LimitOrderServiceTest: AbstractTest() {
         val balances: MutableMap<String, BigDecimal> = HashMap()
 
         assertTrue { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 4722.00, volume = 0.14825074), BigDecimal.valueOf(700.04), balances) }
-        assertEquals(BigDecimal.ZERO, balances["Client2"])
+        assertEquals(BigDecimal.ZERO, balances["Client2"] as BigDecimal)
     }
 
     @Test

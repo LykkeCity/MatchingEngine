@@ -79,7 +79,8 @@ class MatchingEngine(private val LOGGER: Logger,
         var totalLimitVolume = BigDecimal.ZERO
 
         if (checkOrderBook(order, workingOrderBook)) {
-            while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO && workingOrderBook.size > 0 && remainingVolume > BigDecimal.ZERO && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
+            while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO && workingOrderBook.size > 0 && !RoundingUtils.equalsWithDefaultDelta(remainingVolume, BigDecimal.ZERO)
+                    && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrder = workingOrderBook.poll()
                 if (order.clientId == limitOrder.clientId) {
                     skipLimitOrders.add(limitOrder)
@@ -303,7 +304,7 @@ class MatchingEngine(private val LOGGER: Logger,
             orderBook.isEmpty() || orderBook.peek().assetPairId == order.assetPairId && orderBook.peek().isBuySide() != order.isBuySide()
 
     private fun getCrossVolume(volume: BigDecimal, straight: Boolean, price: BigDecimal): BigDecimal {
-        return if (straight) volume else volume / price
+        return if (straight) volume else RoundingUtils.divideWithMaxScale(volume, price)
     }
 
     private fun getVolume(volume: BigDecimal, straight: Boolean, price: BigDecimal): BigDecimal {
