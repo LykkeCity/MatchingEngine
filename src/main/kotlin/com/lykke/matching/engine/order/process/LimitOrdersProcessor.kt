@@ -200,7 +200,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                             LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${RoundingUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${RoundingUtils.roundForPrint(assetPair.minVolume)})")
                             orderCopy.status = OrderStatus.Cancelled.name
                         } else {
-                            orderCopy.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.setScaleRoundUp(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
+                            orderCopy.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                             if (!isTrustedClient) {
                                 val newReservedBalance = RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
                                 ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))

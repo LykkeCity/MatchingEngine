@@ -928,7 +928,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
 
-        assertEquals(2, balanceUpdate.balances.filter { it.newReserved == BigDecimal.ZERO }.size)
+        assertEquals(2, balanceUpdate.balances.filter { RoundingUtils.equalsIgnoreScale(it.newReserved, BigDecimal.ZERO) }.size)
     }
 
     @Test

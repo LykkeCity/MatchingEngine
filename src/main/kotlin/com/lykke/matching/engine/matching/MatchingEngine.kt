@@ -103,7 +103,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 if ((!order.isStraight()) && isFullyMatched) {
                     oppositeRoundedVolume = BigDecimal.valueOf(order.volume.signum().toLong()) * (RoundingUtils.setScale(order.volume.abs() - totalLimitVolume.abs(), assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy))
-                    marketRoundedVolume = RoundingUtils.setScale(-oppositeRoundedVolume / limitOrder.price, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, !isBuy)
+                    marketRoundedVolume = RoundingUtils.setScale( RoundingUtils.divideWithMaxScale(-oppositeRoundedVolume, limitOrder.price), assetsHolder.getAsset(assetPair.baseAssetId).accuracy, !isBuy)
                     LOGGER.info("Rounding last matched limit order trade: ${RoundingUtils.roundForPrint(marketRoundedVolume)}")
                 }
 
@@ -132,7 +132,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 val bestBid = if (isBuy) genericLimitOrderService.getOrderBook(limitOrder.assetPairId).getBidPrice() else limitOrder.price
                 val validSpread = bestAsk > BigDecimal.ZERO && bestBid > BigDecimal.ZERO
                 val absoluteSpread = if (validSpread) bestAsk - bestBid else null
-                val relativeSpread = if (validSpread) absoluteSpread!! / bestAsk else null
+                val relativeSpread = if (validSpread) RoundingUtils.divideWithMaxScale(absoluteSpread!!, bestAsk) else null
 
                 val makerFees = try {
                     feeProcessor.processMakerFee(limitOrder.fees ?: emptyList(),
@@ -280,8 +280,8 @@ class MatchingEngine(private val LOGGER: Logger,
             order.updateRemainingVolume(BigDecimal.ZERO)
         }
         order.updateMatchTime(now)
-        order.updatePrice(RoundingUtils.setScale(if (order.isStraight()) totalLimitPrice / order.getAbsVolume() else order.getAbsVolume() / totalVolume
-                , assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
+        order.updatePrice(RoundingUtils.setScale(if (order.isStraight()) RoundingUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume()) else RoundingUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
+                assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
 
         return MatchingResult(orderWrapper,
                 now,
