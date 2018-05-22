@@ -280,7 +280,9 @@ class MatchingEngine(private val LOGGER: Logger,
             order.updateRemainingVolume(BigDecimal.ZERO)
         }
         order.updateMatchTime(now)
-        order.updatePrice(RoundingUtils.setScale(if (order.isStraight()) RoundingUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume()) else RoundingUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
+        order.updatePrice(RoundingUtils.setScale(
+                if (order.isStraight()) RoundingUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
+                else RoundingUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
                 assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
 
         return MatchingResult(orderWrapper,
