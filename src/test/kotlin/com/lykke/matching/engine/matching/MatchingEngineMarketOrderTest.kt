@@ -597,7 +597,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
         val orders = testDatabaseAccessor.getOrders("BTCUSD", false).filter { it.clientId == "Client1" }
         assertEquals(1, orders.size)
-        assertEquals(0.00947867, orders.first().reservedLimitVolume)
+        assertEquals(BigDecimal.valueOf(0.00947867), orders.first().reservedLimitVolume)
     }
 
     @Test

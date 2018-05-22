@@ -178,7 +178,8 @@ abstract class MatchingEngineTest {
         assertEquals(orderBookSize, matchingResult.orderBook.size)
     }
 
-    private fun walletOperationTransform(operation: WalletOperation): WalletOperation = WalletOperation("", operation.externalId, operation.clientId, operation.assetId, now, operation.amount, operation.reservedAmount, operation.isFee)
+    private fun walletOperationTransform(operation: WalletOperation): WalletOperation =
+            WalletOperation("", operation.externalId, operation.clientId, operation.assetId, now, operation.amount.stripTrailingZeros(), operation.reservedAmount.stripTrailingZeros(), operation.isFee)
 
     protected fun assertCashMovementsEquals(expectedMovements: List<WalletOperation>, actualMovements: List<WalletOperation>) {
         assertEquals(expectedMovements.size, actualMovements.size)
