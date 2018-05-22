@@ -56,6 +56,7 @@ class RedisPersistenceManager(
 
         val transaction = jedis.multi()
         try {
+            transaction.select(redisConfig.balanceDatabase)
             primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
             val persistTime = System.nanoTime()
 
