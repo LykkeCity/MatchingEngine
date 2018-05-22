@@ -10,7 +10,7 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
-import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Jedis
 import java.util.Date
 import java.util.LinkedList
 
@@ -28,7 +28,7 @@ fun migrateAccountsIfConfigured(applicationContext: ApplicationContext) {
 
 class AccountsMigrationException(message: String) : MatchingEngineException(message)
 
-class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder: BalancesHolder) {
+class AccountsMigration(private val config: MatchingEngineConfig, private val balancesHolder: BalancesHolder) {
 
     companion object {
         private val LOGGER = Logger.getLogger(AccountsMigration::class.java.name)
@@ -37,18 +37,18 @@ class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder
     private val azureAccountsTableName = config.db.accountsTableName
             ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME
 
-    private val redisUri = config.redis.balancesUri
+    private val jedis = initJedis(config)
 
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, azureAccountsTableName)
-    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor = RedisWalletDatabaseAccessor(JedisPool(redisUri))
+    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor = RedisWalletDatabaseAccessor(jedis)
 
     fun fromDbToRedis() {
         if (redisDatabaseAccessor.loadWallets().isNotEmpty()) {
-            throw AccountsMigrationException("Wallets already exist in redis $redisUri")
+            throw AccountsMigrationException("Wallets already exist in redis ${config.redis.host}.${config.redis.port}")
         }
 
         val startTime = Date().time
-        teeLog("Starting wallets migration from azure to redis; azure table: $azureAccountsTableName, redis: $redisUri")
+        teeLog("Starting wallets migration from azure to redis; azure table: $azureAccountsTableName, redis: ${config.redis.host}.${config.redis.port}")
         val wallets = azureDatabaseAccessor.loadWallets()
         val loadTime = Date().time
         teeLog("Loaded ${wallets.size} wallets from azure (ms: ${loadTime - startTime})")
@@ -61,11 +61,11 @@ class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder
 
     fun fromRedisToDb() {
         val startTime = Date().time
-        teeLog("Starting wallets migration from redis to azure; redis: $redisUri, azure table: $azureAccountsTableName")
+        teeLog("Starting wallets migration from redis to azure; redis: ${config.redis.host}.${config.redis.port}, azure table: $azureAccountsTableName")
         val loadTime = Date().time
         val wallets = redisDatabaseAccessor.loadWallets()
         if (wallets.isEmpty()) {
-            throw AccountsMigrationException("There are no wallets in redis $redisUri")
+            throw AccountsMigrationException("There are no wallets in redis ${config.redis.host}.${config.redis.port}")
         }
         teeLog("Loaded ${wallets.size} wallets from redis (ms: ${loadTime - startTime})")
         balancesHolder.insertOrUpdateWallets(wallets.values.toList())
@@ -142,5 +142,14 @@ class AccountsMigration(config: MatchingEngineConfig, private val balancesHolder
         }
 
         return true
+    }
+
+    private fun initJedis(config: MatchingEngineConfig): Jedis {
+        val jedis = Jedis(config.redis.host, config.redis.port, config.redis.timeout, config.redis.useSsl)
+        jedis.connect()
+        if (config.redis.password != null) {
+            jedis.auth(config.redis.password)
+        }
+        return jedis
     }
 }
