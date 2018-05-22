@@ -100,11 +100,7 @@ class RedisPersistenceManager(
             while (true) {
                 try {
                     val wallets = updatedWalletsQueue.take()
-                    if (wallets.size == 1) {
-                        secondaryBalancesAccessor.insertOrUpdateWallet(wallets.first())
-                    } else {
-                        secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
-                    }
+                    secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
                 } catch (e: Exception) {
                     LOGGER.error("Unable to save wallets", e)
                 }
