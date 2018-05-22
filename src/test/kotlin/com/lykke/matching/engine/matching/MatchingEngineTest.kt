@@ -20,6 +20,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.junit.After
 import org.junit.Assert.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
