@@ -130,14 +130,14 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
                 val oldBalance = it.reserved
                 val newBalance = reservedBalances[id]?.get(it.asset)
                 if (newBalance != null && newBalance.volume > BigDecimal.ZERO) {
-                    if (oldBalance != newBalance.volume) {
+                    if (!RoundingUtils.equalsIgnoreScale(oldBalance, newBalance.volume)) {
                         val correction = ReservedVolumeCorrection(id, it.asset, newBalance.orderIds.joinToString(","), oldBalance, newBalance.volume)
                         corrections.add(correction)
                         teeLog("1 $id, ${it.asset} : Old $oldBalance New $newBalance")
                         wallet.setReservedBalance(it.asset, newBalance.volume)
                         updatedWallets.add(wallet)
                     }
-                } else if (oldBalance != BigDecimal.ZERO) {
+                } else if (!RoundingUtils.equalsIgnoreScale(oldBalance, BigDecimal.ZERO)) {
                     val orderIds = if (newBalance != null) newBalance.orderIds.joinToString(",") else null
                     val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: BigDecimal.ZERO)
                     corrections.add(correction)

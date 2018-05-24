@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.RoundingUtils
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -132,7 +133,7 @@ class ReservedVolumesRecalculatorTest {
         assertEquals(BigDecimal.valueOf(2080.0), testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
         assertEquals(7, reservedVolumesDatabaseAccessor.corrections.size)
-        assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == BigDecimal.valueOf( 0.7) }.orderIds)
-        assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { it.newReserved == BigDecimal.valueOf(2080.0) }.orderIds)
+        assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { RoundingUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf( 0.7)) }.orderIds)
+        assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { RoundingUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf(2080.0)) }.orderIds)
     }
 }

@@ -33,6 +33,7 @@ import java.util.Date
 import java.util.LinkedList
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse

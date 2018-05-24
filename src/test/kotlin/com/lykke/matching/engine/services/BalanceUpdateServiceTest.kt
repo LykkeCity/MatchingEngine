@@ -6,6 +6,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.junit.Assert.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -108,10 +109,10 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
         assertEquals(1, balanceUpdate.balances.size)
         val clientBalanceUpdate = balanceUpdate.balances.first()
-        assertEquals(oldBalance, clientBalanceUpdate.oldBalance)
-        assertEquals(balance, clientBalanceUpdate.newBalance)
-        assertEquals(oldReserved, clientBalanceUpdate.oldReserved)
-        assertEquals(reserved, clientBalanceUpdate.newReserved)
+        assertEquals(BigDecimal.valueOf(oldBalance), clientBalanceUpdate.oldBalance)
+        assertEquals(BigDecimal.valueOf(balance), clientBalanceUpdate.newBalance)
+        assertEquals(BigDecimal.valueOf(oldReserved), clientBalanceUpdate.oldReserved)
+        assertEquals(BigDecimal.valueOf(reserved), clientBalanceUpdate.newReserved)
     }
 
     private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: BigDecimal, reserved: BigDecimal) {
