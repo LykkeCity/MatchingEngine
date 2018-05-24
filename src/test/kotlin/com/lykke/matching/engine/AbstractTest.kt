@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 
 abstract class AbstractTest {
     @Autowired

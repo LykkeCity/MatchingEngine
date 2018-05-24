@@ -235,7 +235,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         if (price <= BigDecimal.ZERO) {
             throw FeeException("Unable to get a price to convert to fee asset (price is not positive or order book is empty)")
         }
-        return if (assetPair.baseAssetId == feeAssetId) BigDecimal.ONE / price else price
+        return if (assetPair.baseAssetId == feeAssetId) RoundingUtils.divideWithMaxScale(BigDecimal.ONE, price) else price
     }
 
 }

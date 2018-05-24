@@ -314,7 +314,7 @@ class RoundingTest: AbstractTest() {
         assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
         assertEquals(BigDecimal.valueOf(999.99852558), testWalletDatabaseAccessor.getBalance("Client3", "BTC"))
-        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(1.0), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
         assertEquals(BigDecimal.valueOf(0.00147442), testWalletDatabaseAccessor.getBalance("Client4", "BTC"))
         assertEquals(BigDecimal.valueOf(1499.0), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
