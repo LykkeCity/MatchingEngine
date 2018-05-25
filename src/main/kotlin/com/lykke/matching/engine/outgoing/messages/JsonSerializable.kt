@@ -19,48 +19,46 @@ import java.util.TimeZone
 
 
 open class JsonSerializable {
-    fun toJson():String {
-        return GsonBuilder().registerTypeAdapter(Date::class.java, GmtDateTypeAdapter()).create().toJson(this)
+
+    companion object {
+        private val gson = GsonBuilder()
+                .registerTypeAdapter(Date::class.java, GmtDateTypeAdapter())
+                .registerTypeAdapter(BigDecimal::class.java, BigDecimalAdapter())
+                .create()
     }
 
-    class BigDecimalTypeAdapter : JsonSerializer<BigDecimal>, JsonDeserializer<BigDecimal> {
-        override fun serialize(src: BigDecimal?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
+    fun toJson():String {
+        return gson.toJson(this)
+    }
 
-        override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): BigDecimal {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    class BigDecimalAdapter: JsonSerializer<BigDecimal> {
+        override fun serialize(src: BigDecimal, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+            return JsonPrimitive(src.stripTrailingZeros())
         }
-
     }
 
     class GmtDateTypeAdapter: JsonSerializer<Date>, JsonDeserializer<Date> {
-        private val dateFormat: DateFormat
-
-        init {
-            dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
-            dateFormat.timeZone = TimeZone.getTimeZone("UTC")
-        }
-
-        @Synchronized
         override fun serialize(date: Date, type: Type,
                                              jsonSerializationContext: JsonSerializationContext): JsonElement {
-            synchronized(dateFormat) {
-                val dateFormatAsString = dateFormat.format(date)
-                return JsonPrimitive(dateFormatAsString)
-            }
+            val dateFormat = getDateTimeFormat()
+            val dateFormatAsString = dateFormat.format(date)
+            return JsonPrimitive(dateFormatAsString)
         }
 
-        @Synchronized
         override fun deserialize(jsonElement: JsonElement, type: Type,
                                                jsonDeserializationContext: JsonDeserializationContext): Date {
             try {
-                synchronized(dateFormat) {
-                    return dateFormat.parse(jsonElement.asString)
-                }
+                val dateFormat = getDateTimeFormat()
+                return dateFormat.parse(jsonElement.asString)
             } catch (e: ParseException) {
                 throw JsonSyntaxException(jsonElement.asString, e)
             }
+        }
+
+        private fun getDateTimeFormat(): DateFormat {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
+            dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+            return dateFormat
         }
     }
 }

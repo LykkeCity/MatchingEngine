@@ -42,7 +42,7 @@ public class RoundingUtils {
     }
 
     public static BigDecimal parseDouble(Double value, int accuracy) {
-        return new BigDecimal(value).setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
+        return BigDecimal.valueOf(value).setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
     }
 
     public static BigDecimal setScaleRoundUp(BigDecimal value, int accuracy) {

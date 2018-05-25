@@ -229,7 +229,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             val orderBook = genericLimitOrderService.getOrderBook(assetPair.assetPairId)
             val askPrice = orderBook.getAskPrice()
             val bidPrice = orderBook.getBidPrice()
-            if (askPrice > BigDecimal.ZERO && bidPrice > BigDecimal.ZERO) (askPrice + bidPrice) / BigDecimal.valueOf(2) else BigDecimal.ZERO
+            if (askPrice > BigDecimal.ZERO && bidPrice > BigDecimal.ZERO) RoundingUtils.divideWithMaxScale((askPrice + bidPrice), BigDecimal.valueOf(2)) else BigDecimal.ZERO
         }
 
         if (price <= BigDecimal.ZERO) {

@@ -142,7 +142,7 @@ class LimitOrderServiceTest: AbstractTest() {
     fun testAddLimitOrder() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9, volume = 1.0)))
 
-        val order = testOrderDatabaseAccessor.loadLimitOrders().find { it.price == BigDecimal.valueOf(999.9) }
+        val order = testOrderDatabaseAccessor.loadLimitOrders().find { RoundingUtils.equalsIgnoreScale(it.price, BigDecimal.valueOf(999.9)) }
         assertNotNull(order)
 
         assertEquals(BigDecimal.valueOf(1000.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
@@ -153,7 +153,7 @@ class LimitOrderServiceTest: AbstractTest() {
     fun testAddSellLimitOrder() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(price = 999.9, volume = -1.0)))
 
-        val order = testOrderDatabaseAccessor.loadLimitOrders().find { it.price == BigDecimal.valueOf(999.9) }
+        val order = testOrderDatabaseAccessor.loadLimitOrders().find { RoundingUtils.equalsIgnoreScale(it.price, BigDecimal.valueOf(999.9)) }
         assertNotNull(order)
 
         assertEquals(BigDecimal.valueOf(1000.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
