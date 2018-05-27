@@ -71,7 +71,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
             return
         }
 
-        publishRabbitMessage(message, walletOperation, fees, message.messageId!!)
+        publishRabbitMessage(message, walletOperation, fees, messageWrapper.messageId!!)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(walletOperation.id)
