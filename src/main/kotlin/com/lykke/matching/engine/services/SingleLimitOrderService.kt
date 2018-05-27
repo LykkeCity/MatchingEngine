@@ -57,7 +57,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrder
             order = createOrder(message, now)
-            LOGGER.info("Got limit order ${incomingMessageInfo(message, order)}")
+            LOGGER.info("Got limit order ${incomingMessageInfo(messageWrapper.messageId, message, order)}")
             isCancelOrders = message.cancelAllPreviousLimitOrders
         }
 
@@ -74,8 +74,9 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
     }
 
-    private fun incomingMessageInfo(message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
+    private fun incomingMessageInfo(messageId: String?, message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
         return "id: ${message.uid}" +
+                ", messageId $messageId" +
                 ", type: ${order.type}" +
                 ", client: ${message.clientId}" +
                 ", assetPair: ${message.assetPairId}" +
