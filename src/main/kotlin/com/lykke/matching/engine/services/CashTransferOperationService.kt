@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
@@ -14,7 +13,9 @@ import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageStatus.*
+import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
+import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
+import com.lykke.matching.engine.messages.MessageStatus.OK
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -34,8 +35,8 @@ import java.util.concurrent.BlockingQueue
 
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val assetsHolder: AssetsHolder,
-                                   private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                   private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationValidator: CashTransferOperationValidator): AbstractService {
 
@@ -73,7 +74,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             writeErrorResponse(messageWrapper, operationId, LOW_BALANCE, e.message)
             return
         }
-        cashOperationsDatabaseAccessor.insertTransferOperation(operation)
+        dbTransferOperationQueue.put(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId,
                 operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy),
                 operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees, messageWrapper.messageId!!))
