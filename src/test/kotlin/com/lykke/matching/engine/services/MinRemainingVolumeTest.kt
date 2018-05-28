@@ -153,7 +153,8 @@ class MinRemainingVolumeTest : AbstractTest() {
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                VolumePrice(0.11, 9000.0), VolumePrice(0.0891, 8900.0)
+                VolumePrice(BigDecimal.valueOf(0.11), BigDecimal.valueOf(9000.0)),
+                VolumePrice(BigDecimal.valueOf(0.0891), BigDecimal.valueOf(8900.0))
         ), listOf(), listOf()))
 
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
@@ -179,7 +180,8 @@ class MinRemainingVolumeTest : AbstractTest() {
 
         clearMessageQueues()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                VolumePrice(-0.11, 6800.0), VolumePrice(-0.0909, 6900.0)
+                VolumePrice(BigDecimal.valueOf(-0.11), BigDecimal.valueOf(6800.0)),
+                VolumePrice(BigDecimal.valueOf(-0.0909), BigDecimal.valueOf(6900.0))
         ), listOf(), listOf(), listOf("order1", "order2")))
 
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)

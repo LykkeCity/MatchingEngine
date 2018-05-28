@@ -185,8 +185,8 @@ class MessageBuilder {
                                         cancelMode: OrderCancelMode? = null
         ): MessageWrapper {
             val orders = volumes.mapIndexed { i, volume ->
-                IncomingLimitOrder(volume.volume,
-                        volume.price,
+                IncomingLimitOrder(volume.volume.toDouble(),
+                        volume.price.toDouble(),
                         if (i < ordersUid.size) ordersUid[i] else UUID.randomUUID().toString(),
                         if (i < ordersFee.size) ordersFee[i] else null,
                         if (i < ordersFees.size) ordersFees[i] else emptyList(),

@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.daos
 
 import java.io.Serializable
+import java.math.BigDecimal
 import java.util.Date
 
 open class Order: Serializable {
@@ -8,13 +9,14 @@ open class Order: Serializable {
     var externalId: String = ""
     var assetPairId: String = ""
     var clientId: String = ""
-    var volume: Double = 0.0
+    var volume: BigDecimal = BigDecimal.ZERO
     var status: String = ""
     var createdAt: Date = Date()
     var registered: Date = Date()
 
     constructor()
-    constructor(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, status: String, createdAt: Date, registered: Date) {
+    constructor(id: String, externalId: String, assetPairId: String, clientId: String,
+                volume: BigDecimal, status: String, createdAt: Date, registered: Date) {
         this.id = id
         this.externalId = externalId
         this.assetPairId = assetPairId
@@ -25,11 +27,11 @@ open class Order: Serializable {
         this.registered = registered
     }
 
-    fun getAbsVolume(): Double {
-        return Math.abs(volume)
+    fun getAbsVolume(): BigDecimal {
+        return volume.abs()
     }
 
     open fun isBuySide(): Boolean {
-        return volume > 0
+        return volume > BigDecimal.ZERO
     }
 }

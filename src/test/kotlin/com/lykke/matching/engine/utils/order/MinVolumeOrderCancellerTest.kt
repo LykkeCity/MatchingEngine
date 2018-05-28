@@ -104,7 +104,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10001.0, volume = 0.001)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "BTCUSD",
-                volumes = listOf(VolumePrice(0.00102, 10002.0), VolumePrice(-0.00001, 11000.0)),
+                volumes = listOf(VolumePrice(BigDecimal.valueOf(0.00102), BigDecimal.valueOf(10002.0)),
+                        VolumePrice(BigDecimal.valueOf(-0.00001), BigDecimal.valueOf(11000.0))),
                 ordersFee = emptyList(), ordersFees = emptyList()))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "BTCUSD", price = 10002.0, volume = -0.001)))
@@ -117,7 +118,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order2", clientId = "Client2", assetId = "EURUSD", price = 1.1, volume = 4.09)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "EURUSD",
-                volumes = listOf(VolumePrice(30.0, 1.1), VolumePrice(-30.0, 1.4)),
+                volumes = listOf(VolumePrice(BigDecimal.valueOf(30.0), BigDecimal.valueOf(1.1)),
+                        VolumePrice(BigDecimal.valueOf(-30.0), BigDecimal.valueOf(1.4))),
                 ordersFee = emptyList(), ordersFees = emptyList()))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "EURUSD", price = 1.2, volume = 6.0)))
@@ -199,7 +201,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
     @Test
     fun testCancelOrdersWithRemovedAssetPair() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = "Client1", assetId = "BTCEUR", price = 10000.0, volume = -1.0)))
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient", listOf(VolumePrice(-1.0, price = 10000.0)), emptyList(), emptyList(), listOf("order2")))
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient",
+                listOf(VolumePrice(BigDecimal.valueOf(-1.0), price = BigDecimal.valueOf(10000.0))), emptyList(), emptyList(), listOf("order2")))
 
         assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
         assertEquals(BigDecimal.valueOf( 1.0), balancesHolder.getReservedBalance("Client1", "BTC"))

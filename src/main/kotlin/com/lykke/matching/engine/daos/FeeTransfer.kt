@@ -23,9 +23,9 @@ data class FeeTransfer(
           if (fromClientId != other.fromClientId) return false
           if (toClientId != other.toClientId) return false
           if (dateTime != other.dateTime) return false
-          if (RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
+          if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
           if (asset != other.asset) return false
-          if (RoundingUtils.equalsIgnoreScale(feeCoef, other.feeCoef)) return false
+          if (!RoundingUtils.equalsIgnoreScale(feeCoef, other.feeCoef)) return false
 
           return true
       }

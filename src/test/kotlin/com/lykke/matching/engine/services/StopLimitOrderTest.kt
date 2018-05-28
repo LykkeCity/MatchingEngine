@@ -376,7 +376,9 @@ class StopLimitOrderTest : AbstractTest() {
 
         clientsLimitOrdersQueue.clear()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client3",
-                listOf(VolumePrice(-0.1, 11000.0), VolumePrice(-0.05, 8500.0)), emptyList(), emptyList()))
+                listOf(VolumePrice(BigDecimal.valueOf(-0.1), BigDecimal.valueOf(11000.0)),
+                        VolumePrice(BigDecimal.valueOf(-0.05), BigDecimal.valueOf(8500.0))),
+                emptyList(), emptyList()))
     }
 
     @Test
@@ -436,7 +438,9 @@ class StopLimitOrderTest : AbstractTest() {
         )))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client2",
-                listOf(VolumePrice(-0.1, 9000.0), VolumePrice(-0.2, 10000.0)), emptyList(), emptyList()))
+                listOf(VolumePrice(BigDecimal.valueOf(-0.1), BigDecimal.valueOf(9000.0)),
+                        VolumePrice(BigDecimal.valueOf(-0.2), BigDecimal.valueOf(10000.0))),
+                emptyList(), emptyList()))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 10000.0)))
 
@@ -499,11 +503,13 @@ class StopLimitOrderTest : AbstractTest() {
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client2", listOf(
-                VolumePrice(-0.00009, 10000.0), VolumePrice(-0.09, 11000.0)
+                VolumePrice(BigDecimal.valueOf(-0.00009), BigDecimal.valueOf(10000.0)),
+                VolumePrice(BigDecimal.valueOf(-0.09), BigDecimal.valueOf(11000.0))
         ), emptyList(), emptyList()))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "Client2", listOf(
-                VolumePrice(1.0, 1.1), VolumePrice(6.0, 1.0)
+                VolumePrice(BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.1)),
+                VolumePrice(BigDecimal.valueOf(6.0), BigDecimal.valueOf(1.0))
         ), emptyList(), emptyList()))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -613,7 +619,8 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(1050.0), balancesHolder.getReservedBalance("Client3", "USD"))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client2", listOf(
-                VolumePrice(-0.1, 10000.0), VolumePrice(0.1, 9000.0)
+                VolumePrice(BigDecimal.valueOf(-0.1), BigDecimal.valueOf(10000.0)),
+                VolumePrice(BigDecimal.valueOf(0.1), BigDecimal.valueOf(9000.0))
         ), emptyList(), emptyList()))
 
         assertTrue(genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).isEmpty())

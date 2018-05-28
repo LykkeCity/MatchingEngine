@@ -14,7 +14,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
@@ -38,12 +37,12 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
                 "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${RoundingUtils.roundForPrint(message.volume2)}")
 
         val operation = SwapOperation(UUID.randomUUID().toString(), message.id, Date(message.timestamp)
-                , message.clientId1, message.assetId1, message.volume1
-                , message.clientId2, message.assetId2, message.volume2)
+                , message.clientId1, message.assetId1, BigDecimal.valueOf(message.volume1)
+                , message.clientId2, message.assetId2, BigDecimal.valueOf(message.volume2))
 
         val balance1 = balancesHolder.getBalance(message.clientId1, message.assetId1)
         val reservedBalance1 = balancesHolder.getReservedBalance(message.clientId1, message.assetId1)
-        if (balance1 - reservedBalance1 < BigDecimal.valueOf(operation.volume1)) {
+        if (balance1 - reservedBalance1 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId1},asset:${message.assetId1}, volume:${message.volume1}").build())
             LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId1}, ${operation.volume1} ${operation.asset1}")
@@ -52,7 +51,7 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
 
         val balance2 = balancesHolder.getBalance(message.clientId2, message.assetId2)
         val reservedBalance2 = balancesHolder.getReservedBalance(message.clientId2, message.assetId2)
-        if (balance2 - reservedBalance2 < BigDecimal.valueOf(operation.volume1)) {
+        if (balance2 - reservedBalance2 < operation.volume1) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(LOW_BALANCE.type).setStatusReason("ClientId:${message.clientId2},asset:${message.assetId2}, volume:${message.volume2}").build())
             LOGGER.info("Cash swap operation failed due to low balance: ${operation.clientId2}, ${operation.volume2} ${operation.asset2}")
@@ -69,8 +68,10 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
-                operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
-                operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy)))
+                operation.clientId1, operation.asset1,
+                RoundingUtils.setScaleRoundHalfUp(operation.volume1, assetsHolder.getAsset(operation.asset1).accuracy).toPlainString(),
+                operation.clientId2, operation.asset2,
+                RoundingUtils.setScaleRoundHalfUp(operation.volume2, assetsHolder.getAsset(operation.asset2).accuracy).toPlainString()))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
         LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${RoundingUtils.roundForPrint(message.volume1)} " +
@@ -85,14 +86,14 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,
-                operation.dateTime, BigDecimal.valueOf(-operation.volume1)))
+                operation.dateTime, -operation.volume1))
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset1,
-                operation.dateTime, BigDecimal.valueOf(operation.volume1)))
+                operation.dateTime, operation.volume1))
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset2,
-                operation.dateTime, BigDecimal.valueOf(operation.volume2)))
+                operation.dateTime, operation.volume2))
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
-                operation.dateTime, BigDecimal.valueOf(-operation.volume2)))
+                operation.dateTime, -operation.volume2))
 
         balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(operation.externalId, MessageType.CASH_SWAP_OPERATION.name)
     }

@@ -83,12 +83,12 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client1", assetId = "EURUSD", volume = 10.0, price = 1.1)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "TrustedClient", listOf(
-                VolumePrice(-5.0, 1.3),
-                VolumePrice(5.0, 1.1)
+                VolumePrice(BigDecimal.valueOf(-5.0), BigDecimal.valueOf(1.3)),
+                VolumePrice(BigDecimal.valueOf(5.0), BigDecimal.valueOf(1.1))
         ), emptyList(), emptyList(), listOf("m1", "m2")))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                VolumePrice(-1.0, 8500.0)
+                VolumePrice(BigDecimal.valueOf(-1.0), BigDecimal.valueOf(8500.0))
         ), emptyList(), emptyList()))
 
         assertOrderBookSize("BTCUSD", false, 3)
