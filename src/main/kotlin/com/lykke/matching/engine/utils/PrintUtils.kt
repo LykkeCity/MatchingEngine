@@ -5,20 +5,20 @@ class PrintUtils {
         fun convertToString(value: Double): String {
             if ((value / 100000).toInt() == 0) {
                 //microseconds
-                return "${RoundingUtils.roundForPrint(value / 1000)} micros"
+                return "${NumberUtils.roundForPrint(value / 1000)} micros"
             } else {
                 //milliseconds
-                return "${RoundingUtils.roundForPrint(value / 1000000)} millis"
+                return "${NumberUtils.roundForPrint(value / 1000000)} millis"
             }
         }
 
         fun convertToString2(value: Double): String {
             if ((value / 100000).toInt() == 0) {
                 //microseconds
-                return "${RoundingUtils.roundForPrint2(value / 1000)} micros"
+                return "${NumberUtils.roundForPrint2(value / 1000)} micros"
             } else {
                 //milliseconds
-                return "${RoundingUtils.roundForPrint2(value / 1000000)} millis"
+                return "${NumberUtils.roundForPrint2(value / 1000000)} millis"
             }
         }
     }

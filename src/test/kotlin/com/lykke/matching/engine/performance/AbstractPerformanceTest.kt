@@ -3,7 +3,14 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestPersistenceManager
+import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -18,7 +25,14 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MarketOrderService
+import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.SingleLimitOrderService
+import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
+import com.lykke.matching.engine.utils.config.RedisConfig
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
@@ -79,7 +93,7 @@ abstract class AbstractPerformanceTest {
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
-        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, null)
+        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("", 0,0,false, null, 0))
         persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
                 persistenceManager,
@@ -133,7 +147,7 @@ abstract class AbstractPerformanceTest {
                 genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue,
                 clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
-
+        val multiLimitOrderValidatorImpl = MultiLimitOrderValidatorImpl(assetsHolder)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService,
                 genericLimitOrdersCancellerFactory,
                 limitOrdersProcessorFactory,
@@ -145,22 +159,22 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 lkkTradesQueue,
-                genericLimitOrderProcessorFactory)
+                genericLimitOrderProcessorFactory, multiLimitOrderValidatorImpl)
 
         rabbitSwapQueue = LinkedBlockingQueue()
+        val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor,
                 genericLimitOrderService,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache,
                 trustedClientsLimitOrdersQueue,
                 clientsLimitOrdersQueue,
                 orderBookQueue,
                 rabbitOrderBookQueue,
                 rabbitSwapQueue,
                 lkkTradesQueue,
-                genericLimitOrderProcessorFactory)
+                genericLimitOrderProcessorFactory, marketOrderValidator)
 
     }
 }

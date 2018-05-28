@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -7,19 +8,24 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.services.validators.BalanceUpdateValidator
+import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 import java.util.Date
 
-class BalanceUpdateService(private val balancesHolder: BalancesHolder): AbstractService {
+@Service
+class BalanceUpdateService @Autowired constructor (private val balancesHolder: BalancesHolder,
+                                                   private val balanceUpdateValidator: BalanceUpdateValidator): AbstractService {
 
     companion object {
-        val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
+        private val LOGGER = Logger.getLogger(BalanceUpdateService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
-
-    private var messagesCount: Long = 0
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.parsedMessage == null) {
@@ -27,34 +33,45 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
         }
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
-            LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+            LOGGER.debug("Processing holders update messageId: ${messageWrapper.messageId} for client ${message.clientId}, " +
+                    "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
 
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
             balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(), MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
+                    MessageType.BALANCE_UPDATE.name, Date(),
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).build())
-            LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
+
+            LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.BalanceUpdate
-            LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+            LOGGER.debug("Processing holders update for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (reservedBalance > message.amount) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type).build())
-                LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${RoundingUtils.roundForPrint(message.amount)}) is lower that reserved balance ${RoundingUtils.roundForPrint(reservedBalance)}")
+
+            try {
+                balanceUpdateValidator.performValidation(message)
+            } catch (e: ValidationException) {
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setStatus(MessageStatusUtils.toMessageStatus(e.validationType).type))
                 return
             }
 
             balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid, MessageType.BALANCE_UPDATE.name, Date(), listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance))))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
+                    MessageType.BALANCE_UPDATE.name,
+                    Date(),
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.uid).setStatus(MessageStatus.OK.type).build())
-            LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setStatus(MessageStatus.OK.type))
+            LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
         }
     }
 
@@ -69,22 +86,25 @@ class BalanceUpdateService(private val balancesHolder: BalancesHolder): Abstract
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
             val message =  parseOld(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid.toString()
-            messageWrapper.timestamp = Date().time
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid.toString()
+            messageWrapper.id = message.uid.toString()
             messageWrapper.parsedMessage = message
         } else {
             val message =  parse(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
-            messageWrapper.timestamp = Date().time
+            messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.uid
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid
         }
+
+        messageWrapper.timestamp = Date().time
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                     .setStatus(status.type))
         }
     }
 }

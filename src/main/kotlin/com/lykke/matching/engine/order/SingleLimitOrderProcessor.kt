@@ -10,7 +10,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.utils.order.OrderStatusUtils
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.util.Date
 
@@ -20,7 +20,12 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                                 private val matchingEngine: MatchingEngine,
                                 private val LOGGER: Logger) {
 
-    fun processLimitOrder(order: NewLimitOrder, isCancelOrders: Boolean, now: Date, payBackReserved: Double? = null, messageWrapper: MessageWrapper? = null) {
+    fun processLimitOrder(order: NewLimitOrder,
+                          isCancelOrders: Boolean,
+                          now: Date,
+                          messageId: String,
+                          payBackReserved: Double? = null,
+                          messageWrapper: MessageWrapper? = null) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
@@ -52,8 +57,8 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 LOGGER)
 
         matchingEngine.initTransaction()
-        val result = processor.preProcess(listOf(order))
-                .apply(order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
+        val result = processor.preProcess(messageId, listOf(order))
+                .apply(messageId, order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 
         if (result.orders.size != 1) {
             throw Exception("Error during limit order process (id: ${order.externalId}): result has invalid orders count: ${result.orders.size}")
@@ -62,7 +67,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         if (processedOrder.accepted) {
             writeResponse(messageWrapper, order, MessageStatus.OK)
         } else {
-            writeResponse(messageWrapper, processedOrder.order, OrderStatusUtils.toMessageStatus(processedOrder.order.status), processedOrder.reason)
+            writeResponse(messageWrapper, processedOrder.order, MessageStatusUtils.toMessageStatus(processedOrder.order.status), processedOrder.reason)
         }
     }
 
@@ -71,12 +76,12 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
             return
         }
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()))
         } else {
             if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setMatchingEngineId(order.id).setStatus(status.type))
             } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason))
             }
         }
     }

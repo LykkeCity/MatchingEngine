@@ -10,7 +10,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
@@ -45,9 +45,9 @@ import java.util.Date
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
-            changedAssetBalance.balance = RoundingUtils.parseDouble(changedAssetBalance.balance + operation.amount.toBigDecimal(), asset.accuracy)
+            changedAssetBalance.balance = NumberUtils.parseDouble(changedAssetBalance.balance + operation.amount.toBigDecimal(), asset.accuracy)
             changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
-                RoundingUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount.toBigDecimal(), asset.accuracy)
+                NumberUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount.toBigDecimal(), asset.accuracy)
             else
                 changedAssetBalance.reserved
         }
@@ -83,7 +83,7 @@ import java.util.Date
         return this
     }
 
-    fun apply(id: String, type: String) {
+    fun apply(id: String, type: String, messageId: String) {
         if (changedAssetBalances.isEmpty()) {
             return
         }
@@ -91,7 +91,7 @@ import java.util.Date
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
         persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
         clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList()))
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
     }
 
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
