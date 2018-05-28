@@ -9,8 +9,8 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.TableOperation
 
-class AzureCashOperationsDatabaseAccessor (connectionString: String,
-                                                                 tableName: String) : CashOperationsDatabaseAccessor {
+class AzureCashOperationsDatabaseAccessor(connectionString: String,
+                                          tableName: String) : CashOperationsDatabaseAccessor {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureCashOperationsDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()

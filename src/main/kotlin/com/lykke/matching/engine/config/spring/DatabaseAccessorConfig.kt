@@ -2,7 +2,10 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessorFactory
+import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
+import com.lykke.matching.engine.database.redis.RedisPersistenceManager
+import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,6 +25,16 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun persistenceManager(): PersistenceManager {
-        return DefaultPersistenceManager(balancesDatabaseAccessorsHolder())
+        return when (config.me.walletsStorage) {
+            WalletsStorage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
+            WalletsStorage.Redis -> {
+                val holder = balancesDatabaseAccessorsHolder()
+                RedisPersistenceManager(
+                        holder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        holder.secondaryAccessor,
+                        holder.redisConfig
+                )
+            }
+        }
     }
 }
