@@ -268,7 +268,9 @@ class MatchingEngine(private val LOGGER: Logger,
         val marketBalance = getMarketBalance(availableBalances, order, asset)
         if (marketBalance < BigDecimal.ZERO || reservedBalance < RoundingUtils.setScale((if (isBuy) totalLimitPrice else totalVolume), asset.accuracy, true)) {
             order.status = OrderStatus.NotEnoughFunds.name
-            LOGGER.info("Not enough funds for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: $marketBalance : $reservedBalance < ${RoundingUtils.round((if(isBuy) totalLimitPrice else totalVolume).toDouble(), asset.accuracy, true)}")
+            LOGGER.info("Not enough funds for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, " +
+                    "volume: ${RoundingUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, " +
+                    "marketBalance: $marketBalance : $reservedBalance < ${RoundingUtils.setScaleRoundUp((if(isBuy) totalLimitPrice else totalVolume), asset.accuracy)}")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 

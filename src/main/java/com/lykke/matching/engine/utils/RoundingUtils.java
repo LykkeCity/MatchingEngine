@@ -11,7 +11,7 @@ public class RoundingUtils {
     private static final DecimalFormat FORMAT = initFormat(8);
     private static final DecimalFormat FORMAT2 = initFormat(2);
     private static final int MAX_SCALE = 16;
-    private static final int MAX_SCALE_DIVIDE = 20;
+    public static final int MAX_SCALE_BIGDECIMAL_OPERATIONS = 100;
     private static final BigDecimal DELTA = BigDecimal.valueOf(0.0000000001);
 
     private static DecimalFormat initFormat(int accuracy) {
@@ -76,7 +76,7 @@ public class RoundingUtils {
     }
 
     public static BigDecimal divideWithMaxScale(BigDecimal dividend, BigDecimal divisor) {
-        return dividend.divide(divisor, MAX_SCALE_DIVIDE, ROUND_HALF_UP);
+        return dividend.divide(divisor, MAX_SCALE_BIGDECIMAL_OPERATIONS, ROUND_HALF_UP);
     }
 
     public static boolean equalsWithDefaultDelta(BigDecimal first, BigDecimal second) {
