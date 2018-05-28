@@ -1,9 +1,13 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessorFactory
 import com.lykke.matching.engine.database.WalletsStorage
+import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
+import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
