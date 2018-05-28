@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -35,8 +34,8 @@ import java.util.concurrent.BlockingQueue
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val assetsHolder: AssetsHolder,
                                    private val applicationSettingsCache: ApplicationSettingsCache,
-                                   private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                   private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor): AbstractService {
 
     companion object {
@@ -81,7 +80,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             writeErrorResponse(messageWrapper, message, operationId, LOW_BALANCE, e.message)
             return
         }
-        cashOperationsDatabaseAccessor.insertTransferOperation(operation)
+        dbTransferOperationQueue.put(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
