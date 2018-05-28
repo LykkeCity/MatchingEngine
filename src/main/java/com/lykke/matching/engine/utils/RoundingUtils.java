@@ -72,7 +72,7 @@ public class RoundingUtils {
     }
 
     public static Boolean equalsIgnoreScale(BigDecimal first, BigDecimal second) {
-        return first.compareTo(second) == 0;
+        return (first == second) || first.compareTo(second) == 0;
     }
 
     public static BigDecimal divideWithMaxScale(BigDecimal dividend, BigDecimal divisor) {
