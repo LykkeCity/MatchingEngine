@@ -3,6 +3,7 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -55,7 +56,6 @@ abstract class AbstractTest {
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
-    protected val testCashOperationsDatabaseAccessor = TestCashOperationsDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
@@ -64,6 +64,7 @@ abstract class AbstractTest {
     protected val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val clientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
+    protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
     protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
 
@@ -109,7 +110,7 @@ abstract class AbstractTest {
         val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrdersProcessorFactory, clientsLimitOrdersQueue, assetsHolder, assetsPairsHolder, balancesHolder, applicationSettingsCache)
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrderProcessorFactory, trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue)
 
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, testCashOperationsDatabaseAccessor, rabbitTransferQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, applicationSettingsCache, rabbitTransferQueue, dbTransferOperationQueue, FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService))
         minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
         balanceUpdateService = BalanceUpdateService(balancesHolder)
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
