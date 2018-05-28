@@ -38,7 +38,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
         val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
         if (message.reservedVolume < 0) {
-            if (RoundingUtils.parseDouble(reservedBalance + BigDecimal.valueOf(message.reservedVolume), accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.setScaleRoundHalfUp(reservedBalance + BigDecimal.valueOf(message.reservedVolume), accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
                 LOGGER.info("Reserved cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low reserved balance $reservedBalance")
@@ -46,7 +46,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             }
         } else {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            if (RoundingUtils.parseDouble(balance - reservedBalance - BigDecimal.valueOf(message.reservedVolume), accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance - BigDecimal.valueOf(message.reservedVolume), accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type).build())
                 LOGGER.info("Reserved cash in operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low balance $balance, current reserved balance $reservedBalance")

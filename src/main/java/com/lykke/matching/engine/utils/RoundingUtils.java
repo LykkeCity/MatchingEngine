@@ -63,10 +63,6 @@ public class RoundingUtils {
         return value.setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
     }
 
-    public static BigDecimal parseDouble(BigDecimal value, int accuracy) {
-        return value.setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
-    }
-
     public static Boolean isPositive(BigDecimal number) {
         return number.compareTo(BigDecimal.ZERO) > 0;
     }

@@ -202,7 +202,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                         } else {
                             orderCopy.reservedLimitVolume = if (order.isBuySide()) RoundingUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                             if (!isTrustedClient) {
-                                val newReservedBalance = RoundingUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
+                                val newReservedBalance = RoundingUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
                                 ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
                             }
                         }
@@ -289,7 +289,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume
         if (!isTrustedClient) {
             walletOperationsProcessor.preProcess(listOf(
-                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, BigDecimal.ZERO, RoundingUtils.parseDouble(limitVolume, limitAsset.accuracy))
+                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, BigDecimal.ZERO, RoundingUtils.setScaleRoundHalfUp(limitVolume, limitAsset.accuracy))
             ), true)
         }
 

@@ -100,7 +100,7 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
 
                     val clientAssets = reservedBalances.getOrPut(order.clientId) { HashMap() }
                     val balance = clientAssets.getOrPut(asset.assetId) { ClientOrdersReservedVolume() }
-                    val newBalance = RoundingUtils.parseDouble(balance.volume + reservedVolume, asset.accuracy)
+                    val newBalance = RoundingUtils.setScaleRoundHalfUp(balance.volume + reservedVolume, asset.accuracy)
                     balance.volume = newBalance
                     balance.orderIds.add(order.externalId)
                 } catch (e: Exception) {

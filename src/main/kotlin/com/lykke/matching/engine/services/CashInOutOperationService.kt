@@ -62,7 +62,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (RoundingUtils.parseDouble(balance - reservedBalance + BigDecimal.valueOf(message.volume), assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance + BigDecimal.valueOf(message.volume), assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type).build())
                 LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
