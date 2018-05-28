@@ -1,7 +1,13 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestPersistenceManager
+import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -10,11 +16,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.TestReservedCashOperationListener
-import com.lykke.matching.engine.services.BalanceUpdateService
-import com.lykke.matching.engine.services.ReservedCashInOutOperationService
-import com.lykke.matching.engine.services.validators.*
-import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.utils.config.RedisConfig
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -79,7 +81,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
-        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, null)
+        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("",0,0,false,null,0))
     }
 
     @Bean
