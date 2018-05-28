@@ -94,7 +94,7 @@ task printProperties << {
     }
 }
 
-jar {
+bootJar {
     if (project.hasProperty('teamcity')) {
         manifest {
             attributes 'Revision-number': teamcity['build.vcs.number'], 'Build-number': teamcity['build.number'], 'Version': version + '.' + teamcity['build.number']

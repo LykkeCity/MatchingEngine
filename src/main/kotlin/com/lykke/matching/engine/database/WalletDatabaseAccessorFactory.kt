@@ -27,7 +27,7 @@ class WalletDatabaseAccessorFactory(private val config: MatchingEngineConfig) {
                     jedis.auth(config.redis.password)
                 }
 
-                primaryAccessor = RedisWalletDatabaseAccessor(jedis)
+                primaryAccessor = RedisWalletDatabaseAccessor(jedis, config.redis.balanceDatabase)
 
                 secondaryAccessor = if (config.writeBalancesToSecondaryDb)
                     AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.newAccountsTableName!!)

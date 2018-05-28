@@ -40,7 +40,7 @@ class AccountsMigration(private val config: MatchingEngineConfig, private val ba
     private val jedis = initJedis(config)
 
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, azureAccountsTableName)
-    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor = RedisWalletDatabaseAccessor(jedis)
+    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor = RedisWalletDatabaseAccessor(jedis, config.redis.balanceDatabase)
 
     fun fromDbToRedis() {
         if (redisDatabaseAccessor.loadWallets().isNotEmpty()) {
