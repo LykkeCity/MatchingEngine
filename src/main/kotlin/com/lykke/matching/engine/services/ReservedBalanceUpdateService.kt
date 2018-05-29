@@ -21,7 +21,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         if (messageWrapper.parsedMessage == null) {
             parseMessage(messageWrapper)
         }
-        val message = messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
+        val message = getMessage(messageWrapper)
         LOGGER.debug("Processing holders update messageId: ${messageWrapper.messageId} " +
                 "for client ${message.clientId}, asset ${message.assetId}, " +
                 "reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
@@ -45,6 +45,9 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
                 .setStatus(MessageStatus.OK.type))
         LOGGER.debug("Reserved balance updated for client ${message.clientId}, asset ${message.assetId}, reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
     }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage as ProtocolMessages.ReservedBalanceUpdate
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedBalanceUpdate {
         return ProtocolMessages.ReservedBalanceUpdate.parseFrom(array)

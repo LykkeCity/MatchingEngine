@@ -32,7 +32,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             parseMessage(messageWrapper)
         }
         if (messageWrapper.type == MessageType.OLD_BALANCE_UPDATE.type) {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
+            val message = getMessage(messageWrapper)
             LOGGER.debug("Processing holders update messageId: ${messageWrapper.messageId} for client ${message.clientId}, " +
                     "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
@@ -73,6 +73,9 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
         }
     }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage!! as ProtocolMessages.OldBalanceUpdate
 
     private fun parse(array: ByteArray): ProtocolMessages.BalanceUpdate {
         return ProtocolMessages.BalanceUpdate.parseFrom(array)

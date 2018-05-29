@@ -17,7 +17,7 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
     }
 
     override fun getOrders(messageWrapper: MessageWrapper): Orders {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderMassCancel
+        val message = getMessage(messageWrapper)
 
         val clientId = message.clientId
         val assetPairId = if (message.hasAssetPairId()) message.assetPairId else null
@@ -27,6 +27,9 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
 
         return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy), emptyList())
     }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderMassCancel
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = ProtocolMessages.LimitOrderMassCancel.parseFrom(messageWrapper.byteArray)
