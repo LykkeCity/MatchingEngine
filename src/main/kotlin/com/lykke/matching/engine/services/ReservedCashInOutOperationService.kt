@@ -30,7 +30,9 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             parseMessage(messageWrapper)
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
-        LOGGER.debug("Processing reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}")
+        LOGGER.debug("Processing reserved cash in/out messageId: ${messageWrapper.messageId} " +
+                "operation (${message.id}) for client ${message.clientId}, " +
+                "asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)}")
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
                 Date(message.timestamp), BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
@@ -38,35 +40,44 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
         val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
         if (message.reservedVolume < 0) {
-            if (RoundingUtils.setScaleRoundHalfUp(reservedBalance + BigDecimal.valueOf(message.reservedVolume), accuracy) < BigDecimal.ZERO) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                        .setStatus(MessageStatus.LOW_BALANCE.type).build())
+            if (RoundingUtils.setScaleRoundHalfUp(reservedBalance + message.reservedVolume, accuracy).toDouble() < 0.0) {
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setMatchingEngineId(operation.id)
+                        .setStatus(MessageStatus.LOW_BALANCE.type))
                 LOGGER.info("Reserved cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low reserved balance $reservedBalance")
                 return
             }
         } else {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance - BigDecimal.valueOf(message.reservedVolume), accuracy) < BigDecimal.ZERO) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                        .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type).build())
+            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance - message.reservedVolume, accuracy).toDouble() < 0.0) {
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setMatchingEngineId(operation.id)
+                        .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type))
                 LOGGER.info("Reserved cash in operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.reservedVolume)}: low balance $balance, current reserved balance $reservedBalance")
                 return
             }
         }
 
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name)
+            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message))
             return
         }
 
-        rabbitCashInOutQueue.put(ReservedCashOperation(message.id, operation.clientId, operation.dateTime,
-                RoundingUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(), operation.assetId))
+        rabbitCashInOutQueue.put(ReservedCashOperation(message.id,
+                operation.clientId,
+                operation.dateTime,
+                RoundingUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
+                operation.assetId,
+                messageWrapper.messageId!!))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(MessageStatus.OK.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(operation.id)
+                .setStatus(MessageStatus.OK.type))
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.reservedVolume)} processed")
     }
 
@@ -76,14 +87,15 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.id
+        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        messageWrapper.id = message.id
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.ReservedCashInOutOperation
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type)
+        )
     }
-
 }

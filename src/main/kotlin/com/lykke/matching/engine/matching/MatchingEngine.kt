@@ -47,7 +47,7 @@ class MatchingEngine(private val LOGGER: Logger,
         return this
     }
 
-    fun match(originOrder: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, balance: BigDecimal? = null): MatchingResult {
+    fun match(originOrder: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, messageId: String, balance: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
@@ -75,7 +75,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
         val marketOrderTrades = LinkedList<TradeInfo>()
 
-        val limitOrdersReport = LimitOrdersReport()
+        val limitOrdersReport = LimitOrdersReport(messageId)
         var totalLimitVolume = BigDecimal.ZERO
 
         if (checkOrderBook(order, workingOrderBook)) {

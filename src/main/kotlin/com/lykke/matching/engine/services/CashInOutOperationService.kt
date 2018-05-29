@@ -39,7 +39,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         }
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        LOGGER.debug("Processing cash in/out messageId: ${messageWrapper.messageId} operation (${message.id})" +
+                " for client ${message.clientId}, asset ${message.assetId}," +
+                " amount: ${RoundingUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
 
         val operationId = UUID.randomUUID().toString()
         if (!checkFee(null, feeInstructions)) {
@@ -52,8 +54,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val operations = mutableListOf(operation)
 
         if (message.volume < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                    .setStatus(MessageStatus.DISABLED_ASSET.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.DISABLED_ASSET.type))
             LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: disabled asset")
             return
         }
@@ -61,9 +64,10 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         if (message.volume < 0) {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance + BigDecimal.valueOf(message.volume), assetsHolder.getAsset(operation.assetId).accuracy).toDouble() < 0.0) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
-                        .setStatus(MessageStatus.LOW_BALANCE.type).build())
+            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance + BigDecimal.valueOf(message.volume), assetsHolder.getAsset(operation.assetId).accuracy) < BigDecimal.ZERO) {
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                        .setMatchingEngineId(operation.id)
+                        .setStatus(MessageStatus.LOW_BALANCE.type))
                 LOGGER.info("Cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.volume)}: low balance $balance, reserved balance $reservedBalance")
                 return
             }
@@ -77,7 +81,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         }
 
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name)
+            balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
         }  catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, message, operationId, MessageStatus.LOW_BALANCE, e.message)
             return
@@ -89,10 +93,13 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 operation.dateTime,
                 RoundingUtils.setScaleRoundHalfUp(operation.amount, assetsHolder.getAsset(operation.assetId).accuracy).toPlainString(),
                 operation.assetId,
+                messageWrapper.messageId!!,
                 fees
         ))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(operation.id)
+                .setStatus(OK.type))
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)} processed")
     }
 
@@ -102,14 +109,15 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.id
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        messageWrapper.id = message.id
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type))
     }
 
     private fun writeInvalidFeeResponse(messageWrapper: MessageWrapper, message: ProtocolMessages.CashInOutOperation, operationId: String, errorMessage: String = "invalid fee for client") {
@@ -122,11 +130,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                    status: MessageStatus,
                                    errorMessage: String) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
-                .setStatusReason(errorMessage)
-                .build())
+                .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.volume)}: $errorMessage")
         return
     }

@@ -6,7 +6,8 @@ import java.util.Date
 class BalanceUpdate( val id: String,
                      val type: String,
                      val timestamp: Date,
-                     val balances: List<ClientBalanceUpdate>): JsonSerializable() {
+                     var balances: List<ClientBalanceUpdate>,
+                     val messageId: String): JsonSerializable() {
 
     override fun toString(): String {
         return toJson()

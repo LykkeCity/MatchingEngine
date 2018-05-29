@@ -61,6 +61,8 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
 
         initServices()
     }
@@ -530,4 +532,36 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         assertTrue(listOf("Ask-ToCancel-1", "Ask-ToCancel-2", "Bid-ToCancel-1").containsAll(cancelledOrders.map { it.order.externalId }))
     }
 
+
+    @Test
+    fun testAddLimitOrderWithSameReserveSum() {
+        //Do not send balance update if balances didn't change
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "Client2", listOf(
+                IncomingLimitOrder(100.0, 1.2, "1"),
+                IncomingLimitOrder(100.0, 1.3, "2")
+        )))
+
+        assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(250.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
+
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        var limitOrders = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, limitOrders.orders.size)
+        assertEquals(1.2, limitOrders.orders[0].order.price)
+        assertEquals(1.3, limitOrders.orders[1].order.price)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "Client2", listOf(
+                IncomingLimitOrder(100.0, 1.2, "3", oldUid = "1"),
+                IncomingLimitOrder(100.0, 1.3, "4", oldUid = "2")
+        )))
+
+        assertEquals(1, clientsLimitOrdersQueue.size)
+        limitOrders = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(4, limitOrders.orders.size)
+        assertEquals(1.2, limitOrders.orders[2].order.price)
+        assertEquals(1.3, limitOrders.orders[3].order.price)
+        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+    }
 }

@@ -14,7 +14,6 @@ class QuotesUpdateHandler(private val notificationQueue: BlockingQueue<QuotesUpd
     companion object {
         val LOGGER = Logger.getLogger(QuotesUpdateHandler::class.java.name)
     }
-
     private val connections = CopyOnWriteArrayList<ClientHandler>()
 
     override fun run() {

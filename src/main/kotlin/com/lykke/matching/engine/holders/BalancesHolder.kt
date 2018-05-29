@@ -117,9 +117,11 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
-        LOGGER.info(balanceUpdate.toString())
-
-        applicationEventPublisher.publishEvent(balanceUpdate)
+        balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance != it.oldBalance || it.newReserved != it.oldReserved }
+        if (balanceUpdate.balances.isNotEmpty()) {
+            LOGGER.info(balanceUpdate.toString())
+            applicationEventPublisher.publishEvent(balanceUpdate)
+        }
     }
 
     fun isTrustedClient(clientId: String) = applicationSettingsCache.isTrustedClient(clientId)
