@@ -5,6 +5,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import org.apache.commons.lang3.StringUtils
 import org.nustaq.serialization.FSTConfiguration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -16,6 +17,7 @@ import java.text.SimpleDateFormat
 import java.util.Arrays
 import java.util.Date
 import java.util.LinkedList
+import java.util.stream.Collectors
 
 class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: String): ProcessedMessagesDatabaseAccessor {
 
@@ -28,25 +30,22 @@ class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: S
 
     private var conf = FSTConfiguration.createJsonConfiguration()
 
+    init {
+        val messageDir = File(filePath)
+        messageDir.mkdirs()
+    }
+
     override fun loadProcessedMessages(startDate: Date): List<ProcessedMessage> {
-        val result = LinkedList<ProcessedMessage>()
+        var result = LinkedList<ProcessedMessage>()
         val startFileName = DATE_FORMAT.format(startDate)
 
         try {
             val dir = File(filePath)
-            if (dir.exists()) {
-                dir.listFiles().forEach { file ->
-                    if (!file.isDirectory && file.name >= startFileName) {
-                        try {
-                            result.addAll(loadFile(file))
-                        } catch (e: Exception) {
-                            LOGGER.error("Unable to read processed messages file ${file.name}.", e)
-                        }
-                    }
-                }
-            } else {
-                dir.mkdir()
-            }
+            result = Arrays.stream(dir.listFiles())
+                    .filter({ !it.isDirectory && it.name >= startFileName })
+                    .map { loadFile(it) }
+                    .flatMap({ it.stream() })
+                    .collect(Collectors.toCollection({ LinkedList<ProcessedMessage>() }))
         } catch(e: Exception) {
             LOGGER.error("Unable to processed messages", e)
             METRICS_LOGGER.logError( "Unable to processed messages", e)
@@ -57,17 +56,19 @@ class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: S
     }
 
     private fun loadFile(file: File): List<ProcessedMessage> {
-        val result = LinkedList<ProcessedMessage>()
-        val fileLocation = file.toPath()
-        Files.readAllLines(fileLocation).forEach {
-            if (it != null && it.isNotBlank()) {
-                val readCase = conf.asObject(it.toByteArray())
-                if (readCase is ProcessedMessage) {
-                    result.add(readCase)
-                }
-            }
+        try {
+            return Files.readAllLines(file.toPath())
+                .stream()
+                .filter(StringUtils::isNotBlank)
+                .map { conf.asObject(it.toByteArray()) }
+                .filter({ it is ProcessedMessage })
+                .map {it as ProcessedMessage}
+                .collect(Collectors.toCollection({ LinkedList<ProcessedMessage>() }))
+        } catch (e: Exception) {
+            LOGGER.error("Unable to read processed messages file ${file.name}.", e)
         }
-        return result
+
+        return LinkedList()
     }
 
     override fun saveProcessedMessage(message: ProcessedMessage) {
