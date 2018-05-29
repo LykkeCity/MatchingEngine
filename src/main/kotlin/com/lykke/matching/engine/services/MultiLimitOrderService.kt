@@ -83,7 +83,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             parseMessage(messageWrapper)
         }
         if (!isOldTypeMessage) {
-            processClientOrders(messageWrapper)
+            processMultiOrder(messageWrapper)
             return
         }
         val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
@@ -345,7 +345,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
     }
 
-    private fun processClientOrders(messageWrapper: MessageWrapper) {
+    private fun processMultiOrder(messageWrapper: MessageWrapper) {
         val multiLimitOrder = readMultiLimitOrder(messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder)
         val isTrustedClient = balancesHolder.isTrustedClient(multiLimitOrder.clientId)
         if (isTrustedClient) {

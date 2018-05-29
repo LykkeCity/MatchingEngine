@@ -40,7 +40,7 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
         val operationType = MessageType.valueOf(messageWrapper.type)?.name
                 ?: "Unknown message type ${messageWrapper.type}"
 
-        val operationId = messageWrapper.messageId ?: UUID.randomUUID().toString()
+        val operationId = messageWrapper.id ?: UUID.randomUUID().toString()
         cancellerFactory.create(LOGGER, now)
                 .preProcessLimitOrders(orders.orders)
                 .preProcessStopLimitOrders(orders.stopOrders)
