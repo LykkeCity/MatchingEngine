@@ -541,14 +541,14 @@ class ClientMultiLimitOrderTest : AbstractTest() {
                 IncomingLimitOrder(100.0, 1.3, "2")
         )))
 
-        assertEquals(1000.0, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
-        assertEquals(250.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(1000.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(250.0), testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         var limitOrders = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, limitOrders.orders.size)
-        assertEquals(1.2, limitOrders.orders[0].order.price)
-        assertEquals(1.3, limitOrders.orders[1].order.price)
+        assertEquals(BigDecimal.valueOf(1.2), limitOrders.orders[0].order.price)
+        assertEquals(BigDecimal.valueOf(1.3), limitOrders.orders[1].order.price)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
 
@@ -560,8 +560,8 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         assertEquals(1, clientsLimitOrdersQueue.size)
         limitOrders = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(4, limitOrders.orders.size)
-        assertEquals(1.2, limitOrders.orders[2].order.price)
-        assertEquals(1.3, limitOrders.orders[3].order.price)
+        assertEquals(BigDecimal.valueOf(1.2), limitOrders.orders[2].order.price)
+        assertEquals(BigDecimal.valueOf(1.3), limitOrders.orders[3].order.price)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 }

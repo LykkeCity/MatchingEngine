@@ -40,7 +40,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
         val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
         if (message.reservedVolume < 0) {
-            if (RoundingUtils.setScaleRoundHalfUp(reservedBalance + message.reservedVolume, accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.setScaleRoundHalfUp(reservedBalance + BigDecimal.valueOf(message.reservedVolume), accuracy) < BigDecimal.ZERO) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.LOW_BALANCE.type))
@@ -49,7 +49,7 @@ class ReservedCashInOutOperationService(private val assetsHolder: AssetsHolder,
             }
         } else {
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance - message.reservedVolume, accuracy).toDouble() < 0.0) {
+            if (RoundingUtils.setScaleRoundHalfUp(balance - reservedBalance - BigDecimal.valueOf(message.reservedVolume), accuracy) < BigDecimal.ZERO) {
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                         .setMatchingEngineId(operation.id)
                         .setStatus(MessageStatus.RESERVED_VOLUME_HIGHER_THAN_BALANCE.type))
