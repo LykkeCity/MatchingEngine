@@ -40,8 +40,10 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val message = getMessage(messageWrapper)
-        LOGGER.debug("Processing cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, amount: ${NumberUtils.roundForPrint(message.volume1)} " +
-                "to client ${message.clientId2}, asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)}")
+        LOGGER.debug("Processing cash swap messageId: ${messageWrapper.messageId}, " +
+                "operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}," +
+                " amount: ${NumberUtils.roundForPrint(message.volume1)} to client ${message.clientId2}, " +
+                "asset ${message.assetId2}, amount: ${NumberUtils.roundForPrint(message.volume2)}")
 
         val operationId = UUID.randomUUID().toString()
         val operation = SwapOperation(operationId, message.id, Date(message.timestamp),
@@ -56,7 +58,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         }
 
         try {
-            processSwapOperation(operation)
+            processSwapOperation(operation, messageWrapper.messageId!!)
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
@@ -65,15 +67,19 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         applicationEventPublisher.publishEvent(CashSwapEvent(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
-                operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy))))
+                operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy), messageWrapper.messageId!!))
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(OK.type).build())
+        messageWrapper
+                .writeNewResponse(ProtocolMessages.NewResponse
+                .newBuilder()
+                .setMatchingEngineId(operation.id)
+                .setStatus(OK.type))
         LOGGER.info("Cash swap operation (${message.id}) from client ${message.clientId1}, asset ${message.assetId1}, " +
                 "amount: ${NumberUtils.roundForPrint(message.volume1)} to client ${message.clientId2}, asset ${message.assetId2}, " +
                 "amount: ${NumberUtils.roundForPrint(message.volume2)} processed")
     }
 
-    private fun processSwapOperation(operation: SwapOperation) {
+    private fun processSwapOperation(operation: SwapOperation, messageId: String) {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,
@@ -86,7 +92,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
                 operation.dateTime, -operation.volume2))
 
-        balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(operation.externalId, MessageType.CASH_SWAP_OPERATION.name)
+        balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, messageId)
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashSwapOperation {
@@ -94,24 +100,24 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper, operation: SwapOperation, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
-                .setStatus(status.type).setStatusReason(errorMessage).build())
+                .setStatus(status.type)
+                .setStatusReason(errorMessage))
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.id
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        messageWrapper.id = messageWrapper.id
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = getMessage(messageWrapper)
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type))
     }
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashSwapOperation {

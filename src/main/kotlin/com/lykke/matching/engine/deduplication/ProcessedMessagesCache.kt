@@ -9,7 +9,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 class ProcessedMessagesCache(
-        expiryTime: Long,
+        expirationTime: Long,
         messages: List<ProcessedMessage>
 ) {
     private var prevPeriodMessageMap = HashMap<Byte, MutableSet<ProcessedMessage>>()
@@ -38,14 +38,14 @@ class ProcessedMessagesCache(
     }
 
     init {
-        val cutoffTime = Date().time - expiryTime
+        val cutoffTime = Date().time - expirationTime
         messages.forEach {
             if (it.timestamp > cutoffTime) {
                 messagesMap.getOrPut(it.type) { HashSet() }.add(it)
             }
         }
 
-        fixedRateTimer(name = "ProcessedMessagesCacheCleaner", initialDelay = expiryTime, period = expiryTime) {
+        fixedRateTimer(name = "ProcessedMessagesCacheCleaner", initialDelay = expirationTime, period = expirationTime) {
             clean()
         }
     }

@@ -38,9 +38,9 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             parseMessage(messageWrapper)
         }
         val message = getMessage(messageWrapper)
-        LOGGER.debug("Processing reserved cash in/out operation (${message.id}) " +
-                "for client ${message.clientId}, asset ${message.assetId}, " +
-                "amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
+        LOGGER.debug("Processing reserved cash in/out messageId: ${messageWrapper.messageId} " +
+                "operation (${message.id}) for client ${message.clientId}, " +
+                "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
                 Date(message.timestamp), 0.0, message.reservedVolume)
@@ -55,28 +55,33 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
 
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name)
+            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
             return
         }
 
-        applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id, operation.clientId,
-                operation.dateTime, operation.reservedAmount.round(accuracy), operation.assetId)) )
+        applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id,
+                operation.clientId,
+                operation.dateTime,
+                operation.reservedAmount.round(accuracy),
+                operation.assetId,
+                messageWrapper.messageId!!)) )
 
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id).setStatus(MessageStatus.OK.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(operation.id)
+                .setStatus(MessageStatus.OK.type))
+
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)} processed")
     }
 
     fun writeErrorResponse(messageWrapper: MessageWrapper, operation: WalletOperation, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
-        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operation.id)
-                .setStatus(status.type).setStatusReason(errorMessage).build())
+                .setStatus(status.type).setStatusReason(errorMessage))
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.ReservedCashInOutOperation {
@@ -85,14 +90,16 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.id
+        messageWrapper.messageId = if(message.hasMessageId()) message.messageId else  message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        messageWrapper.id = message.id
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = getMessage(messageWrapper)
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setStatus(status.type).build())
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setStatus(status.type)
+        )
     }
 
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.ReservedCashInOutOperation {

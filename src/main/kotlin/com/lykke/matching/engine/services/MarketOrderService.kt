@@ -73,8 +73,10 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val feeInstructions: List<NewFeeInstruction>?
         val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            LOGGER.debug("Got old market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
+            LOGGER.debug("Got old market order messageId: ${messageWrapper.messageId}, " +
+                    "id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
                     "volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
@@ -83,9 +85,10 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
             feeInstructions = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("Got market order id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
-                    "volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}, " +
-                    "fee: $feeInstruction, fees: $feeInstructions")
+            LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
+                    "id: ${message.uid}, client: ${message.clientId}, " +
+                    "asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, " +
+                    "straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
                     Processing.name, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume,
@@ -96,7 +99,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {
             order.status = e.orderStatus.name
-            rabbitSwapQueue.put(MarketOrderWithTrades(order))
+            rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
             writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
             return
         }
@@ -104,22 +107,22 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         val assetPair = getAssetPair(order)
         val orderBook = getOrderBook(order)
 
-        val matchingResult = matchingEngine.initTransaction().match(order, orderBook)
+        val matchingResult = matchingEngine.initTransaction().match(order, orderBook, messageWrapper.messageId!!)
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             ReservedVolumeGreaterThanBalance -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             InvalidFee -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             Matched -> {
@@ -145,17 +148,17 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     true
                 } catch (e: BalanceException) {
                     order.status = OrderStatus.NotEnoughFunds.name
-                    rabbitSwapQueue.put(MarketOrderWithTrades(order))
+                    rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
                     LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
                     writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), e.message)
                     false
                 }
 
-                val clientLimitOrdersReport = LimitOrdersReport()
-                val trustedClientLimitOrdersReport = LimitOrdersReport()
+                val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
+                val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
                     matchingResult.apply()
-                    walletOperationsProcessor.apply(order.externalId, MessageType.MARKET_ORDER.name)
+                    walletOperationsProcessor.apply(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
                     genericLimitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
                     orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
@@ -170,7 +173,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
-                    rabbitSwapQueue.put(MarketOrderWithTrades(order, matchingResult.marketOrderTrades.toMutableList()))
+                    rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order, matchingResult.marketOrderTrades.toMutableList()))
 
                     matchingResult.limitOrdersReport?.let {
                         clientLimitOrdersReport.orders.addAll(it.orders)
@@ -191,7 +194,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
 
         val endTime = System.nanoTime()
 
@@ -219,45 +222,58 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()).setRecordId(order.id).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                    .setRecordId(order.id))
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
-            if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
-            } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+            val newResponseBuilder = ProtocolMessages.NewResponse.newBuilder()
+                    .setMatchingEngineId(order.id)
+                    .setStatus(status.type)
+
+            if (reason != null) {
+                newResponseBuilder.statusReason = reason
             }
+
+            messageWrapper.writeNewResponse(newResponseBuilder)
+
         } else {
+            val marketOrderResponse = ProtocolMessages.MarketOrderResponse.newBuilder()
+                    .setStatus(status.type)
+
             if (order.price != null) {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setPrice(order.price!!).setStatus(status.type).build())
-            } else if (reason == null) {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setStatus(status.type).build())
-            } else {
-                messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(order.externalId).setStatus(status.type).setStatusReason(reason).build())
+                marketOrderResponse.price = order.price!!
+            } else if (reason != null) {
+                marketOrderResponse.statusReason = reason
             }
+
+            messageWrapper.writeMarketOrderResponse(marketOrderResponse)
         }
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
             val message =  parseOld(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid.toString()
+            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid.toString()
         } else {
             val message =  parse(messageWrapper.byteArray)
-            messageWrapper.messageId = message.uid
+            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
+            messageWrapper.id = message.uid
         }
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(messageWrapper.messageId!!.toLong()).build())
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
-        } else{
-            messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder().setId(messageWrapper.messageId!!).setStatus(status.type).build())
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setStatus(status.type))
+        } else {
+            messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
+                    .setStatus(status.type))
         }
     }
 }

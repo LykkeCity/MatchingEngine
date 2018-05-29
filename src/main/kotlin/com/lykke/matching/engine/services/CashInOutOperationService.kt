@@ -41,9 +41,10 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val message = getMessage(messageWrapper)
 
         val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out operation (${message.id}) " +
-                "for client ${message.clientId}, asset ${message.assetId}, " +
-                "amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        LOGGER.debug("Processing cash in/out messageId: ${messageWrapper.messageId} operation (${message.id})" +
+                " for client ${message.clientId}, asset ${message.assetId}," +
+                " amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+
         val operationId = UUID.randomUUID().toString()
 
         val walletOperation = getWalletOperation(operationId, message)
@@ -66,7 +67,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         try {
             balancesHolder.createWalletProcessor(LOGGER)
                     .preProcess(operations)
-                    .apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name)
+                    .apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
         }  catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, walletOperation.id, MessageStatus.LOW_BALANCE, e.message)
             return
@@ -75,22 +76,25 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         publishRabbitMessage(message, walletOperation, fees)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(walletOperation.id)
-                .setStatus(OK.type).build())
+                .setStatus(OK.type))
 
         LOGGER.info("Cash in/out walletOperation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, " +
                 "amount: ${NumberUtils.roundForPrint(message.volume)} processed")
     }
 
-    private fun publishRabbitMessage(message: ProtocolMessages.CashInOutOperation, walletOperation: WalletOperation, fees: List<Fee>) {
+    private fun publishRabbitMessage(message: ProtocolMessages.CashInOutOperation,
+                                     walletOperation: WalletOperation,
+                                     fees: List<Fee>,
+                                     messageId: String) {
         rabbitCashInOutQueue.put(CashOperation(
                 message.id,
                 walletOperation.clientId,
                 walletOperation.dateTime,
                 walletOperation.amount.round(assetsHolder.getAsset(walletOperation.assetId).accuracy),
                 walletOperation.assetId,
+                messageId,
                 fees
         ))
     }
@@ -112,16 +116,15 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = message.id
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
+        messageWrapper.id = message.id
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
-                .setStatus(status.type).build())
+                .setStatus(status.type))
     }
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
@@ -130,11 +133,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                    errorMessage: String = StringUtils.EMPTY) {
         val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setId(message.id)
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
-                .setStatusReason(errorMessage)
-                .build())
+                .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)}: $errorMessage")
     }
