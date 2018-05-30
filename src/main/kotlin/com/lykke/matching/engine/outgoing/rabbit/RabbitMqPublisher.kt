@@ -18,6 +18,8 @@ class RabbitMqPublisher(
         private val uri: String,
         private val exchangeName: String,
         private val queue: BlockingQueue<JsonSerializable>,
+        private val appName: String,
+        private val appVersion: String,
         /** null if do not need to log */
         private val messageDatabaseLogger: MessageDatabaseLogger? = null) : Thread(RabbitMqPublisher::class.java.name) {
 
@@ -28,6 +30,7 @@ class RabbitMqPublisher(
         private val STATS_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.stats")
         private const val EXCHANGE_TYPE = "fanout"
         private const val LOG_COUNT = 1000
+        private const val CONNECTION_NAME_FORMAT = "[Pub] %s %s to %s"
     }
 
     private var connection: Connection? = null
@@ -43,7 +46,7 @@ class RabbitMqPublisher(
         LOGGER.info("Connecting to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
         try {
-            this.connection = factory.newConnection()
+            this.connection = factory.newConnection(CONNECTION_NAME_FORMAT.format(appName, appVersion, exchangeName))
             this.channel = connection!!.createChannel()
             channel!!.exchangeDeclare(exchangeName, EXCHANGE_TYPE, true)
 
