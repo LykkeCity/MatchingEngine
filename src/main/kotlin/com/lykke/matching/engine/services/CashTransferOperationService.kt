@@ -60,7 +60,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
 
         try {
-            cashTransferOperationValidator.performValidation(message, operationId)
+            cashTransferOperationValidator.performValidation(message, operationId, feeInstructions, feeInstruction)
         } catch (e: ValidationException) {
             writeErrorResponse(messageWrapper, operationId, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return

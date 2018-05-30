@@ -51,7 +51,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val operations = mutableListOf(walletOperation)
 
         try {
-            cashInOutOperationValidator.performValidation(message)
+            cashInOutOperationValidator.performValidation(message, feeInstructions)
         } catch (e: ValidationException) {
             writeErrorResponse(messageWrapper, walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return

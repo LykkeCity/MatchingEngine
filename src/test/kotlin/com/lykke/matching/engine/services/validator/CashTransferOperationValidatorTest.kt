@@ -4,6 +4,7 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
@@ -22,6 +23,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.util.*
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (CashTransferOperationValidatorTest.Config::class)])
@@ -75,7 +77,9 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID)
+            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
+                    getFeeInstructions(),
+                    null)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
@@ -89,9 +93,14 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationBuilder.addFees(ProtocolMessages.Fee.newBuilder()
-                    .setType(FeeType.EXTERNAL_FEE.externalId))
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID)
+            val invalidFee = ProtocolMessages.Fee.newBuilder()
+                    .setType(FeeType.EXTERNAL_FEE.externalId).build()
+
+
+            cashTransferOperationBuilder.addFees(invalidFee)
+            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
+                    NewFeeInstruction.create(Arrays.asList(invalidFee)),
+                    null)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
             throw e
@@ -106,7 +115,9 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID)
+            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
+                    getFeeInstructions(),
+                    null)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -123,7 +134,9 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID)
+            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
+                    getFeeInstructions(),
+                    null)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
@@ -133,7 +146,9 @@ class CashTransferOperationValidatorTest {
     @Test
     fun testValidData() {
         //when
-        cashTransferOperationValidator.performValidation(getCashTransferOperationBuilder().build(), OPERATION_ID)
+        cashTransferOperationValidator.performValidation(getCashTransferOperationBuilder().build(), OPERATION_ID,
+                getFeeInstructions(),
+                null)
     }
 
     fun getCashTransferOperationBuilder(): ProtocolMessages.CashTransferOperation.Builder {
@@ -144,5 +159,11 @@ class CashTransferOperationValidatorTest {
                 .setTimestamp(System.currentTimeMillis())
                 .setFromClientId(CLIENT_NAME1)
                 .setToClientId(CLIENT_NAME2).setVolume(0.0)
+    }
+
+    private fun getFeeInstructions():  List<NewFeeInstruction> {
+        return NewFeeInstruction.create(Arrays.asList(ProtocolMessages.Fee.newBuilder()
+                .setType(FeeType.NO_FEE.externalId)
+                .build()))
     }
 }

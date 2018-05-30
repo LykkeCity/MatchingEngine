@@ -4,6 +4,7 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.util.*
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -70,9 +72,12 @@ class CashInOutOperationValidatorTest {
 
         //when
         try {
-            cashInOutOperationBuilder.addFees(ProtocolMessages.Fee.newBuilder()
-                    .setType(FeeType.EXTERNAL_FEE.externalId))
-            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build())
+            val fee = ProtocolMessages.Fee.newBuilder()
+                    .setType(FeeType.EXTERNAL_FEE.externalId).build()
+            cashInOutOperationBuilder.addFees(fee)
+            val feeInstructions = NewFeeInstruction.create(Arrays.asList(fee))
+
+            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build(), feeInstructions)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
             throw e
@@ -90,7 +95,7 @@ class CashInOutOperationValidatorTest {
         try {
             val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
             cashInOutOperationBuilder.volume = -1.0
-            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build())
+            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build(), getFeeInstructions())
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
@@ -107,7 +112,7 @@ class CashInOutOperationValidatorTest {
 
         //when
         try {
-            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build())
+            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build(), getFeeInstructions())
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
@@ -122,7 +127,7 @@ class CashInOutOperationValidatorTest {
 
         //when
         try {
-            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build())
+            cashInOutOperationValidator.performValidation(cashInOutOperationBuilder.build(), getFeeInstructions())
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -131,7 +136,8 @@ class CashInOutOperationValidatorTest {
 
     @Test
     fun validData() {
-        cashInOutOperationValidator.performValidation(getDefaultCashInOutOperationBuilder().build())
+        cashInOutOperationValidator.performValidation(getDefaultCashInOutOperationBuilder().build(),
+                getFeeInstructions())
     }
 
     private fun getDefaultCashInOutOperationBuilder(): ProtocolMessages.CashInOutOperation.Builder {
@@ -143,5 +149,11 @@ class CashInOutOperationValidatorTest {
                 .setTimestamp(System.currentTimeMillis())
                 .addFees(ProtocolMessages.Fee.newBuilder()
                         .setType(FeeType.NO_FEE.externalId))
+    }
+
+    private fun getFeeInstructions():  List<NewFeeInstruction> {
+        return NewFeeInstruction.create(Arrays.asList(ProtocolMessages.Fee.newBuilder()
+                .setType(FeeType.NO_FEE.externalId)
+                .build()))
     }
 }

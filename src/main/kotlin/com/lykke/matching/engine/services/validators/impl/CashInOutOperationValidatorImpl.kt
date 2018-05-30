@@ -20,8 +20,7 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
         private val LOGGER = Logger.getLogger(CashInOutOperationValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
-        val feeInstructions = NewFeeInstruction.create(cashInOutOperation.feesList)
+    override fun performValidation(cashInOutOperation: ProtocolMessages.CashInOutOperation, feeInstructions: List<NewFeeInstruction>) {
         isFeeValid(feeInstructions)
         isAssetEnabled(cashInOutOperation)
         isBalanceValid(cashInOutOperation)

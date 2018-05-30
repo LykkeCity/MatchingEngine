@@ -26,9 +26,9 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
         private val LOGGER = Logger.getLogger(CashTransferOperationValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(cashTransferOperation: ProtocolMessages.CashTransferOperation, operationId: String) {
-        val feeInstruction = if (cashTransferOperation.hasFee()) FeeInstruction.create(cashTransferOperation.fee) else null
-        val feeInstructions = NewFeeInstruction.create(cashTransferOperation.feesList)
+    override fun performValidation(cashTransferOperation: ProtocolMessages.CashTransferOperation,
+                                   operationId: String, feeInstructions: List<NewFeeInstruction>,
+                                   feeInstruction: FeeInstruction?) {
         val operation = TransferOperation(operationId, cashTransferOperation.id, cashTransferOperation.fromClientId, cashTransferOperation.toClientId,
                 cashTransferOperation.assetId, Date(cashTransferOperation.timestamp), cashTransferOperation.volume, cashTransferOperation.overdraftLimit,
                 listOfFee(feeInstruction, feeInstructions))
