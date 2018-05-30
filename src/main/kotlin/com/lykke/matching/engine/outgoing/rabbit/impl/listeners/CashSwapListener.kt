@@ -38,7 +38,7 @@ class CashSwapListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.cashOperations, queue,
+        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.swapOperations, queue,
                 MessageDatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
                                 logTable, logBlobName)))

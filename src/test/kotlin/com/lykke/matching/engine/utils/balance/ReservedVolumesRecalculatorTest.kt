@@ -120,7 +120,7 @@ class ReservedVolumesRecalculatorTest {
 
     @Test
     fun testRecalculate() {
-        val recalculator = ReservedVolumesRecalculator(testBackOfficeDatabaseAccessor, orderBookDatabaseAccessor,
+        val recalculator = ReservedVolumesRecalculator(orderBookDatabaseAccessor,
                 stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext)
         recalculator.recalculate()
 

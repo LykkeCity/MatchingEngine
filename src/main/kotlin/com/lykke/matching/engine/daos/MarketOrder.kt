@@ -53,7 +53,7 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
     }
 
     override fun toString(): String {
-        return "market order id: $id}, client: $clientId, asset: $assetPairId, " +
+        return "market order id: $id, client: $clientId, asset: $assetPairId, " +
                 "volume: ${NumberUtils.roundForPrint(volume)}, straight: $straight"
     }
 }

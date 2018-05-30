@@ -226,7 +226,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         // recalculate reserved volumes to reset locked reservedAmount
         val recalculator = ReservedVolumesRecalculator(
-                testBackOfficeDatabaseAccessor,
                 testOrderDatabaseAccessor,
                 TestStopOrderBookDatabaseAccessor(),
                 TestReservedVolumesDatabaseAccessor(),
