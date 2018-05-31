@@ -33,4 +33,6 @@ enum class OrderStatus {
     ,NotFoundPrevious
     // Replaced
     ,Replaced
+    ,InvalidPriceAccuracy
+    ,InvalidVolumeAccuracy
 }

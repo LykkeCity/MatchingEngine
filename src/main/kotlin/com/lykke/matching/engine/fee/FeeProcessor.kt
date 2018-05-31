@@ -14,7 +14,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.HashMap
 import java.util.LinkedList
@@ -97,7 +97,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                 fee.transfer.volume else 0.0
         }
         if (totalFeeAmount > 0 && totalFeeAmount > Math.abs(receiptOperation.amount)) {
-            throw FeeException("Total fee amount should be not more than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${RoundingUtils.roundForPrint(totalFeeAmount)}, operation amount ${RoundingUtils.roundForPrint(receiptOperation.amount)})")
+            throw FeeException("Total fee amount should be not more than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${NumberUtils.roundForPrint(totalFeeAmount)}, operation amount ${NumberUtils.roundForPrint(receiptOperation.amount)})")
         }
         externalBalances?.putAll(balances)
         operations.clear()
@@ -124,7 +124,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val feeAsset = getFeeAsset(feeInstruction, operationAsset)
         val isAnotherAsset = operationAsset.assetId != feeAsset.assetId
 
-        val absFeeAmount = RoundingUtils.round(when (feeSizeType) {
+        val absFeeAmount = NumberUtils.round(when (feeSizeType) {
             FeeSizeType.PERCENTAGE -> {
                 // In case of cash out receipt operation has a negative amount, but fee amount should be positive
                 val absBaseAssetFeeAmount = Math.abs(receiptOperation.amount) * feeSize
@@ -159,10 +159,10 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
         }
         val receiptOperation = receiptOperationWrapper.baseReceiptOperation
-        clientBalances[feeAsset.assetId] = RoundingUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
+        clientBalances[feeAsset.assetId] = NumberUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.sourceClientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
-        return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) RoundingUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
+        return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
     }
 
     private fun processClientFee(feeInstruction: FeeInstruction,
@@ -181,7 +181,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             if (balance < absFeeAmount) {
                 throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
             }
-            clientBalances[feeAsset.assetId] = RoundingUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
+            clientBalances[feeAsset.assetId] = NumberUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
             operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, receiptOperation.clientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
         } else {
             val baseReceiptOperationAmount = receiptOperationWrapper.baseReceiptOperation.amount
@@ -190,14 +190,14 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             }
             val newReceiptAmount = if (baseReceiptOperationAmount > 0) receiptOperation.amount - absFeeAmount else receiptOperation.amount
             operations.remove(receiptOperation)
-            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId, receiptOperation.assetId, receiptOperation.dateTime, RoundingUtils.parseDouble(newReceiptAmount, feeAsset.accuracy).toDouble())
+            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId, receiptOperation.assetId, receiptOperation.dateTime, NumberUtils.parseDouble(newReceiptAmount, feeAsset.accuracy).toDouble())
             operations.add(newReceiptOperation)
             receiptOperationWrapper.currentReceiptOperation = newReceiptOperation
         }
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
 
-        return FeeTransfer(receiptOperation.externalId, receiptOperation.clientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) RoundingUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
+        return FeeTransfer(receiptOperation.externalId, receiptOperation.clientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
     }
 
     private fun getFeeAsset(feeInstruction: FeeInstruction, operationAsset: Asset): Asset {

@@ -12,7 +12,6 @@ import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
@@ -59,8 +58,12 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
+import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.QueueSizeLogger
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -99,9 +102,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val rabbitOrderBooksQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    private val rabbitCashSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    private val rabbitReservedCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitSwapQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitTrustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitClientLimitOrdersQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -167,9 +168,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
-        val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor, 60000))
-        val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor, 60000))
+        val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
+        val dictionariesDatabaseAccessor = applicationContext.getBean(DictionariesDatabaseAccessor::class.java)
+        val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
         val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
@@ -215,27 +216,31 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 orderBooksQueue,
                 rabbitOrderBooksQueue)
 
-        this.cashOperationService = CashOperationService(balanceHolder, applicationSettingsCache)
-        this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, applicationSettingsCache, rabbitCashInOutQueue, feeProcessor)
-        this.reservedCashInOutOperationService = ReservedCashInOutOperationService(assetsHolder, balanceHolder, rabbitReservedCashInOutQueue)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, applicationSettingsCache, rabbitTransferQueue, dbTransferOperationQueue, feeProcessor)
-        this.cashSwapOperationService = CashSwapOperationService(balanceHolder, assetsHolder, cashOperationsDatabaseAccessor, rabbitCashSwapQueue)
+        this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
+        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
+        this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, rabbitCashInOutQueue, feeProcessor, cashInOutOperationValidator)
+        this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
+        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder,  rabbitTransferQueue, dbTransferOperationQueue, feeProcessor, cashTransferOperationValidator)
+        this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, rabbitTrustedClientsLimitOrdersQueue,
-                rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue, genericLimitOrderProcessorFactory)
 
+        val multiLimitOrderValidator = applicationContext.getBean(MultiLimitOrderValidator::class.java)
+        this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, rabbitTrustedClientsLimitOrdersQueue,
+                rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue, genericLimitOrderProcessorFactory, multiLimitOrderValidator)
+        val marketOrderValidator = applicationContext.getBean(MarketOrderValidator::class.java)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder,
-                assetsPairsHolder, balanceHolder, applicationSettingsCache, rabbitTrustedClientsLimitOrdersQueue,
+                assetsPairsHolder, balanceHolder, rabbitTrustedClientsLimitOrdersQueue,
                 rabbitClientLimitOrdersQueue,
-                orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory)
+                orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
 
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        this.balanceUpdateService = BalanceUpdateService(balanceHolder)
+        this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         if (config.me.cancelMinVolumeOrders) {
@@ -246,7 +251,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
                 genericLimitOrderService,
-                applicationContext.environment.getProperty("application.tick.frequency").toLong())
+                applicationContext.environment.getProperty("application.tick.frequency")!!.toLong())
 
         if (!isLocalProfile) {
             marketStateCache.refresh()
@@ -279,20 +284,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 config.me.name,
                 AppVersion.VERSION)
 
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.reservedCashOperations, rabbitReservedCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineReservedCashOperations", logContainer)),
-                rabbitMqService,
-                config.me.name,
-                AppVersion.VERSION)
-
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
-                rabbitMqService,
-                config.me.name,
-                AppVersion.VERSION)
-
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.swapOperations, rabbitCashSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineSwapOperations", logContainer)),
                 rabbitMqService,
                 config.me.name,
                 AppVersion.VERSION)
@@ -340,7 +333,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
                 val result = healthService.collectMonitoringResult()
                 if (result != null) {
-                    MONITORING_LOGGER.info("CPU: ${RoundingUtils.roundForPrint2(result.vmCpuLoad)}/${RoundingUtils.roundForPrint2(result.totalCpuLoad)}, " +
+                    MONITORING_LOGGER.info("CPU: ${NumberUtils.roundForPrint2(result.vmCpuLoad)}/${NumberUtils.roundForPrint2(result.totalCpuLoad)}, " +
                             "RAM: ${result.freeMemory}/${result.totalMemory}, " +
                             "heap: ${result.freeHeap}/${result.totalHeap}/${result.maxHeap}, " +
                             "swap: ${result.freeSwap}/${result.totalSwap}, " +

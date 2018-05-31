@@ -29,8 +29,8 @@ class BalanceUpdatesListener {
     @Value("\${azure.logs.blob.container}")
     private lateinit var logBlobName: String
 
-    @Value("\${azure.table.prefix}")
-    private lateinit var tablePrefix: String
+    @Value("\${azure.logs.balance.update.table}")
+    private lateinit var logTable: String
 
     @EventListener
     fun processBalanceUpdate(balanceUpdate: BalanceUpdate) {
@@ -43,6 +43,6 @@ class BalanceUpdatesListener {
                 AppVersion.VERSION,
                 MessageDatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
-                                "${tablePrefix}MatchingEngineMarketOrders", logBlobName)))
+                                logTable, logBlobName)))
     }
 }

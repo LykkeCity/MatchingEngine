@@ -2,9 +2,11 @@ package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 
+@Component
 class BalanceUpdateHandlerTest {
     val balanceUpdateQueue: Queue<BalanceUpdate> = LinkedBlockingQueue()
     val balanceUpdateQueueNotification: Queue<BalanceUpdateNotification> = LinkedBlockingQueue()
