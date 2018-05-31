@@ -25,20 +25,14 @@ open class DatabaseAccessorConfig {
     private lateinit var config: Config
 
     @Bean
-    open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
-        return WalletDatabaseAccessorFactory(config.me).createAccessorsHolder()
-    }
-
-    @Bean
-    open fun persistenceManager(): PersistenceManager {
+    open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): PersistenceManager {
         return when (config.me.walletsStorage) {
-            WalletsStorage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
+            WalletsStorage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor)
             WalletsStorage.Redis -> {
-                val holder = balancesDatabaseAccessorsHolder()
                 RedisPersistenceManager(
-                        holder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        holder.secondaryAccessor,
-                        holder.redisConfig
+                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        balancesDatabaseAccessorsHolder.redisConfig
                 )
             }
         }

@@ -3,38 +3,48 @@ package com.lykke.matching.engine.database
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.utils.config.MatchingEngineConfig
+import com.lykke.matching.engine.utils.config.Config
+import org.springframework.beans.factory.FactoryBean
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import redis.clients.jedis.Jedis
 
-class WalletDatabaseAccessorFactory(private val config: MatchingEngineConfig) {
+@Component
+class WalletDatabaseAccessorFactory: FactoryBean<BalancesDatabaseAccessorsHolder> {
 
-    fun createAccessorsHolder(): BalancesDatabaseAccessorsHolder {
+    @Autowired
+    private lateinit var config: Config
+
+    override fun getObjectType(): Class<*> {
+        return BalancesDatabaseAccessorsHolder::class.java
+    }
+
+    override fun getObject(): BalancesDatabaseAccessorsHolder {
         val primaryAccessor: WalletDatabaseAccessor
         val secondaryAccessor: WalletDatabaseAccessor?
 
-        when (config.walletsStorage) {
+        when (config.me.walletsStorage) {
             WalletsStorage.Azure -> {
-                primaryAccessor = AzureWalletDatabaseAccessor(config.db.balancesInfoConnString,
-                        config.db.accountsTableName ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME)
+                primaryAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString,
+                        config.me.db.accountsTableName ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME)
 
                 secondaryAccessor = null
             }
 
             WalletsStorage.Redis -> {
-                val jedis = Jedis(config.redis.host, config.redis.port, config.redis.timeout, config.redis.useSsl)
+                val jedis = Jedis(config.me.redis.host, config.me.redis.port, config.me.redis.timeout, config.me.redis.useSsl)
                 jedis.connect()
-                if (config.redis.password != null) {
-                    jedis.auth(config.redis.password)
+                if (config.me.redis.password != null) {
+                    jedis.auth(config.me.redis.password)
                 }
 
-                primaryAccessor = RedisWalletDatabaseAccessor(jedis, config.redis.balanceDatabase)
+                primaryAccessor = RedisWalletDatabaseAccessor(jedis, config.me.redis.balanceDatabase)
 
-                secondaryAccessor = if (config.writeBalancesToSecondaryDb)
-                    AzureWalletDatabaseAccessor(config.db.balancesInfoConnString, config.db.newAccountsTableName!!)
+                secondaryAccessor = if (config.me.writeBalancesToSecondaryDb)
+                    AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.newAccountsTableName!!)
                 else null
             }
         }
-        return BalancesDatabaseAccessorsHolder(primaryAccessor, secondaryAccessor, config.redis)
+        return BalancesDatabaseAccessorsHolder(primaryAccessor, secondaryAccessor, config.me.redis)
     }
-
 }
