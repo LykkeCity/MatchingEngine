@@ -3,18 +3,33 @@ package com.lykke.matching.engine.database.cache
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import kotlin.concurrent.fixedRateTimer
 
-class AssetPairsCache(
+@Component
+class AssetPairsCache @Autowired constructor (
         private val databaseAccessor: DictionariesDatabaseAccessor,
-        updateInterval: Long? = null) : DataCache() {
+        @Value("\${application.assets.pair.cache.update.interval}") updateInterval: Long? = null) : DataCache() {
 
     companion object {
         private val LOGGER = Logger.getLogger(AssetPairsCache::class.java)
     }
 
-    private var assetPairsById: Map<String, AssetPair>
-    private var assetPairsByPair: Map<String, AssetPair>
+    private var assetPairsById: Map<String, AssetPair> = HashMap()
+    private var assetPairsByPair: Map<String, AssetPair> = HashMap()
+
+    init {
+        this.assetPairsById = databaseAccessor.loadAssetPairs()
+        this.assetPairsByPair = generateAssetPairsMapByPair(assetPairsById)
+        LOGGER.info("Loaded ${assetPairsById.size} assets pairs")
+        updateInterval?.let {
+            fixedRateTimer(name = "Asset Pairs Cache Updater", initialDelay = it, period = it) {
+                update()
+            }
+        }
+    }
 
     fun getAssetPair(assetPair: String): AssetPair? {
         return assetPairsById[assetPair] ?: databaseAccessor.loadAssetPair(assetPair)
@@ -45,17 +60,4 @@ class AssetPairsCache(
     }
 
     private fun pairKey(assetId1: String, assetId2: String) = "${assetId1}_$assetId2"
-
-    init {
-        val assetPairsById = databaseAccessor.loadAssetPairs()
-        val assetPairsByPair = generateAssetPairsMapByPair(assetPairsById)
-        this.assetPairsById = assetPairsById
-        this.assetPairsByPair = assetPairsByPair
-        LOGGER.info("Loaded ${assetPairsById.size} assets pairs")
-        updateInterval?.let {
-            fixedRateTimer(name = "Asset Pairs Cache Updater", initialDelay = it, period = it) {
-                update()
-            }
-        }
-    }
 }

@@ -4,7 +4,7 @@ import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.Channel
@@ -100,7 +100,7 @@ class RabbitMqPublisher(
 
         if (messagesCount % LOG_COUNT == 0L) {
             STATS_LOGGER.info("Exchange: $exchangeName. Messages: $LOG_COUNT. Total: ${PrintUtils.convertToString(totalTime)}. " +
-                    " Persist: ${PrintUtils.convertToString(totalPersistTime)}, ${RoundingUtils.roundForPrint2(100 * totalPersistTime / totalTime)} %")
+                    " Persist: ${PrintUtils.convertToString(totalPersistTime)}, ${NumberUtils.roundForPrint2(100 * totalPersistTime / totalTime)} %")
             totalPersistTime = 0.0
             totalTime = 0.0
         }

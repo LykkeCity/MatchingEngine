@@ -13,7 +13,16 @@ class TestConfigDatabaseAccessor : ConfigDatabaseAccessor {
         val trustedClients: MutableSet<String> = HashSet(settings.trustedClients)
         trustedClients.add(trustedClient)
 
-        settings = Settings(trustedClients = trustedClients)
+        settings = Settings(trustedClients = trustedClients,
+                disabledAssets = settings.disabledAssets)
+    }
+
+    fun addDisabledAsset(disabledAsset: String) {
+        val disabledAssets: MutableSet<String> = HashSet(settings.disabledAssets)
+        disabledAssets.add(disabledAsset)
+
+        settings = Settings(trustedClients = settings.trustedClients,
+                disabledAssets = disabledAssets)
     }
 
     fun clear() {
