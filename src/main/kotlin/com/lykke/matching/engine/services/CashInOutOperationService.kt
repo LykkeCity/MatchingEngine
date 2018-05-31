@@ -16,13 +16,11 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
-import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
@@ -94,7 +92,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 message.id,
                 walletOperation.clientId,
                 walletOperation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(walletOperation.amount, assetsHolder.getAsset(operation.assetId).accuracy).toPlainString(),
+                NumberUtils.setScaleRoundHalfUp(walletOperation.amount, assetsHolder.getAsset(walletOperation.assetId).accuracy).toPlainString(),
                 walletOperation.assetId,
                 messageId,
                 fees

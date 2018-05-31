@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
 
@@ -13,7 +13,7 @@ data class TradeInfo(val assetPair: String, val isBuy: Boolean, val price: BigDe
 
         if (assetPair != other.assetPair) return false
         if (isBuy != other.isBuy) return false
-        if (!RoundingUtils.equalsIgnoreScale(price, other.price)) return false
+        if (!NumberUtils.equalsIgnoreScale(price, other.price)) return false
         if (date != other.date) return false
 
         return true

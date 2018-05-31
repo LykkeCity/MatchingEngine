@@ -48,8 +48,8 @@ public class NumberUtils {
         return value.setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
     }
 
-    public static boolean isScaleSmallerOrEqual(double number, int expectedScale) {
-        return BigDecimal.valueOf(number).stripTrailingZeros().scale() <= expectedScale;
+    public static boolean isScaleSmallerOrEqual(BigDecimal number, int expectedScale) {
+        return number.stripTrailingZeros().scale() <= expectedScale;
     }
 
     public static BigDecimal setScale(BigDecimal value, int accuracy, boolean roundUp) {

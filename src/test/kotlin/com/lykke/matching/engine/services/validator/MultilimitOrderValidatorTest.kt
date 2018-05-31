@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import java.util.*
 import kotlin.test.assertEquals
 
@@ -50,7 +51,7 @@ class MultilimitOrderValidatorTest {
         @Bean
         open fun testDictionariesDatabaseAccessor(): TestDictionariesDatabaseAccessor {
             val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-            testDictionariesDatabaseAccessor.addAssetPair(AssetPair( ASSET_PAIR_ID, BASE_ASSET_ID, QUOTING_ASSET_ID, 2, 0.9))
+            testDictionariesDatabaseAccessor.addAssetPair(AssetPair( ASSET_PAIR_ID, BASE_ASSET_ID, QUOTING_ASSET_ID, 2, BigDecimal.valueOf(0.9)))
             return testDictionariesDatabaseAccessor
         }
     }
@@ -65,7 +66,7 @@ class MultilimitOrderValidatorTest {
     fun testInvalidPrice() {
         //given
         val order = getOrder()
-        order.price = -1.0
+        order.price = BigDecimal.valueOf(-1.0)
 
         //when
         try {
@@ -122,7 +123,7 @@ class MultilimitOrderValidatorTest {
     fun testInvalidPriceAccuracy() {
         //given
         val order = getOrder()
-        order.price = 1.111
+        order.price = BigDecimal.valueOf(1.111)
 
         //when
         try {
@@ -140,16 +141,16 @@ class MultilimitOrderValidatorTest {
     }
 
     private fun getOrder(volume: Double = 1.0): NewLimitOrder {
-        return NewLimitOrder("test", "test", ASSET_PAIR_ID, CLIENT_NAME, volume, 1.0, "TEST",
-                Date(), Date(), 0.1, null, null, null, null,
+        return NewLimitOrder("test", "test", ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(volume), BigDecimal.valueOf(1.0), "TEST",
+                Date(), Date(), BigDecimal.valueOf(0.1), null, null, null, null,
                 null, null, null, null, null, null)
     }
 
     private fun getOrderBook(): AssetOrderBook {
              val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
             assetOrderBook.addOrder(NewLimitOrder("test", "test",
-                    ASSET_PAIR_ID, CLIENT_NAME, 1.0, 1.0,
-                    OrderStatus.InOrderBook.name, Date(), Date(), 1.0, Date(), 1.0,
+                    ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
+                    OrderStatus.InOrderBook.name, Date(), Date(), BigDecimal.valueOf(1.0), Date(), BigDecimal.valueOf(1.0),
                     null, null, null, null, null, null, null, null))
 
             return assetOrderBook

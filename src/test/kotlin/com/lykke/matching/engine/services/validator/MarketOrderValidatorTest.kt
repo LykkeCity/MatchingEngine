@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 import kotlin.test.assertEquals
@@ -54,7 +55,7 @@ class MarketOrderValidatorTest {
         @Bean
         open fun testDictionariesDatabaseAccessor(): TestDictionariesDatabaseAccessor {
             val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-            testDictionariesDatabaseAccessor.addAssetPair(AssetPair( ASSET_PAIR_ID, BASE_ASSET_ID, QUOTING_ASSET_ID, 2, 0.9))
+            testDictionariesDatabaseAccessor.addAssetPair(AssetPair( ASSET_PAIR_ID, BASE_ASSET_ID, QUOTING_ASSET_ID, 2, BigDecimal.valueOf(0.9)))
             return testDictionariesDatabaseAccessor
         }
 
@@ -175,7 +176,7 @@ class MarketOrderValidatorTest {
         //given
         val marketOrderBuilder = getDefaultMarketOrderBuilder()
         val order = toMarketOrder(marketOrderBuilder.build())
-        order.price = 1.1111
+        order.price = BigDecimal.valueOf(1.1111)
 
         //when
         try {
@@ -198,16 +199,16 @@ class MarketOrderValidatorTest {
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
 
-        return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                OrderStatus.Processing.name, Date(message.timestamp), Date(), null, message.straight, message.reservedLimitVolume,
+        return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
+                OrderStatus.Processing.name, Date(message.timestamp), Date(), null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                 NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
     }
 
     private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<NewLimitOrder> {
         val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
         assetOrderBook.addOrder(NewLimitOrder("test", "test",
-                ASSET_PAIR_ID, CLIENT_NAME, 1.0, 1.0,
-                OrderStatus.InOrderBook.name, Date(), Date(), 1.0, Date(), 1.0,
+                ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
+                OrderStatus.InOrderBook.name, Date(), Date(), BigDecimal.valueOf(1.0), Date(), BigDecimal.valueOf(1.0),
                 null, null, null, null, null, null, null, null))
 
         return assetOrderBook.getOrderBook(isBuy)

@@ -13,7 +13,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
 import com.lykke.matching.engine.outgoing.rabbit.events.CashSwapEvent
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.CashSwapOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -48,8 +47,8 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         val operationId = UUID.randomUUID().toString()
         val operation = SwapOperation(operationId, message.id, Date(message.timestamp),
-                , message.clientId1, message.assetId1, BigDecimal.valueOf(message.volume1)
-                , message.clientId2, message.assetId2, BigDecimal.valueOf(message.volume2))
+                message.clientId1, message.assetId1, BigDecimal.valueOf(message.volume1),
+                message.clientId2, message.assetId2, BigDecimal.valueOf(message.volume2))
 
         try {
             cashSwapOperationValidator.performValidation(message, operationId)

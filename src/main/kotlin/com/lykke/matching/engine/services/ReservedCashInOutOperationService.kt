@@ -10,7 +10,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.rabbit.events.ReservedCashOperationEvent
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -66,7 +65,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id,
                 operation.clientId,
                 operation.dateTime,
-                RoundingUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
+                NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
                 operation.assetId,
                 messageWrapper.messageId!!)) )
 

@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
 
@@ -21,8 +21,8 @@ data class LkkTrade(
 
          if (assetPair != other.assetPair) return false
          if (clientId != other.clientId) return false
-         if (!RoundingUtils.equalsIgnoreScale(price, other.price)) return false
-         if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
+         if (!NumberUtils.equalsIgnoreScale(price, other.price)) return false
+         if (!NumberUtils.equalsIgnoreScale(volume, other.volume)) return false
          if (date != other.date) return false
 
          return true

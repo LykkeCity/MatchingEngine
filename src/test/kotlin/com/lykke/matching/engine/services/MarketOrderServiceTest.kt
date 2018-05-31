@@ -17,7 +17,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.After
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
@@ -102,7 +102,7 @@ class MarketOrderServiceTest: AbstractTest() {
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "EURUSD", volume = -1000.0)))
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
-        assertEquals(OrderStatus.Cancelled.name, result.orders.find { RoundingUtils.equalsIgnoreScale(it.order.price, BigDecimal.valueOf(1.6)) }?.order?.status)
+        assertEquals(OrderStatus.Cancelled.name, result.orders.find { NumberUtils.equalsIgnoreScale(it.order.price, BigDecimal.valueOf(1.6)) }?.order?.status)
     }
 
     @Test

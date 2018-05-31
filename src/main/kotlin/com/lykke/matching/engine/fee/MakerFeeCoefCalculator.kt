@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.fee
 
 import ch.obermuhlner.math.big.BigDecimalMath
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.math.MathContext
 
@@ -20,6 +20,6 @@ class MakerFeeCoefCalculator(private val relativeSpread: BigDecimal?) : FeeCoefC
             throw FeeException("Spread should be greater than 0 (actual value: $spread)")
         }
 
-        return BigDecimal.ONE - BigDecimalMath.exp(-spread * feeModificator, MathContext(RoundingUtils.MAX_SCALE_BIGDECIMAL_OPERATIONS))
+        return BigDecimal.ONE - BigDecimalMath.exp(-spread * feeModificator, MathContext(NumberUtils.MAX_SCALE_BIGDECIMAL_OPERATIONS))
     }
 }

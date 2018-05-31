@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.notification
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
 data class QuotesUpdate(val asset: String, val price: BigDecimal, val volume: BigDecimal) {
@@ -11,8 +11,8 @@ data class QuotesUpdate(val asset: String, val price: BigDecimal, val volume: Bi
         other as QuotesUpdate
 
         if (asset != other.asset) return false
-        if (!RoundingUtils.equalsIgnoreScale(price, other.price)) return false
-        if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
+        if (!NumberUtils.equalsIgnoreScale(price, other.price)) return false
+        if (!NumberUtils.equalsIgnoreScale(volume, other.volume)) return false
 
         return true
     }

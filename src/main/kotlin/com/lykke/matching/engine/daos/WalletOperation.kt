@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
 
@@ -25,8 +25,8 @@ data class WalletOperation(
         if (clientId != other.clientId) return false
         if (assetId != other.assetId) return false
         if (dateTime != other.dateTime) return false
-        if (!RoundingUtils.equalsIgnoreScale(amount, other.amount)) return false
-        if (!RoundingUtils.equalsIgnoreScale(reservedAmount, other.reservedAmount)) return false
+        if (!NumberUtils.equalsIgnoreScale(amount, other.amount)) return false
+        if (!NumberUtils.equalsIgnoreScale(reservedAmount, other.reservedAmount)) return false
         if (isFee != other.isFee) return false
 
         return true

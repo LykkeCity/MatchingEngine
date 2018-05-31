@@ -15,7 +15,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.matching.engine.utils.RoundingUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.HashMap
@@ -170,7 +169,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.sourceClientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
         return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId,
-                receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) RoundingUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
+                receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
     }
 
     private fun processClientFee(feeInstruction: FeeInstruction,
@@ -231,13 +230,13 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             val orderBook = genericLimitOrderService.getOrderBook(assetPair.assetPairId)
             val askPrice = orderBook.getAskPrice()
             val bidPrice = orderBook.getBidPrice()
-            if (askPrice > BigDecimal.ZERO && bidPrice > BigDecimal.ZERO) RoundingUtils.divideWithMaxScale((askPrice + bidPrice), BigDecimal.valueOf(2)) else BigDecimal.ZERO
+            if (askPrice > BigDecimal.ZERO && bidPrice > BigDecimal.ZERO) NumberUtils.divideWithMaxScale((askPrice + bidPrice), BigDecimal.valueOf(2)) else BigDecimal.ZERO
         }
 
         if (price <= BigDecimal.ZERO) {
             throw FeeException("Unable to get a price to convert to fee asset (price is not positive or order book is empty)")
         }
-        return if (assetPair.baseAssetId == feeAssetId) RoundingUtils.divideWithMaxScale(BigDecimal.ONE, price) else price
+        return if (assetPair.baseAssetId == feeAssetId) NumberUtils.divideWithMaxScale(BigDecimal.ONE, price) else price
     }
 
 }

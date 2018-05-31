@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos.balance
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.LinkedList
 
@@ -11,7 +11,7 @@ data class ClientOrdersReservedVolume(var volume: BigDecimal = BigDecimal.ZERO, 
 
         other as ClientOrdersReservedVolume
 
-        if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
+        if (!NumberUtils.equalsIgnoreScale(volume, other.volume)) return false
         if (orderIds != other.orderIds) return false
 
         return true

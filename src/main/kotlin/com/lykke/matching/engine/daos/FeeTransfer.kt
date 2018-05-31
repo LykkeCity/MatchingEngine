@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
 
@@ -23,9 +23,9 @@ data class FeeTransfer(
           if (fromClientId != other.fromClientId) return false
           if (toClientId != other.toClientId) return false
           if (dateTime != other.dateTime) return false
-          if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
+          if (!NumberUtils.equalsIgnoreScale(volume, other.volume)) return false
           if (asset != other.asset) return false
-          if (!RoundingUtils.equalsIgnoreScale(feeCoef, other.feeCoef)) return false
+          if (!NumberUtils.equalsIgnoreScale(feeCoef, other.feeCoef)) return false
 
           return true
       }

@@ -7,7 +7,7 @@ fun assertEquals(expected: BigDecimal?, actual: BigDecimal?) {
         return
     }
 
-    if (!RoundingUtils.equalsIgnoreScale(expected, actual)) {
+    if (!NumberUtils.equalsIgnoreScale(expected, actual)) {
         kotlin.test.assertEquals(expected, actual)
     }
 }

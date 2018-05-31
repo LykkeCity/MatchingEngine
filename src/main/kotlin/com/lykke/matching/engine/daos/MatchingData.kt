@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
 data class MatchingData(val masterOrderId: String, val matchedOrderId: String, val volume: BigDecimal) {
@@ -12,7 +12,7 @@ data class MatchingData(val masterOrderId: String, val matchedOrderId: String, v
 
         if (masterOrderId != other.masterOrderId) return false
         if (matchedOrderId != other.matchedOrderId) return false
-        if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
+        if (!NumberUtils.equalsIgnoreScale(volume, other.volume)) return false
 
         return true
     }

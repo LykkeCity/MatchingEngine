@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos.balance
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
 data class ReservedVolumeCorrection(val clientId: String,
@@ -17,8 +17,8 @@ data class ReservedVolumeCorrection(val clientId: String,
         if (clientId != other.clientId) return false
         if (assetId != other.assetId) return false
         if (orderIds != other.orderIds) return false
-        if (!RoundingUtils.equalsIgnoreScale(oldReserved, other.oldReserved)) return false
-        if (!RoundingUtils.equalsIgnoreScale(newReserved, other.newReserved)) return false
+        if (!NumberUtils.equalsIgnoreScale(oldReserved, other.oldReserved)) return false
+        if (!NumberUtils.equalsIgnoreScale(newReserved, other.newReserved)) return false
 
         return true
     }

@@ -7,7 +7,7 @@ import com.lykke.matching.engine.daos.NewOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
 import java.util.HashSet
@@ -64,7 +64,7 @@ data class MatchingResult(
         if (marketOrderTrades != other.marketOrderTrades) return false
         if (limitOrdersReport != other.limitOrdersReport) return false
         if (orderBook != other.orderBook) return false
-        if (!RoundingUtils.equalsIgnoreScale(marketBalance, other.marketBalance)) return false
+        if (!NumberUtils.equalsIgnoreScale(marketBalance, other.marketBalance)) return false
         if (autoApply != other.autoApply) return false
         if (order != other.order) return false
         if (uncompletedLimitOrderCopy != other.uncompletedLimitOrderCopy) return false

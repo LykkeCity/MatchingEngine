@@ -21,7 +21,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -58,7 +57,10 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val operationId = UUID.randomUUID().toString()
 
         val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId,
-                message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
+                message.assetId, Date(message.timestamp),
+                BigDecimal.valueOf(message.volume),
+                BigDecimal.valueOf(message.overdraftLimit),
+                listOfFee(feeInstruction, feeInstructions))
 
         try {
             cashTransferOperationValidator.performValidation(message, operationId, feeInstructions, feeInstruction)
@@ -81,7 +83,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 operation.fromClientId,
                 operation.toClientId,
                 operation.dateTime,
-                RoundingUtils.setScaleRoundHalfUp(operation.volume, assetsHolder.getAsset(operation.asset).accuracy).toPlainString(),
+                NumberUtils.setScaleRoundHalfUp(operation.volume, assetsHolder.getAsset(operation.asset).accuracy).toPlainString(),
                 operation.overdraftLimit,
                 operation.asset,
                 feeInstruction,

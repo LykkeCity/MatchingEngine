@@ -11,6 +11,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder): MultiLimitOrderValidator {
@@ -64,7 +65,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
     }
 
     private fun isPriceValid(order: NewLimitOrder) {
-        if (order.price <= 0) {
+        if (order.price <= BigDecimal.ZERO) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
             throw OrderValidationException(OrderStatus.InvalidPrice)
         }

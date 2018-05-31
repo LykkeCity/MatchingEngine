@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
 data class VolumePrice(val volume: BigDecimal, val price: BigDecimal) {
@@ -10,8 +10,8 @@ data class VolumePrice(val volume: BigDecimal, val price: BigDecimal) {
 
         other as VolumePrice
 
-        if (!RoundingUtils.equalsIgnoreScale(volume, other.volume)) return false
-        if (!RoundingUtils.equalsIgnoreScale(price, other.price)) return false
+        if (!NumberUtils.equalsIgnoreScale(volume, other.volume)) return false
+        if (!NumberUtils.equalsIgnoreScale(price, other.price)) return false
 
         return true
     }

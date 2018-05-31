@@ -3,7 +3,6 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.azure.AzureAssetPair
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
-import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable

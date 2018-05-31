@@ -79,7 +79,7 @@ class MatchingEngine(private val LOGGER: Logger,
         var totalLimitVolume = BigDecimal.ZERO
 
         if (checkOrderBook(order, workingOrderBook)) {
-            while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO && workingOrderBook.size > 0 && !RoundingUtils.equalsWithDefaultDelta(remainingVolume, BigDecimal.ZERO)
+            while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO && workingOrderBook.size > 0 && !NumberUtils.equalsWithDefaultDelta(remainingVolume, BigDecimal.ZERO)
                     && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrder = workingOrderBook.poll()
                 if (order.clientId == limitOrder.clientId) {
@@ -132,7 +132,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 val bestBid = if (isBuy) genericLimitOrderService.getOrderBook(limitOrder.assetPairId).getBidPrice() else limitOrder.price
                 val validSpread = bestAsk > BigDecimal.ZERO && bestBid > BigDecimal.ZERO
                 val absoluteSpread = if (validSpread) bestAsk - bestBid else null
-                val relativeSpread = if (validSpread) RoundingUtils.divideWithMaxScale(absoluteSpread!!, bestAsk) else null
+                val relativeSpread = if (validSpread) NumberUtils.divideWithMaxScale(absoluteSpread!!, bestAsk) else null
 
                 val makerFees = try {
                     feeProcessor.processMakerFee(limitOrder.fees ?: emptyList(),
@@ -209,10 +209,10 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 marketOrderTrades.add(TradeInfo(traderId,
                         order.clientId,
-                        RoundingUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
+                        NumberUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
                         asset.assetId,
                         limitOrder.clientId,
-                        RoundingUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
+                        NumberUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
                         limitAsset.assetId,
                         limitOrder.price,
                         limitOrder.id,
@@ -229,14 +229,14 @@ class MatchingEngine(private val LOGGER: Logger,
                         mutableListOf(LimitTradeInfo(traderId,
                                 limitOrder.clientId,
                                 limitAsset.assetId,
-                                RoundingUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
+                                NumberUtils.setScaleRoundHalfUp((if (isBuy) marketRoundedVolume else oppositeRoundedVolume).abs(), limitAsset.accuracy).toPlainString(),
                                 limitOrder.price,
                                 now,
                                 order.id,
                                 order.externalId,
                                 asset.assetId,
                                 order.clientId,
-                                RoundingUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
+                                NumberUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
                                 tradeIndex,
                                 limitOrder.fee,
                                 singleFeeTransfer(limitOrder.fee, makerFees),
@@ -276,7 +276,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
             order.status = OrderStatus.Processing.name
-            order.updateRemainingVolume(if (order.isBuySide() ||  RoundingUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO) ) remainingVolume else -remainingVolume)
+            order.updateRemainingVolume(if (order.isBuySide() ||  NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO) ) remainingVolume else -remainingVolume)
         } else {
             order.status = OrderStatus.Matched.name
             order.updateRemainingVolume(BigDecimal.ZERO)

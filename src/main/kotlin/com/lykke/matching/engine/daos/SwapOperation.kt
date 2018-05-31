@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
 
@@ -18,10 +18,10 @@ data class SwapOperation(val id: String, val externalId: String, val dateTime: D
         if (dateTime != other.dateTime) return false
         if (clientId1 != other.clientId1) return false
         if (asset1 != other.asset1) return false
-        if (!RoundingUtils.equalsIgnoreScale(volume1, other.volume1)) return false
+        if (!NumberUtils.equalsIgnoreScale(volume1, other.volume1)) return false
         if (clientId2 != other.clientId2) return false
         if (asset2 != other.asset2) return false
-        if (!RoundingUtils.equalsIgnoreScale(volume2, other.volume2)) return false
+        if (!NumberUtils.equalsIgnoreScale(volume2, other.volume2)) return false
 
         return true
     }

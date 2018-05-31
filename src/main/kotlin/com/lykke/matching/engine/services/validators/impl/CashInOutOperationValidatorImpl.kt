@@ -10,6 +10,7 @@ import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class CashInOutOperationValidatorImpl constructor(private val balancesHolder: BalancesHolder,
@@ -31,7 +32,7 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
         if (cashInOutOperation.volume < 0) {
             val balance = balancesHolder.getBalance(cashInOutOperation.clientId, cashInOutOperation.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashInOutOperation.clientId, cashInOutOperation.assetId)
-            if (NumberUtils.parseDouble(balance - reservedBalance + cashInOutOperation.volume, assetsHolder.getAsset(cashInOutOperation.assetId).accuracy).toDouble() < 0.0) {
+            if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + BigDecimal.valueOf(cashInOutOperation.volume), assetsHolder.getAsset(cashInOutOperation.assetId).accuracy) < BigDecimal.ZERO) {
                 LOGGER.info("Cash out operation (${cashInOutOperation.id}) " +
                         "for client ${cashInOutOperation.clientId} asset ${cashInOutOperation.assetId}, " +
                         "volume: ${NumberUtils.roundForPrint(cashInOutOperation.volume)}: low balance $balance, " +
@@ -43,7 +44,8 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
     }
 
     private fun isVolumeAccuracyValid(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(cashInOutOperation.volume, assetsHolder.getAsset(cashInOutOperation.assetId).accuracy)
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(cashInOutOperation.volume),
+                assetsHolder.getAsset(cashInOutOperation.assetId).accuracy)
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy is invalid  client: ${cashInOutOperation.clientId}, " +
@@ -54,7 +56,8 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
 
     private fun isAssetEnabled(cashInOutOperation: ProtocolMessages.CashInOutOperation) {
          if (cashInOutOperation.volume < 0 && applicationSettingsCache.isAssetDisabled(cashInOutOperation.assetId)) {
-             LOGGER.info("Cash out operation (${cashInOutOperation.id}) for client ${cashInOutOperation.clientId} asset ${cashInOutOperation.assetId}, " +
+             LOGGER.info("Cash out operation (${cashInOutOperation.id}) for client ${cashInOutOperation.clientId} " +
+                     "asset ${cashInOutOperation.assetId}, " +
                      "volume: ${NumberUtils.roundForPrint(cashInOutOperation.volume)}: disabled asset")
              throw ValidationException (ValidationException.Validation.DISABLED_ASSET)
         }

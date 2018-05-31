@@ -249,7 +249,7 @@ class MarketOrderService_Dust_Test: AbstractTest() {
         assertEquals(BigDecimal.valueOf(127.87), marketOrderReport.order.volume)
         assertEquals(1, marketOrderReport.trades.size)
 
-        assertEquals("0.00999961", marketOrderReport.trades.first().marketVolume)
+        assertEquals("0.00999944", marketOrderReport.trades.first().marketVolume)
         assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
         assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
         assertEquals("127.87", marketOrderReport.trades.first().limitVolume)

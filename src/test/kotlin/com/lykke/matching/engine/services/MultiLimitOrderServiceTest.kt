@@ -21,7 +21,7 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -694,11 +694,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertEquals(2, result.orders.size)
 
-        val newOrder = result.orders.first { RoundingUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-10.0)) }.order
+        val newOrder = result.orders.first { NumberUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-10.0)) }.order
         assertEquals(OrderStatus.InOrderBook.name, newOrder.status)
         assertEquals(BigDecimal.valueOf(0.488), newOrder.price)
 
-        val oldOrder = result.orders.first { RoundingUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-9.0)) }.order
+        val oldOrder = result.orders.first { NumberUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-9.0)) }.order
         assertEquals(OrderStatus.Cancelled.name, oldOrder.status)
         assertEquals(BigDecimal.valueOf(-9.0), oldOrder.volume)
         assertEquals(BigDecimal.valueOf(0.4875), oldOrder.price)

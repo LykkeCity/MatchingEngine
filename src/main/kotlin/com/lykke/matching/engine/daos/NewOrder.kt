@@ -2,7 +2,7 @@ package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
 import java.math.BigDecimal
@@ -29,7 +29,7 @@ abstract class NewOrder(
     }
 
     open fun isBuySide(): Boolean {
-        return RoundingUtils.isPositive(volume)
+        return NumberUtils.isPositive(volume)
     }
 
     abstract fun isOrigBuySide(): Boolean
