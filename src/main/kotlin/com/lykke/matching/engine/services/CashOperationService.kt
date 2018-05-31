@@ -2,13 +2,14 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.services.validators.CashOperationValidator
+import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,34 +20,23 @@ import java.util.UUID
 
 @Service
 class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
-                                                   private val applicationSettingsCache: ApplicationSettingsCache): AbstractService {
+                                                   private val cashOperationValidator: CashOperationValidator): AbstractService {
     companion object {
         val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+        val message = getMessage(messageWrapper)
         LOGGER.debug("Processing cash messageId: ${messageWrapper.messageId}," +
                 " operation (${message.bussinesId}),for client ${message.clientId}, " +
-                "asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)}")
+                "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
 
-        if (message.amount < 0 && applicationSettingsCache.isAssetDisabled(message.assetId)) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setBussinesId(message.bussinesId))
-            LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: disabled asset")
+        try {
+            cashOperationValidator.performValidation(message)
+        } catch (e: ValidationException) {
+            writeErrorResponse(messageWrapper)
             return
-        }
-
-        if (message.amount < 0) {
-            val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-            val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-            if (balance - reservedBalance < BigDecimal.valueOf(message.amount).abs()) {
-                messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                        .setBussinesId(message.bussinesId))
-                LOGGER.info("Cash out operation (${message.uid}) for client ${message.clientId} asset ${message.assetId}, volume: ${RoundingUtils.roundForPrint(message.amount)}: low balance $balance, reserved balance $reservedBalance")
-                return
-            }
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
@@ -67,7 +57,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                 .setBussinesId(message.bussinesId)
                 .setRecordId(operation.id))
-        LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${RoundingUtils.roundForPrint(message.amount)} processed")
+        LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)} processed")
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashOperation {
@@ -83,8 +73,22 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+        val message = getMessage(messageWrapper)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                 .setBussinesId(message.bussinesId))
     }
+
+    fun writeErrorResponse(messageWrapper: MessageWrapper) {
+        val message = getMessage(messageWrapper)
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
+                .setBussinesId(message.bussinesId))
+    }
+
+    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashOperation {
+        if (messageWrapper.parsedMessage == null) {
+            parseMessage(messageWrapper)
+        }
+        return messageWrapper.parsedMessage!! as ProtocolMessages.CashOperation
+    }
+
 }

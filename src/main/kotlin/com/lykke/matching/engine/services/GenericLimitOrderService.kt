@@ -10,7 +10,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.ArrayList
@@ -104,9 +104,9 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
         val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
         val result = availableBalance >= volume
-        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${RoundingUtils.roundForPrint(availableBalance)} >= ${RoundingUtils.roundForPrint(volume)} = $result")
+        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
         if (result) {
-            limitBalances[order.clientId] = RoundingUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
+            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
         }
         return result
     }

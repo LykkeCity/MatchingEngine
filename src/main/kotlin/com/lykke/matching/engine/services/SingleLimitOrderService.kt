@@ -12,7 +12,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.PrintUtils
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
@@ -51,7 +51,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
             LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
                     "assetPair: ${oldMessage.assetPairId}, " +
-                    "volume: ${RoundingUtils.roundForPrint(oldMessage.volume)}, price: ${RoundingUtils.roundForPrint(oldMessage.price)}, " +
+                    "volume: ${NumberUtils.roundForPrint(oldMessage.volume)}, price: ${NumberUtils.roundForPrint(oldMessage.price)}, " +
                     "cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
 
             isCancelOrders = oldMessage.cancelAllPreviousLimitOrders
@@ -81,12 +81,12 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 ", type: ${order.type}" +
                 ", client: ${message.clientId}" +
                 ", assetPair: ${message.assetPairId}" +
-                ", volume: ${RoundingUtils.roundForPrint(message.volume)}" +
-                ", price: ${RoundingUtils.roundForPrint(order.price)}" +
-                (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${RoundingUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
-                (if (order.lowerPrice != null) ", lowerPrice: ${RoundingUtils.roundForPrint(order.lowerPrice)}" else "") +
-                (if (order.upperLimitPrice != null) ", upperLimitPrice: ${RoundingUtils.roundForPrint(order.upperLimitPrice)}" else "") +
-                (if (order.upperPrice != null) ", upperPrice: ${RoundingUtils.roundForPrint(order.upperPrice)}" else "") +
+                ", volume: ${NumberUtils.roundForPrint(message.volume)}" +
+                ", price: ${NumberUtils.roundForPrint(order.price)}" +
+                (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
+                (if (order.lowerPrice != null) ", lowerPrice: ${NumberUtils.roundForPrint(order.lowerPrice)}" else "") +
+                (if (order.upperLimitPrice != null) ", upperLimitPrice: ${NumberUtils.roundForPrint(order.upperLimitPrice)}" else "") +
+                (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
                 ", cancel: ${message.cancelAllPreviousLimitOrders}" +
                 ", fee: ${order.fee}" +
                 ", fees: ${order.fees}"
@@ -154,3 +154,4 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
     }
 }
+

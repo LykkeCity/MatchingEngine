@@ -5,7 +5,7 @@ import java.text.DecimalFormat;
 
 import static java.math.BigDecimal.*;
 
-public class RoundingUtils {
+public class NumberUtils {
     private static final DecimalFormat FORMAT = getDecimalFormat(8);
     private static final DecimalFormat FORMAT2 = getDecimalFormat(2);
 
@@ -46,6 +46,10 @@ public class RoundingUtils {
 
     public static BigDecimal setScaleRoundHalfUp(BigDecimal value, int accuracy) {
         return value.setScale(accuracy + 8, ROUND_HALF_UP).setScale(accuracy, ROUND_HALF_UP);
+    }
+
+    public static boolean isScaleSmallerOrEqual(double number, int expectedScale) {
+        return BigDecimal.valueOf(number).stripTrailingZeros().scale() <= expectedScale;
     }
 
     public static BigDecimal setScale(BigDecimal value, int accuracy, boolean roundUp) {

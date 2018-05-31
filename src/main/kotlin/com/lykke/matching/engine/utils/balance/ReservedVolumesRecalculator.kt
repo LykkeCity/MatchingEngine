@@ -5,19 +5,15 @@ import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.cache.AssetPairsCache
-import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
@@ -29,16 +25,13 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val dictionariesDatabaseAccessor = AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
-    val backOfficeDatabaseAccessor =  applicationContext.getBean(BackOfficeDatabaseAccessor::class.java)
     val filePath = config.me.orderBookPath
     val stopOrderBookPath = config.me.stopOrderBookPath
     val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = applicationContext.getBean(OrderBookDatabaseAccessor::class.java)
     val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)
-    ReservedVolumesRecalculator(dictionariesDatabaseAccessor,
-            backOfficeDatabaseAccessor,
+    ReservedVolumesRecalculator(
             orderBookDatabaseAccessor,
             stopOrderBookDatabaseAccessor,
             reservedVolumesDatabaseAccessor,
@@ -46,9 +39,7 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
 }
 
 
-class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
-                                  private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
-                                  private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                   private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                   private val applicationContext: ApplicationContext) {
@@ -64,8 +55,8 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
     }
 
     fun recalculate() {
-        val assetsHolder = AssetsHolder(AssetsCache(backOfficeDatabaseAccessor))
-        val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(dictionariesDatabaseAccessor))
+        val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
+        val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
 
         val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
@@ -91,7 +82,7 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
                         order.reservedLimitVolume!!
                     } else {
                         val calculatedReservedVolume = if (order.isBuySide())
-                            RoundingUtils.setScale(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
+                            NumberUtils.setScale(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
                             else order.getAbsRemainingVolume() * order.price, asset.accuracy, false)
                         else order.getAbsRemainingVolume()
                         LOGGER.info("Null reserved volume, recalculated: $calculatedReservedVolume")
@@ -100,7 +91,7 @@ class ReservedVolumesRecalculator(private val dictionariesDatabaseAccessor: Dict
 
                     val clientAssets = reservedBalances.getOrPut(order.clientId) { HashMap() }
                     val balance = clientAssets.getOrPut(asset.assetId) { ClientOrdersReservedVolume() }
-                    val newBalance = RoundingUtils.setScaleRoundHalfUp(balance.volume + reservedVolume, asset.accuracy)
+                    val newBalance = NumberUtils.setScaleRoundHalfUp(balance.volume + reservedVolume, asset.accuracy)
                     balance.volume = newBalance
                     balance.orderIds.add(order.externalId)
                 } catch (e: Exception) {

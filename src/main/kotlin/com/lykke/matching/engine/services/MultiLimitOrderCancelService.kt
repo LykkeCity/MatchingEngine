@@ -16,7 +16,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrderCancel
+        val message = getMessage(messageWrapper)
         LOGGER.debug("Got multi limit order cancel " +
                 "message id: ${messageWrapper.messageId}, id: ${message.uid}, ${message.clientId}, " +
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
@@ -32,6 +32,9 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 .setStatus(MessageStatus.OK.type))
         LOGGER.debug("Multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy} processed")
     }
+
+    private fun getMessage(messageWrapper: MessageWrapper) =
+            messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrderCancel
 
     private fun parse(array: ByteArray): ProtocolMessages.MultiLimitOrderCancel {
         return ProtocolMessages.MultiLimitOrderCancel.parseFrom(array)

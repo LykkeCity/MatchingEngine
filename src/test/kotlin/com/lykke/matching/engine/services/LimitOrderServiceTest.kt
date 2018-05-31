@@ -18,7 +18,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderF
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -580,7 +580,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(1999.99954761), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(2000.00045239), testWalletDatabaseAccessor.getBalance("Client4", "BTC"))
-        assertEquals(RoundingUtils.setScale(BigDecimal.valueOf(263.33 + 139.59), 2, true),
+        assertEquals(NumberUtils.setScale(BigDecimal.valueOf(263.33 + 139.59), 2, true),
                 testWalletDatabaseAccessor.getReservedBalance("Client4", "USD"))
     }
 

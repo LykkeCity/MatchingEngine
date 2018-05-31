@@ -9,8 +9,8 @@ class RoundingUtilsTest {
 
     @Test
     fun testEqualsWithDefaultDelta() {
-        assertTrue(RoundingUtils.equalsWithDefaultDelta(BigDecimal.valueOf(0.01), BigDecimal.valueOf(0.01)))
-        assertTrue(RoundingUtils.equalsWithDefaultDelta(BigDecimal.valueOf(0.10000000001), BigDecimal.valueOf(0.1)))
-        assertFalse(RoundingUtils.equalsWithDefaultDelta(BigDecimal.valueOf(0.1000001), BigDecimal.valueOf(0.1)))
+        assertTrue(NumberUtils.equalsWithDefaultDelta(BigDecimal.valueOf(0.01), BigDecimal.valueOf(0.01)))
+        assertTrue(NumberUtils.equalsWithDefaultDelta(BigDecimal.valueOf(0.10000000001), BigDecimal.valueOf(0.1)))
+        assertFalse(NumberUtils.equalsWithDefaultDelta(BigDecimal.valueOf(0.1000001), BigDecimal.valueOf(0.1)))
     }
 }

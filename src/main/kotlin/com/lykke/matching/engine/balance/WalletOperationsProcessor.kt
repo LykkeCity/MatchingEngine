@@ -10,7 +10,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.utils.RoundingUtils
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
@@ -45,9 +45,9 @@ import java.util.Date
             }
 
             val asset = assetsHolder.getAsset(operation.assetId)
-            changedAssetBalance.balance = RoundingUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
+            changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
             changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
-                RoundingUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
+                NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
             else
                 changedAssetBalance.reserved
         }
