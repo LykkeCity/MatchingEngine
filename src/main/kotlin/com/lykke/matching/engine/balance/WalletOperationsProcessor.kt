@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
@@ -90,7 +91,7 @@ import java.util.Date
         val clientAssetBalances = changedAssetBalances.values.toSet().map { it.assetBalance }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
         persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
-        clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
+        clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it))) }
         balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
     }
 
