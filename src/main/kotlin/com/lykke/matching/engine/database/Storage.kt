@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.database
 
-enum class WalletsStorage {
+enum class Storage {
     Azure,
     Redis
 }

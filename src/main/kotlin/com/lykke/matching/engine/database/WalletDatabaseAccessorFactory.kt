@@ -23,15 +23,15 @@ class WalletDatabaseAccessorFactory: FactoryBean<BalancesDatabaseAccessorsHolder
         val primaryAccessor: WalletDatabaseAccessor
         val secondaryAccessor: WalletDatabaseAccessor?
 
-        when (config.me.walletsStorage) {
-            WalletsStorage.Azure -> {
+        when (config.me.storage) {
+            Storage.Azure -> {
                 primaryAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString,
                         config.me.db.accountsTableName ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME)
 
                 secondaryAccessor = null
             }
 
-            WalletsStorage.Redis -> {
+            Storage.Redis -> {
                 val jedis = Jedis(config.me.redis.host, config.me.redis.port, config.me.redis.timeout, config.me.redis.useSsl)
                 jedis.connect()
                 if (config.me.redis.password != null) {
