@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database.redis
 
 import com.lykke.matching.engine.utils.config.RedisConfig
 import com.lykke.utils.logging.ThrottlingLogger
+import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import kotlin.concurrent.thread
 import redis.clients.jedis.JedisPoolConfig
@@ -18,13 +19,13 @@ class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
     private var externalFail = false
     var ok = false
 
-    override fun ok() = ok
+    override fun ok() = ok && !externalFail
 
     fun fail() {
         externalFail = true
     }
 
-    fun resource() = jedisPool.resource
+    fun resource(): Jedis = jedisPool.resource
 
     fun balanceDatabase() = redisConfig.balanceDatabase
 
