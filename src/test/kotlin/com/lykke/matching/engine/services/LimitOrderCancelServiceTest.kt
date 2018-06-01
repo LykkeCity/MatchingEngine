@@ -92,7 +92,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertNull(order)
         assertEquals(4, testOrderDatabaseAccessor.loadLimitOrders().size)
 
-        val previousOrders = genericLimitOrderService.getAllPreviousOrders("Client1", "EURUSD", true)
+        val previousOrders = genericLimitOrderService.searchOrders("Client1", "EURUSD", true)
         assertEquals(4, previousOrders.size)
         assertFalse(previousOrders.any { it.externalId == "3" })
     }
