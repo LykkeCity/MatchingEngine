@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -99,7 +100,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         return this
     }
 
-    fun apply(messageId: String,
+    fun apply(processedMessage: ProcessedMessage,
               operationId: String,
               operationType: String,
               pBuySideOrderBookChanged: Boolean,
@@ -108,7 +109,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         buySideOrderBookChanged = buySideOrderBookChanged || pBuySideOrderBookChanged
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
-        walletOperationsProcessor.apply(operationId, operationType, messageId)
+        walletOperationsProcessor.apply(operationId, operationType, processedMessage)
 
         genericLimitOrderService.moveOrdersToDone(completedOrders)
         genericLimitOrderService.cancelLimitOrders(ordersToCancel)
@@ -136,11 +137,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(processedMessage.messageId, trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
+            clientsLimitOrdersQueue.put(LimitOrdersReport(processedMessage.messageId, clientsLimitOrdersWithTrades))
         }
 
         return OrderProcessResult(processedOrders)

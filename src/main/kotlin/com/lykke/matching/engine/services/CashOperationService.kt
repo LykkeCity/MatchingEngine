@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -44,7 +45,9 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         try {
             balancesHolder.createWalletProcessor(LOGGER)
                     .preProcess(listOf(operation))
-                    .apply(message.uid.toString(), MessageType.CASH_OPERATION.name, messageWrapper.messageId!!)
+                    .apply(message.uid.toString(),
+                            MessageType.CASH_OPERATION.name,
+                            ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
 
         } catch (e: BalanceException) {
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")

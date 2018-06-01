@@ -4,6 +4,7 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -158,7 +159,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
                     matchingResult.apply()
-                    walletOperationsProcessor.apply(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
+                    walletOperationsProcessor.apply(order.externalId,
+                            MessageType.MARKET_ORDER.name,
+                            ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
                     genericLimitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
                     orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)

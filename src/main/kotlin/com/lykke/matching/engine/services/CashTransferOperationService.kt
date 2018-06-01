@@ -6,8 +6,7 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
@@ -67,7 +66,9 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val fees = try {
-            processTransferOperation(operation, messageWrapper.messageId!!)
+            processTransferOperation(operation, ProcessedMessage(messageWrapper.type,
+                    messageWrapper.timestamp!!,
+                    messageWrapper.messageId!!))
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, operationId, INVALID_FEE, e.message)
             return
@@ -99,7 +100,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashTransferOperation.parseFrom(array)
     }
 
-    private fun processTransferOperation(operation: TransferOperation, messageId: String): List<Fee> {
+    private fun processTransferOperation(operation: TransferOperation, processedMessage: ProcessedMessage): List<Fee> {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,
@@ -110,7 +111,11 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        balancesHolder.createWalletProcessor(LOGGER, false).preProcess(operations).apply(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
+        balancesHolder.createWalletProcessor(LOGGER, false)
+                .preProcess(operations)
+                .apply(operation.externalId,
+                        MessageType.CASH_TRANSFER_OPERATION.name,
+                        processedMessage)
 
         return fees
     }

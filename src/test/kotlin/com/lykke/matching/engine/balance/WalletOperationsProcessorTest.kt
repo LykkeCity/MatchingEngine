@@ -7,6 +7,8 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.junit.Test
@@ -18,6 +20,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.awt.TrayIcon
 import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -71,7 +74,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        walletOperationsProcessor.apply("id", "type", "test")
+        walletOperationsProcessor.apply("id", "type",
+                ProcessedMessage(MessageType.BALANCE_UPDATE.type, System.currentTimeMillis(), "test"))
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
         assertBalance("Client2", "ETH", 3.0, 0.3)
@@ -112,7 +116,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
         walletOperationsProcessor.preProcess(
                 listOf(
                         WalletOperation("1", null, "Client1", "BTC", Date(), 0.0, -0.1)
-                ), true).apply("id", "type","test")
+                ), true).apply("id", "type",
+                ProcessedMessage(MessageType.BALANCE_UPDATE.type, System.currentTimeMillis(), "test"))
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
     }

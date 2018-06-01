@@ -404,7 +404,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             if (!notDeduplicateMessageTypes.contains(messageType)) {
                 val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
                 processedMessagesCache.addMessage(processedMessage)
-                processedMessagesDatabaseAccessor.saveProcessedMessage(processedMessage)
             }
 
             val endTime = System.nanoTime()

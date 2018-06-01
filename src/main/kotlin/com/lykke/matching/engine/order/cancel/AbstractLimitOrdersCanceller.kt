@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -127,7 +128,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                            assetOrderBooks: Map<String, TAssetOrderBook>): TCancelResult
 
     /** Cancels orders, updates balances and sends notifications */
-    open fun applyFull(operationId: String, messageId: String, operationType: String, validateBalances: Boolean) {
+    open fun applyFull(operationId: String, processedMessage: ProcessedMessage, operationType: String, validateBalances: Boolean) {
         val result = apply()
 
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
@@ -147,13 +148,13 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         }
 
         if (result.clientsOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
+            clientsLimitOrdersQueue.put(LimitOrdersReport(processedMessage.messageId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(processedMessage.messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
 
-        walletProcessor.apply(operationId, operationType, messageId)
+        walletProcessor.apply(operationId, operationType, processedMessage)
     }
 
     @Suppress("unchecked_cast")

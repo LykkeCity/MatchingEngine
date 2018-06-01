@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -83,15 +84,15 @@ import java.util.Date
         return this
     }
 
-    fun apply(id: String, type: String, messageId: String) {
+    fun apply(id: String, type: String, processedMessage: ProcessedMessage) {
         if (changedAssetBalances.isEmpty()) {
             return
         }
         val clientAssetBalances = changedAssetBalances.values.toSet().map { it.assetBalance }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
-        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances, messageId))
+        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances, processedMessage))
         clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), processedMessage))
     }
 
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
