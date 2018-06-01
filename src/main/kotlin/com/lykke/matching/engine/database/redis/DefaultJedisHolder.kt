@@ -2,8 +2,11 @@ package com.lykke.matching.engine.database.redis
 
 import com.lykke.matching.engine.utils.config.RedisConfig
 import com.lykke.utils.logging.ThrottlingLogger
-import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
 import kotlin.concurrent.thread
+import redis.clients.jedis.JedisPoolConfig
+import java.time.Duration
+
 
 class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
 
@@ -11,27 +14,47 @@ class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
         private val LOGGER = ThrottlingLogger.getLogger(DefaultJedisHolder::class.java.name)
     }
 
-    var jedis = openRedisConnection()
-        private set
-
-    private var ok = false
+    private var jedisPool = openRedisConnection()
+    private var externalFail = false
+    var ok = false
 
     override fun ok() = ok
 
+    fun fail() {
+        externalFail = true
+    }
+
+    fun resource() = jedisPool.resource
+
     fun balanceDatabase() = redisConfig.balanceDatabase
 
-    private fun openRedisConnection(): Jedis {
-        val jedis = Jedis(redisConfig.host, redisConfig.port, redisConfig.timeout, redisConfig.useSsl)
-        jedis.connect()
-        if (redisConfig.password != null) {
-            jedis.auth(redisConfig.password)
-        }
-        return jedis
+    private fun openRedisConnection(): JedisPool {
+        return JedisPool(buildPoolConfig(), redisConfig.host, redisConfig.port, redisConfig.timeout, redisConfig.password, redisConfig.useSsl)
+    }
+
+    private fun buildPoolConfig(): JedisPoolConfig {
+        val poolConfig = JedisPoolConfig()
+        poolConfig.maxTotal = 128
+        poolConfig.maxIdle = 128
+        poolConfig.minIdle = 16
+        poolConfig.testOnBorrow = true
+        poolConfig.testOnReturn = true
+        poolConfig.testWhileIdle = true
+        poolConfig.minEvictableIdleTimeMillis = Duration.ofSeconds(60).toMillis()
+        poolConfig.timeBetweenEvictionRunsMillis = Duration.ofSeconds(30).toMillis()
+        poolConfig.numTestsPerEvictionRun = 3
+        poolConfig.blockWhenExhausted = true
+        return poolConfig
     }
 
     private fun reinit(): Boolean {
         return try {
-            jedis = openRedisConnection()
+            try {
+                jedisPool.close()
+            } catch (e: Exception) {
+                // ignored
+            }
+            jedisPool = openRedisConnection()
             true
         } catch (e: Exception) {
             LOGGER.error("Unable to open redis connection", e)
@@ -40,10 +63,12 @@ class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
     }
 
     private fun ping(): Boolean {
-        return try {
-            "PONG" == jedis.ping()
+        try {
+            jedisPool.resource.use { jedis ->
+                return "PONG" == jedis.ping()
+            }
         } catch (e: Exception) {
-            false
+            return false
         }
     }
 
@@ -51,9 +76,12 @@ class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
         thread(name = DefaultJedisHolder::class.java.name) {
             while (true) {
                 var ping = ping()
-                if (!ping) {
+                if (externalFail || !ping) {
                     ok = false
-                    while (!reinit()) {}
+                    while (!reinit()) {
+                        Thread.sleep(100)
+                    }
+                    externalFail = false
                     ping = ping()
                 }
                 ok = ping

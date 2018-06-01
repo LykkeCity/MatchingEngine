@@ -31,6 +31,7 @@ class RedisPersistenceManager(
             persistData(data)
             true
         } catch (e: Exception) {
+            jedisHolder.fail()
             val retryMessage = "Unable to save data (${data.details()})"
             LOGGER.error(retryMessage, e)
             METRICS_LOGGER.logError(retryMessage, e)
@@ -41,26 +42,27 @@ class RedisPersistenceManager(
     private fun persistData(data: PersistenceData) {
         val startTime = System.nanoTime()
 
-        val jedis = jedisHolder.jedis
-        val transaction = jedis.multi()
-        try {
-            transaction.select(jedisHolder.balanceDatabase())
-            primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
-            val persistTime = System.nanoTime()
+        jedisHolder.resource().use { jedis ->
+            val transaction = jedis.multi()
+            try {
+                transaction.select(jedisHolder.balanceDatabase())
+                primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
+                val persistTime = System.nanoTime()
 
-            transaction.exec()
-            val commitTime = System.nanoTime()
+                transaction.exec()
+                val commitTime = System.nanoTime()
 
-            REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
-                    ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
-                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
+                REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
+                        ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
+                        ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
 
-            if (secondaryBalancesAccessor != null) {
-                updatedWalletsQueue.put(data.wallets)
+                if (secondaryBalancesAccessor != null) {
+                    updatedWalletsQueue.put(data.wallets)
+                }
+            } catch (e: Exception) {
+                transaction.clear()
+                throw e
             }
-        } catch (e: Exception) {
-            transaction.clear()
-            throw e
         }
     }
 
