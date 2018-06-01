@@ -66,8 +66,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             val messageStatus = MessageStatusUtils.Companion.toMessageStatus(e.orderStatus)
             if (cancelVolume > 0) {
                 val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
-                balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
+                balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance, messageId = messageWrapper.messageId!!)
+                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
+                        listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)),
+                        messageWrapper.messageId!!))
             }
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
@@ -109,8 +111,9 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
         val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
-        balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
+        balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance, messageId =  messageWrapper.messageId!!)
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now,
+                listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
 
         writeResponse(messageWrapper, order, MessageStatus.OK)
         LOGGER.info("${orderInfo(order)} added to stop order book")

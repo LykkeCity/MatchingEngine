@@ -86,17 +86,21 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return 0.0
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: Double) {
+    fun updateBalance(clientId: String, assetId: String, balance: Double, messageId: String) {
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
         wallet.setBalance(assetId, balance.toBigDecimal())
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
-                listOf(wallet.balances[assetId]!!)
+                listOf(wallet.balances[assetId]!!),
+                messageId
         ))
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true) {
+    fun updateReservedBalance(clientId: String, assetId: String,
+                              balance: Double,
+                              skipForTrustedClient: Boolean = true,
+                              messageId: String) {
         if (skipForTrustedClient && applicationSettingsCache.isTrustedClient(clientId)) {
             return
         }
@@ -105,7 +109,8 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         wallet.setReservedBalance(assetId, balance.toBigDecimal())
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
-                listOf(wallet.balances[assetId]!!)
+                listOf(wallet.balances[assetId]!!),
+                messageId
         ))
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }

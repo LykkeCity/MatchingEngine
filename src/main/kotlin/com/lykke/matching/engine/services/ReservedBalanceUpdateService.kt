@@ -35,7 +35,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         }
 
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
-        balancesHolder.updateReservedBalance(message.clientId, message.assetId, message.reservedAmount, false)
+        balancesHolder.updateReservedBalance(message.clientId, message.assetId, message.reservedAmount, false, messageWrapper.messageId!!)
         balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                 MessageType.RESERVED_BALANCE_UPDATE.name,
                 Date(),

@@ -89,7 +89,7 @@ import java.util.Date
         }
         val clientAssetBalances = changedAssetBalances.values.toSet().map { it.assetBalance }
         val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
-        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
+        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances, messageId))
         clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
         balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
     }

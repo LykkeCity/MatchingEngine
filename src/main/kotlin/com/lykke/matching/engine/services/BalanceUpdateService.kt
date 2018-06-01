@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -40,7 +39,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
+            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount, messageWrapper.messageId!!)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
                     MessageType.BALANCE_UPDATE.name, Date(),
                     listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
@@ -63,7 +62,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                 return
             }
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
+            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount, messageWrapper.messageId!!)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                     MessageType.BALANCE_UPDATE.name,
                     Date(),
