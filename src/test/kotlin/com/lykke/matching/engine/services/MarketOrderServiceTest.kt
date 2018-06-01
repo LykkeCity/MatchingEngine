@@ -6,6 +6,8 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
@@ -250,7 +252,8 @@ class MarketOrderServiceTest: AbstractTest() {
 
         assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
 
-        balancesHolder.updateBalance("Client4", "EUR", 1000.0, "test")
+        balancesHolder.updateBalance("Client4", "EUR", 1000.0,
+                ProcessedMessage(MessageType.BALANCE_UPDATE.type, System.currentTimeMillis(),"test"))
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
         assertEquals(1, rabbitSwapQueue.size)

@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.apache.log4j.Logger
@@ -86,13 +87,13 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return 0.0
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: Double, messageId: String) {
+    fun updateBalance(clientId: String, assetId: String, balance: Double, processedMessage: ProcessedMessage) {
         val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
         wallet.setBalance(assetId, balance.toBigDecimal())
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
                 listOf(wallet.balances[assetId]!!),
-                messageId
+                processedMessage
         ))
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }
@@ -100,7 +101,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     fun updateReservedBalance(clientId: String, assetId: String,
                               balance: Double,
                               skipForTrustedClient: Boolean = true,
-                              messageId: String) {
+                              processedMessage: ProcessedMessage) {
         if (skipForTrustedClient && applicationSettingsCache.isTrustedClient(clientId)) {
             return
         }
@@ -110,7 +111,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         persistenceManager.persist(PersistenceData(
                 listOf(wallet),
                 listOf(wallet.balances[assetId]!!),
-                messageId
+                processedMessage
         ))
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
     }

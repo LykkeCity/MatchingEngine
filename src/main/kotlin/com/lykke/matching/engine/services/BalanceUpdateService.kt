@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -39,10 +40,12 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount, messageWrapper.messageId!!)
+            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount,
+                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
             balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
                     MessageType.BALANCE_UPDATE.name, Date(),
-                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)),
+                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)))
 
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
 
@@ -62,11 +65,13 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                 return
             }
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount, messageWrapper.messageId!!)
+            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount,
+                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
             balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                     MessageType.BALANCE_UPDATE.name,
                     Date(),
-                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)),
+                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)))
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.OK.type))
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")

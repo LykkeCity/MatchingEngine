@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.cancel
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
@@ -73,9 +74,9 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return GenericLimitOrdersCancelResult(limitOrdersCanceller.apply(), stopLimitOrdersCanceller.apply())
     }
 
-    fun applyFull(operationId: String, messageId: String,  operationType: String, validateBalances: Boolean) {
-        limitOrdersCanceller.applyFull(operationId, messageId, operationType, validateBalances)
-        stopLimitOrdersCanceller.applyFull(operationId, messageId, operationType, validateBalances)
+    fun applyFull(operationId: String, processedMessage: ProcessedMessage, operationType: String, validateBalances: Boolean) {
+        limitOrdersCanceller.applyFull(operationId, processedMessage, operationType, validateBalances)
+        stopLimitOrdersCanceller.applyFull(operationId, processedMessage, operationType, validateBalances)
     }
 
 }
