@@ -34,9 +34,9 @@ class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
 
     private fun buildPoolConfig(): JedisPoolConfig {
         val poolConfig = JedisPoolConfig()
-        poolConfig.maxTotal = 128
-        poolConfig.maxIdle = 128
-        poolConfig.minIdle = 16
+        poolConfig.maxTotal = 2
+        poolConfig.maxIdle = 2
+        poolConfig.minIdle = 2
         poolConfig.testOnBorrow = true
         poolConfig.testOnReturn = true
         poolConfig.testWhileIdle = true
