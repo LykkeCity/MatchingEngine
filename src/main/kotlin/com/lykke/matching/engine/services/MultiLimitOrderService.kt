@@ -422,7 +422,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
-                .apply(multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name, messageWrapper.messageId!!,
+                .apply(messageWrapper.messageId!!, multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
 
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
