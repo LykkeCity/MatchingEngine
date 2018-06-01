@@ -65,6 +65,10 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
                     .setStatus(MessageStatus.LOW_BALANCE.type).setStatusReason(e.message).build())
             return
+        } catch (e: Exception) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(message.id).setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.RUNTIME.type).setStatusReason(e.message).build())
+            return
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         notificationQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
@@ -93,7 +97,13 @@ class CashSwapOperationService(private val balancesHolder: BalancesHolder,
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
                 operation.dateTime, -operation.volume2))
 
-        balancesHolder.createWalletProcessor(LOGGER).preProcess(operations).apply(operation.externalId, MessageType.CASH_SWAP_OPERATION.name)
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+        walletProcessor.preProcess(operations)
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            throw Exception("Unable to save balance")
+        }
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_SWAP_OPERATION.name)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {

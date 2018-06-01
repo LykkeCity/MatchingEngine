@@ -163,7 +163,11 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
                 val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
                 if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                    val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.toList())
+                    val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
+                        val cancelledOrder = it.copy
+                        cancelledOrder.status = OrderStatus.Cancelled.name
+                        cancelledOrder
+                    })
                     cancelledOrdersWalletOperations.addAll(result.walletOperations)
                     cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
                     cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
@@ -190,11 +194,21 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 val clientLimitOrdersReport = LimitOrdersReport()
                 val trustedClientLimitOrdersReport = LimitOrdersReport()
                 if (preProcessResult) {
+                    val updated = walletOperationsProcessor.persistBalances()
+                    if (!updated) {
+                        val message = "Unable to save result data"
+                        LOGGER.error("${orderInfo(order)}: $message")
+                        writeResponse(messageWrapper, order, OrderStatusUtils.toMessageStatus(order.status), message)
+                        return
+                    }
+                    walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name)
+
                     matchingResult.apply()
-                    walletOperationsProcessor.apply(order.externalId, MessageType.MARKET_ORDER.name)
-                    genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders)
-                    genericLimitOrderService.cancelLimitOrders(matchingResult.cancelledLimitOrders.toList())
-                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult)
+                    matchingEngine.apply()
+                    genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders.map { it.origin!! })
+                    val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
+                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
+                    genericLimitOrderService.cancelLimitOrders(ordersToCancel)
 
                     trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)

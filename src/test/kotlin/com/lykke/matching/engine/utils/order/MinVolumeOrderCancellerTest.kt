@@ -156,7 +156,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         // BTCUSD
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", true).filter { it.clientId == "Client1" }.size)
         // check order is removed from clientOrdersMap
-        assertEquals(1, genericLimitOrderService.getAllPreviousOrders("Client1", "BTCUSD", true).size)
+        assertEquals(1, genericLimitOrderService.searchOrders("Client1", "BTCUSD", true).size)
 
         assertEquals("validVolume", testOrderDatabaseAccessor.getOrders("BTCUSD", true).first { it.clientId == "Client1" }.externalId)
 
@@ -165,7 +165,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", true).filter { it.clientId == "Client2" }.size)
         // check order is removed from clientOrdersMap
-        assertEquals(1, genericLimitOrderService.getAllPreviousOrders("Client2", "BTCUSD", true).size)
+        assertEquals(1, genericLimitOrderService.searchOrders("Client2", "BTCUSD", true).size)
 
         // EURUSD
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", true).filter { it.clientId == "Client1" }.size)
@@ -216,8 +216,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
 
         // check order is removed from clientOrdersMap
-        assertEquals(0, genericLimitOrderService.getAllPreviousOrders("Client1", "BTCEUR", false).size)
-        assertEquals(0, genericLimitOrderService.getAllPreviousOrders("TrustedClient", "BTCEUR", false).size)
+        assertEquals(0, genericLimitOrderService.searchOrders("Client1", "BTCEUR", false).size)
+        assertEquals(0, genericLimitOrderService.searchOrders("TrustedClient", "BTCEUR", false).size)
 
         assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(1.0, balancesHolder.getReservedBalance("Client1", "BTC"))

@@ -48,9 +48,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
         val clientLimitOrdersReport = LimitOrdersReport()
         var cancelVolume = 0.0
+        val ordersToCancel = mutableListOf<NewLimitOrder>()
         if (isCancelOrders) {
-            stopLimitOrderService.getAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
-                stopLimitOrderService.cancelStopLimitOrder(orderToCancel.externalId)
+            stopLimitOrderService.searchOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
+                ordersToCancel.add(orderToCancel)
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(orderToCancel))
                 cancelVolume += orderToCancel.reservedLimitVolume!!
             }
@@ -62,17 +63,25 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.status = e.orderStatus.name
-            val messageStatus = OrderStatusUtils.Companion.toMessageStatus(e.orderStatus)
+            val messageStatus = OrderStatusUtils.toMessageStatus(e.orderStatus)
+            var updated = true
             if (cancelVolume > 0) {
                 val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
-                balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-                balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
+                updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+                if (updated) {
+                    balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
+                }
             }
 
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(messageStatus.type).build())
+            if (updated) {
+                stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel)
+                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(messageStatus.type).build())
 
-            clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-            clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+                clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
+                clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+            } else {
+                writePersistenceErrorResponse(messageWrapper, order)
+            }
             return
         }
 
@@ -98,14 +107,20 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
+        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
+        val updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+        if (!updated) {
+            writePersistenceErrorResponse(messageWrapper, order)
+            return
+        }
+
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
+        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel)
+
         order.reservedLimitVolume = limitVolume.toDouble()
         stopLimitOrderService.addStopOrder(order)
 
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-
-        val newReservedBalance = RoundingUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
-        balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))))
 
         writeResponse(messageWrapper, order, MessageStatus.OK)
         LOGGER.info("${orderInfo(order)} added to stop order book")
@@ -127,14 +142,25 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         return "Stop limit order (id: ${order.externalId})"
     }
 
-    private fun writeResponse(messageWrapper: MessageWrapper?, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {
-        if (messageWrapper == null) {
-            return
+    private fun writeResponse(messageWrapper: MessageWrapper, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {
+        val builder = ProtocolMessages.NewResponse.newBuilder()
+                .setId(order.externalId)
+                .setMatchingEngineId(order.id)
+                .setStatus(status.type)
+        if (reason != null) {
+            builder.statusReason = reason
         }
-        if (reason == null) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).build())
-            return
-        }
-        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setId(order.externalId).setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason).build())
+        messageWrapper.writeNewResponse(builder.build())
+    }
+
+    private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: NewLimitOrder) {
+        val message = "Unable to save result data"
+        LOGGER.error("$message (stop limit order id ${order.externalId})")
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                .setId(order.externalId)
+                .setMatchingEngineId(order.id)
+                .setStatus(OrderStatusUtils.toMessageStatus(order.status).type)
+                .setStatusReason(message)
+                .build())
     }
 }

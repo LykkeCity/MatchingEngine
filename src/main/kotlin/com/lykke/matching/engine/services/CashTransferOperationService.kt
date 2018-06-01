@@ -18,6 +18,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
 import com.lykke.matching.engine.messages.MessageStatus.OK
+import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -79,6 +80,9 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         } catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, message, operationId, LOW_BALANCE, e.message)
             return
+        } catch (e: Exception) {
+            writeErrorResponse(messageWrapper, message, operationId, RUNTIME, e.message ?: "Unable to process operation")
+            return
         }
         dbTransferOperationQueue.put(operation)
         notificationQueue.put(CashTransferOperation(message.id, operation.fromClientId, operation.toClientId, operation.dateTime, operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy), operation.overdraftLimit, operation.asset, feeInstruction, singleFeeTransfer(feeInstruction, fees), fees))
@@ -102,7 +106,13 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        balancesHolder.createWalletProcessor(LOGGER, false).preProcess(operations).apply(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name)
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
+        walletProcessor.preProcess(operations)
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            throw Exception("Unable to save balance")
+        }
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name)
 
         return fees
     }

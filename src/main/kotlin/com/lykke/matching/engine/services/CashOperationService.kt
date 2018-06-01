@@ -47,12 +47,18 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
                 Date(message.timestamp), message.amount, 0.0)
 
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.uid.toString(), MessageType.CASH_OPERATION.name)
+            walletProcessor.preProcess(listOf(operation))
         } catch (e: BalanceException) {
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).build())
             return
+        }
+
+        val updated = walletProcessor.persistBalances()
+        if (updated) {
+            walletProcessor.apply().sendNotification(message.uid.toString(), MessageType.CASH_OPERATION.name)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(message.uid).setBussinesId(message.bussinesId).setRecordId(operation.id).build())

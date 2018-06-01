@@ -2,7 +2,7 @@ package com.lykke.matching.engine.daos
 
 class CopyWrapper<out T : Copyable>(value: T, isNew: Boolean = false) {
 
-    private val origin: T?
+    val origin: T?
     val copy: T
 
     fun applyToOrigin(): T {

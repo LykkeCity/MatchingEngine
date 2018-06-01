@@ -1,17 +1,15 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
-import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
@@ -135,14 +133,6 @@ class BalanceUpdateServiceTest: AbstractTest() {
         val cacheReserved = balancesHolder.getReservedBalance(clientId, assetId)
         assertEquals(cacheBalance, dbBalance, DELTA)
         assertEquals(cacheReserved, dbReserved, DELTA)
-    }
-
-    private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
-        return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
-                .setUid("123")
-                .setClientId(clientId)
-                .setAssetId(assetId)
-                .setAmount(amount).build().toByteArray(), null)
     }
 
     private fun buildReservedBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
