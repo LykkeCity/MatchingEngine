@@ -4,6 +4,9 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessorFactory
 import com.lykke.matching.engine.database.WalletsStorage
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
+import com.lykke.matching.engine.database.redis.DefaultJedisHolder
+import com.lykke.matching.engine.database.redis.EmptyJedisHolder
+import com.lykke.matching.engine.database.redis.JedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -24,6 +27,17 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
+    open fun jedisHolder(): JedisHolder {
+        return when (config.me.walletsStorage) {
+            WalletsStorage.Azure -> EmptyJedisHolder()
+            WalletsStorage.Redis -> {
+                val holder = balancesDatabaseAccessorsHolder()
+                DefaultJedisHolder(holder.redisConfig)
+            }
+        }
+    }
+
+    @Bean
     open fun persistenceManager(): PersistenceManager {
         return when (config.me.walletsStorage) {
             WalletsStorage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
@@ -32,7 +46,7 @@ open class DatabaseAccessorConfig {
                 RedisPersistenceManager(
                         holder.primaryAccessor as RedisWalletDatabaseAccessor,
                         holder.secondaryAccessor,
-                        holder.redisConfig
+                        jedisHolder() as DefaultJedisHolder
                 )
             }
         }

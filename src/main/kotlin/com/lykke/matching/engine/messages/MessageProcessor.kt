@@ -18,12 +18,14 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.redis.JedisHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.keepalive.MeIsAliveResponseGetter
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -63,10 +65,10 @@ import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.RoundingUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
+import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.AppVersion
-import com.lykke.utils.keepalive.http.DefaultIsAliveResponseGetter
 import com.lykke.utils.keepalive.http.KeepAliveStarter
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -151,6 +153,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
+    private val healthMonitor = GeneralHealthMonitor(listOf(applicationContext.getBean(JedisHolder::class.java)))
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
@@ -333,8 +336,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
             }
 
-            KeepAliveStarter.start(config.me.keepAlive, DefaultIsAliveResponseGetter(), AppVersion.VERSION)
-
+            KeepAliveStarter.start(config.me.keepAlive, MeIsAliveResponseGetter(healthMonitor), AppVersion.VERSION)
         }
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
@@ -391,6 +393,15 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             }
 
             service.parseMessage(message)
+
+            if (!healthMonitor.ok()) {
+                service.writeResponse(message, MessageStatus.RUNTIME)
+                val errorMessage = "Message processing is disabled"
+                LOGGER.error(errorMessage)
+                METRICS_LOGGER.logError(errorMessage)
+                return
+            }
+
             if (!notDeduplicateMessageTypes.contains(messageType)) {
                 if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
                     service.writeResponse(message, MessageStatus.DUPLICATE)
