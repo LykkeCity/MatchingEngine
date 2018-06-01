@@ -62,11 +62,24 @@ class DefaultJedisHolder(private val redisConfig: RedisConfig): JedisHolder {
         }
     }
 
+    private fun pingDb(): Int {
+        return  if (balanceDatabase() != 0) 0 else 1
+    }
+
     private fun ping(): Boolean {
         try {
             jedisPool.resource.use { jedis ->
-                return "PONG" == jedis.ping()
+                val transaction = jedis.multi()
+                try {
+                    transaction.select(pingDb())
+                    transaction["PING"] = "PONG"
+                    transaction.exec()
+                } catch (e: Exception) {
+                    transaction.clear()
+                    return false
+                }
             }
+            return true
         } catch (e: Exception) {
             return false
         }
