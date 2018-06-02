@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.redis
 
+import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.MetricsLogger
@@ -12,7 +13,7 @@ import java.util.stream.Collectors
 
 class RedisProcessedMessagesDatabaseAccessor(private val jedis: Jedis,
                                              private val dbIndex: Int,
-                                             private val timeToLive: Int) {
+                                             private val timeToLive: Int): ReadOnlyProcessedMessagesDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(FileProcessedMessagesDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -24,7 +25,7 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedis: Jedis,
 
     private var conf = FSTConfiguration.createJsonConfiguration()
 
-    fun loadProcessedMessages(): Set<ProcessedMessage> {
+    override fun get(): Set<ProcessedMessage> {
         LOGGER.info("Start loading processed messages from redis")
         jedis.select(dbIndex)
 

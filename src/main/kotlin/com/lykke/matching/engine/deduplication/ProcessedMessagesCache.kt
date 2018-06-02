@@ -10,7 +10,7 @@ import kotlin.concurrent.write
 
 class ProcessedMessagesCache(
         expirationTime: Long,
-        messages: List<ProcessedMessage>
+        messages: Set<ProcessedMessage>
 ) {
     private var prevPeriodMessageMap = HashMap<Byte, MutableSet<ProcessedMessage>>()
     private var messagesMap = HashMap<Byte, MutableSet<ProcessedMessage>>()

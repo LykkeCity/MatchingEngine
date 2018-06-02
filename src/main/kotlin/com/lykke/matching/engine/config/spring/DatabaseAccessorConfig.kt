@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
+import com.lykke.matching.engine.database.redis.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
@@ -31,10 +32,24 @@ open class DatabaseAccessorConfig {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor(),
                         balancesDatabaseAccessorsHolder.redisConfig
                 )
             }
         }
+    }
+
+    @Bean
+    open fun readOnlyProcessedMessagesDatabaseAccessor(): ReadOnlyProcessedMessagesDatabaseAccessor {
+        return when (config.me.storage) {
+            Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
+            Storage.Redis -> RedisProcessedMessagesDatabaseAccessor()
+        }
+    }
+
+    @Bean
+    open fun redisProcessedMessagesDatabaseAccessor(): RedisProcessedMessagesDatabaseAccessor {
+        return RedisProcessedMessagesDatabaseAccessor()
     }
 
     @Bean
@@ -104,6 +119,6 @@ open class DatabaseAccessorConfig {
     @Bean
     open fun fileProcessedMessagesDatabaseAccessor()
             : ProcessedMessagesDatabaseAccessor {
-        return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
+        return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
     }
 }
