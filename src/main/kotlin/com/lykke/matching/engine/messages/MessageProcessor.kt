@@ -264,8 +264,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         connectionsHolder.start()
 
         processedMessagesDatabaseAccessor = applicationContext.getBean(FileProcessedMessagesDatabaseAccessor::class.java)
-        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval,
-                processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
+        processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {

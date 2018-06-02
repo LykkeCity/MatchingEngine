@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 import redis.clients.jedis.Jedis
 
 @Component
-class WalletDatabaseAccessorFactory: FactoryBean<BalancesDatabaseAccessorsHolder> {
+class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccessorsHolder> {
 
     @Autowired
     private lateinit var config: Config
