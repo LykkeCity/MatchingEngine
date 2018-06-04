@@ -297,16 +297,38 @@ class MessageBuilder {
                                  assetId: String,
                                  amount: Double,
                                  overdraftLimit: Double,
-                                 bussinesId: String = UUID.randomUUID().toString()
+                                 businessId: String = UUID.randomUUID().toString()
         ): MessageWrapper {
             return MessageWrapper("Test", MessageType.CASH_TRANSFER_OPERATION.type, ProtocolMessages.CashTransferOperation.newBuilder()
-                    .setId(bussinesId)
+                    .setId(businessId)
                     .setFromClientId(fromClientId)
                     .setToClientId(toClientId)
                     .setAssetId(assetId)
                     .setVolume(amount)
                     .setOverdraftLimit(overdraftLimit)
                     .setTimestamp(Date().time).build().toByteArray(), null)
+        }
+
+        fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double, uid: String = "123"): MessageWrapper {
+            return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
+                    .setUid(uid)
+                    .setClientId(clientId)
+                    .setAssetId(assetId)
+                    .setAmount(amount).build().toByteArray(), null)
+        }
+
+        fun buildCashInOutWrapper(clientId: String, assetId: String, amount: Double, businessId: String = UUID.randomUUID().toString(),
+                                fees: List<NewFeeInstruction> = listOf()): MessageWrapper {
+            val builder = ProtocolMessages.CashInOutOperation.newBuilder()
+                    .setId(businessId)
+                    .setClientId(clientId)
+                    .setAssetId(assetId)
+                    .setVolume(amount)
+                    .setTimestamp(Date().time)
+            fees.forEach {
+                builder.addFees(MessageBuilder.buildFee(it))
+            }
+            return MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)
         }
     }
 }

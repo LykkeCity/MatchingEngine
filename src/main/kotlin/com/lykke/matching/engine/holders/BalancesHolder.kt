@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.updaters.BalancesUpdater
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -86,28 +87,28 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return 0.0
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: Double) {
-        val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setBalance(assetId, balance.toBigDecimal())
-        persistenceManager.persist(PersistenceData(
-                listOf(wallet),
-                listOf(wallet.balances[assetId]!!)
-        ))
+    fun updateBalance(clientId: String, assetId: String, balance: Double): Boolean {
+        val balancesUpdater = createUpdater()
+        balancesUpdater.updateBalance(clientId, assetId, balance.toBigDecimal())
+        val persisted = persistenceManager.persist(balancesUpdater.persistenceData())
+        if (!persisted) {
+            return false
+        }
+        balancesUpdater.apply()
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
+        return true
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true) {
-        if (skipForTrustedClient && applicationSettingsCache.isTrustedClient(clientId)) {
-            return
+    fun updateReservedBalance(clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true): Boolean {
+        val balancesUpdater = createUpdater()
+        balancesUpdater.updateReservedBalance(clientId, assetId, balance.toBigDecimal())
+        val persisted = persistenceManager.persist(balancesUpdater.persistenceData())
+        if (!persisted) {
+            return false
         }
-
-        val wallet = wallets.getOrPut(clientId) { Wallet(clientId) }
-        wallet.setReservedBalance(assetId, balance.toBigDecimal())
-        persistenceManager.persist(PersistenceData(
-                listOf(wallet),
-                listOf(wallet.balances[assetId]!!)
-        ))
+        balancesUpdater.apply()
         applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
+        return true
     }
 
     fun insertOrUpdateWallets(wallets: Collection<Wallet>) {
@@ -127,10 +128,19 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
 
     fun createWalletProcessor(logger: Logger?, validate: Boolean = true): WalletOperationsProcessor {
         return WalletOperationsProcessor(this,
+                applicationSettingsCache,
                 persistenceManager,
                 applicationEventPublisher,
                 assetsHolder,
                 validate,
                 logger)
+    }
+
+    fun createUpdater() = BalancesUpdater(this)
+
+    fun setWallets(wallets: Collection<Wallet>) {
+        wallets.forEach { wallet ->
+            this.wallets[wallet.clientId] = wallet
+        }
     }
 }

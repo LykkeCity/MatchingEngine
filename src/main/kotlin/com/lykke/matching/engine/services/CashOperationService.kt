@@ -10,7 +10,6 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.CashOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -21,8 +20,7 @@ import java.util.UUID
 class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                    private val cashOperationValidator: CashOperationValidator): AbstractService {
     companion object {
-        val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
@@ -41,16 +39,19 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
                 Date(message.timestamp), message.amount, 0.0)
 
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
-            balancesHolder.createWalletProcessor(LOGGER)
-                    .preProcess(listOf(operation))
-                    .apply(message.uid.toString(), MessageType.CASH_OPERATION.name, messageWrapper.messageId!!)
-
+            walletProcessor.preProcess(listOf(operation))
         } catch (e: BalanceException) {
             LOGGER.info("Unable to process cash operation (${message.bussinesId}): ${e.message}")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                     .setBussinesId(message.bussinesId))
             return
+        }
+
+        val updated = walletProcessor.persistBalances()
+        if (updated) {
+            walletProcessor.apply().sendNotification(message.uid.toString(), MessageType.CASH_OPERATION.name, messageWrapper.messageId!!)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()

@@ -36,28 +36,26 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         }
     }
 
-    fun getAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean): List<NewLimitOrder> {
+    fun searchOrders(clientId: String, assetPair: String, isBuy: Boolean): List<NewLimitOrder> {
         val ordersToRemove = LinkedList<NewLimitOrder>()
         clientStopLimitOrdersMap[clientId]?.forEach { limitOrder ->
             if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide() == isBuy) {
                 ordersToRemove.add(limitOrder)
             }
         }
-        clientStopLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
         return ordersToRemove
     }
 
-    fun cancelStopLimitOrder(uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
-        val order = stopLimitOrdersMap.remove(uid) ?: return null
-
-        if (removeFromClientMap) {
+    fun cancelStopLimitOrders(assetPairId: String, isBuy: Boolean, orders: Collection<NewLimitOrder>) {
+        val orderBook = getOrderBook(assetPairId)
+        orders.forEach { order ->
+            val uid = order.externalId
+            stopLimitOrdersMap.remove(uid)
             removeFromClientMap(uid, clientStopLimitOrdersMap)
+            orderBook.removeOrder(order)
+            order.status = OrderStatus.Cancelled.name
         }
-
-        getOrderBook(order.assetPairId).removeOrder(order)
-        order.status = OrderStatus.Cancelled.name
-        updateOrderBook(order.assetPairId, order.isBuySide())
-        return order
+        updateOrderBook(assetPairId, isBuy)
     }
 
     override fun cancelLimitOrders(orders: Collection<NewLimitOrder>) {

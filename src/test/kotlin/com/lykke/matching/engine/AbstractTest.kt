@@ -84,6 +84,9 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var balanceUpdateService: BalanceUpdateService
 
+    @Autowired
+    protected lateinit var persistenceManager: TestPersistenceManager
+
     protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
 
@@ -180,6 +183,15 @@ abstract class AbstractTest {
         // check cache orders map size
         val allClientIds = testWalletDatabaseAccessor.loadWallets().keys
         assertEquals(size, allClientIds.sumBy { genericLimitOrderService.searchOrders(it, assetPairId, isBuySide).size })
+    }
+
+    protected fun assertStopOrderBookSize(assetPairId: String, isBuySide: Boolean, size: Int) {
+        assertEquals(size, stopOrderDatabaseAccessor.getStopOrders(assetPairId, isBuySide).size)
+        assertEquals(size, genericStopLimitOrderService.getOrderBook(assetPairId).getOrderBook(isBuySide).size)
+
+        // check cache orders map size
+        val allClientIds = testWalletDatabaseAccessor.loadWallets().keys
+        assertEquals(size, allClientIds.sumBy { genericStopLimitOrderService.searchOrders(it, assetPairId, isBuySide).size })
     }
 
     protected fun assertBalance(clientId: String, assetId: String, balance: Double? = null, reserved: Double? = null) {
