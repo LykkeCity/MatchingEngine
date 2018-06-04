@@ -5,10 +5,10 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
 import java.util.Date
-import java.util.UUID
 
 abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderService: GenericLimitOrderService,
                                                 protected val genericStopLimitOrderService: GenericStopLimitOrderService,
@@ -41,14 +41,26 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
         val operationType = MessageType.valueOf(messageWrapper.type)?.name
                 ?: "Unknown message type ${messageWrapper.type}"
 
-        val operationId = messageWrapper.id ?: UUID.randomUUID().toString()
-        cancellerFactory.create(LOGGER, now)
-                .preProcessLimitOrders(orders.orders)
+        val canceller = cancellerFactory.create(LOGGER, now)
+        val operationId = messageWrapper.id!!
+        val messageId = messageWrapper.messageId!!
+        val updated = canceller.preProcessLimitOrders(orders.orders)
                 .preProcessStopLimitOrders(orders.stopOrders)
                 .applyFull(operationId,
-                        messageWrapper.messageId!!,
+                        messageId,
                         ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
-                        operationType,  false)
+                        operationType,
+                        false)
+
+        if (!updated) {
+            val errorMessage = "Unable to save result"
+            messageWrapper.writeNewResponse(
+                    ProtocolMessages.NewResponse.newBuilder()
+                            .setStatus(MessageStatus.RUNTIME.type)
+                            .setStatusReason(errorMessage))
+            LOGGER.info("$errorMessage for operation $operationId")
+            return
+        }
 
         writeResponse(messageWrapper, MessageStatus.OK)
     }

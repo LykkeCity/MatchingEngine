@@ -40,13 +40,14 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount,
+            val updated = balancesHolder.updateBalance(message.clientId, message.assetId, message.amount,
                     ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
-            balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
-                    MessageType.BALANCE_UPDATE.name, Date(),
-                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)),
-                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)))
-
+            if (updated) {
+                balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
+                        MessageType.BALANCE_UPDATE.name, Date(),
+                        listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)),
+                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)))
+            }
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
 
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
@@ -65,8 +66,16 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                 return
             }
 
-            balancesHolder.updateBalance(message.clientId, message.assetId, message.amount,
+            val updated = balancesHolder.updateBalance(message.clientId, message.assetId, message.amount,
                     ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+            if (!updated) {
+                messageWrapper.writeNewResponse(
+                        ProtocolMessages.NewResponse.newBuilder()
+                                .setStatus(MessageStatus.RUNTIME.type)
+                                .setStatusReason("Unable to save balance"))
+                LOGGER.info("Unable to save balance (client ${message.clientId}, asset ${message.assetId}, ${NumberUtils.roundForPrint(message.amount)})")
+                return
+            }
             balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                     MessageType.BALANCE_UPDATE.name,
                     Date(),

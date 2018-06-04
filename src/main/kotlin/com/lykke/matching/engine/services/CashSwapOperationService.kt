@@ -64,6 +64,12 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
             return
+        } catch (e: Exception) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.RUNTIME.type)
+                    .setStatusReason(e.message))
+            return
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         applicationEventPublisher.publishEvent(CashSwapEvent(CashSwapOperation(operation.externalId, operation.dateTime,
@@ -93,11 +99,13 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
                 operation.dateTime, -operation.volume2))
 
-        balancesHolder.createWalletProcessor(LOGGER)
-                .preProcess(operations)
-                .apply(operation.externalId,
-                MessageType.CASH_SWAP_OPERATION.name,
-                processedMessage)
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
+        walletProcessor.preProcess(operations)
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            throw Exception("Unable to save balance")
+        }
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, messageId)
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashSwapOperation {

@@ -65,14 +65,23 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
             return
         }
 
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
-            balancesHolder.createWalletProcessor(LOGGER)
-                    .preProcess(operations)
-                    .apply(message.id, MessageType.CASH_IN_OUT_OPERATION.name, ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+            walletProcessor.preProcess(operations)
         }  catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, walletOperation.id, MessageStatus.LOW_BALANCE, e.message)
             return
         }
+
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setMatchingEngineId(walletOperation.id)
+                    .setStatus(MessageStatus.RUNTIME.type))
+            LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: unable to save balance")
+            return
+        }
+        walletProcessor.apply().sendNotification(message.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
         publishRabbitMessage(message, walletOperation, fees, messageWrapper.messageId!!)
 

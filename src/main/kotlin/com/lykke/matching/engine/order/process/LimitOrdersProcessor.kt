@@ -37,6 +37,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            applicationSettingsCache: ApplicationSettingsCache,
+                           ordersToCancel: Collection<NewLimitOrder>,
                            private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -66,8 +67,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private var buySideOrderBookChanged = false
     private var sellSideOrderBookChanged = false
 
-    private val ordersToCancel = mutableListOf<NewLimitOrder>()
-    private val completedOrders = mutableListOf<NewLimitOrder>()
+    private val ordersToCancel = ordersToCancel.filter { it.status != OrderStatus.Replaced.name }.toMutableList()
+    private val completedOrders = ordersToCancel.filter { it.status == OrderStatus.Replaced.name }.toMutableList()
 
     private val processedOrders = mutableListOf<ProcessedOrder>()
     private val ordersToAdd = mutableListOf<NewLimitOrder>()
@@ -110,7 +111,13 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         buySideOrderBookChanged = buySideOrderBookChanged || pBuySideOrderBookChanged
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
-        walletOperationsProcessor.apply(operationId, operationType, processedMessage)
+        val updated = walletOperationsProcessor.persistBalances()
+        if (!updated) {
+            return OrderProcessResult(false, emptyList())
+        }
+        walletOperationsProcessor.apply().sendNotification(operationId, operationType, messageId)
+
+        matchingEngine.apply()
 
         genericLimitOrderService.moveOrdersToDone(completedOrders)
         genericLimitOrderService.cancelLimitOrders(ordersToCancel)
@@ -145,7 +152,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
         }
 
-        return OrderProcessResult(processedOrders)
+        return OrderProcessResult(true, processedOrders)
     }
 
     private fun preProcess(messageId: String, order: NewLimitOrder) {
@@ -193,7 +200,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
                     val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
                     if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                        val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.toList())
+                        val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
+                            val cancelledOrder = it.copy
+                            cancelledOrder.status = OrderStatus.Cancelled.name
+                            cancelledOrder
+                        })
                         cancelledOrdersWalletOperations.addAll(result.walletOperations)
                         cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
                         cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
@@ -231,24 +242,19 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     }
 
                     matchingResult.apply()
-                    completedOrders.addAll(matchingResult.completedLimitOrders)
+                    completedOrders.addAll(matchingResult.completedLimitOrders.map { it.origin!! })
 
-                    if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-                        ordersToCancel.addAll(matchingResult.cancelledLimitOrders)
+                    val originCancelledLimitOrders = matchingResult.cancelledLimitOrders.map { it.origin!! }
+                    if (originCancelledLimitOrders.isNotEmpty()) {
+                        ordersToCancel.addAll(originCancelledLimitOrders)
                         trustedClientsLimitOrdersWithTrades.addAll(cancelledTrustedOrdersWithTrades)
                         clientsLimitOrdersWithTrades.addAll(cancelledOrdersWithTrades)
-                        buySideOrderBookChanged = buySideOrderBookChanged || matchingResult.cancelledLimitOrders.any { it.isBuySide() }
-                        sellSideOrderBookChanged = sellSideOrderBookChanged || matchingResult.cancelledLimitOrders.any { !it.isBuySide() }
+                        buySideOrderBookChanged = buySideOrderBookChanged || originCancelledLimitOrders.any { it.isBuySide() }
+                        sellSideOrderBookChanged = sellSideOrderBookChanged || originCancelledLimitOrders.any { !it.isBuySide() }
                     }
 
                     matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-                    matchingResult.uncompletedLimitOrder?.let { uncompletedLimitOrder ->
-                        if (preProcessUncompletedOrderResult) {
-                            matchingResult.orderBook.put(uncompletedLimitOrder)
-                        } else {
-                            ordersToCancel.add(uncompletedLimitOrder)
-                        }
-                    }
+                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
 
                     orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
                     lkkTrades.addAll(matchingResult.lkkTrades)

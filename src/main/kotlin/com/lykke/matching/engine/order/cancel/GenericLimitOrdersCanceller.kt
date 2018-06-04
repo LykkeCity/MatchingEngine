@@ -17,7 +17,7 @@ import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsPairsHolder: AssetsPairsHolder,
-                                  balancesHolder: BalancesHolder,
+                                  private val balancesHolder: BalancesHolder,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
@@ -70,12 +70,30 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return this
     }
 
-    fun apply(): GenericLimitOrdersCancelResult {
-        return GenericLimitOrdersCancelResult(limitOrdersCanceller.apply(), stopLimitOrdersCanceller.apply())
+    fun processLimitOrders(): LimitOrdersCancelResult {
+        return limitOrdersCanceller.process()
     }
 
-    fun applyFull(operationId: String, messageId: String, processedMessage: ProcessedMessage?, operationType: String, validateBalances: Boolean) {
-        limitOrdersCanceller.applyFull(operationId, messageId, processedMessage, operationType, validateBalances)
-        stopLimitOrdersCanceller.applyFull(operationId, messageId, processedMessage, operationType, validateBalances)
+    fun processStopLimitOrders(): StopLimitOrdersCancelResult {
+        return stopLimitOrdersCanceller.process()
+    }
+
+    fun applyFull(operationId: String, messageId: String, operationType: String, validateBalances: Boolean): Boolean {
+        val limitOrdersCancelResult = processLimitOrders()
+        val stopLimitOrdersResult = processStopLimitOrders()
+
+        val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
+        walletProcessor.preProcess(limitOrdersCancelResult.walletOperations)
+        walletProcessor.preProcess(stopLimitOrdersResult.walletOperations)
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            return false
+        }
+
+        walletProcessor.apply().sendNotification(operationId, operationType, messageId)
+        stopLimitOrdersCanceller.apply(messageId, stopLimitOrdersResult)
+
+        limitOrdersCanceller.apply(messageId, limitOrdersCancelResult)
+        return true
     }
 }
