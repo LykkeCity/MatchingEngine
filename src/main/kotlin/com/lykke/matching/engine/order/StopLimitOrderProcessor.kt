@@ -67,7 +67,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             val messageStatus = MessageStatusUtils.toMessageStatus(e.orderStatus)
             var updated = true
             if (cancelVolume > BigDecimal.ZERO) {
-                val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
+                val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume, limitAsset.accuracy)
                 updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
                 if (updated) {
                     balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
