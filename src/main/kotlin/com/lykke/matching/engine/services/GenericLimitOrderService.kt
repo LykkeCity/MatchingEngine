@@ -13,6 +13,7 @@ import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.util.ArrayList
+import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
@@ -112,7 +113,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return result
     }
 
-    fun cancelLimitOrder(uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
+    fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
 
         if (removeFromClientMap) {
@@ -120,7 +121,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         }
 
         getOrderBook(order.assetPairId).removeOrder(order)
-        order.status = Cancelled.name
+        order.updateStatus(Cancelled, date)
         updateOrderBook(order.assetPairId, order.isBuySide())
         return order
     }
@@ -130,12 +131,12 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 
-    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>) {
+    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
-                ord.status = Cancelled.name
+                ord.updateStatus(Cancelled, date)
             }
         }
     }

@@ -47,6 +47,7 @@ class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
                     order.volume,
                     order.price,
                     order.status,
+                    order.statusDate,
                     order.createdAt,
                     order.registered,
                     order.remainingVolume,

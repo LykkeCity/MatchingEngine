@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -178,8 +179,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertFalse(testOrderDatabaseAccessor.getOrders("EURUSD", false).any { it.clientId == "Client2" })
 
         // check order is removed from ordersMap
-        assertNull(genericLimitOrderService.cancelLimitOrder("order1", false))
-        assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         assertEquals(1, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
@@ -212,8 +213,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)
 
         // check order is removed from ordersMap
-        assertNull(genericLimitOrderService.cancelLimitOrder("order1", false))
-        assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
         // check order is removed from clientOrdersMap
         assertEquals(0, genericLimitOrderService.searchOrders("Client1", "BTCEUR", false).size)

@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import java.util.ArrayList
+import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
@@ -46,24 +47,24 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         return ordersToRemove
     }
 
-    fun cancelStopLimitOrders(assetPairId: String, isBuy: Boolean, orders: Collection<NewLimitOrder>) {
+    fun cancelStopLimitOrders(assetPairId: String, isBuy: Boolean, orders: Collection<NewLimitOrder>, date: Date) {
         val orderBook = getOrderBook(assetPairId)
         orders.forEach { order ->
             val uid = order.externalId
             stopLimitOrdersMap.remove(uid)
             removeFromClientMap(uid, clientStopLimitOrdersMap)
             orderBook.removeOrder(order)
-            order.status = OrderStatus.Cancelled.name
+            order.updateStatus(OrderStatus.Cancelled, date)
         }
         updateOrderBook(assetPairId, isBuy)
     }
 
-    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>) {
+    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = stopLimitOrdersMap.remove(order.externalId)
             clientStopLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
-                ord.status = OrderStatus.Cancelled.name
+                ord.updateStatus(OrderStatus.Cancelled, date)
             }
         }
     }
@@ -86,13 +87,13 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
-    fun getStopOrderForProcess(assetPairId: String): NewLimitOrder? {
+    fun getStopOrderForProcess(assetPairId: String, date: Date): NewLimitOrder? {
         val orderBook = genericLimitOrderService.getOrderBook(assetPairId)
-        return getStopOrderForProcess(assetPairId, orderBook.getBidPrice(), false)
-                ?: getStopOrderForProcess(assetPairId, orderBook.getAskPrice(), true)
+        return getStopOrderForProcess(assetPairId, orderBook.getBidPrice(), false, date)
+                ?: getStopOrderForProcess(assetPairId, orderBook.getAskPrice(), true, date)
     }
 
-    private fun getStopOrderForProcess(assetPairId: String, price: Double, isBuySide: Boolean): NewLimitOrder? {
+    private fun getStopOrderForProcess(assetPairId: String, price: Double, isBuySide: Boolean, date: Date): NewLimitOrder? {
         if (price <= 0) {
             return null
         }
@@ -114,7 +115,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             stopOrderBook.removeOrder(order)
             updateOrderBook(order.assetPairId, order.isBuySide())
             order.price = orderPrice!!
-            order.status = OrderStatus.InOrderBook.name
+            order.updateStatus(OrderStatus.InOrderBook, date)
         }
         return order
     }
