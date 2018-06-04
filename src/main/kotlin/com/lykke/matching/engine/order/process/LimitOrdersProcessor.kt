@@ -100,7 +100,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         return this
     }
 
-    fun apply(processedMessage: ProcessedMessage,
+    fun apply(messageId: String,
+              processedMessage: ProcessedMessage?,
               operationId: String,
               operationType: String,
               pBuySideOrderBookChanged: Boolean,
@@ -137,11 +138,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(processedMessage.messageId, trustedClientsLimitOrdersWithTrades))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(processedMessage.messageId, clientsLimitOrdersWithTrades))
+            clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
         }
 
         return OrderProcessResult(processedOrders)

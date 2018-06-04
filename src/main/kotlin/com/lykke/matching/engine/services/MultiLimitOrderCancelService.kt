@@ -28,6 +28,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             genericLimitOrdersCancellerFactory.create(LOGGER, now)
                     .preProcessLimitOrders(ordersToCancel)
                     .applyFull(message.uid,
+                            messageWrapper.messageId!!,
                             ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                             MessageType.MULTI_LIMIT_ORDER_CANCEL.name,
                             false)

@@ -84,7 +84,7 @@ import java.util.Date
         return this
     }
 
-    fun apply(id: String, type: String, processedMessage: ProcessedMessage) {
+    fun apply(id: String, type: String, processedMessage: ProcessedMessage?) {
         if (changedAssetBalances.isEmpty()) {
             return
         }

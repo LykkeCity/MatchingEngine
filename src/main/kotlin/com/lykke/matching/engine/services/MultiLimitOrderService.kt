@@ -341,7 +341,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                 assetPair.assetPairId, now)
     }
 
@@ -427,7 +428,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
-                .apply(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                .apply(messageWrapper.messageId!!,
+                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                         multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
 
@@ -448,7 +450,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                 assetPair.assetPairId, now)
     }
 

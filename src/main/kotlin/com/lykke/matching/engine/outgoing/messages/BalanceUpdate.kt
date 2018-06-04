@@ -7,7 +7,7 @@ class BalanceUpdate( val id: String,
                      val type: String,
                      val timestamp: Date,
                      var balances: List<ClientBalanceUpdate>,
-                     val processedMessage: ProcessedMessage): JsonSerializable() {
+                     val processedMessage: ProcessedMessage?): JsonSerializable() {
 
     override fun toString(): String {
         return toJson()

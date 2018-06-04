@@ -46,6 +46,7 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
                 .preProcessLimitOrders(orders.orders)
                 .preProcessStopLimitOrders(orders.stopOrders)
                 .applyFull(operationId,
+                        messageWrapper.messageId!!,
                         ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                         operationType,  false)
 

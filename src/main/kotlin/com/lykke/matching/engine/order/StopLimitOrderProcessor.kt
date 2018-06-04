@@ -105,7 +105,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.status = OrderStatus.InOrderBook.name
             order.price = price
 
-            genericLimitOrderProcessor.processLimitOrder(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+            genericLimitOrderProcessor.processLimitOrder(messageWrapper.messageId!!,
+                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                     order,
                     now,
                     0.0)

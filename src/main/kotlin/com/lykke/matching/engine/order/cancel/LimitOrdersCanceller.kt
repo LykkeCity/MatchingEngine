@@ -45,8 +45,12 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                 trustedClientsOrdersWithTrades, assetOrderBooks, orderBooks.values.toList())
     }
 
-    override fun applyFull(operationId: String, processedMessage: ProcessedMessage, operationType: String, validateBalances: Boolean) {
-        super.applyFull(operationId, processedMessage, operationType, validateBalances)
+    override fun applyFull(operationId: String,
+                           messageId: String,
+                           processedMessage: ProcessedMessage?,
+                           operationType: String,
+                           validateBalances: Boolean) {
+        super.applyFull(operationId, messageId, processedMessage, operationType, validateBalances)
 
         orderBooks.values.forEach { orderBook ->
             genericLimitOrderService.putTradeInfo(TradeInfo(orderBook.assetPair, orderBook.isBuy, orderBook.prices.firstOrNull()?.price
@@ -58,7 +62,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         val assetPairs = HashSet(ordersToCancel.keys)
         if (assetPairs.isNotEmpty()) {
             assetPairs.forEach { assetPair ->
-                genericLimitOrderProcessor.checkAndProcessStopOrder(processedMessage, assetPair.assetPairId, date)
+                genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, processedMessage, assetPair.assetPairId, date)
             }
         }
     }
