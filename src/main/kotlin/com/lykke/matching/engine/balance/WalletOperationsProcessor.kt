@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -18,18 +19,20 @@ import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.Date
 
- class WalletOperationsProcessor constructor (private val balancesHolder: BalancesHolder,
-                                              private val persistenceManager: PersistenceManager,
-                                              private val applicationEventPublisher: ApplicationEventPublisher,
-                                              private val assetsHolder: AssetsHolder,
-                                              private val validate: Boolean,
-                                              private val logger: Logger?) {
+class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
+                                private val applicationSettings: ApplicationSettingsCache,
+                                private val persistenceManager: PersistenceManager,
+                                private val applicationEventPublisher: ApplicationEventPublisher,
+                                private val assetsHolder: AssetsHolder,
+                                private val validate: Boolean,
+                                private val logger: Logger?) {
 
     companion object {
         private val LOGGER = Logger.getLogger(WalletOperationsProcessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    private val balancesUpdater = balancesHolder.createUpdater()
     private val changedAssetBalances = HashMap<String, ChangedAssetBalance>()
     private val clientIds = HashSet<String>()
     private val updates = HashMap<String, ClientBalanceUpdate>()
@@ -47,7 +50,7 @@ import java.util.Date
 
             val asset = assetsHolder.getAsset(operation.assetId)
             changedAssetBalance.balance = NumberUtils.parseDouble(changedAssetBalance.balance + operation.amount.toBigDecimal(), asset.accuracy)
-            changedAssetBalance.reserved = if (!balancesHolder.isTrustedClient(operation.clientId))
+            changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
                 NumberUtils.parseDouble(changedAssetBalance.reserved + operation.reservedAmount.toBigDecimal(), asset.accuracy)
             else
                 changedAssetBalance.reserved
@@ -84,25 +87,33 @@ import java.util.Date
         return this
     }
 
-    fun apply(id: String, type: String, messageId: String) {
+    fun apply(): WalletOperationsProcessor {
+        balancesUpdater.apply()
+        return this
+    }
+
+    fun persistenceData(): PersistenceData {
+        return balancesUpdater.persistenceData()
+    }
+
+    fun persistBalances(): Boolean {
         if (changedAssetBalances.isEmpty()) {
-            return
+            return true
         }
-        val clientAssetBalances = changedAssetBalances.values.toSet().map { it.assetBalance }
-        val updatedWallets = changedAssetBalances.values.mapTo(HashSet()) { it.apply() }
-        persistenceManager.persist(PersistenceData(updatedWallets, clientAssetBalances))
-        clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it))) }
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
+        changedAssetBalances.forEach { it.value.apply() }
+        return persistenceManager.persist(persistenceData())
+    }
+
+    fun sendNotification(id: String, type: String, messageId: String) {
+        clientIds.forEach {  applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it))) }
+        if (updates.isNotEmpty()) {
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
+        }
     }
 
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
-        val wallet = balancesHolder.wallets.getOrPut(operation.clientId) {
-            Wallet(operation.clientId)
-        }
-        val assetBalance = wallet.balances.getOrPut(operation.assetId) {
-            AssetBalance(operation.clientId, operation.assetId)
-        }
-        return ChangedAssetBalance(wallet, assetBalance)
+        val walletAssetBalance = balancesUpdater.getWalletAssetBalance(operation.clientId, operation.assetId)
+        return ChangedAssetBalance(walletAssetBalance.wallet, walletAssetBalance.assetBalance)
     }
 }
 

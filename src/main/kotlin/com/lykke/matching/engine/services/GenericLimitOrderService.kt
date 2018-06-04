@@ -64,21 +64,11 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         }
     }
 
-    fun updateLimitOrder(order: NewLimitOrder) {
-        updateOrderBook(order.assetPairId, order.isBuySide())
-    }
-
     fun moveOrdersToDone(orders: List<NewLimitOrder>) {
         orders.forEach { order ->
             limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)
         }
-    }
-
-    fun getAllPreviousOrders(clientId: String, assetPair: String, isBuy: Boolean): List<NewLimitOrder> {
-        val ordersToRemove = searchOrders(clientId, assetPair, isBuy)
-        clientLimitOrdersMap[clientId]?.removeAll(ordersToRemove)
-        return ordersToRemove
     }
 
     override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {

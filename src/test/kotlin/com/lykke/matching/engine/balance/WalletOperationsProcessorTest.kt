@@ -6,12 +6,9 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -71,7 +68,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
                     )
             )
         }
-        walletOperationsProcessor.apply("id", "type", "test")
+        assertTrue(walletOperationsProcessor.persistBalances())
+        walletOperationsProcessor.apply().sendNotification("id", "type", "test")
 
         assertBalance("Client1", "BTC", 0.5, 0.0)
         assertBalance("Client2", "ETH", 3.0, 0.3)
@@ -112,7 +110,10 @@ class WalletOperationsProcessorTest : AbstractTest() {
         walletOperationsProcessor.preProcess(
                 listOf(
                         WalletOperation("1", null, "Client1", "BTC", Date(), 0.0, -0.1)
-                ), true).apply("id", "type","test")
+                ), true)
+
+        assertTrue(walletOperationsProcessor.persistBalances())
+        walletOperationsProcessor.apply().sendNotification("id", "type","test")
 
         assertBalance("Client1", "BTC", 0.0, -0.1)
     }
