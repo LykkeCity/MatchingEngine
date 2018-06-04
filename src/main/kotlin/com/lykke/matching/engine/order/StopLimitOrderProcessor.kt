@@ -77,10 +77,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             if (updated) {
                 stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel)
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setId(order.externalId)
-                    .setMatchingEngineId(order.id)
-                    .setMessageId(messageWrapper.messageId)
-                    .setStatus(messageStatus.type))
+                        .setId(order.externalId)
+                        .setMatchingEngineId(order.id)
+                        .setMessageId(messageWrapper.messageId)
+                        .setStatus(messageStatus.type))
 
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 clientLimitOrderReportQueue.put(clientLimitOrdersReport)
@@ -112,14 +112,29 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
+        val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy)
+        val updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+        if (!updated) {
+            writePersistenceErrorResponse(messageWrapper, order)
+            return
+        }
+
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId,
+                MessageType.LIMIT_ORDER.name,
+                now,
+                listOf(ClientBalanceUpdate(order.clientId,
+                        limitAsset.assetId,
+                        balance,
+                        balance,
+                        reservedBalance,
+                        newReservedBalance)),
+                messageWrapper.messageId!!))
+        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel)
+
         order.reservedLimitVolume = limitVolume
         stopLimitOrderService.addStopOrder(order)
 
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-
-        val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy)
-        balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, now, listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
 
         writeResponse(messageWrapper, order, MessageStatus.OK)
         LOGGER.info("${orderInfo(order)} added to stop order book")
