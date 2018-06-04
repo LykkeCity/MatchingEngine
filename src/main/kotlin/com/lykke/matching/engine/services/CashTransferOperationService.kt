@@ -6,8 +6,6 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
@@ -15,7 +13,10 @@ import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageStatus.*
+import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
+import com.lykke.matching.engine.messages.MessageStatus.LOW_BALANCE
+import com.lykke.matching.engine.messages.MessageStatus.OK
+import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -65,17 +66,20 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         try {
             cashTransferOperationValidator.performValidation(message, operationId, feeInstructions, feeInstruction)
         } catch (e: ValidationException) {
-            writeErrorResponse(messageWrapper, operationId, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            writeErrorResponse(messageWrapper, message, operationId, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return
         }
 
         val fees = try {
             processTransferOperation(operation, messageWrapper.messageId!!)
         } catch (e: FeeException) {
-            writeErrorResponse(messageWrapper, operationId, INVALID_FEE, e.message)
+            writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, e.message)
             return
         } catch (e: BalanceException) {
-            writeErrorResponse(messageWrapper, operationId, LOW_BALANCE, e.message)
+            writeErrorResponse(messageWrapper, message, operationId, LOW_BALANCE, e.message)
+            return
+        } catch (e: Exception) {
+            writeErrorResponse(messageWrapper, message, operationId, RUNTIME, e.message ?: "Unable to process operation")
             return
         }
         dbTransferOperationQueue.put(operation)
@@ -113,7 +117,13 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations)
 
-        balancesHolder.createWalletProcessor(LOGGER, false).preProcess(operations).apply(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
+        walletProcessor.preProcess(operations)
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            throw Exception("Unable to save balance")
+        }
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
 
         return fees
     }
@@ -141,10 +151,10 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
+                                   message: ProtocolMessages.CashTransferOperation,
                                    operationId: String,
                                    status: MessageStatus,
                                    errorMessage: String =  StringUtils.EMPTY) {
-        val message = getMessage(messageWrapper)
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.matching
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
@@ -93,8 +94,8 @@ abstract class MatchingEngineTest {
     fun tearDown() {
     }
 
-    protected fun assertCompletedLimitOrders(completedLimitOrders: List<NewLimitOrder>, checkOrderId: Boolean = true) {
-        completedLimitOrders.forEach { completedOrder ->
+    protected fun assertCompletedLimitOrders(completedLimitOrders: List<CopyWrapper<NewLimitOrder>>, checkOrderId: Boolean = true) {
+        completedLimitOrders.map { it.origin!! }.forEach { completedOrder ->
             if (checkOrderId) {
                 assertEquals("completed", completedOrder.id)
             }
@@ -120,6 +121,7 @@ abstract class MatchingEngineTest {
             orderBookSize: Int = 0
     ) {
         matchingResult.apply()
+        matchingEngine.apply()
         assertTrue { matchingResult.order is MarketOrder }
         assertEquals(marketPrice, matchingResult.order.takePrice())
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize,
@@ -141,6 +143,7 @@ abstract class MatchingEngineTest {
             orderBookSize: Int = 0
     ) {
         matchingResult.apply()
+        matchingEngine.apply()
         assertTrue { matchingResult.order is NewLimitOrder }
         val matchedOrder = matchingResult.order as NewLimitOrder
         assertEquals(remainingVolume, matchedOrder.remainingVolume)

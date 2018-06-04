@@ -173,6 +173,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(2, limitOrders.orders.size)
         assertEquals(BigDecimal.valueOf(1.2), limitOrders.orders[0].order.price)
         assertEquals(BigDecimal.valueOf(1.3), limitOrders.orders[1].order.price)
+        assertOrderBookSize("EURUSD", true, 2)
 
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
@@ -183,6 +184,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(2, limitOrders.orders.size)
         assertEquals(BigDecimal.valueOf(1.4), limitOrders.orders[0].order.price)
         assertEquals(BigDecimal.valueOf(1.5), limitOrders.orders[1].order.price)
+        assertOrderBookSize("EURUSD", true, 4)
 
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
@@ -197,6 +199,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(1.5), limitOrders.orders[3].order.price)
         assertEquals(BigDecimal.valueOf(2.0), limitOrders.orders[4].order.price)
         assertEquals(BigDecimal.valueOf(2.1), limitOrders.orders[5].order.price)
+        assertOrderBookSize("EURUSD", true, 2)
     }
 
     @Test
@@ -223,6 +226,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(1130.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
         assertEquals(BigDecimal.valueOf(900.0), testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
         assertEquals(BigDecimal.valueOf(50.0), testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
+        assertOrderBookSize("EURUSD", true, 1)
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
         listOf(VolumePrice(BigDecimal.valueOf(10.0), BigDecimal.valueOf(1.3)), VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.26)),
@@ -248,6 +252,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(1192.5), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
         assertEquals(BigDecimal.valueOf(850.0), testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
+        assertOrderBookSize("EURUSD", true, 2)
+
     }
 
     @Test

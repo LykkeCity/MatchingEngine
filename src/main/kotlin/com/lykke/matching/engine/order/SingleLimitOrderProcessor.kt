@@ -34,9 +34,11 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         var buySideOrderBookChanged = false
         var sellSideOrderBookChanged = false
         var cancelVolume = BigDecimal.ZERO
+        val ordersToCancel = mutableListOf<NewLimitOrder>()
+
         if (isCancelOrders) {
-            limitOrderService.getAllPreviousOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
-                limitOrderService.cancelLimitOrder(orderToCancel.externalId)
+            limitOrderService.searchOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
+                ordersToCancel.add(orderToCancel)
                 orderBook.removeOrder(orderToCancel)
                 clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(orderToCancel))
                 val cancelVol = if (orderToCancel.isBuySide()) orderToCancel.remainingVolume * orderToCancel.price else orderToCancel.getAbsRemainingVolume()
@@ -54,6 +56,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 orderBook,
                 if (limitAsset == assetPair.baseAssetId) totalPayBackReserved else BigDecimal.ZERO,
                 if (limitAsset == assetPair.quotingAssetId) totalPayBackReserved else BigDecimal.ZERO,
+                ordersToCancel,
                 clientsLimitOrdersWithTrades,
                 emptyList(),
                 LOGGER)
@@ -61,6 +64,13 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageId, listOf(order))
                 .apply(messageId, order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
+
+        if (!result.success) {
+            val message = "Unable to save result data"
+            LOGGER.error("$message (order external id: ${order.externalId})")
+            writeResponse(messageWrapper, order, MessageStatus.RUNTIME, message)
+            return
+        }
 
         if (result.orders.size != 1) {
             throw Exception("Error during limit order process (id: ${order.externalId}): result has invalid orders count: ${result.orders.size}")

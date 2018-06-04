@@ -22,11 +22,19 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                 "assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
 
         val now = Date()
-        val ordersToCancel = limitOrderService.getAllPreviousOrders(message.clientId, message.assetPairId, message.isBuy)
+        val ordersToCancel = limitOrderService.searchOrders(message.clientId, message.assetPairId, message.isBuy)
         if (ordersToCancel.isNotEmpty()) {
-            genericLimitOrdersCancellerFactory.create(LOGGER, now)
+            val updated = genericLimitOrdersCancellerFactory.create(LOGGER, now)
                     .preProcessLimitOrders(ordersToCancel)
                     .applyFull(message.uid, messageWrapper.messageId!!, MessageType.MULTI_LIMIT_ORDER_CANCEL.name, false)
+            if (!updated) {
+                LOGGER.debug("Unable to save result for multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
+                messageWrapper.writeNewResponse(
+                        ProtocolMessages.NewResponse.newBuilder()
+                                .setStatus(MessageStatus.RUNTIME.type)
+                                .setStatusReason("Unable to save result"))
+                return
+            }
         }
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(MessageStatus.OK.type))

@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
@@ -151,14 +152,6 @@ class BalanceUpdateServiceTest: AbstractTest() {
         val cacheReserved = balancesHolder.getReservedBalance(clientId, assetId)
         assertEquals(cacheBalance, dbBalance)
         assertEquals(cacheReserved, dbReserved)
-    }
-
-    private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
-        return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
-                .setUid("123")
-                .setClientId(clientId)
-                .setAssetId(assetId)
-                .setAmount(amount).build().toByteArray(), null)
     }
 
     private fun buildReservedBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {

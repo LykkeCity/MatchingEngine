@@ -1,13 +1,34 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
+import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessorFactory
 import com.lykke.matching.engine.database.WalletsStorage
-import com.lykke.matching.engine.database.azure.*
+import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.DefaultJedisHolder
+import com.lykke.matching.engine.database.redis.EmptyJedisHolder
+import com.lykke.matching.engine.database.redis.JedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -30,6 +51,17 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
+    open fun jedisHolder(): JedisHolder {
+        return when (config.me.walletsStorage) {
+            WalletsStorage.Azure -> EmptyJedisHolder()
+            WalletsStorage.Redis -> {
+                val holder = balancesDatabaseAccessorsHolder()
+                DefaultJedisHolder(holder.redisConfig)
+            }
+        }
+    }
+
+    @Bean
     open fun persistenceManager(): PersistenceManager {
         return when (config.me.walletsStorage) {
             WalletsStorage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
@@ -38,7 +70,7 @@ open class DatabaseAccessorConfig {
                 RedisPersistenceManager(
                         holder.primaryAccessor as RedisWalletDatabaseAccessor,
                         holder.secondaryAccessor,
-                        holder.redisConfig
+                        jedisHolder() as DefaultJedisHolder
                 )
             }
         }

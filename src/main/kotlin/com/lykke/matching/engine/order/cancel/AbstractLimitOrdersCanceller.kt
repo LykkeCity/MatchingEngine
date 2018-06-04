@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.AssetPair
@@ -19,13 +18,13 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrderBook,
-        out TCancelResult: AbstractLimitOrdersCancelResult<TAssetOrderBook>>(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
-                                                                             private val assetsPairsHolder: AssetsPairsHolder,
-                                                                             private val balancesHolder: BalancesHolder,
-                                                                             private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
-                                                                             private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                                                                             private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                                                                             private val date: Date) {
+        TCancelResult : AbstractLimitOrdersCancelResult<TAssetOrderBook>>(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                                                                          private val assetsPairsHolder: AssetsPairsHolder,
+                                                                          private val balancesHolder: BalancesHolder,
+                                                                          private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
+                                                                          private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                                                          private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                                                          private val date: Date) {
 
     private val ordersToRemove = HashMap<String, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
     protected val ordersToCancel = HashMap<AssetPair, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
@@ -98,7 +97,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
 
     protected abstract fun getOrderLimitVolume(order: NewLimitOrder): BigDecimal
 
-    open fun apply(): TCancelResult {
+    fun process(): TCancelResult {
         val clientsLimitOrders = LinkedList<LimitOrderWithTrades>()
         val trustedClientsLimitOrders = LinkedList<LimitOrderWithTrades>()
 
@@ -118,7 +117,6 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
             }
         }
 
-        //return AbstractLimitOrdersCancelResult(walletOperations, clientsLimitOrders, trustedClientsLimitOrders, assetOrderBooks)
         return getCancelResult(walletOperations, clientsLimitOrders, trustedClientsLimitOrders, assetOrderBooks)
     }
 
@@ -127,13 +125,12 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                            trustedClientsOrdersWithTrades: List<LimitOrderWithTrades>,
                                            assetOrderBooks: Map<String, TAssetOrderBook>): TCancelResult
 
-    /** Cancels orders, updates balances and sends notifications */
-    open fun applyFull(operationId: String, messageId: String, operationType: String, validateBalances: Boolean) {
-        val result = apply()
+    open fun apply(messageId: String, result: TCancelResult) {
+        removeOrdersAndUpdateOrderBooks()
+        sendReports(messageId, result)
+    }
 
-        val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
-        walletProcessor.preProcess(result.walletOperations)
-
+    private fun removeOrdersAndUpdateOrderBooks() {
         ordersToRemove.forEach { assetPairId, sideOrders ->
             sideOrders.forEach { isBuy, orders ->
                 removeOrdersAndUpdateOrderBook(orders, assetPairId, isBuy)
@@ -146,15 +143,15 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                 removeOrdersAndUpdateOrderBook(orders, assetPairId, isBuy)
             }
         }
+    }
 
+    private fun sendReports(messageId: String, result: TCancelResult) {
         if (result.clientsOrdersWithTrades.isNotEmpty()) {
             clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
             trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
-
-        walletProcessor.apply(operationId, operationType, messageId)
     }
 
     @Suppress("unchecked_cast")

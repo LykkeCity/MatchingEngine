@@ -54,13 +54,24 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
         val accuracy = assetsHolder.getAsset(operation.assetId).accuracy
 
+        val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
-            balancesHolder.createWalletProcessor(LOGGER).preProcess(listOf(operation)).apply(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
+            walletProcessor.preProcess(listOf(operation))
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
             return
         }
+
+        val updated = walletProcessor.persistBalances()
+        if (!updated) {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setMatchingEngineId(operation.id)
+                    .setStatus(MessageStatus.RUNTIME.type))
+            LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: unable to save balance")
+            return
+        }
+        walletProcessor.apply().sendNotification(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
         applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id,
                 operation.clientId,

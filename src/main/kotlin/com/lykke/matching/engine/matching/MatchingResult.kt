@@ -15,15 +15,13 @@ import java.util.LinkedList
 import java.util.concurrent.PriorityBlockingQueue
 
 data class MatchingResult(
-        /** Copy wrapper of incoming order */
         private val orderCopyWrapper: CopyWrapper<NewOrder>,
         val timestamp: Date,
-        val cancelledLimitOrders: Set<NewLimitOrder> = HashSet(),
-        /** Copy wrappers of matched orders */
+        val cancelledLimitOrders: Set<CopyWrapper<NewLimitOrder>> = HashSet(),
         private val matchedOrders: List<CopyWrapper<NewLimitOrder>> = LinkedList(),
         val skipLimitOrders: Set<NewLimitOrder> = HashSet(),
-        val completedLimitOrders: List<NewLimitOrder> = LinkedList(),
-        /** Copy wrapper of uncompleted order */
+        val completedLimitOrders: List<CopyWrapper<NewLimitOrder>> = LinkedList(),
+        private val matchedUncompletedLimitOrderWrapper: CopyWrapper<NewLimitOrder>? = null,
         private val uncompletedLimitOrderWrapper: CopyWrapper<NewLimitOrder>? = null,
         val lkkTrades: List<LkkTrade> = LinkedList(),
         val ownCashMovements: List<WalletOperation> = LinkedList(),
@@ -36,11 +34,10 @@ data class MatchingResult(
 ) {
 
     val order: NewOrder = orderCopyWrapper.copy
-    val uncompletedLimitOrderCopy: NewLimitOrder? = uncompletedLimitOrderWrapper?.copy
-    var uncompletedLimitOrder: NewLimitOrder? = null
+    val uncompletedLimitOrderCopy: NewLimitOrder? = matchedUncompletedLimitOrderWrapper?.copy
+    val uncompletedLimitOrder: NewLimitOrder? = uncompletedLimitOrderWrapper?.origin
 
     fun apply() {
-        uncompletedLimitOrder = uncompletedLimitOrderWrapper?.applyToOrigin()
         orderCopyWrapper.applyToOrigin()
         matchedOrders.forEach { it.applyToOrigin() }
     }

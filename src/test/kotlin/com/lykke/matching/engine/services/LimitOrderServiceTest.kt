@@ -191,7 +191,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         initServices()
 
-        assertNotNull(genericLimitOrderService.getAllPreviousOrders("Client1", "EURUSD", true).find { it.externalId == "2" })
+        assertNotNull(genericLimitOrderService.searchOrders("Client1", "EURUSD", true).find { it.externalId == "2" })
         limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("2"))
     }
 

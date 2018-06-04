@@ -7,11 +7,9 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,8 +21,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -104,14 +100,5 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, tradesInfoQueue.size)
         assertEquals(1, orderBookQueue.size)
         assertEquals(1, rabbitOrderBookQueue.size)
-    }
-
-    private fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper {
-        return MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
-                .setUid(UUID.randomUUID().toString())
-                .setTimestamp(Date().time)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setIsBuy(isBuy).build().toByteArray(), null)
     }
 }
