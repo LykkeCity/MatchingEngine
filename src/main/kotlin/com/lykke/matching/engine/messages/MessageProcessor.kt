@@ -157,11 +157,11 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val healthMonitor = GeneralHealthMonitor(listOf(applicationContext.getBean(RedisHealthStatusHolder::class.java)))
+    private val healthMonitor: GeneralHealthMonitor
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
-
+        healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         val persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
 

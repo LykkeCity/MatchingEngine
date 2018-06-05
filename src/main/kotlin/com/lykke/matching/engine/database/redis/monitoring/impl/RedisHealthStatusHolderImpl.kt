@@ -2,12 +2,24 @@ package com.lykke.matching.engine.database.redis.monitoring.impl
 
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
+import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Component
 import redis.clients.jedis.JedisPool
-import kotlin.concurrent.thread
+import javax.annotation.PostConstruct
+import kotlin.concurrent.fixedRateTimer
 
 
-class RedisHealthStatusHolderImpl(private val jedisPool: JedisPool, private val config: Config): RedisHealthStatusHolder {
+@Component
+class RedisHealthStatusHolderImpl @Autowired constructor(
+        private val jedisPool: JedisPool,
+        private val config: Config,
+        private val applicationEventPublisher: ApplicationEventPublisher,
+        @Value("\${redis.health_check.update.interval}") private val  updateInteval: Long): RedisHealthStatusHolder {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RedisHealthStatusHolderImpl::class.java.name)
@@ -25,7 +37,7 @@ class RedisHealthStatusHolderImpl(private val jedisPool: JedisPool, private val 
     }
 
     private fun getPingDb(): Int {
-        return  if (config.me.redis.balanceDatabase != 0) 0 else 1
+        return if (config.me.redis.balanceDatabase != 0) 0 else 1
     }
 
     private fun isRedisAlive(): Boolean {
@@ -49,15 +61,13 @@ class RedisHealthStatusHolderImpl(private val jedisPool: JedisPool, private val 
         }
     }
 
-
-    init {
-        thread(name = RedisHealthStatusHolderImpl::class.java.name) {
-            while (true) {
-                val redisAlive = isRedisAlive()
-                ok = externalFail || redisAlive
-                externalFail = redisAlive
-                Thread.sleep(500)
-            }
+    @PostConstruct
+    open fun init() {
+        fixedRateTimer(RedisHealthStatusHolderImpl::class.java.name, false, 0, updateInteval) {
+            val redisAlive = isRedisAlive()
+            ok = externalFail || redisAlive
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(ok, MonitoredComponent.REDIS))
+            externalFail = redisAlive
         }
     }
 }

@@ -13,7 +13,6 @@ import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAcce
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.monitoring.impl.RedisHealthStatusHolderImpl
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -36,7 +35,9 @@ open class DatabaseAccessorConfig {
     private lateinit var config: Config
 
     @Bean
-    open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder, jedisPool: JedisPool): PersistenceManager {
+    open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
+                                jedisPool: JedisPool,
+                                redisHealthStatusHolder: RedisHealthStatusHolder): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
@@ -44,7 +45,7 @@ open class DatabaseAccessorConfig {
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor(jedisPool),
-                        redisStatusHolder(jedisPool),
+                        redisHealthStatusHolder,
                         jedisPool,
                         config
                 )
@@ -94,11 +95,6 @@ open class DatabaseAccessorConfig {
                 redisConfig.password,
                 redisConfig.useSsl)
     }
-
-    @Bean
-    open fun redisStatusHolder(jedisPool: JedisPool): RedisHealthStatusHolder {
-        return RedisHealthStatusHolderImpl(jedisPool, config)
-     }
 
     @Bean
     open fun redisProcessedMessagesDatabaseAccessor(jedisPool: JedisPool): RedisProcessedMessagesDatabaseAccessor {
