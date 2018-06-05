@@ -12,7 +12,6 @@ import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -21,9 +20,7 @@ import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -119,7 +116,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
-    private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
 
     private val cashOperationService: CashOperationService
@@ -269,7 +265,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        processedMessagesDatabaseAccessor = applicationContext.getBean(FileProcessedMessagesDatabaseAccessor::class.java)
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
 
@@ -310,8 +305,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
                 tradesInfoService.saveHourCandles()
             }
-
-
 
             val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, persistenceManager, config.me.queueSizeLimit)
             fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {

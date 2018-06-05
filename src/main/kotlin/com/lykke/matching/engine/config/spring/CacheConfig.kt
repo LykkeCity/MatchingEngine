@@ -14,7 +14,7 @@ open class CacheConfig {
     private lateinit var config: Config
 
     @Bean
-    fun processedMessagesCache(readOnlyProcessedMessagesDatabaseAccessor: ReadOnlyProcessedMessagesDatabaseAccessor): ProcessedMessagesCache {
+    open fun processedMessagesCache(readOnlyProcessedMessagesDatabaseAccessor: ReadOnlyProcessedMessagesDatabaseAccessor): ProcessedMessagesCache {
         val messages = readOnlyProcessedMessagesDatabaseAccessor.get()
         return ProcessedMessagesCache(config.me.processedMessagesInterval, messages)
     }

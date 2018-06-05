@@ -15,7 +15,7 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
                                              private val dbIndex: Int,
                                              private val timeToLive: Int): ReadOnlyProcessedMessagesDatabaseAccessor {
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(FileProcessedMessagesDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(RedisProcessedMessagesDatabaseAccessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
 
         val DATE_FORMAT = SimpleDateFormat("yyyyMMdd")

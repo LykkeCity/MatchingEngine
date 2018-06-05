@@ -12,6 +12,7 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
+import java.time.Duration
 import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
@@ -91,7 +92,7 @@ class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: S
     }
 
     private fun getStartDate(interval: Long): Date {
-        val days = interval / Period.ofDays(1).get(ChronoUnit.MILLIS)  + 1
+        val days = interval / Duration.ofDays(1).toMillis()  + 1
 
         return Date.from(LocalDate
                 .now()
