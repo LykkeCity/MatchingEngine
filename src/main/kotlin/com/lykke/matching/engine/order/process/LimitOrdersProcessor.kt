@@ -111,7 +111,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         buySideOrderBookChanged = buySideOrderBookChanged || pBuySideOrderBookChanged
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
-        val updated = walletOperationsProcessor.persistBalances()
+        val updated = walletOperationsProcessor.persistBalances(processedMessage)
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }

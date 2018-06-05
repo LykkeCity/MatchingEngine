@@ -101,11 +101,11 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances()
+        val updated = walletProcessor.persistBalances(processedMessage)
         if (!updated) {
             throw Exception("Unable to save balance")
         }
-        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, messageId)
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, processedMessage.messageId)
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashSwapOperation {

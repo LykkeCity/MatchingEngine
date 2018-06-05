@@ -7,5 +7,6 @@ data class RedisConfig(
     val useSsl: Boolean,
     val password: String?,
     val balanceDatabase: Int,
-    val processedMessageDatabase: Int
+    val processedMessageDatabase: Int,
+    val processedMessageTTL: Int
 )

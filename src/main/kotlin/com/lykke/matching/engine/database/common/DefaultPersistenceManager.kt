@@ -1,14 +1,15 @@
 package com.lykke.matching.engine.database.common
 
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 
 class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor,
-                                private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor)
+                                private val fileProcessedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor)
     : PersistenceManager {
 
     companion object {
@@ -21,7 +22,6 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     override fun persist(data: PersistenceData): Boolean {
         return try {
             persistData(data)
-            persistProcessedMessages(data.message)
             true
         } catch (e: Exception) {
             val retryMessage = "Unable to save data (${data.details()}), retrying"
@@ -41,7 +41,10 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     }
 
     private fun persistData(data: PersistenceData) {
-        walletDatabaseAccessor.insertOrUpdateWallets(data.wallets.toList())
+        if (data.balancesData != null) {
+            walletDatabaseAccessor.insertOrUpdateWallets(data.balancesData.wallets.toList())
+        }
+        persistProcessedMessages(data.processedMessage)
     }
 
     private fun persistProcessedMessages(processedMessage: ProcessedMessage?) {

@@ -3,7 +3,7 @@ package com.lykke.matching.engine.utils.migration
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.exception.MatchingEngineException
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.config.Config

@@ -78,22 +78,22 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return stopLimitOrdersCanceller.process()
     }
 
-    fun applyFull(operationId: String, messageId: String, operationType: String, validateBalances: Boolean): Boolean {
+    fun applyFull(operationId: String, messageId: String, processedMessage: ProcessedMessage?, operationType: String, validateBalances: Boolean): Boolean {
         val limitOrdersCancelResult = processLimitOrders()
         val stopLimitOrdersResult = processStopLimitOrders()
 
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
         walletProcessor.preProcess(limitOrdersCancelResult.walletOperations)
         walletProcessor.preProcess(stopLimitOrdersResult.walletOperations)
-        val updated = walletProcessor.persistBalances()
+        val updated = walletProcessor.persistBalances(processedMessage)
         if (!updated) {
             return false
         }
 
         walletProcessor.apply().sendNotification(operationId, operationType, messageId)
-        stopLimitOrdersCanceller.apply(messageId, stopLimitOrdersResult)
+        stopLimitOrdersCanceller.apply(messageId, processedMessage, stopLimitOrdersResult)
 
-        limitOrdersCanceller.apply(messageId, limitOrdersCancelResult)
+        limitOrdersCanceller.apply(messageId, processedMessage, limitOrdersCancelResult)
         return true
     }
 }

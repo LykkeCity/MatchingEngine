@@ -287,7 +287,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val startPersistTime = System.nanoTime()
 
-        val updated = walletOperationsProcessor.persistBalances()
+        val updated = walletOperationsProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -435,7 +435,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
-                .apply(messageWrapper.messageId!!, multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
+                .apply(messageWrapper.messageId!!,
+                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                        multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
 
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()

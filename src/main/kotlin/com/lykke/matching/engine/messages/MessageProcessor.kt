@@ -23,7 +23,7 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.JedisHolder
+import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -84,10 +84,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
 import java.util.HashMap
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
@@ -160,7 +157,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val healthMonitor = GeneralHealthMonitor(listOf(applicationContext.getBean(JedisHolder::class.java)))
+    private val healthMonitor = GeneralHealthMonitor(listOf(applicationContext.getBean(RedisHealthStatusHolder::class.java)))
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")

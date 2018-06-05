@@ -1,13 +1,12 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import java.util.Date
 
 class BalanceUpdate( val id: String,
                      val type: String,
                      val timestamp: Date,
                      var balances: List<ClientBalanceUpdate>,
-                     val processedMessage: ProcessedMessage?): JsonSerializable() {
+                     val messageId: String): JsonSerializable() {
 
     override fun toString(): String {
         return toJson()

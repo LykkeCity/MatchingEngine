@@ -69,9 +69,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             var updated = true
             if (cancelVolume > 0) {
                 val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
-                updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+                updated = balancesHolder.updateReservedBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                        order.clientId, limitAsset.assetId, newReservedBalance)
                 if (updated) {
-                    balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
+                    balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
+                            listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)),
+                            messageWrapper.messageId!!))
                 }
             }
 
@@ -118,7 +121,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
 
         val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
-        val updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+        val updated = balancesHolder.updateReservedBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                order.clientId, limitAsset.assetId, newReservedBalance)
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, order)
             return

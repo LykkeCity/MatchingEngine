@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.FactoryBean
