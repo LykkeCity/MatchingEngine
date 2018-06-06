@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.config.Config
@@ -22,6 +23,7 @@ class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
+        private val redisHealthStatusHolder: RedisHealthStatusHolder,
         private val jedisPool: JedisPool,
         private val config: Config): PersistenceManager {
 
@@ -40,6 +42,7 @@ class RedisPersistenceManager(
             persistData(data)
             true
         } catch (e: Exception) {
+            redisHealthStatusHolder.fail()
             val retryMessage = "Unable to save data (${data.details()})"
             LOGGER.error(retryMessage, e)
             METRICS_LOGGER.logError(retryMessage, e)
