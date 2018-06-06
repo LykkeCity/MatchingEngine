@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
-import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.MetricsLogger
@@ -30,8 +29,8 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
         jedisPool.resource.use { jedis ->
             jedis.select(dbIndex)
 
-            val keys = jedis.keys(PREFIX + SEPARATOR)
-            LOGGER.info("Processed messages keys count: $keys.size")
+            val keys = jedis.keys("$PREFIX$SEPARATOR*")
+            LOGGER.info("Processed messages keys count: ${keys.size}")
 
             return keys
                     .stream()
@@ -42,15 +41,18 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
      }
 
     fun save(transaction: Transaction, message: ProcessedMessage) {
-        transaction.select(dbIndex)
-        val key = getKey(message)
+        jedisPool.resource.use { jedis ->
+            jedis.select(dbIndex)
+            transaction.select(dbIndex)
+            val key = getKey(message)
 
-        val firstSave = !transaction.exists(key).get()
-        transaction.sadd(key, conf.asJsonString(message))
+            val firstSave = !jedis.exists(key)
+            transaction.sadd(key, conf.asJsonString(message))
 
-        if (firstSave) {
-            LOGGER.debug("First save of message for key $key, setting expiration time")
-            transaction.expire(key, timeToLive)
+            if (firstSave) {
+                LOGGER.debug("First save of message for key $key, setting expiration time")
+                transaction.expire(key, timeToLive)
+            }
         }
     }
 

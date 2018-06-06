@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.redis.monitoring.impl
 
+import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
@@ -63,6 +64,9 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
 
     @PostConstruct
     open fun init() {
+        if (config.me.storage != Storage.Redis) {
+            return
+        }
         fixedRateTimer(RedisHealthStatusHolderImpl::class.java.name, false, 0, updateInteval) {
             val redisAlive = isRedisAlive()
             ok = externalFail || redisAlive

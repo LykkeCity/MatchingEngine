@@ -99,9 +99,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     fun persistBalances(processedMessage: ProcessedMessage?): Boolean {
-        if (changedAssetBalances.isEmpty()) {
-            return true
-        }
         changedAssetBalances.forEach { it.value.apply() }
         return persistenceManager.persist(persistenceData(processedMessage))
     }
