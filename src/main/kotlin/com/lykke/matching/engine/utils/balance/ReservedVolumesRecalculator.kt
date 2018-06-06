@@ -25,8 +25,7 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
         return
     }
     val filePath = config.me.orderBookPath
-    val stopOrderBookPath = config.me.stopOrderBookPath
-    val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
+    val stopOrderBookDatabaseAccessor = applicationContext.getBean(FileStopOrderBookDatabaseAccessor::class.java)
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = applicationContext.getBean(OrderBookDatabaseAccessor::class.java)
     val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)

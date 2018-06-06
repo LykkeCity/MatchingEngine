@@ -26,6 +26,7 @@ import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAcce
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.DefaultJedisHolder
 import com.lykke.matching.engine.database.redis.EmptyJedisHolder
 import com.lykke.matching.engine.database.redis.JedisHolder
@@ -144,5 +145,10 @@ open class DatabaseAccessorConfig {
     open fun fileProcessedMessagesDatabaseAccessor()
             : ProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath)
+    }
+
+    @Bean
+    open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
+        return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
     }
 }
