@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.database.redis
+package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -42,7 +42,7 @@ class RedisWalletDatabaseAccessor(private val jedis: Jedis, private val balances
                 if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
                     throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
                 }
-                if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.asset) {
+                if (key.removePrefix("${KEY_PREFIX_BALANCE}${balance.clientId}${KEY_SEPARATOR}") != balance.asset) {
                     throw Exception("Invalid assetId: ${balance.asset}, balance key: $key")
                 }
                 val clientBalances = result.getOrPut(balance.clientId) { Wallet(balance.clientId) }
@@ -74,7 +74,7 @@ class RedisWalletDatabaseAccessor(private val jedis: Jedis, private val balances
     }
 
     private fun balancesKeys(jedis: Jedis): Set<String> {
-        return jedis.keys("$KEY_PREFIX_BALANCE*")
+        return jedis.keys("${KEY_PREFIX_BALANCE}*")
     }
 
     private fun serializeClientAssetBalance(balance: AssetBalance) = conf.asByteArray(balance)
@@ -85,7 +85,7 @@ class RedisWalletDatabaseAccessor(private val jedis: Jedis, private val balances
     }
 
     private fun key(balance: AssetBalance): String {
-        return "$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR${balance.asset}"
+        return "${KEY_PREFIX_BALANCE}${balance.clientId}${KEY_SEPARATOR}${balance.asset}"
     }
 
 }

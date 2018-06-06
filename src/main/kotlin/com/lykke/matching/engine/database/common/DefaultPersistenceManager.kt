@@ -1,11 +1,16 @@
 package com.lykke.matching.engine.database.common
 
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 
-class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor) : PersistenceManager {
+class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                private val fileProcessedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor)
+    : PersistenceManager {
 
     companion object {
         private val LOGGER = Logger.getLogger(DefaultPersistenceManager::class.java.name)
@@ -36,7 +41,15 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     }
 
     private fun persistData(data: PersistenceData) {
-        walletDatabaseAccessor.insertOrUpdateWallets(data.wallets.toList())
-        return
+        if (data.balancesData != null) {
+            walletDatabaseAccessor.insertOrUpdateWallets(data.balancesData.wallets.toList())
+        }
+        persistProcessedMessages(data.processedMessage)
+    }
+
+    private fun persistProcessedMessages(processedMessage: ProcessedMessage?) {
+        if (processedMessage != null) {
+            fileProcessedMessagesDatabaseAccessor.saveProcessedMessage(processedMessage)
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -36,7 +37,8 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-        val updated = balancesHolder.updateReservedBalance(message.clientId, message.assetId, message.reservedAmount, false)
+        val updated = balancesHolder.updateReservedBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                message.clientId, message.assetId, message.reservedAmount, false)
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.RUNTIME.type))
             LOGGER.info("Unable to save balance (client ${message.clientId}, asset ${message.assetId}, reserved ${NumberUtils.roundForPrint(message.reservedAmount)})")
@@ -45,7 +47,11 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                 MessageType.RESERVED_BALANCE_UPDATE.name,
                 Date(),
-                listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance, message.reservedAmount)), messageWrapper.messageId!!))
+                listOf(ClientBalanceUpdate(message.clientId,
+                        message.assetId,
+                        balance,
+                        balance,
+                        currentReservedBalance, message.reservedAmount)), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(MessageStatus.OK.type))

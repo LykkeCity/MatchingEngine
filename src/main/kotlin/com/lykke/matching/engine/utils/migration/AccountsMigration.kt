@@ -1,9 +1,9 @@
 package com.lykke.matching.engine.utils.migration
 
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.WalletsStorage
+import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.exception.MatchingEngineException
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.config.Config
@@ -20,9 +20,9 @@ fun migrateAccountsIfConfigured(applicationContext: ApplicationContext) {
         return
     }
     val balancesHolder = applicationContext.getBean(BalancesHolder::class.java)
-    when (config.me.walletsStorage) {
-        WalletsStorage.Azure -> AccountsMigration(config.me, balancesHolder).fromRedisToDb()
-        WalletsStorage.Redis -> AccountsMigration(config.me, balancesHolder).fromDbToRedis()
+    when (config.me.storage) {
+        Storage.Azure -> AccountsMigration(config.me, balancesHolder).fromRedisToDb()
+        Storage.Redis -> AccountsMigration(config.me, balancesHolder).fromDbToRedis()
     }
 }
 

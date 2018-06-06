@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
@@ -44,10 +45,12 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                 trustedClientsOrdersWithTrades, assetOrderBooks, orderBooks.values.toList())
     }
 
-    override fun apply(messageId: String, result: LimitOrdersCancelResult) {
-        super.apply(messageId, result)
+    override fun apply(messageId: String,
+                       processedMessage: ProcessedMessage?,
+                       result: LimitOrdersCancelResult) {
+        super.apply(messageId, processedMessage, result)
         sendNotification()
-        checkAndProcessStopOrders(messageId)
+        checkAndProcessStopOrders(messageId, processedMessage)
     }
 
     private fun sendNotification() {
@@ -59,11 +62,11 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         }
     }
 
-    private fun checkAndProcessStopOrders(messageId: String) {
+    private fun checkAndProcessStopOrders(messageId: String, processedMessage: ProcessedMessage?) {
         val assetPairs = HashSet(ordersToCancel.keys)
         if (assetPairs.isNotEmpty()) {
             assetPairs.forEach { assetPair ->
-                genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, assetPair.assetPairId, date)
+                genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, processedMessage, assetPair.assetPairId, date)
             }
         }
     }

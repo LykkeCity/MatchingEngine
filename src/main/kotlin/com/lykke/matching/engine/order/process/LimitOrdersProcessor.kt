@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -101,6 +102,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     }
 
     fun apply(messageId: String,
+              processedMessage: ProcessedMessage?,
               operationId: String,
               operationType: String,
               pBuySideOrderBookChanged: Boolean,
@@ -109,7 +111,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         buySideOrderBookChanged = buySideOrderBookChanged || pBuySideOrderBookChanged
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
-        val updated = walletOperationsProcessor.persistBalances()
+        val updated = walletOperationsProcessor.persistBalances(processedMessage)
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }

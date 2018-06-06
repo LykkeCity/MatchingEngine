@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
@@ -24,6 +25,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                           isCancelOrders: Boolean,
                           now: Date,
                           messageId: String,
+                          processedMessage: ProcessedMessage?,
                           payBackReserved: Double? = null,
                           messageWrapper: MessageWrapper? = null) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
@@ -60,7 +62,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageId, listOf(order))
-                .apply(messageId, order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
+                .apply(messageId, processedMessage, order.externalId, MessageType.LIMIT_ORDER.name, buySideOrderBookChanged, sellSideOrderBookChanged)
 
         if (!result.success) {
             val message = "Unable to save result data"
