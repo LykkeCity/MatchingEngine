@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.utils.SetUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.JedisPool
@@ -14,12 +14,11 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
                                              private val dbIndex: Int,
                                              private val timeToLive: Int): ReadOnlyProcessedMessagesDatabaseAccessor {
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(RedisProcessedMessagesDatabaseAccessor::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(RedisProcessedMessagesDatabaseAccessor::class.java.name)
 
-        val DATE_FORMAT = SimpleDateFormat("yyyyMMdd")
-        val PREFIX = "message"
-        val SEPARATOR = ":"
+        private val DATE_FORMAT = SimpleDateFormat("yyyyMMdd")
+        private const val PREFIX = "message"
+        private const val SEPARATOR = ":"
     }
 
     private var conf = FSTConfiguration.createJsonConfiguration()
@@ -41,22 +40,13 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
      }
 
     fun save(transaction: Transaction, message: ProcessedMessage) {
-        jedisPool.resource.use { jedis ->
-            jedis.select(dbIndex)
-            transaction.select(dbIndex)
-            val key = getKey(message)
+        transaction.select(dbIndex)
+        val key = getKey(message)
+        SetUtils.performAtomicSaveSetExpire(transaction, key, conf.asJsonString(message), timeToLive)
+        LOGGER.debug("Persist of processed message: $message to redis performed")
+     }
 
-            val firstSave = !jedis.exists(key)
-            transaction.sadd(key, conf.asJsonString(message))
-
-            if (firstSave) {
-                LOGGER.debug("First save of message for key $key, setting expiration time")
-                transaction.expire(key, timeToLive)
-            }
-        }
-    }
-
-    fun getKey(message: ProcessedMessage): String {
+    private fun getKey(message: ProcessedMessage): String {
         return PREFIX + SEPARATOR + DATE_FORMAT.format(message.timestamp)
     }
 }
