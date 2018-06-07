@@ -350,7 +350,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                 assetPair.assetPairId, now)
     }
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
@@ -471,7 +470,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                 assetPair.assetPairId, now)
     }
 
