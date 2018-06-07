@@ -78,8 +78,13 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         return Paths.get(ordersDir, fileName)
     }
 
-    protected fun updateOrdersFile(fileName: String, orders: Collection<NewLimitOrder>) {
+    private fun getOrderBookFileName(asset: String, buy: Boolean): String {
+        return "${asset}_$buy"
+    }
+
+    protected fun updateOrdersFile(asset: String, buy: Boolean,  orders: Collection<NewLimitOrder>) {
         try {
+            val fileName = getOrderBookFileName(asset, buy)
             archiveAndDeleteFile(fileName)
             saveFile(fileName, orders.toList())
         } catch(e: Exception) {

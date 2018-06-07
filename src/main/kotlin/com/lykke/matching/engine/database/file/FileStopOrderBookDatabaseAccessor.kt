@@ -10,8 +10,6 @@ class FileStopOrderBookDatabaseAccessor(ordersDir: String) : AbstractFileOrderBo
     }
 
     override fun updateStopOrderBook(assetPairId: String, isBuy: Boolean, orderBook: Collection<NewLimitOrder>) {
-        val fileName = "${assetPairId}_$isBuy"
-        updateOrdersFile(fileName, orderBook)
+        updateOrdersFile(assetPairId, isBuy, orderBook)
     }
-
 }

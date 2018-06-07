@@ -10,9 +10,8 @@ class FileOrderBookDatabaseAccessor(ordersDir: String) : AbstractFileOrderBookDa
         return loadOrdersFromFiles()
     }
 
-    override fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
-        val fileName = "${asset}_$isBuy"
-        updateOrdersFile(fileName, orderBook)
+    override fun updateOrderBook(asset: String, buy: Boolean, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
+         updateOrdersFile(asset , buy, orderBook)
     }
 
 }
