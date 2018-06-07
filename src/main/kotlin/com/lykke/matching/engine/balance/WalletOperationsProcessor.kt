@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -92,15 +93,13 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return this
     }
 
-    fun persistenceData(processedMessage: ProcessedMessage?): PersistenceData {
-        val persistenceData = balancesUpdater.persistenceData()
-        persistenceData.processedMessage = processedMessage
-        return persistenceData
+    fun persistenceData(): BalancesData {
+        return balancesUpdater.persistenceData()
     }
 
     fun persistBalances(processedMessage: ProcessedMessage?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
-        return persistenceManager.persist(persistenceData(processedMessage))
+        return persistenceManager.persist(PersistenceData(persistenceData(), processedMessage))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {

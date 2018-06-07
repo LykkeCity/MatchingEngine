@@ -19,6 +19,7 @@ import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -117,6 +118,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
+    private val persistenceManager: PersistenceManager
 
     private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
@@ -159,7 +161,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        val persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
+        persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
 
         cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
@@ -410,6 +412,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             if (!notDeduplicateMessageTypes.contains(messageType)) {
                 val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
                 processedMessagesCache.addMessage(processedMessage)
+                if (!message.processedMessagePersisted) {
+                    persistenceManager.persist(PersistenceData(ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)))
+                }
             }
 
             val endTime = System.nanoTime()
