@@ -2,17 +2,13 @@ package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.*
-import javax.annotation.PostConstruct
-import kotlin.concurrent.fixedRateTimer
 
 @Component
-class GeneralHealthMonitor
-@Autowired constructor (@Value("\${health.check.update.interval}") private val updateInterval: Long): HealthMonitor {
+class GeneralHealthMonitor: HealthMonitor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(GeneralHealthMonitor::class.java.name)
@@ -34,15 +30,13 @@ class GeneralHealthMonitor
         }
     }
 
-    @PostConstruct
-    open fun init() {
-        fixedRateTimer(GeneralHealthMonitor::class.java.name, false, 0, updateInterval) {
-            ok = brokenComponents.isEmpty()
-            if (!ok) {
-                val message = "Maintenance mode is on"
-                LOGGER.error(message)
-                METRICS_LOGGER.logError(message)
-            }
+    @Scheduled(fixedRateString = "\${health.check.update.interval}")
+    open fun checkBrokenComponents() {
+        ok = brokenComponents.isEmpty()
+        if (!ok) {
+            val message = "Maintenance mode is on"
+            LOGGER.error(message)
+            METRICS_LOGGER.logError(message)
         }
     }
 }

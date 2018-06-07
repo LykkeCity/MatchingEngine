@@ -162,6 +162,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
+                    messageWrapper.processedMessagePersisted = true
                     val updated = walletOperationsProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
                     if (!updated) {
                         val message = "Unable to save result data"
@@ -210,7 +211,6 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
         }
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                 assetPair.assetPairId,
                 now)
 

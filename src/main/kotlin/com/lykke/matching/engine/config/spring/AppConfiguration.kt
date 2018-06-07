@@ -11,13 +11,33 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.core.env.get
+import org.springframework.scheduling.TaskScheduler
+import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.scheduling.annotation.SchedulingConfigurer
+import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler
+import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import javax.annotation.PostConstruct
+import java.util.concurrent.Executors
 
 @Configuration
-open class AppConfiguration {
-
+@EnableScheduling
+open class AppConfiguration: SchedulingConfigurer {
     @Autowired
     private lateinit var config: Config
+
+    @Autowired
+    private lateinit var environment: Environment
+
+    override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
+        taskRegistrar.setTaskScheduler(taskScheduler())
+    }
+
+    @Bean
+    open fun taskScheduler(): TaskScheduler {
+        return ConcurrentTaskScheduler(Executors.newScheduledThreadPool(environment["concurent.corepool.size"].toInt()))
+    }
 
     @Bean
     open fun socketServer(): Runnable {

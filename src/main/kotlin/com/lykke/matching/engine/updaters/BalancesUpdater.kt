@@ -22,8 +22,8 @@ class BalancesUpdater(private val balancesHolder: BalancesHolder) {
         walletAssetBalance.assetBalance.reserved = balance
     }
 
-    fun persistenceData(): PersistenceData {
-        return PersistenceData(BalancesData(changedWallets.values, changedBalances.flatMap { it.value.values }))
+    fun persistenceData(): BalancesData {
+        return BalancesData(changedWallets.values, changedBalances.flatMap { it.value.values })
     }
 
     fun apply() {

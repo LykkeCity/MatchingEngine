@@ -94,10 +94,8 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     fun updateBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: Double): Boolean {
         val balancesUpdater = createUpdater()
         balancesUpdater.updateBalance(clientId, assetId, balance.toBigDecimal())
-        val persistenceData = balancesUpdater.persistenceData()
-        persistenceData.processedMessage = processedMessage
-        val persisted = persistenceManager
-                .persist(persistenceData)
+        val balancesData = balancesUpdater.persistenceData()
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
         if (!persisted) {
             return false
         }
@@ -109,9 +107,8 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     fun updateReservedBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true): Boolean {
         val balancesUpdater = createUpdater()
         balancesUpdater.updateReservedBalance(clientId, assetId, balance.toBigDecimal())
-        val persistenceData = balancesUpdater.persistenceData()
-        persistenceData.processedMessage = processedMessage
-        val persisted = persistenceManager.persist(persistenceData)
+        val balancesData = balancesUpdater.persistenceData()
+         val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
         if (!persisted) {
             return false
         }

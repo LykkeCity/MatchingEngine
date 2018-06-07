@@ -50,7 +50,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                        result: LimitOrdersCancelResult) {
         super.apply(messageId, processedMessage, result)
         sendNotification()
-        checkAndProcessStopOrders(messageId, processedMessage)
+        checkAndProcessStopOrders(messageId)
     }
 
     private fun sendNotification() {
@@ -62,11 +62,11 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         }
     }
 
-    private fun checkAndProcessStopOrders(messageId: String, processedMessage: ProcessedMessage?) {
+    private fun checkAndProcessStopOrders(messageId: String) {
         val assetPairs = HashSet(ordersToCancel.keys)
         if (assetPairs.isNotEmpty()) {
             assetPairs.forEach { assetPair ->
-                genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, processedMessage, assetPair.assetPairId, date)
+                genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, assetPair.assetPairId, date)
             }
         }
     }
