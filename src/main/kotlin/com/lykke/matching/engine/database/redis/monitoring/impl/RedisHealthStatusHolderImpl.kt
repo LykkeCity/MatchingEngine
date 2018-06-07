@@ -9,10 +9,10 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Component
 import redis.clients.jedis.JedisPool
 import javax.annotation.PostConstruct
-import kotlin.concurrent.fixedRateTimer
 
 
 @Component
@@ -20,6 +20,7 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
         private val jedisPool: JedisPool,
         private val config: Config,
         private val applicationEventPublisher: ApplicationEventPublisher,
+        private val taskScheduler: TaskScheduler,
         @Value("\${redis.health_check.update.interval}") private val  updateInteval: Long): RedisHealthStatusHolder {
 
     companion object {
@@ -61,11 +62,11 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
         if (config.me.storage != Storage.Redis) {
             return
         }
-        fixedRateTimer(RedisHealthStatusHolderImpl::class.java.name, false, 0, updateInteval) {
+        taskScheduler.scheduleAtFixedRate ({
             val redisAlive = isRedisAlive()
             ok = externalFail || redisAlive
             applicationEventPublisher.publishEvent(HealthMonitorEvent(ok, MonitoredComponent.REDIS))
             externalFail = redisAlive
-        }
+        },  updateInteval)
     }
 }
