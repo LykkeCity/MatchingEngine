@@ -31,8 +31,6 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
     private var externalFail = false
     var ok = false
 
-    override fun ok() = ok && !externalFail
-
     override fun fail() {
         externalFail = true
     }
@@ -59,7 +57,7 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
     }
 
     @PostConstruct
-    open fun init() {
+    fun init() {
         if (config.me.storage != Storage.Redis) {
             return
         }
