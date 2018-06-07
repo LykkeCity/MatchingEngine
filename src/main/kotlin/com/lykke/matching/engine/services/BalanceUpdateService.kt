@@ -42,6 +42,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
 
             val updated = balancesHolder.updateBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                     message.clientId, message.assetId, message.amount)
+            messageWrapper.processedMessagePersisted = true
             if (updated) {
                 balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
                         MessageType.BALANCE_UPDATE.name, Date(),
@@ -67,6 +68,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
 
             val updated = balancesHolder.updateBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                     message.clientId, message.assetId, message.amount)
+            messageWrapper.processedMessagePersisted = true
             if (!updated) {
                 messageWrapper.writeNewResponse(
                         ProtocolMessages.NewResponse.newBuilder()

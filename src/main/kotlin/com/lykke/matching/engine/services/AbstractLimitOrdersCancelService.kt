@@ -51,7 +51,7 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
                         ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
                         operationType,
                         false)
-
+        messageWrapper.processedMessagePersisted = true
         if (!updated) {
             val errorMessage = "Unable to save result"
             messageWrapper.writeNewResponse(

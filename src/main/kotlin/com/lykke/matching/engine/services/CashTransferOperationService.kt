@@ -69,6 +69,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val fees = try {
+            messageWrapper.processedMessagePersisted = true
             processTransferOperation(operation, ProcessedMessage(messageWrapper.type,
                     messageWrapper.timestamp!!,
                     messageWrapper.messageId!!))

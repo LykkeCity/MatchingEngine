@@ -60,6 +60,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         try {
             processSwapOperation(operation, ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+            messageWrapper.processedMessagePersisted = true
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
