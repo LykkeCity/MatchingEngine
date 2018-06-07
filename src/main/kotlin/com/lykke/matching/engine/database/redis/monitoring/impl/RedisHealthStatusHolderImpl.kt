@@ -37,16 +37,12 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
         externalFail = true
     }
 
-    private fun getPingDb(): Int {
-        return if (config.me.redis.balanceDatabase != 0) 0 else 1
-    }
-
     private fun isRedisAlive(): Boolean {
         try {
             jedisPool.resource.use { jedis ->
                 val transaction = jedis.multi()
                 try {
-                    transaction.select(getPingDb())
+                    transaction.select(config.me.redis.pingDatabase)
                     transaction[PING_KEY] = PING_VALUE
                     transaction.exec()
                 } catch (e: Exception) {
@@ -57,7 +53,7 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
             }
             return true
         } catch (e: Exception) {
-            LOGGER.error("Redis ping operation failed")
+            LOGGER.error("Redis ping operation failed", e)
             return false
         }
     }

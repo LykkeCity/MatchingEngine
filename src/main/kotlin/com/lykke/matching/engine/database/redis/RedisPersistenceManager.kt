@@ -79,10 +79,10 @@ class RedisPersistenceManager(
     }
 
     private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {
-        LOGGER.info("Start to persist processed messages in redis")
+        LOGGER.trace("Start to persist processed messages in redis")
 
         if (processedMessage == null) {
-            LOGGER.debug("Processed message is empty, skip persisting")
+            LOGGER.trace("Processed message is empty, skip persisting")
             return
         }
 
@@ -94,7 +94,7 @@ class RedisPersistenceManager(
             return
         }
 
-        LOGGER.info("Start to persist balances in redis")
+        LOGGER.trace("Start to persist balances in redis")
         transaction.select(config.me.redis.balanceDatabase)
         primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances)
     }
