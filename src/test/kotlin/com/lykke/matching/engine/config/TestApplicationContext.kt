@@ -80,7 +80,8 @@ open class TestApplicationContext {
 
     @Bean
     open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
-        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("",0,0,false,null,0, 1, 1000))
+        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null,
+                RedisConfig("",0,0,false,null,0, 1, 2,  1000))
     }
 
     @Bean
