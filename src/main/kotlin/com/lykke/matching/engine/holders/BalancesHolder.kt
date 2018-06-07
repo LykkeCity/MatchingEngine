@@ -8,8 +8,10 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.updaters.BalancesUpdater
+import com.lykke.matching.engine.outgoing.rabbit.events.BalanceUpdateEvent
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -100,7 +102,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         balancesUpdater.apply()
-        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(clientId)))
         return true
     }
 
@@ -114,7 +116,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         balancesUpdater.apply()
-        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(clientId)))
         return true
     }
 
@@ -127,7 +129,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance != it.oldBalance || it.newReserved != it.oldReserved }
         if (balanceUpdate.balances.isNotEmpty()) {
             LOGGER.info(balanceUpdate.toString())
-            applicationEventPublisher.publishEvent(balanceUpdate)
+            applicationEventPublisher.publishEvent(BalanceUpdateEvent(balanceUpdate))
         }
     }
 
