@@ -16,7 +16,7 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RedisProcessedMessagesDatabaseAccessor::class.java.name)
 
-        private val DATE_FORMAT = SimpleDateFormat("yyyyMMdd")
+        private val DATE_FORMAT = SimpleDateFormat("yyyyMMddHH")
         private const val PREFIX = "message"
         private const val SEPARATOR = ":"
     }

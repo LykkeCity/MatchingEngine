@@ -7,13 +7,16 @@ import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
 
 @Component
 class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccessorsHolder> {
 
     @Autowired
     private lateinit var config: Config
+
+    @Autowired
+    private lateinit var jedisPool: JedisPool
 
     override fun getObjectType(): Class<*> {
         return BalancesDatabaseAccessorsHolder::class.java
@@ -32,13 +35,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
             }
 
             Storage.Redis -> {
-                val jedis = Jedis(config.me.redis.host, config.me.redis.port, config.me.redis.timeout, config.me.redis.useSsl)
-                jedis.connect()
-                if (config.me.redis.password != null) {
-                    jedis.auth(config.me.redis.password)
-                }
-
-                primaryAccessor = RedisWalletDatabaseAccessor(jedis, config.me.redis.balanceDatabase)
+                primaryAccessor = RedisWalletDatabaseAccessor(jedisPool, config.me.redis.balanceDatabase)
 
                 secondaryAccessor = if (config.me.writeBalancesToSecondaryDb)
                     AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.newAccountsTableName!!)
