@@ -16,10 +16,9 @@ import org.springframework.core.env.get
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
-import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import javax.annotation.PostConstruct
-import java.util.concurrent.Executors
 
 @Configuration
 @EnableScheduling
@@ -36,7 +35,10 @@ open class AppConfiguration: SchedulingConfigurer {
 
     @Bean
     open fun taskScheduler(): TaskScheduler {
-        return ConcurrentTaskScheduler(Executors.newScheduledThreadPool(environment["concurent.corepool.size"].toInt()))
+        val threadPoolTaskScheduler = ThreadPoolTaskScheduler()
+        threadPoolTaskScheduler.threadNamePrefix = "scheduled-task"
+        threadPoolTaskScheduler.poolSize = environment["concurent.pool.size"].toInt()
+        return threadPoolTaskScheduler
     }
 
     @Bean

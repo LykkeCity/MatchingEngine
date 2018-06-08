@@ -8,6 +8,5 @@ data class RedisConfig(
     val password: String?,
     val balanceDatabase: Int,
     val processedMessageDatabase: Int,
-    val pingDatabase: Int,
-    val processedMessageTTL: Int
+    val pingDatabase: Int
 )

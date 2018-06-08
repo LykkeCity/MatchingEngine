@@ -59,7 +59,7 @@ open class DatabaseAccessorConfig {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
             Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(jedisPool,
                     config.me.redis.processedMessageDatabase,
-                    config.me.redis.processedMessageTTL)
+                    getProcessedMessageTTL())
         }
     }
 
@@ -100,7 +100,7 @@ open class DatabaseAccessorConfig {
     open fun redisProcessedMessagesDatabaseAccessor(jedisPool: JedisPool): RedisProcessedMessagesDatabaseAccessor {
         return RedisProcessedMessagesDatabaseAccessor(jedisPool,
                 config.me.redis.processedMessageDatabase,
-                config.me.redis.processedMessageTTL)
+                getProcessedMessageTTL())
     }
 
     @Bean
@@ -171,5 +171,9 @@ open class DatabaseAccessorConfig {
     open fun fileProcessedMessagesDatabaseAccessor()
             : ProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
+    }
+
+    private fun getProcessedMessageTTL(): Int {
+        return (config.me.processedMessagesInterval / 500).toInt()
     }
 }
