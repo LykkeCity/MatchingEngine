@@ -2,10 +2,8 @@ package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.utils.NumberUtils
 import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
-import java.math.BigDecimal
 import java.util.Date
 
 abstract class NewOrder(
@@ -13,37 +11,37 @@ abstract class NewOrder(
         val externalId: String,
         val assetPairId: String,
         val clientId: String,
-        val volume: BigDecimal,
+        val volume: Double,
         var status: String,
         val createdAt: Date,
         val registered: Date,
-        var reservedLimitVolume: BigDecimal?,
+        var reservedLimitVolume: Double?,
         @Version (1) // for compatibility with old serialized orders
         val fee: FeeInstruction?,
         @Version (2)
         val fees: List<NewFeeInstruction>?
 ) : Serializable, Copyable {
 
-    fun getAbsVolume(): BigDecimal {
-        return volume.abs()
+    fun getAbsVolume(): Double {
+        return Math.abs(volume)
     }
 
     open fun isBuySide(): Boolean {
-        return NumberUtils.isPositive(volume)
+        return volume > 0
     }
 
     abstract fun isOrigBuySide(): Boolean
     abstract fun isStraight(): Boolean
-    abstract fun calculateReservedVolume(): BigDecimal
+    abstract fun calculateReservedVolume(): Double
     abstract fun updateMatchTime(time: Date)
-    abstract fun takePrice(): BigDecimal?
-    abstract fun updatePrice(price: BigDecimal)
-    abstract fun updateRemainingVolume(volume: BigDecimal)
+    abstract fun takePrice(): Double?
+    abstract fun updatePrice(price: Double)
+    abstract fun updateRemainingVolume(volume: Double)
 
     fun checkVolume(assetPair: AssetPair): Boolean {
         val volume = getAbsVolume()
         val minVolume = if (isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
+        return minVolume == null || volume >= minVolume.toDouble()
     }
 
     fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
