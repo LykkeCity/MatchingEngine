@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.utils.balance
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -65,7 +65,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
 
-        val handleOrder: (order: NewLimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
+        val handleOrder: (order: LimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
             if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
                 try {
                     if (isStopOrder) {

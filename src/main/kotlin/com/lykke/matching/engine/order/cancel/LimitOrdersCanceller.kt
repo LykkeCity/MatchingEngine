@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.order.cancel
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
@@ -69,7 +69,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         }
     }
 
-    override fun getOrderLimitVolume(order: NewLimitOrder): BigDecimal {
+    override fun getOrderLimitVolume(order: LimitOrder): BigDecimal {
         return order.reservedLimitVolume
                 ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
     }

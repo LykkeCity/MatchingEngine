@@ -700,9 +700,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertEquals(2, result.orders.size)
 
-        val newOrder = result.orders.first { NumberUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-10.0)) }.order
-        assertEquals(OrderStatus.InOrderBook.name, newOrder.status)
-        assertEquals(BigDecimal.valueOf(0.488), newOrder.price)
+        val order = result.orders.first { NumberUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-10.0)) }.order
+        assertEquals(OrderStatus.InOrderBook.name, order.status)
+        assertEquals(BigDecimal.valueOf(0.488), order.price)
 
         val oldOrder = result.orders.first { NumberUtils.equalsIgnoreScale(it.order.volume, BigDecimal.valueOf(-9.0)) }.order
         assertEquals(OrderStatus.Cancelled.name, oldOrder.status)

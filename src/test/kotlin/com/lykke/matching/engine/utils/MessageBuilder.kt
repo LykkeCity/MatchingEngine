@@ -6,7 +6,7 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
@@ -37,8 +37,8 @@ class MessageBuilder {
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
-                            previousExternalId: String? = null): NewLimitOrder =
-                NewLimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf( volume), BigDecimal.valueOf(price), status, registered, registered, BigDecimal.valueOf(volume), null,
+                            previousExternalId: String? = null): LimitOrder =
+                LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf( volume), BigDecimal.valueOf(price), status, registered, registered, BigDecimal.valueOf(volume), null,
                         if (reservedVolume != null) BigDecimal.valueOf(reservedVolume) else null,
                         fee, fees,
                         type, if (lowerLimitPrice != null)  BigDecimal.valueOf(lowerLimitPrice) else null,
@@ -148,7 +148,7 @@ class MessageBuilder {
                         if (reservedVolume != null) BigDecimal.valueOf(reservedVolume) else null,
                         fee = fee, fees = fees)
 
-        fun buildLimitOrderWrapper(order: NewLimitOrder,
+        fun buildLimitOrderWrapper(order: LimitOrder,
                                    cancel: Boolean = false): MessageWrapper {
             val builder = ProtocolMessages.LimitOrder.newBuilder()
                     .setUid(order.externalId)

@@ -6,7 +6,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
@@ -94,7 +94,7 @@ abstract class MatchingEngineTest {
     fun tearDown() {
     }
 
-    protected fun assertCompletedLimitOrders(completedLimitOrders: List<CopyWrapper<NewLimitOrder>>, checkOrderId: Boolean = true) {
+    protected fun assertCompletedLimitOrders(completedLimitOrders: List<CopyWrapper<LimitOrder>>, checkOrderId: Boolean = true) {
         completedLimitOrders.map { it.origin!! }.forEach { completedOrder ->
             if (checkOrderId) {
                 assertEquals("completed", completedOrder.id)
@@ -144,8 +144,8 @@ abstract class MatchingEngineTest {
     ) {
         matchingResult.apply()
         matchingEngine.apply()
-        assertTrue { matchingResult.order is NewLimitOrder }
-        val matchedOrder = matchingResult.order as NewLimitOrder
+        assertTrue { matchingResult.order is LimitOrder }
+        val matchedOrder = matchingResult.order as LimitOrder
         assertEquals(remainingVolume, matchedOrder.remainingVolume)
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize,
                 cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
@@ -200,7 +200,7 @@ abstract class MatchingEngineTest {
         assertTrue { expected.containsAll(actual) }
     }
 
-    protected fun getOrderBook(assetPairId: String, isBuySide: Boolean): PriorityBlockingQueue<NewLimitOrder> =
+    protected fun getOrderBook(assetPairId: String, isBuySide: Boolean): PriorityBlockingQueue<LimitOrder> =
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {

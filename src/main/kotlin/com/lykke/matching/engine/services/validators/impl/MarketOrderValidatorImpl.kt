@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services.validators.impl
 
 import com.lykke.matching.engine.daos.FeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
@@ -27,7 +27,7 @@ class MarketOrderValidatorImpl
         private val LOGGER = Logger.getLogger(MarketOrderValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(order: MarketOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>,
+    override fun performValidation(order: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>,
                                    feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>?) {
         isAssetKnown(order)
         isAssetEnabled(order)
@@ -38,7 +38,7 @@ class MarketOrderValidatorImpl
         isPriceAccuracyValid(order)
     }
 
-    private fun isOrderBookValid(order: MarketOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>) {
+    private fun isOrderBookValid(order: MarketOrder, orderBook: PriorityBlockingQueue<LimitOrder>) {
         if (orderBook.size == 0) {
             LOGGER.info("No liquidity, no orders in order book, for $order")
             throw OrderValidationException(OrderStatus.NoLiquidity)

@@ -3,7 +3,7 @@ package com.lykke.matching.engine.services.validator
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
@@ -140,15 +140,15 @@ class MultilimitOrderValidatorTest {
         multiLimitOrderValidator.performValidation(getOrder(), assetsPairsHolder.getAssetPair(ASSET_PAIR_ID), getOrderBook())
     }
 
-    private fun getOrder(volume: Double = 1.0): NewLimitOrder {
-        return NewLimitOrder("test", "test", ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(volume), BigDecimal.valueOf(1.0), "TEST",
+    private fun getOrder(volume: Double = 1.0): LimitOrder {
+        return LimitOrder("test", "test", ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(volume), BigDecimal.valueOf(1.0), "TEST",
                 Date(), Date(), BigDecimal.valueOf(0.1), null, null, null, null,
                 null, null, null, null, null, null)
     }
 
     private fun getOrderBook(): AssetOrderBook {
              val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
-            assetOrderBook.addOrder(NewLimitOrder("test", "test",
+            assetOrderBook.addOrder(LimitOrder("test", "test",
                     ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
                     OrderStatus.InOrderBook.name, Date(), Date(), BigDecimal.valueOf(1.0), Date(), BigDecimal.valueOf(1.0),
                     null, null, null, null, null, null, null, null))

@@ -3,7 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -36,7 +36,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            applicationSettingsCache: ApplicationSettingsCache,
-                           ordersToCancel: Collection<NewLimitOrder>,
+                           ordersToCancel: Collection<LimitOrder>,
                            private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -70,7 +70,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private val completedOrders = ordersToCancel.filter { it.status == OrderStatus.Replaced.name }.toMutableList()
 
     private val processedOrders = mutableListOf<ProcessedOrder>()
-    private val ordersToAdd = mutableListOf<NewLimitOrder>()
+    private val ordersToAdd = mutableListOf<LimitOrder>()
 
     private val lkkTrades = mutableListOf<LkkTrade>()
     private val clientsLimitOrdersWithTrades = clientsLimitOrdersWithTrades.toMutableList()
@@ -95,7 +95,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         walletOperationsProcessor.preProcess(payBackReservedOperations, true)
     }
 
-    fun preProcess(messageId: String, orders: Collection<NewLimitOrder>): LimitOrdersProcessor {
+    fun preProcess(messageId: String, orders: Collection<LimitOrder>): LimitOrdersProcessor {
         orders.forEach { preProcess(messageId, it) }
         return this
     }
@@ -153,7 +153,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         return OrderProcessResult(true, processedOrders)
     }
 
-    private fun preProcess(messageId: String, order: NewLimitOrder) {
+    private fun preProcess(messageId: String, order: LimitOrder) {
 
         val limitAsset = if (order.isBuySide()) quotingAsset else baseAsset
         val limitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundUp(order.getAbsVolume() * order.price, limitAsset.accuracy) else order.getAbsVolume()
@@ -173,7 +173,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
 
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageId, availableBalance)
-            val orderCopy = matchingResult.order as NewLimitOrder
+            val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
                 OrderStatus.NoLiquidity -> {
@@ -312,7 +312,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         LOGGER.info("$orderInfo added to order book")
     }
 
-    private fun validateLimitOrder(order: NewLimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
+    private fun validateLimitOrder(order: LimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (order.clientId != clientId) {
             throw OrderValidationException(OrderStatus.Cancelled, "${orderInfo(order)} has invalid clientId: ${order.clientId}")
         }
@@ -338,15 +338,15 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
     }
 
-    private fun orderInfo(order: NewLimitOrder) = "Limit order (id: ${order.externalId})"
+    private fun orderInfo(order: LimitOrder) = "Limit order (id: ${order.externalId})"
 
-    private fun addToReportIfNotTrusted(order: NewLimitOrder) {
+    private fun addToReportIfNotTrusted(order: LimitOrder) {
         if (!isTrustedClient) {
             clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
         }
     }
 
-    private fun addToReport(order: NewLimitOrder) {
+    private fun addToReport(order: LimitOrder) {
         if (isTrustedClient) {
             trustedClientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
         } else {

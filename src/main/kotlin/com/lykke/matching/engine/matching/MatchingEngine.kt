@@ -3,8 +3,8 @@ package com.lykke.matching.engine.matching
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.daos.NewOrder
+import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -54,17 +54,17 @@ class MatchingEngine(private val LOGGER: Logger,
         copyWrappers.forEach { it.applyToOrigin() }
     }
 
-    private val changedOrders = HashMap<NewLimitOrder, CopyWrapper<NewLimitOrder>>()
+    private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
-    fun match(originOrder: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>, messageId: String, balance: BigDecimal? = null): MatchingResult {
+    fun match(originOrder: Order, orderBook: PriorityBlockingQueue<LimitOrder>, messageId: String, balance: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
         var remainingVolume = order.getAbsVolume()
-        val matchedOrders = LinkedList<CopyWrapper<NewLimitOrder>>()
-        val skipLimitOrders = HashSet<NewLimitOrder>()
-        val cancelledLimitOrders = HashSet<CopyWrapper<NewLimitOrder>>()
+        val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
+        val skipLimitOrders = HashSet<LimitOrder>()
+        val cancelledLimitOrders = HashSet<CopyWrapper<LimitOrder>>()
         var totalLimitPrice = BigDecimal.ZERO
         var totalVolume = BigDecimal.ZERO
         val limitReservedBalances = HashMap<String, BigDecimal>() // limit reserved balances for trades funds control
@@ -73,9 +73,9 @@ class MatchingEngine(private val LOGGER: Logger,
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val isBuy = order.isBuySide()
         val lkkTrades = LinkedList<LkkTrade>()
-        val completedLimitOrders = LinkedList<CopyWrapper<NewLimitOrder>>()
-        var matchedUncompletedLimitOrderWrapper: CopyWrapper<NewLimitOrder>? = null
-        var uncompletedLimitOrderWrapper: CopyWrapper<NewLimitOrder>? = null
+        val completedLimitOrders = LinkedList<CopyWrapper<LimitOrder>>()
+        var matchedUncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null
+        var uncompletedLimitOrderWrapper: CopyWrapper<LimitOrder>? = null
         val allOwnCashMovements = LinkedList<WalletOperation>()
         val allOppositeCashMovements = LinkedList<WalletOperation>()
         val asset = assetsHolder.getAsset(if (isBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
@@ -319,7 +319,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 false)
     }
 
-    private fun checkOrderBook(order: NewOrder, orderBook: PriorityBlockingQueue<NewLimitOrder>): Boolean =
+    private fun checkOrderBook(order: Order, orderBook: PriorityBlockingQueue<LimitOrder>): Boolean =
             orderBook.isEmpty() || orderBook.peek().assetPairId == order.assetPairId && orderBook.peek().isBuySide() != order.isBuySide()
 
     private fun getCrossVolume(volume: BigDecimal, straight: Boolean, price: BigDecimal): BigDecimal {
@@ -330,17 +330,17 @@ class MatchingEngine(private val LOGGER: Logger,
         return if (straight) volume else volume * price
     }
 
-    private fun getBalance(order: NewOrder): BigDecimal {
+    private fun getBalance(order: Order): BigDecimal {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         return balancesHolder.getAvailableBalance(order.clientId, asset)
     }
 
-    private fun getMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: NewOrder, asset: Asset): BigDecimal {
+    private fun getMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset): BigDecimal {
         return availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId]!!
     }
 
-    private fun setMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: NewOrder, asset: Asset, value: BigDecimal) {
+    private fun setMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset, value: BigDecimal) {
         availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId] = value
     }
 }

@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.database.file
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
@@ -24,8 +24,8 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         Files.createDirectories( Paths.get(ordersDir))
     }
 
-    fun loadOrdersFromFiles(): List<NewLimitOrder> {
-        val result = ArrayList<NewLimitOrder>()
+    fun loadOrdersFromFiles(): List<LimitOrder> {
+        val result = ArrayList<LimitOrder>()
 
         try {
             val orderDirPath = Paths.get(ordersDir)
@@ -49,7 +49,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         return result
     }
 
-    private fun readOrderBookFileOrPrevFileOnFail(filePath: Path): List<NewLimitOrder> {
+    private fun readOrderBookFileOrPrevFileOnFail(filePath: Path): List<LimitOrder> {
         try {
             return readFile(filePath)
         } catch (e: Exception) {
@@ -60,7 +60,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         return Collections.emptyList()
     }
 
-    private fun readPrevOrderBookFile(fileName: String): List<NewLimitOrder> {
+    private fun readPrevOrderBookFile(fileName: String): List<LimitOrder> {
         try {
             return readFile(getPrevOrderBookFilePath(fileName))
         } catch (e: Exception) {
@@ -82,7 +82,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         return "${asset}_$buy"
     }
 
-    protected fun updateOrdersFile(asset: String, buy: Boolean,  orders: Collection<NewLimitOrder>) {
+    protected fun updateOrdersFile(asset: String, buy: Boolean,  orders: Collection<LimitOrder>) {
         try {
             val fileName = getOrderBookFileName(asset, buy)
             archiveAndDeleteFile(fileName)
@@ -94,22 +94,22 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         }
     }
 
-    private fun readFile(filePath: Path): List<NewLimitOrder> {
+    private fun readFile(filePath: Path): List<LimitOrder> {
         val bytes = Files.readAllBytes(filePath)
         val readCase = conf.asObject(bytes)
 
         if (readCase is List<*>) {
             return readCase
                     .stream()
-                    .filter { it is  NewLimitOrder}
-                    .map { it as NewLimitOrder}
-                    .collect(Collectors.toCollection({ LinkedList<NewLimitOrder>() }))
+                    .filter { it is  LimitOrder}
+                    .map { it as LimitOrder}
+                    .collect(Collectors.toCollection({ LinkedList<LimitOrder>() }))
         }
 
         return LinkedList()
     }
 
-    private fun saveFile(fileName: String, data: List<NewLimitOrder>) {
+    private fun saveFile(fileName: String, data: List<LimitOrder>) {
         try {
             val bytes = conf.asByteArray(data)
             Files.write(getOrderBookFilePath(fileName), bytes, StandardOpenOption.CREATE)

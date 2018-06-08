@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
@@ -38,14 +38,14 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             parseMessage(messageWrapper)
         }
 
-        val order: NewLimitOrder
+        val order: LimitOrder
         val now = Date()
         val isCancelOrders: Boolean
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             val oldMessage = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
             val uid = UUID.randomUUID().toString()
-            order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
+            order = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
                     BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, BigDecimal.valueOf(oldMessage.volume), null,
                     type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
@@ -75,7 +75,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
     }
 
-    private fun incomingMessageInfo(messageId: String?, message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
+    private fun incomingMessageInfo(messageId: String?, message: ProtocolMessages.LimitOrder, order: LimitOrder): String {
         return "id: ${message.uid}" +
                 ", messageId $messageId" +
                 ", type: ${order.type}" +
@@ -92,7 +92,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 ", fees: ${order.fees}"
     }
 
-    private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): NewLimitOrder {
+    private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): LimitOrder {
         val type = if (message.hasType()) LimitOrderType.getByExternalId(message.type) else LimitOrderType.LIMIT
         val status = when(type) {
             LimitOrderType.LIMIT -> OrderStatus.InOrderBook
@@ -100,7 +100,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
         val feeInstruction = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null
         val feeInstructions = NewLimitOrderFeeInstruction.create(message.feesList)
-        return NewLimitOrder(UUID.randomUUID().toString(),
+        return LimitOrder(UUID.randomUUID().toString(),
                 message.uid,
                 message.assetPairId,
                 message.clientId,

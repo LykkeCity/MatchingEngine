@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
@@ -20,7 +20,7 @@ class OrderBook: JsonSerializable {
         this.timestamp = timestamp
     }
 
-    constructor(assetPair: String, isBuy: Boolean, timestamp: Date, orders: PriorityBlockingQueue<NewLimitOrder>) {
+    constructor(assetPair: String, isBuy: Boolean, timestamp: Date, orders: PriorityBlockingQueue<LimitOrder>) {
         this.assetPair = assetPair
         this.isBuy = isBuy
         this.timestamp = timestamp

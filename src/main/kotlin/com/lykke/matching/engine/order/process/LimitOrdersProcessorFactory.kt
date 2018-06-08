@@ -2,7 +2,7 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -36,7 +36,7 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                orderBook: AssetOrderBook,
                payBackBaseReserved: BigDecimal,
                payBackQuotingReserved: BigDecimal,
-               ordersToCancel: Collection<NewLimitOrder>,
+               ordersToCancel: Collection<LimitOrder>,
                clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                LOGGER: Logger) =

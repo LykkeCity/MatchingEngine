@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -23,7 +23,7 @@ class WalletOperationsCalculator(
         private val applicationSettingsCache: ApplicationSettingsCache
 ) {
 
-    fun calculateForCancelledOrders(orders: List<NewLimitOrder>): CancelledOrdersOperationsResult {
+    fun calculateForCancelledOrders(orders: List<LimitOrder>): CancelledOrdersOperationsResult {
         val now = Date()
         val walletOperation = LinkedList<WalletOperation>()
         val trustedLimitOrderWithTrades = LinkedList<LimitOrderWithTrades>()

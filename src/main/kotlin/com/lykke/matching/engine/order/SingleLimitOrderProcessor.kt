@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.order
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
@@ -21,7 +21,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                                 private val matchingEngine: MatchingEngine,
                                 private val LOGGER: Logger) {
 
-    fun processLimitOrder(order: NewLimitOrder,
+    fun processLimitOrder(order: LimitOrder,
                           isCancelOrders: Boolean,
                           now: Date,
                           messageId: String,
@@ -34,7 +34,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         var buySideOrderBookChanged = false
         var sellSideOrderBookChanged = false
         var cancelVolume = BigDecimal.ZERO
-        val ordersToCancel = mutableListOf<NewLimitOrder>()
+        val ordersToCancel = mutableListOf<LimitOrder>()
 
         if (isCancelOrders) {
             limitOrderService.searchOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
@@ -83,7 +83,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         }
     }
 
-    private fun writeResponse(messageWrapper: MessageWrapper?, order: NewLimitOrder, status: MessageStatus, reason: String? = null) {
+    private fun writeResponse(messageWrapper: MessageWrapper?, order: LimitOrder, status: MessageStatus, reason: String? = null) {
         if (messageWrapper == null) {
             return
         }

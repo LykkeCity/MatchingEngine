@@ -204,9 +204,9 @@ class MarketOrderValidatorTest {
                 NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
     }
 
-    private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<NewLimitOrder> {
+    private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<LimitOrder> {
         val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
-        assetOrderBook.addOrder(NewLimitOrder("test", "test",
+        assetOrderBook.addOrder(LimitOrder("test", "test",
                 ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
                 OrderStatus.InOrderBook.name, Date(), Date(), BigDecimal.valueOf(1.0), Date(), BigDecimal.valueOf(1.0),
                 null, null, null, null, null, null, null, null))

@@ -5,7 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -424,7 +424,7 @@ class PersistenceErrorTest : AbstractTest() {
         assertOrder(genericStopLimitOrderService.getOrder("stopOrder1"), OrderStatus.Pending)
     }
 
-    private fun assertOrder(order: NewLimitOrder?, status: OrderStatus) {
+    private fun assertOrder(order: LimitOrder?, status: OrderStatus) {
         assertNotNull(order)
         assertEquals(status.name, order!!.status)
     }
