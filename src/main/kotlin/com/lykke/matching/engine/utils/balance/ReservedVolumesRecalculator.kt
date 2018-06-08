@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
@@ -13,15 +12,23 @@ import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
+import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
+import java.util.UUID
 
-fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext) {
+fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext, applicationEventPublisher: ApplicationEventPublisher) {
     if (!config.me.correctReservedVolumes) {
         return
     }
@@ -35,14 +42,16 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
             orderBookDatabaseAccessor,
             stopOrderBookDatabaseAccessor,
             reservedVolumesDatabaseAccessor,
-            applicationContext).recalculate()
+            applicationContext,
+            applicationEventPublisher).recalculate()
 }
 
 
 class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
                                   private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
-                                  private val applicationContext: ApplicationContext) {
+                                  private val applicationContext: ApplicationContext,
+                                  private val applicationEventPublisher: ApplicationEventPublisher) {
 
 
     companion object {
@@ -114,6 +123,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
 
         val corrections = LinkedList<ReservedVolumeCorrection>()
         val updatedWallets = mutableSetOf<Wallet>()
+        val balanceUpdates = mutableListOf<ClientBalanceUpdate>()
         balanceHolder.wallets.forEach {
             val wallet = it.value
             val id = wallet.clientId
@@ -127,6 +137,13 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                         teeLog("1 $id, ${it.asset} : Old $oldBalance New $newBalance")
                         wallet.setReservedBalance(it.asset, newBalance.volume.toBigDecimal())
                         updatedWallets.add(wallet)
+                        val balanceUpdate = ClientBalanceUpdate(id,
+                                it.asset,
+                                it.balance.toDouble(),
+                                it.balance.toDouble(),
+                                oldBalance,
+                                newBalance.volume)
+                        balanceUpdates.add(balanceUpdate)
                     }
                 } else if (oldBalance != 0.0) {
                     val orderIds = if (newBalance != null) newBalance.orderIds.joinToString(",") else null
@@ -135,13 +152,27 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                     teeLog("2 $id, ${it.asset} : Old $oldBalance New ${newBalance ?: 0.0}")
                     wallet.setReservedBalance(it.asset, BigDecimal.ZERO)
                     updatedWallets.add(wallet)
+                    val balanceUpdate = ClientBalanceUpdate(id,
+                            it.asset,
+                            it.balance.toDouble(),
+                            it.balance.toDouble(),
+                            oldBalance,
+                            0.0)
+                    balanceUpdates.add(balanceUpdate)
                 }
             }
         }
         if (updatedWallets.isNotEmpty()) {
+            val now = Date()
+            val operationId = UUID.randomUUID().toString()
+            LOGGER.info("Starting balances update, operationId: $operationId")
             balanceHolder.insertOrUpdateWallets(updatedWallets)
+            reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
+            balanceHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
+            updatedWallets.map { it.clientId }.toSet().forEach {
+                applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it)))
+            }
         }
-        reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
     }
 
 }
