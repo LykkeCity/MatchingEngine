@@ -3,6 +3,7 @@ package com.lykke.matching.engine.database.file
 import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.apache.commons.lang3.StringUtils
@@ -14,9 +15,7 @@ import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.LocalDate
-import java.time.Period
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 import java.util.Arrays
 import java.util.Date
 import java.util.LinkedList
@@ -77,6 +76,10 @@ class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: S
     }
 
     override fun saveProcessedMessage(message: ProcessedMessage) {
+        if (ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
+            return
+        }
+
         try {
             val fileName = DATE_FORMAT.format(Date(message.timestamp))
             val file = File("$filePath/$fileName")

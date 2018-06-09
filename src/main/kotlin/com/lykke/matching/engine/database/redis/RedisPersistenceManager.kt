@@ -14,6 +14,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.util.CollectionUtils
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.concurrent.LinkedBlockingQueue
@@ -90,13 +91,13 @@ class RedisPersistenceManager(
     }
 
     private fun persistBalances(transaction: Transaction, assetBalances: Collection<AssetBalance>?) {
-        if (assetBalances == null) {
+        if (CollectionUtils.isEmpty(assetBalances)) {
             return
         }
 
         LOGGER.trace("Start to persist balances in redis")
         transaction.select(config.me.redis.balanceDatabase)
-        primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances)
+        primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances!!)
     }
 
     private fun initPersistingIntoSecondaryDb() {

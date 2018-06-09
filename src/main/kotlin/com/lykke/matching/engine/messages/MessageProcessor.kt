@@ -23,6 +23,7 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -416,17 +417,16 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 return
             }
 
-            if (!notDeduplicateMessageTypes.contains(messageType)) {
-                if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
-                    service.writeResponse(message, MessageStatus.DUPLICATE)
-                    LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
-                    METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
-                    return
-                }
+            if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
+                service.writeResponse(message, MessageStatus.DUPLICATE)
+                LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
+                METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
+                return
             }
 
             service.processMessage(message)
-            if (!notDeduplicateMessageTypes.contains(messageType)) {
+
+            if (!ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
                 val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
                 processedMessagesCache.addMessage(processedMessage)
                 if (!message.processedMessagePersisted) {

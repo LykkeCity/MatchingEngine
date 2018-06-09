@@ -3,6 +3,7 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.utils.SetUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.JedisPool
@@ -24,12 +25,10 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
     private var conf = FSTConfiguration.createJsonConfiguration()
 
     override fun get(): Set<ProcessedMessage> {
-        LOGGER.info("Start loading processed messages from redis")
-        jedisPool.resource.use { jedis ->
+         jedisPool.resource.use { jedis ->
             jedis.select(dbIndex)
 
             val keys = jedis.keys("$PREFIX$SEPARATOR*")
-            LOGGER.info("Processed messages keys count: ${keys.size}")
 
             return keys
                     .stream()
@@ -40,6 +39,10 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
      }
 
     fun save(transaction: Transaction, message: ProcessedMessage) {
+        if (ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
+            return
+        }
+
         transaction.select(dbIndex)
         val key = getKey(message)
         SetUtils.performAtomicSaveSetExpire(transaction, key, conf.asJsonString(message), timeToLive)
