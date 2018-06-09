@@ -46,7 +46,6 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
         transaction.select(dbIndex)
         val key = getKey(message)
         SetUtils.performAtomicSaveSetExpire(transaction, key, conf.asJsonString(message), timeToLive)
-        LOGGER.debug("Persist of processed message: $message to redis performed")
      }
 
     private fun getKey(message: ProcessedMessage): String {
