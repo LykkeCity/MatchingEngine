@@ -1,20 +1,31 @@
 package com.lykke.matching.engine.database.redis
 
+import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
-import com.lykke.matching.engine.database.common.PersistenceData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Transaction
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
-        private val jedisHolder: DefaultJedisHolder): PersistenceManager {
+        private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
+        private val redisHealthStatusHolder: RedisHealthStatusHolder,
+        private val jedisPool: JedisPool,
+        private val config: Config): PersistenceManager {
 
     companion object {
         private val LOGGER = Logger.getLogger(DefaultPersistenceManager::class.java.name)
@@ -31,7 +42,7 @@ class RedisPersistenceManager(
             persistData(data)
             true
         } catch (e: Exception) {
-            jedisHolder.fail()
+            redisHealthStatusHolder.fail()
             val retryMessage = "Unable to save data (${data.details()})"
             LOGGER.error(retryMessage, e)
             METRICS_LOGGER.logError(retryMessage, e)
@@ -42,11 +53,12 @@ class RedisPersistenceManager(
     private fun persistData(data: PersistenceData) {
         val startTime = System.nanoTime()
 
-        jedisHolder.resource().use { jedis ->
+        jedisPool.resource.use { jedis ->
             val transaction = jedis.multi()
             try {
-                transaction.select(jedisHolder.balanceDatabase())
-                primaryBalancesAccessor.insertOrUpdateBalances(transaction, data.balances)
+                persistBalances(transaction, data.balancesData?.balances)
+                persistProcessedMessages(transaction, data.processedMessage)
+
                 val persistTime = System.nanoTime()
 
                 transaction.exec()
@@ -56,8 +68,8 @@ class RedisPersistenceManager(
                         ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
                         ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
 
-                if (secondaryBalancesAccessor != null) {
-                    updatedWalletsQueue.put(data.wallets)
+                if (secondaryBalancesAccessor != null && data.balancesData != null) {
+                    updatedWalletsQueue.put(data.balancesData.wallets)
                 }
             } catch (e: Exception) {
                 transaction.clear()
@@ -66,7 +78,28 @@ class RedisPersistenceManager(
         }
     }
 
-    private fun init() {
+    private fun persistProcessedMessages(transaction: Transaction, processedMessage: ProcessedMessage?) {
+        LOGGER.trace("Start to persist processed messages in redis")
+
+        if (processedMessage == null) {
+            LOGGER.trace("Processed message is empty, skip persisting")
+            return
+        }
+
+        redisProcessedMessagesDatabaseAccessor.save(transaction, processedMessage)
+    }
+
+    private fun persistBalances(transaction: Transaction, assetBalances: Collection<AssetBalance>?) {
+        if (assetBalances == null) {
+            return
+        }
+
+        LOGGER.trace("Start to persist balances in redis")
+        transaction.select(config.me.redis.balanceDatabase)
+        primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances)
+    }
+
+    private fun initPersistingIntoSecondaryDb() {
         if (secondaryBalancesAccessor == null) {
             return
         }
@@ -86,6 +119,6 @@ class RedisPersistenceManager(
     }
 
     init {
-        init()
+        initPersistingIntoSecondaryDb()
     }
 }

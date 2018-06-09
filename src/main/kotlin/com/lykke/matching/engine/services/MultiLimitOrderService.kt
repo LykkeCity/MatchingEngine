@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -286,7 +287,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val startPersistTime = System.nanoTime()
 
-        val updated = walletOperationsProcessor.persistBalances()
+        val updated = walletOperationsProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+        messageWrapper.processedMessagePersisted = true
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -348,7 +350,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             clientLimitOrderReportQueue.put(clientLimitOrdersReport)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                assetPair.assetPairId, now)
     }
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
         val multiLimitOrder = readMultiLimitOrder(messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder)
@@ -432,9 +435,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
-                .apply(messageWrapper.messageId!!, multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
+                .apply(messageWrapper.messageId!!,
+                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                        multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
-
+        messageWrapper.processedMessagePersisted = true
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
 
         if (!result.success) {
@@ -465,7 +470,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                assetPair.assetPairId, now)
     }
 
     private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder): MultiLimitOrder {

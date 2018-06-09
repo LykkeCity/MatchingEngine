@@ -2,8 +2,8 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
-import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,7 +37,8 @@ class Application {
         }
 
         try {
-            migrateAccountsIfConfigured(applicationContext)
+            val accountMigration = applicationContext.getBean(AccountsMigrationService::class.java)
+            accountMigration.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
             System.exit(1)
