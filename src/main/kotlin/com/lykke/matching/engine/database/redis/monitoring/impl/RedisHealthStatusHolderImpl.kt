@@ -29,11 +29,9 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
         private val PING_VALUE = "PONG"
     }
 
-    private var externalFail = false
-    var ok = false
 
     override fun fail() {
-        externalFail = true
+        applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.REDIS))
     }
 
     private fun isRedisAlive(): Boolean {
@@ -63,10 +61,7 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
             return
         }
         taskScheduler.scheduleAtFixedRate ({
-            val redisAlive = isRedisAlive()
-            ok = externalFail || redisAlive
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(ok, MonitoredComponent.REDIS))
-            externalFail = redisAlive
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(isRedisAlive(), MonitoredComponent.REDIS))
         },  updateInteval)
     }
 }
