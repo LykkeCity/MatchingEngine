@@ -1,12 +1,17 @@
 package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
+import java.math.BigDecimal
 import java.nio.file.*
 import java.util.*
 import java.util.stream.Collectors
+import java.util.stream.Stream
 
 open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                                                  logPrefix: String = "") {
@@ -96,17 +101,56 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
 
     private fun readFile(filePath: Path): List<LimitOrder> {
         val bytes = Files.readAllBytes(filePath)
-        val readCase = conf.asObject(bytes)
+        val orders = conf.asObject(bytes)
 
-        if (readCase is List<*>) {
-            return readCase
-                    .stream()
-                    .filter { it is  LimitOrder}
-                    .map { it as LimitOrder}
-                    .collect(Collectors.toCollection({ LinkedList<LimitOrder>() }))
+        if (orders is List<*>) {
+            return Stream.concat(readOldOrderFormat(orders).stream(),
+                    readOrders(orders).stream())
+                    .collect(Collectors.toCollection { LinkedList<LimitOrder>() })
         }
 
         return LinkedList()
+    }
+
+    private fun readOrders(orders: List<*>): List<LimitOrder> {
+        return orders
+                .stream()
+                .filter { it is  LimitOrder}
+                .map { it as LimitOrder}
+                .collect(Collectors.toCollection({ LinkedList<LimitOrder>() }))
+    }
+
+    private fun readOldOrderFormat(orders: List<*>): List<LimitOrder> {
+        return orders
+                .stream()
+                .filter { it is  NewLimitOrder}
+                .map { fromNewLimitOrderToLimitOrder(it as NewLimitOrder)}
+                .collect(Collectors.toCollection({ LinkedList<LimitOrder>() }))
+    }
+
+    private fun fromNewLimitOrderToLimitOrder(order: NewLimitOrder): LimitOrder {
+        return LimitOrder(
+                order.id,
+                order.externalId,
+                order.assetPairId,
+                order.clientId,
+                BigDecimal.valueOf(order.volume),
+                BigDecimal.valueOf(order.price),
+                order.status,
+                order.createdAt,
+                order.registered,
+                BigDecimal.valueOf(order.remainingVolume),
+                order.lastMatchTime,
+                if(order.reservedLimitVolume == null) null else BigDecimal.valueOf(order.reservedLimitVolume!!),
+                order.fee as LimitOrderFeeInstruction,
+                order.fees as List<NewLimitOrderFeeInstruction>?,
+                order.type,
+                if(order.lowerLimitPrice == null) null else BigDecimal.valueOf(order.lowerLimitPrice),
+                if(order.lowerPrice == null) null else  BigDecimal.valueOf(order.lowerPrice),
+                if(order.upperLimitPrice == null) null else BigDecimal.valueOf(order.upperLimitPrice),
+                if(order.upperPrice == null) null else BigDecimal.valueOf(order.upperPrice),
+                order.previousExternalId
+        )
     }
 
     private fun saveFile(fileName: String, data: List<LimitOrder>) {

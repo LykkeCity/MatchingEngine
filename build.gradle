@@ -75,6 +75,7 @@ dependencies {
 compileKotlin {
     kotlinOptions {
         apiVersion = "1.2"
+        jvmTarget = "1.8"
     }
 }
 
