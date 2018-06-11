@@ -122,7 +122,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    @Profile("default", "!local_config")
+    @Profile("default")
     open fun azureMonitoringDatabaseAccessor(@Value("\${azure.monitoring.table}") monitoringTable: String,
                                              @Value("\${azure.performance.table}") performanceTable: String)
             : MonitoringDatabaseAccessor {

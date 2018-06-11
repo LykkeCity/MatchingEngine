@@ -1,7 +1,9 @@
 package com.lykke.matching.engine.performance
 
+import org.springframework.stereotype.Component
 import java.util.HashMap
 
+@Component
 class PerformanceStatsHolder {
 
     private var statsMap = HashMap<Byte, PerformanceStats>()
