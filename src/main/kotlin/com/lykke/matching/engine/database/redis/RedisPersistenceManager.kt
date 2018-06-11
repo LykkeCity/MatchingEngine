@@ -52,6 +52,10 @@ class RedisPersistenceManager(
     }
 
     private fun persistData(data: PersistenceData) {
+        if (data.balancesData == null && data.processedMessage == null) {
+            return
+        }
+
         val startTime = System.nanoTime()
 
         jedisPool.resource.use { jedis ->
