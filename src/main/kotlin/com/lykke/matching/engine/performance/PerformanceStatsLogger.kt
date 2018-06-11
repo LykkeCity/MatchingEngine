@@ -5,9 +5,14 @@ import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Profile
+import org.springframework.stereotype.Component
 import java.util.Date
 
-class PerformanceStatsLogger(private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
+@Component
+@Profile("default")
+class PerformanceStatsLogger @Autowired constructor (private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor) {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(PerformanceStatsLogger::class.java.name)
     }
