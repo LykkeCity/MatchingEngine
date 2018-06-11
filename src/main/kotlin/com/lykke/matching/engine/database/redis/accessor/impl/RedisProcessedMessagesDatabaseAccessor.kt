@@ -4,7 +4,6 @@ import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAcces
 import com.lykke.matching.engine.database.redis.utils.SetUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
-import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
@@ -15,8 +14,6 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
                                              private val dbIndex: Int,
                                              private val timeToLive: Int): ReadOnlyProcessedMessagesDatabaseAccessor {
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(RedisProcessedMessagesDatabaseAccessor::class.java.name)
-
         private val DATE_FORMAT = SimpleDateFormat("yyyyMMddHH")
         private const val PREFIX = "message"
         private const val SEPARATOR = ":"
