@@ -138,8 +138,8 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                         updatedWallets.add(wallet)
                         val balanceUpdate = ClientBalanceUpdate(id,
                                 it.asset,
-                                it.balance.toDouble(),
-                                it.balance.toDouble(),
+                                it.balance,
+                                it.balance,
                                 oldBalance,
                                 newBalance.volume)
                         balanceUpdates.add(balanceUpdate)
@@ -153,10 +153,10 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                     updatedWallets.add(wallet)
                     val balanceUpdate = ClientBalanceUpdate(id,
                             it.asset,
-                            it.balance.toDouble(),
-                            it.balance.toDouble(),
+                            it.balance,
+                            it.balance,
                             oldBalance,
-                            0.0)
+                            BigDecimal.ZERO)
                     balanceUpdates.add(balanceUpdate)
                 }
             }

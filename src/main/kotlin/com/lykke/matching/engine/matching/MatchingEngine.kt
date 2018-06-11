@@ -282,13 +282,17 @@ class MatchingEngine(private val LOGGER: Logger,
         val marketBalance = getMarketBalance(availableBalances, order, asset)
         if (marketBalance < BigDecimal.ZERO  || reservedBalance < NumberUtils.setScale((if (isBuy) totalLimitPrice else totalVolume), asset.accuracy, true)) {
             order.updateStatus(OrderStatus.NotEnoughFunds, now)
-            LOGGER.info("Not enough funds for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: $marketBalance : $reservedBalance < ${NumberUtils.round((if(isBuy) totalLimitPrice else totalVolume).toDouble(), asset.accuracy, true)}")
+            LOGGER.info("Not enough funds for order id: ${order.externalId}, " +
+                    "client: ${order.clientId}, asset: ${order.assetPairId}, " +
+                    "volume: ${NumberUtils.roundForPrint(order.volume)}, " +
+                    "price: ${order.takePrice()}, " +
+                    "marketBalance: $marketBalance : $reservedBalance < ${NumberUtils.setScaleRoundUp((if(isBuy) totalLimitPrice else totalVolume), asset.accuracy)}")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
         if (order.takePrice() != null && remainingVolume >  BigDecimal.ZERO) {
             order.updateStatus(OrderStatus.Processing, now)
-            order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == 0.0) remainingVolume else -remainingVolume)
+            order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == BigDecimal.ZERO) remainingVolume else -remainingVolume)
         } else {
             order.updateStatus(OrderStatus.Matched, now)
             order.updateRemainingVolume(BigDecimal.ZERO)

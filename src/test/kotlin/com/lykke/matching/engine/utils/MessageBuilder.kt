@@ -38,7 +38,9 @@ class MessageBuilder {
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
                             previousExternalId: String? = null): LimitOrder =
-                LimitOrder(uid, uid, assetId, clientId,  BigDecimal.valueOf(volume),  BigDecimal.valueOf(price), status, registered, registered,  BigDecimal.valueOf(registered), BigDecimal.valueOf(volume), null, reservedVolume, fee, fees,
+                LimitOrder(uid, uid, assetId, clientId,  BigDecimal.valueOf(volume),  BigDecimal.valueOf(price), status, registered, registered,  registered,
+                        BigDecimal.valueOf(volume), null,
+                        reservedVolume?.toBigDecimal(), fee, fees,
                         type,
                         if (lowerLimitPrice != null)  BigDecimal.valueOf(lowerLimitPrice) else null,
                         if (lowerPrice != null) BigDecimal.valueOf(lowerPrice) else null,

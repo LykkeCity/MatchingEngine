@@ -7,9 +7,21 @@ import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
 
-class LimitOrder(id: String, externalId: String, assetPairId: String, clientId: String, volume: BigDecimal, var price: BigDecimal,
-                 status: String, createdAt: Date, registered: Date, var remainingVolume: BigDecimal, var lastMatchTime: Date?,
-                 reservedLimitVolume: BigDecimal? = null, fee: LimitOrderFeeInstruction? = null, fees: List<NewLimitOrderFeeInstruction>? = null,
+class LimitOrder(id: String,
+                 externalId: String,
+                 assetPairId: String,
+                 clientId: String,
+                 volume: BigDecimal,
+                 var price: BigDecimal,
+                 status: String,
+                 statusDate: Date?,
+                 createdAt: Date,
+                 registered: Date,
+                 var remainingVolume: BigDecimal,
+                 var lastMatchTime: Date?,
+                 reservedLimitVolume: BigDecimal? = null,
+                 fee: LimitOrderFeeInstruction? = null,
+                 fees: List<NewLimitOrderFeeInstruction>? = null,
                  @Version(3)
                  val type: LimitOrderType?,
                  @Version(3)
@@ -22,7 +34,7 @@ class LimitOrder(id: String, externalId: String, assetPairId: String, clientId: 
                  val upperPrice: BigDecimal?,
                  @Transient
                  val previousExternalId: String?)
-    : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees), Serializable {
+    : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable {
 
     fun getAbsRemainingVolume(): BigDecimal {
         return remainingVolume.abs()
@@ -60,9 +72,11 @@ class LimitOrder(id: String, externalId: String, assetPairId: String, clientId: 
         this.remainingVolume = volume
     }
 
-    override fun copy(): Order {
-        return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered,
-                remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction, fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice, previousExternalId)
+    override fun copy(): LimitOrder {
+        return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate, createdAt,
+                        registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
+                        fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
+                        upperPrice, previousExternalId)
     }
 
     override fun applyToOrigin(origin: Copyable) {

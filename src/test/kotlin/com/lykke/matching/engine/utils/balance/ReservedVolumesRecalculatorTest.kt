@@ -168,9 +168,9 @@ class ReservedVolumesRecalculatorTest {
     private fun assertBalanceUpdateNotification(clientId: String, assetId: String, balance: Double, oldReserved: Double, newReserved: Double, balanceUpdates: Collection<ClientBalanceUpdate>) {
         val balanceUpdate = balanceUpdates.single { it.id == clientId && it.asset == assetId }
         val message = "Client $clientId, assetId $assetId"
-        assertEquals(balance, balanceUpdate.oldBalance, message)
-        assertEquals(balance, balanceUpdate.newBalance, message)
-        assertEquals(oldReserved, balanceUpdate.oldReserved, message)
-        assertEquals(newReserved, balanceUpdate.newReserved, message)
+        assertEquals(BigDecimal.valueOf(balance), balanceUpdate.oldBalance, message)
+        assertEquals(BigDecimal.valueOf(balance), balanceUpdate.newBalance, message)
+        assertEquals(BigDecimal.valueOf(oldReserved), balanceUpdate.oldReserved, message)
+        assertEquals(BigDecimal.valueOf(newReserved), balanceUpdate.newReserved, message)
     }
 }
