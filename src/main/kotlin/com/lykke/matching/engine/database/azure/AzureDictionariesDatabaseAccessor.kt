@@ -33,8 +33,8 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         asset.baseAssetId,
                         asset.quotingAssetId,
                         asset.accuracy,
-                        if(asset.minVolume == null) null else  BigDecimal.valueOf(asset.minVolume),
-                        if(asset.minInvertedVolume == null) null else BigDecimal.valueOf(asset.minInvertedVolume))
+                        asset.minVolume?.toBigDecimal(),
+                        asset.minInvertedVolume?.toBigDecimal())
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
