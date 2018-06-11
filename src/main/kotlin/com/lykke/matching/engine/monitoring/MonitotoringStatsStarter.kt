@@ -14,13 +14,13 @@ import kotlin.concurrent.fixedRateTimer
 @Component
 @Profile("default")
 class MonitotoringStatsStarter @Autowired constructor(private val monitoringDatabaseAccessor: MonitoringDatabaseAccessor,
+                                                      private val monitoringStatsCollector :MonitoringStatsCollector,
                                                       @Value("\${monitoring.stats.interval}") private val updateInterval: Long) {
 
     @PostConstruct
     private fun start() {
-        val healthService = MonitoringStatsCollector()
         fixedRateTimer(name = "Monitoring", initialDelay = updateInterval, period = updateInterval) {
-            val result = healthService.collectMonitoringResult()
+            val result = monitoringStatsCollector.collectMonitoringResult()
             if (result != null) {
                 MessageProcessor.MONITORING_LOGGER.info("CPU: ${NumberUtils.roundForPrint2(result.vmCpuLoad)}/${NumberUtils.roundForPrint2(result.totalCpuLoad)}, " +
                         "RAM: ${result.freeMemory}/${result.totalMemory}, " +
