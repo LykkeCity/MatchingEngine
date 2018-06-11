@@ -36,6 +36,10 @@ class RedisPersistenceManager(
 
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
 
+    init {
+        initPersistingIntoSecondaryDb()
+    }
+
     override fun balancesQueueSize() = updatedWalletsQueue.size
 
     override fun persist(data: PersistenceData): Boolean {
@@ -52,7 +56,7 @@ class RedisPersistenceManager(
     }
 
     private fun persistData(data: PersistenceData) {
-        if (data.balancesData == null && data.processedMessage == null) {
+        if (isDataEmpty(data)) {
             return
         }
 
@@ -123,7 +127,11 @@ class RedisPersistenceManager(
         }
     }
 
-    init {
-        initPersistingIntoSecondaryDb()
+    private fun isDataEmpty(data: PersistenceData): Boolean {
+        return (data.balancesData == null ||
+                CollectionUtils.isEmpty(data.balancesData.wallets) &&
+                        CollectionUtils.isEmpty(data.balancesData.balances))
+                && data.processedMessage == null
     }
+
 }
