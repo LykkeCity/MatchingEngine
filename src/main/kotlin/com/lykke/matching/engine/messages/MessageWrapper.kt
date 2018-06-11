@@ -17,7 +17,8 @@ class MessageWrapper(
         var timestamp: Long? = null,
         var messageId: String? = null,
         var parsedMessage: MessageOrBuilder? = null,
-        var id: String? = null) {
+        var id: String? = null,
+        var processedMessagePersisted: Boolean = false) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(MessageWrapper::class.java.name)

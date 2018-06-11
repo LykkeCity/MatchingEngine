@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
@@ -125,7 +126,9 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                            trustedClientsOrdersWithTrades: List<LimitOrderWithTrades>,
                                            assetOrderBooks: Map<String, TAssetOrderBook>): TCancelResult
 
-    open fun apply(messageId: String, result: TCancelResult) {
+    open fun apply(messageId: String,
+                   processedMessage: ProcessedMessage?,
+                   result: TCancelResult) {
         removeOrdersAndUpdateOrderBooks()
         sendReports(messageId, result)
     }
@@ -166,7 +169,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     protected abstract fun processChangedOrderBook(orderBookCopy: TAssetOrderBook, isBuy: Boolean)
 
     private fun removeOrdersAndUpdateOrderBook(orders: List<LimitOrder>, assetPairId: String, isBuy: Boolean) {
-        genericLimitOrderService.cancelLimitOrders(orders)
+        genericLimitOrderService.cancelLimitOrders(orders, date)
         genericLimitOrderService.setOrderBook(assetPairId, assetOrderBooks[assetPairId]!!)
         genericLimitOrderService.updateOrderBook(assetPairId, isBuy)
     }

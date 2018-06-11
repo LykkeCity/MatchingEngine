@@ -5,10 +5,22 @@ import java.math.BigDecimal
 import com.lykke.matching.engine.utils.NumberUtils
 import java.util.Date
 
-class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String, volume: BigDecimal,
-                  var price: BigDecimal?, status: String, createdAt: Date, registered: Date,
-                  var matchedAt: Date?, val straight: Boolean, reservedLimitVolume: BigDecimal? = null, fee: FeeInstruction? = null, fees: List<NewFeeInstruction>? = null)
-    : Order(id, uid, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees) {
+class MarketOrder(id: String,
+                  uid: String,
+                  assetPairId: String,
+                  clientId: String,
+                  volume: BigDecimal,
+                  var price: BigDecimal?,
+                  status: String,
+                  statusDate: Date,
+                  createdAt: Date,
+                  registered: Date,
+                  var matchedAt: Date?,
+                  val straight: Boolean,
+                  reservedLimitVolume: BigDecimal? = null,
+                  fee: FeeInstruction? = null,
+                  fees: List<NewFeeInstruction>? = null)
+    : Order(id, uid, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate) {
 
     override fun isOrigBuySide(): Boolean {
         return super.isBuySide()
@@ -43,7 +55,7 @@ class MarketOrder(id: String, uid: String, assetPairId: String, clientId: String
     }
 
     override fun copy(): MarketOrder {
-        return MarketOrder(id, externalId, assetPairId, clientId, volume, price, status, createdAt, registered, matchedAt, straight, reservedLimitVolume, fee, fees)
+        return MarketOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate!!, createdAt, registered, matchedAt, straight, reservedLimitVolume, fee, fees)
     }
 
     override fun applyToOrigin(origin: Copyable) {

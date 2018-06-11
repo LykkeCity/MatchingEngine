@@ -24,7 +24,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
             LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
-            genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
+            genericLimitOrderService.cancelLimitOrder(Date(), message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
             return Orders.processed()
         }

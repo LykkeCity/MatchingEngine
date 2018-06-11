@@ -38,13 +38,13 @@ class MessageBuilder {
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
                             previousExternalId: String? = null): LimitOrder =
-                LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf( volume), BigDecimal.valueOf(price), status, registered, registered, BigDecimal.valueOf(volume), null,
-                        if (reservedVolume != null) BigDecimal.valueOf(reservedVolume) else null,
-                        fee, fees,
-                        type, if (lowerLimitPrice != null)  BigDecimal.valueOf(lowerLimitPrice) else null,
+                LimitOrder(uid, uid, assetId, clientId,  BigDecimal.valueOf(volume),  BigDecimal.valueOf(price), status, registered, registered,  BigDecimal.valueOf(registered), BigDecimal.valueOf(volume), null, reservedVolume, fee, fees,
+                        type,
+                        if (lowerLimitPrice != null)  BigDecimal.valueOf(lowerLimitPrice) else null,
                         if (lowerPrice != null) BigDecimal.valueOf(lowerPrice) else null,
                         if (upperLimitPrice != null) BigDecimal.valueOf (upperLimitPrice) else null,
-                        if (upperPrice != null) BigDecimal.valueOf(upperPrice) else null, previousExternalId)
+                        if (upperPrice != null) BigDecimal.valueOf(upperPrice) else null,
+                        previousExternalId)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -144,7 +144,7 @@ class MessageBuilder {
                 MarketOrder(rowKey, rowKey, assetId, clientId,
                         BigDecimal.valueOf(volume),
                         null, status, registered,
-                        Date(), null, straight,
+                        registered, Date(), null, straight,
                         if (reservedVolume != null) BigDecimal.valueOf(reservedVolume) else null,
                         fee = fee, fees = fees)
 

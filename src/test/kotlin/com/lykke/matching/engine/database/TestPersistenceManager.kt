@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database
 
-import com.lykke.matching.engine.database.common.PersistenceData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import java.util.*
 
 class TestPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor): PersistenceManager {
 
@@ -10,7 +11,9 @@ class TestPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseA
         if (persistenceErrorMode) {
             return false
         }
-        walletDatabaseAccessor.insertOrUpdateWallets(data.wallets.toList())
+        if (data.balancesData != null) {
+            walletDatabaseAccessor.insertOrUpdateWallets(ArrayList(data.balancesData?.wallets))
+        }
         return true
     }
 

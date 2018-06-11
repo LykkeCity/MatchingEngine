@@ -85,8 +85,6 @@ class MarketOrderValidatorImpl
         val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetVolumeAccuracy)
 
         if (!volumeAccuracyValid) {
-
-            order.status = OrderStatus.InvalidVolumeAccuracy.name
             LOGGER.info("Volume accuracy invalid form base assetId: $baseAssetVolumeAccuracy, volume: ${order.volume}")
             throw OrderValidationException(OrderStatus.InvalidVolumeAccuracy)
         }

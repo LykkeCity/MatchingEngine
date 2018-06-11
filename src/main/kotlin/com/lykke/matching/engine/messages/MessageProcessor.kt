@@ -12,7 +12,6 @@ import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -20,11 +19,11 @@ import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.JedisHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -84,10 +83,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
 import java.util.HashMap
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
@@ -122,8 +118,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
-    private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
+    private val persistenceManager: PersistenceManager
 
     private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
@@ -160,13 +156,13 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val healthMonitor = GeneralHealthMonitor(listOf(applicationContext.getBean(JedisHolder::class.java)))
+    private val healthMonitor: GeneralHealthMonitor
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
-
+        healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        val persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
+        persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
 
         cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
@@ -272,9 +268,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        processedMessagesDatabaseAccessor = applicationContext.getBean(FileProcessedMessagesDatabaseAccessor::class.java)
-        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval,
-                processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
+        processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {
@@ -283,23 +277,38 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         val rabbitMqService = applicationContext.getBean(RabbitMqService::class.java)
 
-        startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService)
+        startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService, config.me.name, AppVersion.VERSION)
 
         val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue, null, rabbitMqService)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue, null,
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitClientLimitOrdersQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         if(!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
@@ -314,8 +323,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             this.hoursCandlesBuilder = fixedRateTimer(name = "HoursCandleBuilder", initialDelay = 0, period = config.me.hoursCandleSaverInterval) {
                 tradesInfoService.saveHourCandles()
             }
-
-
 
             val queueSizeLogger = QueueSizeLogger(messagesQueue, orderBooksQueue, rabbitOrderBooksQueue, persistenceManager, config.me.queueSizeLimit)
             fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
@@ -356,8 +363,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private fun startRabbitMqPublisher(config: RabbitConfig,
                                        queue: BlockingQueue<JsonSerializable>,
                                        messageDatabaseLogger: MessageDatabaseLogger? = null,
-                                       rabbitMqService : RabbitMqService) {
-        rabbitMqService.startPublisher (config, queue, messageDatabaseLogger)
+                                       rabbitMqService : RabbitMqService,
+                                       appName: String,
+                                       appVersion: String) {
+        rabbitMqService.startPublisher (config, queue, appName, appVersion, messageDatabaseLogger)
     }
 
     override fun run() {
@@ -408,20 +417,21 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 return
             }
 
-            if (!notDeduplicateMessageTypes.contains(messageType)) {
-                if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
-                    service.writeResponse(message, MessageStatus.DUPLICATE)
-                    LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
-                    METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
-                    return
-                }
+            if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
+                service.writeResponse(message, MessageStatus.DUPLICATE)
+                LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
+                METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
+                return
             }
 
             service.processMessage(message)
-            if (!notDeduplicateMessageTypes.contains(messageType)) {
+
+            if (!ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
                 val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
                 processedMessagesCache.addMessage(processedMessage)
-                processedMessagesDatabaseAccessor.saveProcessedMessage(processedMessage)
+                if (!message.processedMessagePersisted) {
+                    persistenceManager.persist(PersistenceData(ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)))
+                }
             }
 
             val endTime = System.nanoTime()

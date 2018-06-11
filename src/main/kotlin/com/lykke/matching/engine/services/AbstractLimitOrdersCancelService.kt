@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -45,8 +46,12 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
         val messageId = messageWrapper.messageId!!
         val updated = canceller.preProcessLimitOrders(orders.orders)
                 .preProcessStopLimitOrders(orders.stopOrders)
-                .applyFull(operationId, messageId, operationType, false)
-
+                .applyFull(operationId,
+                        messageId,
+                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                        operationType,
+                        false)
+        messageWrapper.processedMessagePersisted = true
         if (!updated) {
             val errorMessage = "Unable to save result"
             messageWrapper.writeNewResponse(

@@ -5,10 +5,13 @@ import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.common.PersistenceData
+import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
@@ -91,20 +94,17 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return this
     }
 
-    fun persistenceData(): PersistenceData {
+    fun persistenceData(): BalancesData {
         return balancesUpdater.persistenceData()
     }
 
-    fun persistBalances(): Boolean {
-        if (changedAssetBalances.isEmpty()) {
-            return true
-        }
+    fun persistBalances(processedMessage: ProcessedMessage?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
-        return persistenceManager.persist(persistenceData())
+        return persistenceManager.persist(PersistenceData(persistenceData(), processedMessage))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {
-        clientIds.forEach { applicationEventPublisher.publishEvent(BalanceUpdateNotification(it)) }
+        clientIds.forEach {  applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it))) }
         if (updates.isNotEmpty()) {
             balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
         }

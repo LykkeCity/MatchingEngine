@@ -141,18 +141,20 @@ class MultilimitOrderValidatorTest {
     }
 
     private fun getOrder(volume: Double = 1.0): LimitOrder {
+        val now = Date()
         return LimitOrder("test", "test", ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(volume), BigDecimal.valueOf(1.0), "TEST",
-                Date(), Date(), BigDecimal.valueOf(0.1), null, null, null, null,
+                now, now, now, BigDecimal.valueOf(0.1), null, null, null, null,
                 null, null, null, null, null, null)
     }
 
     private fun getOrderBook(): AssetOrderBook {
-             val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
-            assetOrderBook.addOrder(LimitOrder("test", "test",
-                    ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
-                    OrderStatus.InOrderBook.name, Date(), Date(), BigDecimal.valueOf(1.0), Date(), BigDecimal.valueOf(1.0),
-                    null, null, null, null, null, null, null, null))
+        val now = Date()
+        val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
+        assetOrderBook.addOrder(LimitOrder("test", "test",
+                ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
+                OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
+                null, null, null, null, null, null, null, null))
 
-            return assetOrderBook
+        return assetOrderBook
     }
 }

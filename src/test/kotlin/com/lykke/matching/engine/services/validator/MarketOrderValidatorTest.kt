@@ -198,17 +198,18 @@ class MarketOrderValidatorTest {
     }
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
-
-        return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
-                OrderStatus.Processing.name, Date(message.timestamp), Date(), null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
+        val now = Date()
+        return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId,BigDecimal.valueOf( message.volume), null,
+                OrderStatus.Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                 NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
     }
 
     private fun getOrderBook(isBuy: Boolean): PriorityBlockingQueue<LimitOrder> {
         val assetOrderBook = AssetOrderBook(ASSET_PAIR_ID)
+        val now = Date()
         assetOrderBook.addOrder(LimitOrder("test", "test",
                 ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
-                OrderStatus.InOrderBook.name, Date(), Date(), BigDecimal.valueOf(1.0), Date(), BigDecimal.valueOf(1.0),
+                OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
                 null, null, null, null, null, null, null, null))
 
         return assetOrderBook.getOrderBook(isBuy)

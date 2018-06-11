@@ -4,7 +4,7 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
@@ -21,10 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.util.Date
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
@@ -35,6 +37,9 @@ import kotlin.test.assertNull
 @SpringBootTest(classes = [(TestApplicationContext::class), (MinVolumeOrderCancellerTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
+
+    @Autowired
+    private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
     private lateinit var canceller: MinVolumeOrderCanceller
 
@@ -104,9 +109,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10001.0, volume = 0.001)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "BTCUSD",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(0.00102), BigDecimal.valueOf(10002.0)),
-                        VolumePrice(BigDecimal.valueOf(-0.00001), BigDecimal.valueOf(11000.0))),
-                ordersFee = emptyList(), ordersFees = emptyList()))
+                orders = listOf(IncomingLimitOrder(0.00102, 10002.0), IncomingLimitOrder(-0.00001, 11000.0))))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "BTCUSD", price = 10002.0, volume = -0.001)))
 
@@ -118,9 +121,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order2", clientId = "Client2", assetId = "EURUSD", price = 1.1, volume = 4.09)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "EURUSD",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(30.0), BigDecimal.valueOf(1.1)),
-                        VolumePrice(BigDecimal.valueOf(-30.0), BigDecimal.valueOf(1.4))),
-                ordersFee = emptyList(), ordersFees = emptyList()))
+                orders = listOf(IncomingLimitOrder(30.0, 1.1), IncomingLimitOrder(-30.0, 1.4))))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "EURUSD", price = 1.2, volume = 6.0)))
 
@@ -182,8 +183,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertFalse(testOrderDatabaseAccessor.getOrders("EURUSD", false).any { it.clientId == "Client2" })
 
         // check order is removed from ordersMap
-        assertNull(genericLimitOrderService.cancelLimitOrder("order1", false))
-        assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         assertEquals(1, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
@@ -202,7 +203,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
     fun testCancelOrdersWithRemovedAssetPair() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = "Client1", assetId = "BTCEUR", price = 10000.0, volume = -1.0)))
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient",
-                listOf(VolumePrice(BigDecimal.valueOf(-1.0), price = BigDecimal.valueOf(10000.0))), emptyList(), emptyList(), listOf("order2")))
+                listOf(IncomingLimitOrder(-1.0, price = 10000.0, uid = "order2"))))
 
         assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
         assertEquals(BigDecimal.valueOf( 1.0), balancesHolder.getReservedBalance("Client1", "BTC"))
@@ -217,8 +218,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)
 
         // check order is removed from ordersMap
-        assertNull(genericLimitOrderService.cancelLimitOrder("order1", false))
-        assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
         // check order is removed from clientOrdersMap
         assertEquals(0, genericLimitOrderService.searchOrders("Client1", "BTCEUR", false).size)
@@ -234,7 +235,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
                 testOrderDatabaseAccessor,
                 TestStopOrderBookDatabaseAccessor(),
                 TestReservedVolumesDatabaseAccessor(),
-                applicationContext)
+                applicationContext,
+                applicationEventPublisher)
 
         recalculator.recalculate()
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))

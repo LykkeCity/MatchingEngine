@@ -2,9 +2,13 @@ package com.lykke.matching.engine.utils.monitoring
 
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import kotlin.concurrent.thread
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+import java.util.*
 
-class GeneralHealthMonitor(checkers: Collection<HealthMonitor>): HealthMonitor {
+@Component
+class GeneralHealthMonitor: HealthMonitor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(GeneralHealthMonitor::class.java.name)
@@ -13,19 +17,26 @@ class GeneralHealthMonitor(checkers: Collection<HealthMonitor>): HealthMonitor {
 
     private var ok = false
 
+    private val brokenComponents = EnumSet.noneOf(MonitoredComponent::class.java)
+
     override fun ok() = ok
 
-    init {
-        thread(name = GeneralHealthMonitor::class.java.name) {
-            while (true) {
-                ok = !checkers.any { !it.ok() }
-                if (!ok) {
-                    val message = "Maintenance mode is on"
-                    LOGGER.error(message)
-                    METRICS_LOGGER.logError(message)
-                }
-                Thread.sleep(100)
-            }
+    @EventListener
+    fun processHealthMonitorEvent(event: HealthMonitorEvent) {
+        if (!event.ok) {
+            brokenComponents.add(event.componentName)
+        } else {
+            brokenComponents.remove(event.componentName)
+        }
+    }
+
+    @Scheduled(fixedRateString = "\${health.check.update.interval}")
+    open fun checkBrokenComponents() {
+        ok = brokenComponents.isEmpty()
+        if (!ok) {
+            val message = "Maintenance mode is on"
+            LOGGER.error(message)
+            METRICS_LOGGER.logError(message)
         }
     }
 }

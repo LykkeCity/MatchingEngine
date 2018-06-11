@@ -7,6 +7,9 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
@@ -16,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -28,10 +32,16 @@ import com.lykke.matching.engine.utils.assertEquals
 @SpringBootTest(classes = [(TestApplicationContext::class), (ReservedVolumesRecalculatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ReservedVolumesRecalculatorTest {
+
+    @Autowired
+    private lateinit var applicationEventPublisher: ApplicationEventPublisher
+
+    @Autowired
+    protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
     private val orderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val stopOrderBookDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
     private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
-
 
     @TestConfiguration
     open class Config {
@@ -91,40 +101,40 @@ class ReservedVolumesRecalculatorTest {
         stopOrderBookDatabaseAccessor.addStopLimitOrder(buildLimitOrder(uid = "3", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 9000.0, lowerPrice = 9900.0, reservedVolume = 990.0))
         stopOrderBookDatabaseAccessor.addStopLimitOrder(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 10000.0, lowerPrice = 10900.0))
 
-        testBalanceHolderWrapper.updateBalance("trustedClient", "BTC",  10.0)
+        testBalanceHolderWrapper.updateBalance("trustedClient", "BTC", 10.0)
         testBalanceHolderWrapper.updateReservedBalance("trustedClient", "BTC", 2.0, false)
         // negative reserved balance
-        testBalanceHolderWrapper.updateBalance("trustedClient2", "BTC",  1.0)
+        testBalanceHolderWrapper.updateBalance("trustedClient2", "BTC", 1.0)
         testBalanceHolderWrapper.updateReservedBalance("trustedClient2", "BTC", -0.001, false)
 
-        testBalanceHolderWrapper.updateBalance("Client3", "BTC",  0.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "BTC", 0.0)
         testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC", -0.001)
 
 
-        testBalanceHolderWrapper.updateBalance("Client1", "USD",  10.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 1.0)
 
-        testBalanceHolderWrapper.updateBalance("Client1", "BTC",  10.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",   2.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 2.0)
 
-        testBalanceHolderWrapper.updateBalance("Client1", "EUR",  10.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 10.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "EUR", 3.0)
 
 
-        testBalanceHolderWrapper.updateBalance("Client2", "EUR",  10.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",  0.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "EUR", 10.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 0.0)
 
-        testBalanceHolderWrapper.updateBalance("Client2", "BTC",  10.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 10.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC", 1.0)
 
-        testBalanceHolderWrapper.updateBalance("Client2", "USD",  990.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 990.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "USD", 1.0)
     }
 
     @Test
     fun testRecalculate() {
         val recalculator = ReservedVolumesRecalculator(orderBookDatabaseAccessor,
-                stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext)
+                stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext, applicationEventPublisher)
         recalculator.recalculate()
 
         val testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
@@ -141,5 +151,26 @@ class ReservedVolumesRecalculatorTest {
         assertEquals(7, reservedVolumesDatabaseAccessor.corrections.size)
         assertEquals("1,2", reservedVolumesDatabaseAccessor.corrections.first { NumberUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf( 0.7)) }.orderIds)
         assertEquals("3,4", reservedVolumesDatabaseAccessor.corrections.first { NumberUtils.equalsIgnoreScale(it.newReserved, BigDecimal.valueOf(2080.0)) }.orderIds)
+        assertEquals(1, balanceUpdateHandlerTest.balanceUpdateQueue.size)
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
+        assertEquals(7, balanceUpdate.balances.size)
+        assertBalanceUpdateNotification("trustedClient", "BTC", 10.0, 2.0, 0.0, balanceUpdate.balances)
+        assertBalanceUpdateNotification("trustedClient2", "BTC", 1.0, -0.001, 0.0, balanceUpdate.balances)
+        assertBalanceUpdateNotification("Client3", "BTC", 0.0, -0.001, 0.0, balanceUpdate.balances)
+        assertBalanceUpdateNotification("Client1", "BTC", 10.0, 2.0, 0.5, balanceUpdate.balances)
+        assertBalanceUpdateNotification("Client1", "USD", 10.0, 1.0, 0.0, balanceUpdate.balances)
+        assertBalanceUpdateNotification("Client1", "EUR", 10.0, 3.0, 0.7, balanceUpdate.balances)
+        assertBalanceUpdateNotification("Client2", "USD", 990.0, 1.0, 2080.0, balanceUpdate.balances)
+
+        assertEquals(5, balanceUpdateHandlerTest.balanceUpdateQueueNotification.size)
+    }
+
+    private fun assertBalanceUpdateNotification(clientId: String, assetId: String, balance: Double, oldReserved: Double, newReserved: Double, balanceUpdates: Collection<ClientBalanceUpdate>) {
+        val balanceUpdate = balanceUpdates.single { it.id == clientId && it.asset == assetId }
+        val message = "Client $clientId, assetId $assetId"
+        assertEquals(balance, balanceUpdate.oldBalance, message)
+        assertEquals(balance, balanceUpdate.newBalance, message)
+        assertEquals(oldReserved, balanceUpdate.oldReserved, message)
+        assertEquals(newReserved, balanceUpdate.newReserved, message)
     }
 }
