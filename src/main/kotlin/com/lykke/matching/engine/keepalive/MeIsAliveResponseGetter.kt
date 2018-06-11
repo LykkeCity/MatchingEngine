@@ -6,13 +6,16 @@ import com.lykke.utils.AppVersion
 import com.lykke.utils.keepalive.http.IsAliveResponse
 import com.lykke.utils.keepalive.http.IsAliveResponseGetter
 import org.apache.http.HttpStatus
-import org.springframework.context.ApplicationContext
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.stereotype.Component
 
-class MeIsAliveResponseGetter(private val healthMonitor: HealthMonitor,
-                              private val applicationContext: ApplicationContext): IsAliveResponseGetter() {
+
+@Component
+class MeIsAliveResponseGetter @Autowired constructor (@Qualifier("GeneralHealthMonitor") private val healthMonitor: HealthMonitor,
+                                                      private val monitoringStatsCollector: MonitoringStatsCollector): IsAliveResponseGetter() {
 
     override fun getResponse(): IsAliveResponse {
-        val monitoringStatsCollector = applicationContext.getBean(MonitoringStatsCollector::class.java)
         val monitoringResult = monitoringStatsCollector.collectMonitoringResult()
 
         val ok = healthMonitor.ok()
