@@ -287,8 +287,10 @@ class MatchingEngine(private val LOGGER: Logger,
         }
 
         if (order.takePrice() != null && remainingVolume > 0.0) {
-            order.status = OrderStatus.Processing.name
-            order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == 0.0) remainingVolume else -remainingVolume)
+            if (originOrder.volume != remainingVolume) {
+                order.status = OrderStatus.Processing.name
+                order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == 0.0) remainingVolume else -remainingVolume)
+            }
         } else {
             order.status = OrderStatus.Matched.name
             order.updateRemainingVolume(0.0)
