@@ -8,7 +8,6 @@ import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -23,7 +22,6 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -100,6 +98,39 @@ class LimitOrderServiceTest: AbstractTest() {
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.NotEnoughFunds.name, result.orders[0].order.status)
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+    }
+
+    @Test
+    fun testTrustedClientNotEnoughFundsBuyClientInOrderBook() {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 900.0)
+
+        initServices()
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", price = 1.1, volume = -1000.0)))
+        assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 2000.0)))
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.InOrderBook.name, result.orders.first().order.status)
+        assertEquals(0, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
+        assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
+    }
+
+    @Test
+    fun testTrustedClientNotEnoughFundsPartialMatched() {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "EUR", 900.0)
+
+        initServices()
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client3", price = 1.1, volume = -1000.0)))
+        assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0)))
+        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(OrderStatus.Matched.name, result.orders.first().order.status)
+        assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+        assertEquals(-900.0, result.orders[1].order.remainingVolume)
+        assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
     }
 
     @Test
@@ -610,7 +641,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(0.1750629, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2",assetId = "ETHBTC",  uid = "4", price = 0.07958, volume = -0.041938)))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHBTC",  uid = "4", price = 0.07958, volume = -0.041938)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)

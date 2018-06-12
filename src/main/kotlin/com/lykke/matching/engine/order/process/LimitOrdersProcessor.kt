@@ -1,17 +1,14 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
+import com.lykke.matching.engine.matching.MatchingResult
 import com.lykke.matching.engine.order.LimitOrderValidator
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
@@ -241,23 +238,23 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                         return
                     }
 
-                    matchingResult.apply()
-                    completedOrders.addAll(matchingResult.completedLimitOrders.map { it.origin!! })
+        matchingResult.apply()
+        completedOrders.addAll(matchingResult.completedLimitOrders.map { it.origin!! })
 
-                    val originCancelledLimitOrders = matchingResult.cancelledLimitOrders.map { it.origin!! }
-                    if (originCancelledLimitOrders.isNotEmpty()) {
-                        ordersToCancel.addAll(originCancelledLimitOrders)
-                        trustedClientsLimitOrdersWithTrades.addAll(cancelledTrustedOrdersWithTrades)
-                        clientsLimitOrdersWithTrades.addAll(cancelledOrdersWithTrades)
-                        buySideOrderBookChanged = buySideOrderBookChanged || originCancelledLimitOrders.any { it.isBuySide() }
-                        sellSideOrderBookChanged = sellSideOrderBookChanged || originCancelledLimitOrders.any { !it.isBuySide() }
-                    }
+        val originCancelledLimitOrders = matchingResult.cancelledLimitOrders.map { it.origin!! }
+        if (originCancelledLimitOrders.isNotEmpty()) {
+            ordersToCancel.addAll(originCancelledLimitOrders)
+            trustedClientsLimitOrdersWithTrades.addAll(cancelledTrustedOrdersWithTrades)
+            clientsLimitOrdersWithTrades.addAll(cancelledOrdersWithTrades)
+            buySideOrderBookChanged = buySideOrderBookChanged || originCancelledLimitOrders.any { it.isBuySide() }
+            sellSideOrderBookChanged = sellSideOrderBookChanged || originCancelledLimitOrders.any { !it.isBuySide() }
+        }
 
-                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
+        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+        orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
 
-                    orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
-                    lkkTrades.addAll(matchingResult.lkkTrades)
+        orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
+        lkkTrades.addAll(matchingResult.lkkTrades)
 
                     clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order.copy(),
                             matchingResult.marketOrderTrades.map { it ->
@@ -280,21 +277,19 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                                         it.relativeSpread)
                             }.toMutableList()))
 
-                    matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
-                        var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.id == orderReport.order.id }
-                        if (orderWithTrades == null) {
-                            orderWithTrades = LimitOrderWithTrades(orderReport.order)
-                            clientsLimitOrdersWithTrades.add(orderWithTrades)
-                        }
-                        orderWithTrades.trades.addAll(orderReport.trades)
-                    }
+        matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
+            var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.id == orderReport.order.id }
+            if (orderWithTrades == null) {
+                orderWithTrades = LimitOrderWithTrades(orderReport.order)
+                clientsLimitOrdersWithTrades.add(orderWithTrades)
+            }
+            orderWithTrades.trades.addAll(orderReport.trades)
+        }
 
-                    if (order.status == OrderStatus.Processing.name) {
-                        orderBook.addOrder(order)
-                        ordersToAdd.add(order)
-                    }
+        orderBook.addOrder(order)
+        ordersToAdd.add(order)
 
-                    availableBalances[limitAsset.assetId] = BigDecimal.valueOf(matchingResult.marketBalance!!)
+        availableBalances[limitAsset.assetId] = BigDecimal.valueOf(matchingResult.marketBalance!!)
 
                     buySideOrderBookChanged = true
                     sellSideOrderBookChanged = true
@@ -314,21 +309,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         ordersToAdd.add(order)
         addToReport(order.copy())
         processedOrders.add(ProcessedOrder(order, true))
-
-        availableBalances[limitAsset.assetId] = availableBalance - limitVolume
-        if (!isTrustedClient) {
-            walletOperationsProcessor.preProcess(listOf(
-                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, 0.0, NumberUtils.parseDouble(limitVolume.toDouble(), limitAsset.accuracy).toDouble())
-            ), true)
-        }
-
-        if (order.isBuySide()) {
-            buySideOrderBookChanged = true
-        } else {
-            sellSideOrderBookChanged = true
-        }
-
-        LOGGER.info("$orderInfo added to order book")
+        return false
     }
 
     private fun validateLimitOrder(order: NewLimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
