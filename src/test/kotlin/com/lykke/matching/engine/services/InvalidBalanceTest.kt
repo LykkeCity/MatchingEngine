@@ -243,6 +243,7 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(1, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
         assertEquals(0.04, balancesHolder.getBalance("Client1", "ETH"))
         assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "ETH"))
+        assertEquals(275.0, balancesHolder.getReservedBalance("Client2", "USD"))
         assertEquals(0.0, balancesHolder.getBalance("Client2", "ETH"))
         assertEquals(275.0, balancesHolder.getBalance("Client2", "USD"))
 

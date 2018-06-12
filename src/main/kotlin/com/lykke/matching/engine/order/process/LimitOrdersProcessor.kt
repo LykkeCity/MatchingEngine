@@ -244,16 +244,14 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
-        if (orderCopy.status == OrderStatus.Processing.name) {
-            if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
-                LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
-                orderCopy.status = OrderStatus.Cancelled.name
-            } else {
-                orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy, false) else orderCopy.getAbsRemainingVolume()
-                if (!isTrustedClient) {
-                    val newReservedBalance = NumberUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy).toDouble()
-                    ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, 0.0, newReservedBalance))
-                }
+        if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
+            LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+            orderCopy.status = OrderStatus.Cancelled.name
+        } else {
+            orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy, false) else orderCopy.getAbsRemainingVolume()
+            if (!isTrustedClient) {
+                val newReservedBalance = NumberUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy).toDouble()
+                ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, 0.0, newReservedBalance))
             }
         }
 
@@ -304,10 +302,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             orderWithTrades.trades.addAll(orderReport.trades)
         }
 
-        if (order.status == OrderStatus.Processing.name || order.status == OrderStatus.InOrderBook.name) {
-            orderBook.addOrder(order)
-            ordersToAdd.add(order)
-        }
+        orderBook.addOrder(order)
+        ordersToAdd.add(order)
 
         availableBalances[limitAsset.assetId] = BigDecimal.valueOf(matchingResult.marketBalance!!)
 
