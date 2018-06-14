@@ -38,13 +38,13 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 return result
             }
 
-            Files.list(orderDirPath)
+            return Files.list(orderDirPath)
                     .filter {path -> !Files.isDirectory(path) &&
                             !path
                                     .fileName
                                     .toString()
                                     .startsWith(PREV_ORDER_BOOK_FILE_PEFIX) }
-                    .map {readOrderBookFileOrPrevFileOnFail(it)}
+                    .flatMap {readOrderBookFileOrPrevFileOnFail(it).stream()}
                     .collect(Collectors.toList())
 
 
@@ -59,14 +59,12 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
     }
 
     private fun readOrderBookFileOrPrevFileOnFail(filePath: Path): List<LimitOrder> {
-        try {
-            return readFile(filePath)
+        return try {
+            readFile(filePath)
         } catch (e: Exception) {
             LOGGER.error("Unable to read ${logPrefix}order book file ${filePath.fileName}. Trying to load previous one", e)
             readPrevOrderBookFile(filePath.fileName.toString())
         }
-
-        return Collections.emptyList()
     }
 
     private fun readPrevOrderBookFile(fileName: String): List<LimitOrder> {
@@ -108,28 +106,31 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
         val orders = conf.asObject(bytes)
 
         if (orders is List<*>) {
-            return Stream.concat(readOldOrderFormat(orders).stream(),
-                    readOrders(orders).stream())
-                    .collect(Collectors.toCollection { LinkedList<LimitOrder>() })
+            return convertOrders(orders)
         }
 
         return LinkedList()
     }
 
-    private fun readOrders(orders: List<*>): List<LimitOrder> {
-        return orders
-                .stream()
-                .filter { it is  LimitOrder}
-                .map { it as LimitOrder}
-                .collect(Collectors.toCollection({ LinkedList<LimitOrder>() }))
-    }
+    private fun convertOrders(orders: List<*>): List<LimitOrder> {
+        var oldFormatOrdersCount = 0
+        val convertedOrders = orders.stream()
+                .filter { it is LimitOrder || it is NewLimitOrder }
+                .map {
+                    if (it is LimitOrder) {
+                          it
+                    } else {
+                        oldFormatOrdersCount++
+                        fromNewLimitOrderToLimitOrder(it as NewLimitOrder)
+                    }
+                }
+                .collect(Collectors.toCollection { LinkedList<LimitOrder>() })
 
-    private fun readOldOrderFormat(orders: List<*>): List<LimitOrder> {
-        return orders
-                .stream()
-                .filter { it is  NewLimitOrder}
-                .map { fromNewLimitOrderToLimitOrder(it as NewLimitOrder)}
-                .collect(Collectors.toCollection({ LinkedList<LimitOrder>() }))
+        if (oldFormatOrdersCount != 0) {
+            LOGGER.info("Old format orders count: $oldFormatOrdersCount for asset pair: ${convertedOrders.first.assetPairId}")
+        }
+
+        return convertedOrders
     }
 
     private fun fromNewLimitOrderToLimitOrder(order: NewLimitOrder): LimitOrder {
@@ -178,7 +179,6 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
             val message = "Unable to archive and delete, name: $fileName"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError( message, e)
-            throw e
         }
     }
 }
