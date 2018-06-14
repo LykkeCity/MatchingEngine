@@ -1,9 +1,9 @@
 package com.lykke.matching.engine.database.file
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
@@ -11,7 +11,6 @@ import java.math.BigDecimal
 import java.nio.file.*
 import java.util.*
 import java.util.stream.Collectors
-import java.util.stream.Stream
 
 open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                                                  logPrefix: String = "") {

@@ -1,7 +1,8 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
