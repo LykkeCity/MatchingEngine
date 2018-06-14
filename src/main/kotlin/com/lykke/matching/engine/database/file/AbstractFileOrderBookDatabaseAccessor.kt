@@ -39,8 +39,12 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
             }
 
             Files.list(orderDirPath)
-                    .filter { path -> !Files.isDirectory(path) && !path.fileName.startsWith(PREV_ORDER_BOOK_FILE_PEFIX) }
-                    .map { readOrderBookFileOrPrevFileOnFail(it) }
+                    .filter {path -> !Files.isDirectory(path) &&
+                            !path
+                                    .fileName
+                                    .toString()
+                                    .startsWith(PREV_ORDER_BOOK_FILE_PEFIX) }
+                    .map {readOrderBookFileOrPrevFileOnFail(it)}
                     .collect(Collectors.toList())
 
 

@@ -18,9 +18,7 @@ abstract class Order(
         val createdAt: Date,
         val registered: Date,
         var reservedLimitVolume: BigDecimal?,
-        @Version (1) // for compatibility with old serialized orders
         val fee: FeeInstruction?,
-        @Version (2)
         val fees: List<NewFeeInstruction>?
 ) : Serializable, Copyable {
 
