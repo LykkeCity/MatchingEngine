@@ -38,13 +38,13 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 return result
             }
 
-            Files.list(orderDirPath)
+            return Files.list(orderDirPath)
                     .filter {path -> !Files.isDirectory(path) &&
                             !path
                                     .fileName
                                     .toString()
                                     .startsWith(PREV_ORDER_BOOK_FILE_PEFIX) }
-                    .map {readOrderBookFileOrPrevFileOnFail(it)}
+                    .flatMap {readOrderBookFileOrPrevFileOnFail(it).stream()}
                     .collect(Collectors.toList())
 
 
