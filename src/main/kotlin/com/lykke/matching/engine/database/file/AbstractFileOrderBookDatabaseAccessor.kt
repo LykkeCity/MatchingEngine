@@ -146,8 +146,8 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 BigDecimal.valueOf(order.remainingVolume),
                 order.lastMatchTime,
                 order.reservedLimitVolume?.toBigDecimal(),
-                order.fee as LimitOrderFeeInstruction?,
-                order.fees as List<NewLimitOrderFeeInstruction>?,
+                convertLimitOrderFeeInstruction(order.fee as com.lykke.matching.engine.daos.LimitOrderFeeInstruction?),
+                convertLimitOrderFeeInstructions(order.fees as List<com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction>?),
                 order.type,
                 order.lowerLimitPrice?.toBigDecimal(),
                 order.lowerPrice?.toBigDecimal(),
@@ -155,6 +155,28 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 order.upperPrice?.toBigDecimal(),
                 order.previousExternalId
         )
+    }
+
+    private fun convertLimitOrderFeeInstruction(fee: com.lykke.matching.engine.daos.LimitOrderFeeInstruction?): LimitOrderFeeInstruction? {
+        if (fee == null) {
+            return null
+        }
+        return LimitOrderFeeInstruction(fee.type, fee.sizeType,
+                fee.size?.toBigDecimal(), fee.makerSizeType,
+                fee.makerSize?.toBigDecimal(), fee.sourceClientId, fee.targetClientId)
+    }
+
+    private fun convertLimitOrderFeeInstructions(fees: List<com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction>?): List<NewLimitOrderFeeInstruction>? {
+        if (fees == null) {
+            return null
+        }
+        return fees
+                .stream()
+                .map { NewLimitOrderFeeInstruction(it.type, it.sizeType,
+                        it.size?.toBigDecimal(), it.makerSizeType,
+                        it.makerSize?.toBigDecimal(), it.sourceClientId,
+                        it.targetClientId, it.assetIds, it.makerFeeModificator?.toBigDecimal()) }
+                .collect(Collectors.toList())
     }
 
     private fun saveFile(fileName: String, data: List<LimitOrder>) {

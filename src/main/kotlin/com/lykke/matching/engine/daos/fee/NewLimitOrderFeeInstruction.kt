@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.daos.fee
 
-import java.math.BigDecimal
-
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -10,14 +8,14 @@ import org.nustaq.serialization.annotations.Version
 class NewLimitOrderFeeInstruction(
         type: FeeType,
         takerSizeType: FeeSizeType?,
-        takerSize: BigDecimal?,
+        takerSize: Double?,
         val makerSizeType: FeeSizeType?,
-        val makerSize: BigDecimal?,
+        val makerSize: Double?,
         sourceClientId: String?,
         targetClientId: String?,
         assetIds: List<String>,
         @Version(1)
-        val makerFeeModificator: BigDecimal?
+        val makerFeeModificator: Double?
 ) : NewFeeInstruction(type, takerSizeType, takerSize, sourceClientId, targetClientId, assetIds) {
 
     companion object {
@@ -40,13 +38,13 @@ class NewLimitOrderFeeInstruction(
             return NewLimitOrderFeeInstruction(
                     feeType,
                     takerSizeType,
-                    if (fee.hasTakerSize()) BigDecimal.valueOf(fee.takerSize) else null,
+                    if (fee.hasTakerSize()) fee.takerSize else null,
                     makerSizeType,
-                    if (fee.hasMakerSize()) BigDecimal.valueOf(fee.makerSize) else null,
+                    if (fee.hasMakerSize()) fee.makerSize else null,
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null,
                     fee.assetIdList.toList(),
-                    if (fee.hasMakerFeeModificator() && fee.makerFeeModificator != 0.0)  BigDecimal.valueOf(fee.makerFeeModificator) else null)
+                    if (fee.hasMakerFeeModificator() && fee.makerFeeModificator != 0.0) fee.makerFeeModificator else null)
         }
     }
 

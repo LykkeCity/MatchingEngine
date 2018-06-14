@@ -2,14 +2,13 @@ package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.messages.ProtocolMessages
-import java.math.BigDecimal
 
 class LimitOrderFeeInstruction(
         type: FeeType,
         takerSizeType: FeeSizeType?,
-        takerSize: BigDecimal?,
+        takerSize: Double?,
         val makerSizeType: FeeSizeType?,
-        val makerSize: BigDecimal?,
+        val makerSize: Double?,
         sourceClientId: String?,
         targetClientId: String?
 ) : FeeInstruction(type, takerSizeType, takerSize, sourceClientId, targetClientId) {
@@ -33,9 +32,9 @@ class LimitOrderFeeInstruction(
             return LimitOrderFeeInstruction(
                     feeType,
                     takerSizeType,
-                    if (fee.hasTakerSize()) BigDecimal.valueOf(fee.takerSize) else null,
+                    if (fee.hasTakerSize()) fee.takerSize else null,
                     makerSizeType,
-                    if (fee.hasMakerSize()) BigDecimal.valueOf(fee.makerSize) else null,
+                    if (fee.hasMakerSize()) fee.makerSize else null,
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null)
         }

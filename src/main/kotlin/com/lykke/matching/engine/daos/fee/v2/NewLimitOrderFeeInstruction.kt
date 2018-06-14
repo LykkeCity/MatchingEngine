@@ -5,7 +5,6 @@ import java.math.BigDecimal
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.messages.ProtocolMessages
-import org.nustaq.serialization.annotations.Version
 
 class NewLimitOrderFeeInstruction(
         type: FeeType,
@@ -16,7 +15,6 @@ class NewLimitOrderFeeInstruction(
         sourceClientId: String?,
         targetClientId: String?,
         assetIds: List<String>,
-        @Version(1)
         val makerFeeModificator: BigDecimal?
 ) : NewFeeInstruction(type, takerSizeType, takerSize, sourceClientId, targetClientId, assetIds) {
 
