@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
+import java.util.*
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -36,17 +37,18 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                jedisPool: JedisPool,
-                                redisHealthStatusHolder: RedisHealthStatusHolder): PersistenceManager {
+                                jedisPool: Optional<JedisPool>,
+                                redisHealthStatusHolder: RedisHealthStatusHolder,
+                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
-                        redisProcessedMessagesDatabaseAccessor(jedisPool),
+                        redisProcessedMessagesDatabaseAccessor.get(),
                         redisHealthStatusHolder,
-                        jedisPool,
+                        jedisPool.get(),
                         config
                 )
             }
@@ -54,10 +56,10 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun readOnlyProcessedMessagesDatabaseAccessor(jedisPool: JedisPool): ReadOnlyProcessedMessagesDatabaseAccessor {
+    open fun readOnlyProcessedMessagesDatabaseAccessor(jedisPool: Optional<JedisPool>): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
-            Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(jedisPool,
+            Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(jedisPool.get(),
                     config.me.redis.processedMessageDatabase,
                     getProcessedMessageTTL())
         }
@@ -73,8 +75,12 @@ open class DatabaseAccessorConfig {
                        @Value("\${redis.min_evictable_idle_time_millis}") minEvictableIdleTimeMillis: Long,
                        @Value("\${redis.time_between_eviction_runs_millis}") timeBetweenEvictionRunsMillis: Long,
                        @Value("\${redis.num_tests_per_eviction_run}") numTestsPerEvictionRun: Int,
-                       @Value("\${redis.block_when_exhausted}") blockWhenExhausted: Boolean): JedisPool {
+                       @Value("\${redis.block_when_exhausted}") blockWhenExhausted: Boolean): JedisPool? {
         val redisConfig = config.me.redis
+
+        if (redisConfig == null) {
+            return null
+        }
 
         val poolConfig = JedisPoolConfig()
         poolConfig.maxTotal = maxTotal
@@ -97,8 +103,11 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun redisProcessedMessagesDatabaseAccessor(jedisPool: JedisPool): RedisProcessedMessagesDatabaseAccessor {
-        return RedisProcessedMessagesDatabaseAccessor(jedisPool,
+    open fun redisProcessedMessagesDatabaseAccessor(jedisPool: Optional<JedisPool>): RedisProcessedMessagesDatabaseAccessor? {
+        if (!jedisPool.isPresent) {
+            return null
+        }
+        return RedisProcessedMessagesDatabaseAccessor(jedisPool.get(),
                 config.me.redis.processedMessageDatabase,
                 getProcessedMessageTTL())
     }

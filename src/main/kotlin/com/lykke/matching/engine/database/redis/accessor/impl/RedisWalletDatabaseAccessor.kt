@@ -9,7 +9,7 @@ import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
-import java.util.HashMap
+import java.util.*
 
 class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool, private val balancesDatabase: Int) : WalletDatabaseAccessor {
 
