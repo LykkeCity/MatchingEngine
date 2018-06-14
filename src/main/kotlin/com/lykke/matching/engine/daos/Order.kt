@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
-import org.nustaq.serialization.annotations.Version
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
@@ -19,9 +19,7 @@ abstract class Order(
         val createdAt: Date,
         val registered: Date,
         var reservedLimitVolume: BigDecimal?,
-        @Version (1) // for compatibility with old serialized orders
         val fee: FeeInstruction?,
-        @Version (2)
         val fees: List<NewFeeInstruction>?,
         statusDate: Date?
 ) : Serializable, Copyable {
@@ -29,7 +27,6 @@ abstract class Order(
     var status = status
         private set
 
-    @Version (4)
     var statusDate = statusDate
         private set
 

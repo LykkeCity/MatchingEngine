@@ -1,13 +1,16 @@
-package com.lykke.matching.engine.daos
+package com.lykke.matching.engine.daos.v2
 
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.FeeSizeType
+import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.messages.ProtocolMessages
 import java.io.Serializable
+import java.math.BigDecimal
 
 open class FeeInstruction(
         val type: FeeType,
         val sizeType: FeeSizeType?,
-        val size: Double?,
+        val size: BigDecimal?,
         val sourceClientId: String?,
         val targetClientId: String?
 ) : Serializable {
@@ -25,7 +28,7 @@ open class FeeInstruction(
             return FeeInstruction(
                     feeType,
                     sizeType,
-                    if (fee.hasSize()) fee.size else null,
+                    if (fee.hasSize()) BigDecimal.valueOf(fee.size)  else null,
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null
             )

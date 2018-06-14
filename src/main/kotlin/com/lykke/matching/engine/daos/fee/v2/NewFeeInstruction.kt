@@ -1,13 +1,14 @@
-package com.lykke.matching.engine.daos.fee
+package com.lykke.matching.engine.daos.fee.v2
 
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
+import java.math.BigDecimal
 
 open class NewFeeInstruction(type: FeeType,
                              takerSizeType: FeeSizeType?,
-                             takerSize: Double?,
+                             takerSize: BigDecimal?,
                              sourceClientId: String?,
                              targetClientId: String?,
                              val assetIds: List<String>) : FeeInstruction(type, takerSizeType, takerSize, sourceClientId, targetClientId) {
@@ -26,7 +27,7 @@ open class NewFeeInstruction(type: FeeType,
             return NewFeeInstruction(
                     feeType,
                     sizeType,
-                    if (fee.hasSize()) fee.size else null,
+                    if (fee.hasSize()) BigDecimal.valueOf(fee.size) else null,
                     if (fee.hasSourceClientId()) fee.sourceClientId else null,
                     if (fee.hasTargetClientId()) fee.targetClientId else null,
                     fee.assetIdList.toList()

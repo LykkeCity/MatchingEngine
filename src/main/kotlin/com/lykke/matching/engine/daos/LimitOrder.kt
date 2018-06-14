@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import org.nustaq.serialization.annotations.Version
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
@@ -22,15 +22,10 @@ class LimitOrder(id: String,
                  reservedLimitVolume: BigDecimal? = null,
                  fee: LimitOrderFeeInstruction? = null,
                  fees: List<NewLimitOrderFeeInstruction>? = null,
-                 @Version(3)
                  val type: LimitOrderType?,
-                 @Version(3)
                  val lowerLimitPrice: BigDecimal?,
-                 @Version(3)
                  val lowerPrice: BigDecimal?,
-                 @Version(3)
                  val upperLimitPrice: BigDecimal?,
-                 @Version(3)
                  val upperPrice: BigDecimal?,
                  @Transient
                  val previousExternalId: String?)

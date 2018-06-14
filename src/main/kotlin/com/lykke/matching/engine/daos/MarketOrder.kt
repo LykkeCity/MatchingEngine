@@ -1,8 +1,9 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import java.math.BigDecimal
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import java.util.Date
 
 class MarketOrder(id: String,

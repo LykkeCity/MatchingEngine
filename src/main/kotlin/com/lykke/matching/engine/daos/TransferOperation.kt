@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import java.math.BigDecimal
 import java.util.Date
 
