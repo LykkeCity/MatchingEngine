@@ -29,7 +29,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
     }
 
     fun loadOrdersFromFiles(): List<LimitOrder> {
-        val result = ArrayList<LimitOrder>()
+        var result: List<LimitOrder> = ArrayList()
 
         try {
             val orderDirPath = Paths.get(ordersDir)
@@ -37,7 +37,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 return result
             }
 
-            return Files.list(orderDirPath)
+            result = Files.list(orderDirPath)
                     .filter {path -> !Files.isDirectory(path) &&
                             !path
                                     .fileName
