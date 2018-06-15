@@ -17,7 +17,11 @@ class RabbitMqServiceToLogService : RabbitMqService {
         private val LOGGER = Logger.getLogger(RabbitMqServiceToLogService::class.java)
     }
 
-    override fun startPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger?) {
+    override fun startPublisher(config: RabbitConfig,
+                                queue: BlockingQueue<JsonSerializable>,
+                                appName: String,
+                                appVersion: String,
+                                messageDatabaseLogger: MessageDatabaseLogger?) {
         val executor = Executors.newSingleThreadExecutor()
         executor.submit({
             while(true) {
