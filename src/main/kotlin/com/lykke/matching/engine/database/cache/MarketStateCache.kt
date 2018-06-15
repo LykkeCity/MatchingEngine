@@ -8,6 +8,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import kotlin.collections.HashMap
@@ -23,7 +24,7 @@ class MarketStateCache @Autowired constructor (private val historyTicksDatabaseA
     private val assetPairToIntervalTickHolder = HashMap<String, HashMap<TickUpdateInterval, TickBlobHolder>>()
 
     @Synchronized
-    fun addTick(assetPair: String, ask: Double, bid: Double, currentUpdateTime: Long) {
+    fun addTick(assetPair: String, ask: BigDecimal, bid: BigDecimal, currentUpdateTime: Long) {
         val intervalToTickBlobHolder = assetPairToIntervalTickHolder.getOrPut(assetPair) { HashMap() }
 
         TickUpdateInterval.values().forEach({ interval ->

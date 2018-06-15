@@ -6,9 +6,9 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageType.ORDER_BOOK_SNAPSHOT
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.ThrottlingLogger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -82,10 +82,10 @@ class Connection(val socket: Socket,
         val builder = ProtocolMessages.OrderBookSnapshot.newBuilder().setAsset(orderBook.assetPair).setIsBuy(orderBook.isBuy).setTimestamp(orderBook.timestamp.time)
         val pair = assetPairsCache.getAssetPair(orderBook.assetPair)
         val baseAsset = assetsCache.getAsset(pair.baseAssetId)
-        orderBook.prices.forEach { price ->
+        orderBook.prices.forEach { orderBookPrice ->
             builder.addLevels(ProtocolMessages.OrderBookSnapshot.OrderBookLevel.newBuilder()
-                    .setPrice(price.price.round(pair.accuracy))
-                    .setVolume(price.volume.round(baseAsset.accuracy)).build())
+                    .setPrice(NumberUtils.setScaleRoundHalfUp(orderBookPrice.price, pair.accuracy).toPlainString())
+                    .setVolume(NumberUtils.setScaleRoundHalfUp(orderBookPrice.volume, baseAsset.accuracy).toPlainString()).build())
         }
 
         val book = builder.build()

@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.messages
 
+import java.math.BigDecimal
 import java.util.Date
 
 class BalanceUpdate( val id: String,
@@ -16,8 +17,8 @@ class BalanceUpdate( val id: String,
 class ClientBalanceUpdate(
     val id: String,
     val asset: String,
-    val oldBalance: Double,
-    var newBalance: Double,
-    val oldReserved: Double,
-    var newReserved: Double
+    val oldBalance: BigDecimal,
+    var newBalance: BigDecimal,
+    val oldReserved: BigDecimal,
+    var newReserved: BigDecimal
 )

@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.services.validators.impl
 
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.fee.listOfFee
@@ -14,6 +14,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.*
 
 @Component
@@ -29,8 +30,10 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
     override fun performValidation(cashTransferOperation: ProtocolMessages.CashTransferOperation,
                                    operationId: String, feeInstructions: List<NewFeeInstruction>,
                                    feeInstruction: FeeInstruction?) {
-        val operation = TransferOperation(operationId, cashTransferOperation.id, cashTransferOperation.fromClientId, cashTransferOperation.toClientId,
-                cashTransferOperation.assetId, Date(cashTransferOperation.timestamp), cashTransferOperation.volume, cashTransferOperation.overdraftLimit,
+        val operation = TransferOperation(operationId, cashTransferOperation.id,
+                cashTransferOperation.fromClientId, cashTransferOperation.toClientId,
+                cashTransferOperation.assetId, Date(cashTransferOperation.timestamp),
+                BigDecimal.valueOf(cashTransferOperation.volume), BigDecimal.valueOf(cashTransferOperation.overdraftLimit),
                 listOfFee(feeInstruction, feeInstructions))
 
         isAssetEnabled(cashTransferOperation)
@@ -42,7 +45,7 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
     private fun isBalanceValid(cashTransferOperation: ProtocolMessages.CashTransferOperation, operation: TransferOperation) {
         val balanceOfFromClient = balancesHolder.getBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
         val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
-        val overdraftLimit = if (operation.overdraftLimit != null) - operation.overdraftLimit else 0.0
+        val overdraftLimit = if (operation.overdraftLimit != null) - operation.overdraftLimit else BigDecimal.ZERO
         if (balanceOfFromClient - reservedBalanceOfFromClient - operation.volume < overdraftLimit) {
             LOGGER.info("Cash transfer operation (${cashTransferOperation.id}) from client ${cashTransferOperation.fromClientId} " +
                     "to client ${cashTransferOperation.toClientId}, asset ${cashTransferOperation.assetId}, " +
@@ -73,7 +76,8 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
 
     private fun isVolumeAccuracyValid(cashTransferOperation: ProtocolMessages.CashTransferOperation) {
 
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(cashTransferOperation.volume, assetsHolder.getAsset(cashTransferOperation.assetId).accuracy)
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(cashTransferOperation.volume),
+                assetsHolder.getAsset(cashTransferOperation.assetId).accuracy)
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy invalid fromClient  ${cashTransferOperation.fromClientId}, " +

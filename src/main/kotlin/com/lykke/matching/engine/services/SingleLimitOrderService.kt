@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.messages.MessageStatus
@@ -14,6 +14,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
@@ -37,15 +38,15 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             parseMessage(messageWrapper)
         }
 
-        val order: NewLimitOrder
+        val order: LimitOrder
         val now = Date()
         val isCancelOrders: Boolean
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             val oldMessage = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
             val uid = UUID.randomUUID().toString()
-            order = NewLimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, oldMessage.volume,
-                    oldMessage.price, OrderStatus.InOrderBook.name, now, Date(oldMessage.timestamp), now, oldMessage.volume, null,
+            order = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
+                    BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, now, Date(oldMessage.timestamp), now, BigDecimal.valueOf(oldMessage.volume), null,
                     type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
             LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
@@ -74,7 +75,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
     }
 
-    private fun incomingMessageInfo(messageId: String?, message: ProtocolMessages.LimitOrder, order: NewLimitOrder): String {
+    private fun incomingMessageInfo(messageId: String?, message: ProtocolMessages.LimitOrder, order: LimitOrder): String {
         return "id: ${message.uid}" +
                 ", messageId $messageId" +
                 ", type: ${order.type}" +
@@ -91,7 +92,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 ", fees: ${order.fees}"
     }
 
-    private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): NewLimitOrder {
+    private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): LimitOrder {
         val type = if (message.hasType()) LimitOrderType.getByExternalId(message.type) else LimitOrderType.LIMIT
         val status = when(type) {
             LimitOrderType.LIMIT -> OrderStatus.InOrderBook
@@ -99,25 +100,25 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         }
         val feeInstruction = if (message.hasFee()) LimitOrderFeeInstruction.create(message.fee) else null
         val feeInstructions = NewLimitOrderFeeInstruction.create(message.feesList)
-        return NewLimitOrder(UUID.randomUUID().toString(),
+        return LimitOrder(UUID.randomUUID().toString(),
                 message.uid,
                 message.assetPairId,
                 message.clientId,
-                message.volume,
-                if (message.hasPrice()) message.price else 0.0,
+                BigDecimal.valueOf(message.volume),
+                if (message.hasPrice()) BigDecimal.valueOf(message.price) else BigDecimal.ZERO,
                 status.name,
                 now,
                 Date(message.timestamp),
                 now,
-                message.volume,
+                BigDecimal.valueOf(message.volume),
                 null,
                 fee = feeInstruction,
                 fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
                 type = type,
-                lowerLimitPrice = if (message.hasLowerLimitPrice()) message.lowerLimitPrice else null,
-                lowerPrice = if (message.hasLowerPrice()) message.lowerPrice else null,
-                upperLimitPrice = if (message.hasUpperLimitPrice()) message.upperLimitPrice else null,
-                upperPrice = if (message.hasUpperPrice()) message.upperPrice else null,
+                lowerLimitPrice = if (message.hasLowerLimitPrice()) BigDecimal.valueOf(message.lowerLimitPrice )else null,
+                lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
+                upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
+                upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
                 previousExternalId = null)
     }
 

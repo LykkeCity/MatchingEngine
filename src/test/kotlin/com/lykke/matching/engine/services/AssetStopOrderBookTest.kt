@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import org.junit.Test
 import org.junit.Before
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -40,16 +41,16 @@ class AssetStopOrderBookTest {
 
     @Test
     fun getBidOrder() {
-        assertNull(orderBook.getOrder(1.2, true, true))
-        assertNull(orderBook.getOrder(1.2, true, false))
+        assertNull(orderBook.getOrder(BigDecimal.valueOf( 1.2), true, true))
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(1.2), true, false))
 
-        assertNull(orderBook.getOrder(1.13, true, false))
-        var order = orderBook.getOrder(1.13, true, true)
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(1.13), true, false))
+        var order = orderBook.getOrder(BigDecimal.valueOf(1.13), true, true)
         assertNotNull(order)
         assertEquals("order3", order!!.externalId)
 
-        assertNull(orderBook.getOrder(1.31, true, true))
-        order = orderBook.getOrder(1.31, true, false)
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(1.31), true, true))
+        order = orderBook.getOrder(BigDecimal.valueOf(1.31), true, false)
         assertNotNull(order)
         assertEquals("order4", order!!.externalId)
 
@@ -59,27 +60,27 @@ class AssetStopOrderBookTest {
                 lowerLimitPrice = 1.15, lowerPrice = 1.21, upperLimitPrice = 1.25, upperPrice = 1.4
         ))
 
-        order = orderBook.getOrder(1.15, true, true)
+        order = orderBook.getOrder(BigDecimal.valueOf(1.15), true, true)
         assertNotNull(order)
         assertEquals("order5", order!!.externalId)
 
-        order = orderBook.getOrder(1.25, true, false)
+        order = orderBook.getOrder(BigDecimal.valueOf(1.25), true, false)
         assertNotNull(order)
         assertEquals("order5", order!!.externalId)
     }
 
     @Test
     fun getAskOrder() {
-        assertNull(orderBook.getOrder(1.1, false, true))
-        assertNull(orderBook.getOrder(1.1, false, false))
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(1.1), false, true))
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(1.1), false, false))
 
-        assertNull(orderBook.getOrder(0.98, false, false))
-        var order = orderBook.getOrder(0.98, false, true)
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(0.98), false, false))
+        var order = orderBook.getOrder(BigDecimal.valueOf(0.98), false, true)
         assertNotNull(order)
         assertEquals("order1", order!!.externalId)
 
-        assertNull(orderBook.getOrder(1.16, false, true))
-        order = orderBook.getOrder(1.16, false, false)
+        assertNull(orderBook.getOrder(BigDecimal.valueOf(1.16), false, true))
+        order = orderBook.getOrder(BigDecimal.valueOf(1.16), false, false)
         assertNotNull(order)
         assertEquals("order2", order!!.externalId)
 
@@ -89,11 +90,11 @@ class AssetStopOrderBookTest {
                 lowerLimitPrice = 1.0, lowerPrice = 0.94, upperLimitPrice = 1.14, upperPrice = 1.1
         ))
 
-        order = orderBook.getOrder(1.0, false, true)
+        order = orderBook.getOrder(BigDecimal.valueOf(1.0), false, true)
         assertNotNull(order)
         assertEquals("order5", order!!.externalId)
 
-        order = orderBook.getOrder(1.14, false, false)
+        order = orderBook.getOrder(BigDecimal.valueOf(1.14), false, false)
         assertNotNull(order)
         assertEquals("order5", order!!.externalId)
     }

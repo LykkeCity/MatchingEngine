@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services.validators.impl
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
@@ -11,6 +11,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder): MultiLimitOrderValidator {
@@ -18,7 +19,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         private val LOGGER = Logger.getLogger(MultiLimitOrderValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(order: NewLimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook) {
+    override fun performValidation(order: LimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook) {
         isPriceValid(order)
         isVolumeValid(order, assetPair)
         isSpreadValid(orderBook, order)
@@ -26,14 +27,14 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         isPriceAccuracyValid(order, assetPair)
     }
 
-    private fun isSpreadValid(orderBook: AssetOrderBook, order: NewLimitOrder) {
+    private fun isSpreadValid(orderBook: AssetOrderBook, order: LimitOrder) {
         if (orderBook.leadToNegativeSpreadForClient(order)) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to negative spread")
             throw OrderValidationException(OrderStatus.LeadToNegativeSpread)
         }
     }
 
-    private fun isPriceAccuracyValid(order: NewLimitOrder, assetPair: AssetPair) {
+    private fun isPriceAccuracyValid(order: LimitOrder, assetPair: AssetPair) {
         val priceAccuracy = assetPair.accuracy
 
         val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.price, priceAccuracy)
@@ -44,7 +45,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
     }
 
-    private fun isVolumeAccuracyValid(order: NewLimitOrder, assetPair: AssetPair) {
+    private fun isVolumeAccuracyValid(order: LimitOrder, assetPair: AssetPair) {
         val baseAssetId = assetPair.baseAssetId
         val volumeAccuracy = assetsHolder.getAsset(baseAssetId).accuracy
 
@@ -56,15 +57,15 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
     }
 
-    private fun isVolumeValid(order: NewLimitOrder, assetPair: AssetPair) {
+    private fun isVolumeValid(order: LimitOrder, assetPair: AssetPair) {
         if (!order.checkVolume(assetPair)) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
     }
 
-    private fun isPriceValid(order: NewLimitOrder) {
-        if (order.price <= 0) {
+    private fun isPriceValid(order: LimitOrder) {
+        if (order.price <= BigDecimal.ZERO) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to invalid price")
             throw OrderValidationException(OrderStatus.InvalidPrice)
         }

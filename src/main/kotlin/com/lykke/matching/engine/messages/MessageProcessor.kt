@@ -178,7 +178,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
-        val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+        val stopOrderBookDatabaseAccessor = applicationContext.getBean(FileStopOrderBookDatabaseAccessor::class.java)
 
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor,
                 assetsHolder,

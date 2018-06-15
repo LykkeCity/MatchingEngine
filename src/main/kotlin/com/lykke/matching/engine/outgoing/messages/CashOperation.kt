@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.lykke.matching.engine.daos.fee.Fee
+import com.lykke.matching.engine.daos.fee.v2.Fee
 import java.util.Date
 
 class CashOperation(val id: String,
