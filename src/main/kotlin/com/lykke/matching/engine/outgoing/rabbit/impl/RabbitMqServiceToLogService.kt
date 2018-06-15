@@ -25,11 +25,12 @@ class RabbitMqServiceToLogService : RabbitMqService {
         val executor = Executors.newSingleThreadExecutor()
         executor.submit({
             while(true) {
-                logMessage(config.uri, queue.take())
+                logMessage(config.exchange, queue.take())
             }})
     }
 
-    private fun logMessage(uri: String, item: JsonSerializable) {
-        LOGGER.info("new item $item in queue $uri")
+    private fun logMessage(exchange: String, item: JsonSerializable) {
+
+        LOGGER.info("New rmq message (exchange: $exchange): ${item.toJson()}")
     }
 }
