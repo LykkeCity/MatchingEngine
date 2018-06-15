@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -58,7 +59,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.3, price = 10500.0))
         val partiallyMatchedTrustedClientOrder = buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.7, price = 11500.0)
-        partiallyMatchedTrustedClientOrder.remainingVolume = -0.6
+        partiallyMatchedTrustedClientOrder.remainingVolume = BigDecimal.valueOf(-0.6)
         testOrderDatabaseAccessor.addLimitOrder(partiallyMatchedTrustedClientOrder)
 
         initServices()

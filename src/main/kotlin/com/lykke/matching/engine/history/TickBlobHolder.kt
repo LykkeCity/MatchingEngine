@@ -1,27 +1,28 @@
 package com.lykke.matching.engine.history
 
 import com.lykke.matching.engine.daos.TickUpdateInterval
+import java.math.BigDecimal
 import java.util.*
 
 
 class TickBlobHolder(val assetPair: String,
                      val tickUpdateInterval: TickUpdateInterval,
-                     val askTicks: LinkedList<Double>,
-                     val bidTicks: LinkedList<Double>,
+                     val askTicks: LinkedList<BigDecimal>,
+                     val bidTicks: LinkedList<BigDecimal>,
                      var lastUpdate: Long,
                      val frequency: Long) {
 
     constructor(tickBlobHolder: TickBlobHolder): this(assetPair =  tickBlobHolder.assetPair,
             tickUpdateInterval = tickBlobHolder.tickUpdateInterval,
-            askTicks = tickBlobHolder.askTicks.clone() as LinkedList<Double>,
-            bidTicks = tickBlobHolder.bidTicks.clone() as LinkedList<Double>,
+            askTicks = tickBlobHolder.askTicks.clone() as LinkedList<BigDecimal>,
+            bidTicks = tickBlobHolder.bidTicks.clone() as LinkedList<BigDecimal>,
             lastUpdate = tickBlobHolder.lastUpdate,
             frequency = tickBlobHolder.frequency)
 
     constructor(assetPair: String,
                 tickUpdateInterval: TickUpdateInterval,
-                ask: Double,
-                bid: Double,
+                ask: BigDecimal,
+                bid: BigDecimal,
                 lastUpdate: Long,
                 frequency: Long): this(assetPair =  assetPair,
             tickUpdateInterval = tickUpdateInterval,
@@ -44,13 +45,13 @@ class TickBlobHolder(val assetPair: String,
         val PRICE_PAIR_DELIMITER = ";"
     }
 
-    fun addPrice(askPrice: Double, bidPrice: Double, lastUpdateTime: Long) {
+    fun addPrice(askPrice: BigDecimal, bidPrice: BigDecimal, lastUpdateTime: Long) {
         addPrice(askPrice, askTicks)
         addPrice(bidPrice, bidTicks)
         lastUpdate = lastUpdateTime
     }
 
-    private fun addPrice(price: Double, prices: LinkedList<Double>) {
+    private fun addPrice(price: BigDecimal, prices: LinkedList<BigDecimal>) {
         prices.add(price)
         while (prices.size < frequency) {
             prices.add(price)

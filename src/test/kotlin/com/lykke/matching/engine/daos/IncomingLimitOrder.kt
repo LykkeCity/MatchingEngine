@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.daos
 
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import java.util.UUID
 
 data class IncomingLimitOrder(val volume: Double,

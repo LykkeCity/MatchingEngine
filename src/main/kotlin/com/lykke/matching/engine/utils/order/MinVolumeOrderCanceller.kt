@@ -2,7 +2,7 @@ package com.lykke.matching.engine.utils.order
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -32,10 +32,10 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
         val operationId = UUID.randomUUID().toString()
         teeLog("Starting order books analyze to cancel min volume orders ($operationId)")
 
-        val ordersToCancel = HashMap<AssetPair, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
-        val ordersToRemove = HashMap<String, MutableMap<Boolean, MutableList<NewLimitOrder>>>()
+        val ordersToCancel = HashMap<AssetPair, MutableMap<Boolean, MutableList<LimitOrder>>>()
+        val ordersToRemove = HashMap<String, MutableMap<Boolean, MutableList<LimitOrder>>>()
         var totalCount = 0
-        val checkAndAddToCancel: (order: NewLimitOrder) -> Unit = { order ->
+        val checkAndAddToCancel: (order: LimitOrder) -> Unit = { order ->
             try {
                 val assetPair = try {
                     assetsPairsHolder.getAssetPair(order.assetPairId)

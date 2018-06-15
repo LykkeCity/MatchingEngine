@@ -14,6 +14,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
@@ -38,7 +39,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
         }
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
-                Date(message.timestamp), message.amount, 0.0)
+                Date(message.timestamp), BigDecimal.valueOf(message.amount), BigDecimal.ZERO)
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {

@@ -27,7 +27,9 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (InvalidBalanceTest.Config::class)])
@@ -90,17 +92,17 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(2, testOrderDatabaseAccessor.getOrders("ETHUSD", false).size)
         genericLimitOrderService.getOrderBook("ETHUSD").getOrderBook(false).forEach {
             assertEquals("Client2", it.clientId)
-            assertEquals(-0.000005, it.remainingVolume)
+            assertEquals(BigDecimal.valueOf(-0.000005), it.remainingVolume)
             assertEquals(OrderStatus.InOrderBook.name, it.status)
         }
 
         assertBalance("Client1", "USD", 0.02, 0.0)
-        assertEquals(0.0, balancesHolder.getBalance("Client1", "ETH"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getBalance("Client1", "ETH"))
 
         assertBalance("Client2", "ETH", 1000.0, 0.0)
-        assertEquals(0.0, balancesHolder.getReservedBalance("Client2", "USD"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("Client2", "USD"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
     }
 
     @Test
@@ -146,12 +148,12 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", false).size)
 
         assertBalance("Client1", "USD", 0.0, 0.0)
-        assertEquals(0.00001, balancesHolder.getBalance("Client1", "ETH"))
-        assertEquals(0.00001, testWalletDatabaseAccessor.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.valueOf(0.00001), balancesHolder.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.valueOf(0.00001), testWalletDatabaseAccessor.getBalance("Client1", "ETH"))
 
         assertBalance("Client2", "ETH", 0.99999, 1.09999)
-        assertEquals(0.02, balancesHolder.getBalance("Client2", "USD"))
-        assertEquals(0.02, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(0.02), balancesHolder.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(0.02), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
     }
 
     @Test
@@ -195,9 +197,9 @@ class InvalidBalanceTest : AbstractTest() {
         testConfigDatabaseAccessor.addTrustedClient("Client1")
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
-                VolumePrice(-0.1, 1000.0),
-                VolumePrice(-0.05, 1010.0),
-                VolumePrice(-0.1, 1100.0)
+                VolumePrice(BigDecimal.valueOf(-0.1), BigDecimal.valueOf(1000.0)),
+                VolumePrice(BigDecimal.valueOf(-0.05), BigDecimal.valueOf(1010.0)),
+                VolumePrice(BigDecimal.valueOf(-0.1), BigDecimal.valueOf(1100.0))
         ), emptyList(), emptyList(), ordersUid = listOf("1", "2", "3")))
         testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
@@ -206,10 +208,10 @@ class InvalidBalanceTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))
 
         assertEquals(1, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
-        assertEquals(0.2, balancesHolder.getBalance("Client1", "ETH"))
-        assertEquals(0.04, balancesHolder.getReservedBalance("Client1", "ETH"))
-        assertEquals(0.05, balancesHolder.getBalance("Client2", "ETH"))
-        assertEquals(224.5, balancesHolder.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(0.2), balancesHolder.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.valueOf(0.04), balancesHolder.getReservedBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.valueOf(0.05), balancesHolder.getBalance("Client2", "ETH"))
+        assertEquals(BigDecimal.valueOf(224.5), balancesHolder.getBalance("Client2", "USD"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -232,7 +234,7 @@ class InvalidBalanceTest : AbstractTest() {
         testConfigDatabaseAccessor.addTrustedClient("Client1")
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
-                listOf(VolumePrice(-0.05, 1010.0)), emptyList(), emptyList(), ordersUid = listOf("1")))
+                listOf(VolumePrice(BigDecimal.valueOf(-0.05), BigDecimal.valueOf(1010.0))), emptyList(), emptyList(), ordersUid = listOf("1")))
         testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
@@ -241,11 +243,11 @@ class InvalidBalanceTest : AbstractTest() {
 
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", false).size)
         assertEquals(1, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
-        assertEquals(0.04, balancesHolder.getBalance("Client1", "ETH"))
-        assertEquals(0.0, balancesHolder.getReservedBalance("Client1", "ETH"))
-        assertEquals(275.0, balancesHolder.getReservedBalance("Client2", "USD"))
-        assertEquals(0.0, balancesHolder.getBalance("Client2", "ETH"))
-        assertEquals(275.0, balancesHolder.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(0.04), balancesHolder.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.valueOf(275.0), balancesHolder.getReservedBalance("Client2", "USD"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client2", "ETH"))
+        assertEquals(BigDecimal.valueOf(275.0), balancesHolder.getBalance("Client2", "USD"))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -255,7 +257,7 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(OrderStatus.InOrderBook.name, report.orders.first { it.order.externalId == "2"}.order.status)
     }
 
-    private fun assertBalance(clientId: String, assetId: String, balance: Double, reservedBalance: Double) {
+    private fun assertBalance(clientId: String, assetId: String, balance: BigDecimal, reservedBalance: BigDecimal) {
         assertEquals(balance, balancesHolder.getBalance(clientId, assetId))
         assertEquals(reservedBalance, balancesHolder.getReservedBalance(clientId, assetId))
         assertEquals(balance, testWalletDatabaseAccessor.getBalance(clientId, assetId))

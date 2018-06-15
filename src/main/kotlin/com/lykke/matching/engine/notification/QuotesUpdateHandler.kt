@@ -20,7 +20,12 @@ class QuotesUpdateHandler(private val notificationQueue: BlockingQueue<QuotesUpd
         while (true) {
             val notification = notificationQueue.take()
             if (connections.size > 0) {
-                val protoNotification = ProtocolMessages.QuotesUpdate.newBuilder().setAssetId(notification.asset).setPrice(notification.price).setVolume(notification.volume).build()
+                val protoNotification = ProtocolMessages.QuotesUpdate
+                        .newBuilder()
+                        .setAssetId(notification.asset)
+                        .setPrice(notification.price.toDouble())
+                        .setVolume(notification.volume.toDouble())
+                        .build()
                 val disconnected = LinkedList<ClientHandler>()
                 connections.forEach {
                     try {

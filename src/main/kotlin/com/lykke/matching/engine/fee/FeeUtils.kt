@@ -1,11 +1,12 @@
 package com.lykke.matching.engine.fee
 
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.fee.Fee
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.Fee
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import java.math.BigDecimal
 import java.util.LinkedList
 
 fun listOfFee(fee: FeeInstruction?, fees: List<NewFeeInstruction>?): List<NewFeeInstruction> {
@@ -40,7 +41,7 @@ private fun checkFee(feeInstruction: FeeInstruction): Boolean {
     }
 
     if (feeInstruction.sizeType == null ||
-            feeInstruction.size != null && feeInstruction.size < 0 ||
+            feeInstruction.size != null && feeInstruction.size < BigDecimal.ZERO ||
             feeInstruction.targetClientId == null ||
             feeInstruction.type == FeeType.EXTERNAL_FEE && feeInstruction.sourceClientId == null) {
         return false
@@ -49,7 +50,7 @@ private fun checkFee(feeInstruction: FeeInstruction): Boolean {
     var mandatorySize = true
     if (feeInstruction is LimitOrderFeeInstruction) {
         if (feeInstruction.makerSize == null && feeInstruction.size == null ||
-                feeInstruction.makerSize != null && feeInstruction.makerSize < 0) {
+                feeInstruction.makerSize != null && feeInstruction.makerSize < BigDecimal.ZERO) {
             return false
         }
         mandatorySize = false
@@ -57,10 +58,10 @@ private fun checkFee(feeInstruction: FeeInstruction): Boolean {
 
     if (feeInstruction is NewLimitOrderFeeInstruction) {
         if (feeInstruction.makerSize == null && feeInstruction.size == null ||
-                feeInstruction.makerSize != null && feeInstruction.makerSize < 0) {
+                feeInstruction.makerSize != null && feeInstruction.makerSize < BigDecimal.ZERO) {
             return false
         }
-        feeInstruction.makerFeeModificator?.let { if (it <= 0) return false }
+        feeInstruction.makerFeeModificator?.let { if (it <= BigDecimal.ZERO) return false }
         mandatorySize = false
     }
 

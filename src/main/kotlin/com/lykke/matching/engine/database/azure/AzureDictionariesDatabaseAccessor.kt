@@ -8,6 +8,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
+import java.math.BigDecimal
 import java.util.HashMap
 
 class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDatabaseAccessor {
@@ -28,7 +29,12 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                     .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ASSET_PAIR))
 
             for (asset in assetsTable.execute(partitionQuery)) {
-                result[asset.assetPairId] = AssetPair(asset.assetPairId, asset.baseAssetId, asset.quotingAssetId, asset.accuracy, asset.minVolume, asset.minInvertedVolume)
+                result[asset.assetPairId] = AssetPair(asset.assetPairId,
+                        asset.baseAssetId,
+                        asset.quotingAssetId,
+                        asset.accuracy,
+                        asset.minVolume?.toBigDecimal(),
+                        asset.minInvertedVolume?.toBigDecimal())
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
@@ -43,7 +49,7 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, assetPair.minVolume, assetPair.minInvertedVolume)
+                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, BigDecimal.valueOf(assetPair.minVolume), BigDecimal.valueOf(assetPair.minInvertedVolume))
             }
         } catch(e: Exception) {
             if (throwException) {

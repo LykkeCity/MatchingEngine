@@ -50,7 +50,7 @@ abstract class NewOrder(
     fun checkVolume(assetPair: AssetPair): Boolean {
         val volume = getAbsVolume()
         val minVolume = if (isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
+        return minVolume == null || volume >= minVolume.toDouble()
     }
 
     fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {

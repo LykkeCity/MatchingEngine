@@ -8,6 +8,7 @@ import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import redis.clients.jedis.JedisPool
+import java.util.*
 
 @Component
 class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccessorsHolder> {
@@ -16,7 +17,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
     private lateinit var config: Config
 
     @Autowired
-    private lateinit var jedisPool: JedisPool
+    private lateinit var jedisPool: Optional<JedisPool>
 
     override fun getObjectType(): Class<*> {
         return BalancesDatabaseAccessorsHolder::class.java
@@ -35,13 +36,13 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
             }
 
             Storage.Redis -> {
-                primaryAccessor = RedisWalletDatabaseAccessor(jedisPool, config.me.redis.balanceDatabase)
+                primaryAccessor = RedisWalletDatabaseAccessor(jedisPool.get(), config.me.redis.balanceDatabase)
 
                 secondaryAccessor = if (config.me.writeBalancesToSecondaryDb)
                     AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.newAccountsTableName!!)
                 else null
             }
         }
-        return BalancesDatabaseAccessorsHolder(primaryAccessor, secondaryAccessor, config.me.redis)
+        return BalancesDatabaseAccessorsHolder(primaryAccessor, secondaryAccessor)
     }
 }

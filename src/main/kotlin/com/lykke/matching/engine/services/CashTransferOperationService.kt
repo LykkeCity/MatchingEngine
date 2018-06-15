@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.fee.Fee
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.Fee
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -23,13 +23,13 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -59,7 +59,10 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val operationId = UUID.randomUUID().toString()
 
         val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId,
-                message.assetId, Date(message.timestamp), message.volume, message.overdraftLimit, listOfFee(feeInstruction, feeInstructions))
+                message.assetId, Date(message.timestamp),
+                BigDecimal.valueOf(message.volume),
+                BigDecimal.valueOf(message.overdraftLimit),
+                listOfFee(feeInstruction, feeInstructions))
 
         try {
             cashTransferOperationValidator.performValidation(message, operationId, feeInstructions, feeInstruction)
@@ -88,7 +91,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 operation.fromClientId,
                 operation.toClientId,
                 operation.dateTime,
-                operation.volume.round(assetsHolder.getAsset(operation.asset).accuracy),
+                NumberUtils.setScaleRoundHalfUp(operation.volume, assetsHolder.getAsset(operation.asset).accuracy).toPlainString(),
                 operation.overdraftLimit,
                 operation.asset,
                 feeInstruction,

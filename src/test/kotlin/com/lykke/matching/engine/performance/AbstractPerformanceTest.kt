@@ -43,8 +43,8 @@ abstract class AbstractPerformanceTest {
         val REPEAT_TIMES = 100
     }
 
+    protected var testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
-    protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
     protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
@@ -84,6 +84,8 @@ abstract class AbstractPerformanceTest {
 
 
     open fun initServices() {
+        testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
+
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
 
@@ -93,8 +95,7 @@ abstract class AbstractPerformanceTest {
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
-        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null,
-                RedisConfig("", 0,0,false, null, 0, 1, 2))
+        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null)
         persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
                 persistenceManager,

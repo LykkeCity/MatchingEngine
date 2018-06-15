@@ -20,7 +20,8 @@ class AzureCashOperationsDatabaseAccessor(connectionString: String,
 
     override fun insertTransferOperation(operation: TransferOperation) {
         try {
-            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.id, operation.externalId, operation.fromClientId, operation.toClientId, operation.asset, operation.dateTime, operation.volume)))
+            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.id, operation.externalId,
+                    operation.fromClientId, operation.toClientId, operation.asset, operation.dateTime, operation.volume.toDouble())))
         } catch (e: Exception) {
             LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
             METRICS_LOGGER.logError("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
@@ -29,7 +30,12 @@ class AzureCashOperationsDatabaseAccessor(connectionString: String,
 
     override fun insertSwapOperation(operation: SwapOperation) {
         try {
-            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletSwapOperation(operation.id, operation.externalId, operation.clientId1, operation.asset1, operation.volume1, operation.clientId2, operation.asset2, operation.volume2, operation.dateTime)))
+            transferOperationsTable
+                    .execute(TableOperation.insertOrMerge(
+                            AzureWalletSwapOperation(operation.id, operation.externalId,
+                                    operation.clientId1, operation.asset1, operation.volume1.toDouble(),
+                                    operation.clientId2, operation.asset2, operation.volume2.toDouble(),
+                                    operation.dateTime)))
         } catch (e: Exception) {
             LOGGER.error("Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)
             METRICS_LOGGER.logError("Unable to insert swap operation: ${operation.id}, external id: ${operation.externalId}", e)

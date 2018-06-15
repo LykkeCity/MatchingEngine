@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -17,12 +17,12 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
     protected companion object {
         private val LOGGER = Logger.getLogger(AbstractLimitOrdersCancelService::class.java.name)
 
-        class Orders private constructor(val orders: List<NewLimitOrder>,
-                                         val stopOrders: List<NewLimitOrder>,
+        class Orders private constructor(val orders: List<LimitOrder>,
+                                         val stopOrders: List<LimitOrder>,
                                          val processed: Boolean) {
             companion object Factory {
                 fun processed() = Orders(emptyList(), emptyList(), true)
-                fun notProcessed(orders: List<NewLimitOrder>, stopOrders: List<NewLimitOrder>) = Orders(orders, stopOrders, false)
+                fun notProcessed(orders: List<LimitOrder>, stopOrders: List<LimitOrder>) = Orders(orders, stopOrders, false)
             }
         }
     }

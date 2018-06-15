@@ -12,12 +12,13 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Component
 import redis.clients.jedis.JedisPool
+import java.util.*
 import javax.annotation.PostConstruct
 
 
 @Component
 class RedisHealthStatusHolderImpl @Autowired constructor(
-        private val jedisPool: JedisPool,
+        private val jedisPool: Optional<JedisPool>,
         private val config: Config,
         private val applicationEventPublisher: ApplicationEventPublisher,
         private val taskScheduler: TaskScheduler,
@@ -36,7 +37,7 @@ class RedisHealthStatusHolderImpl @Autowired constructor(
 
     private fun isRedisAlive(): Boolean {
         try {
-            jedisPool.resource.use { jedis ->
+            jedisPool.get().resource.use { jedis ->
                 val transaction = jedis.multi()
                 try {
                     transaction.select(config.me.redis.pingDatabase)
