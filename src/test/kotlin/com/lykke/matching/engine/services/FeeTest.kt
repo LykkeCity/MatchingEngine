@@ -227,14 +227,14 @@ class FeeTest: AbstractTest() {
 
     @Test
     fun testOrderBookNotEnoughFundsForFee() {
-        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 750.0)
+        testBalanceHolderWrapper.updateBalance(clientId = "Client1", assetId = "USD", balance = 750.25)
         testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "BTC", balance = 0.0503)
 
         initServices()
 
         for (i in 1..5) {
             singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
-                    uid = "order$i", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01,
+                    uid = "order$i", clientId = "Client2", assetId = "BTCUSD", price = 15000.0 + i, volume = -0.01,
                     fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
                             makerSizeType = FeeSizeType.PERCENTAGE,
                             makerSize = BigDecimal.valueOf(0.01),
@@ -247,7 +247,7 @@ class FeeTest: AbstractTest() {
         balanceUpdateHandlerTest.clear()
         clientsLimitOrdersQueue.clear()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
-                uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.05
+                uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15005.0, volume = 0.05
         )))
 
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
