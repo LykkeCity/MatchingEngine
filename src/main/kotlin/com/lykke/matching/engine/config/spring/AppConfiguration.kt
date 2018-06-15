@@ -2,6 +2,7 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
@@ -57,6 +58,11 @@ open class AppConfiguration: SchedulingConfigurer {
                 .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
                         appName = config.me.name,
                         config = config.me.aliveStatus)
+    }
+
+    @Bean
+    open fun monitoringStatsCollector(): MonitoringStatsCollector {
+        return MonitoringStatsCollector()
     }
 
     @PostConstruct
