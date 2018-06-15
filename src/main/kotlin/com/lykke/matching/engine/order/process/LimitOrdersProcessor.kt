@@ -257,9 +257,26 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
                     lkkTrades.addAll(matchingResult.lkkTrades)
 
-                    clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order, matchingResult.marketOrderTrades.map { it ->
-                        LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, it.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.index, it.feeInstruction, it.feeTransfer, it.fees, it.absoluteSpread, it.relativeSpread)
-                    }.toMutableList()))
+                    clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order.copy(),
+                            matchingResult.marketOrderTrades.map { it ->
+                                LimitTradeInfo(it.tradeId,
+                                        it.marketClientId,
+                                        it.marketAsset,
+                                        it.marketVolume,
+                                        it.price,
+                                        it.timestamp,
+                                        it.limitOrderId,
+                                        it.limitOrderExternalId,
+                                        it.limitAsset,
+                                        it.limitClientId,
+                                        it.limitVolume,
+                                        it.index,
+                                        it.feeInstruction,
+                                        it.feeTransfer,
+                                        it.fees,
+                                        it.absoluteSpread,
+                                        it.relativeSpread)
+                            }.toMutableList()))
 
                     matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
                         var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.id == orderReport.order.id }
@@ -293,7 +310,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         order.reservedLimitVolume = limitVolume.toDouble()
         orderBook.addOrder(order)
         ordersToAdd.add(order)
-        addToReport(order)
+        addToReport(order.copy())
         processedOrders.add(ProcessedOrder(order, true))
 
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume
