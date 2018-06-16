@@ -190,11 +190,9 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     processedOrders.add(ProcessedOrder(order, false))
                 }
                 OrderStatus.Matched,
+                OrderStatus.InOrderBook,
                 OrderStatus.Processing -> {
-                    if (processMatchingResult(matchingResult, orderCopy, orderInfo, order, limitAsset)) return
-                }
-                OrderStatus.InOrderBook -> {
-                    if (processMatchingResult(matchingResult, orderCopy, orderInfo, order, limitAsset)) return
+                    if (!processMatchingResult(matchingResult, orderCopy, orderInfo, order, limitAsset)) return
                 }
                 else -> {
                     LOGGER.error("Not handled order status: ${matchingResult.order.status}")
@@ -268,7 +266,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             order.status = OrderStatus.NotEnoughFunds.name
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, message))
-            return true
+            return false
         }
 
         matchingResult.apply()
@@ -310,7 +308,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         buySideOrderBookChanged = true
         sellSideOrderBookChanged = true
         processedOrders.add(ProcessedOrder(order, true))
-        return false
+        return true
     }
 
     private fun validateLimitOrder(order: NewLimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
