@@ -48,7 +48,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     fun checkAndProcessStopOrder(messageId: String, assetPairId: String, now: Date) {
         val order = stopLimitOrderService.getStopOrderForProcess(assetPairId, now) ?: return
         val orderBook = limitOrderService.getOrderBook(assetPairId)
-        LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()})")
+        LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()}) due to message $messageId")
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
         processLimitOrder(messageId, null, order, now, payBackReserved)

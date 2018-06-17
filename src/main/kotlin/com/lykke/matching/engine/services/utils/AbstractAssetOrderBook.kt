@@ -2,7 +2,8 @@ package com.lykke.matching.engine.services.utils
 
 import com.lykke.matching.engine.daos.LimitOrder
 
-interface AbstractAssetOrderBook {
-    fun copy(): AbstractAssetOrderBook
-    fun removeOrder(order: LimitOrder): Boolean
+abstract class AbstractAssetOrderBook(val assetPairId: String) {
+    abstract fun copy(): AbstractAssetOrderBook
+    abstract fun removeOrder(order: LimitOrder): Boolean
+    abstract fun getOrderBook(isBuySide: Boolean): Collection<LimitOrder>
 }

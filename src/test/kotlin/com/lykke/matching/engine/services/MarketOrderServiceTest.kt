@@ -20,7 +20,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
-import org.junit.After
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
@@ -73,10 +72,6 @@ class MarketOrderServiceTest: AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
         initServices()
-    }
-
-    @After
-    fun tearDown() {
     }
 
     @Test
