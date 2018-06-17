@@ -2,6 +2,7 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
+import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
@@ -17,6 +18,8 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -26,9 +29,11 @@ import com.lykke.matching.engine.services.validators.CashTransferOperationValida
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 abstract class AbstractTest {
     @Autowired
@@ -37,7 +42,15 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
+    @Autowired
+    protected lateinit var ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder
+
+    @Autowired
+    protected lateinit var stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder
+
     protected lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
+    protected lateinit var testOrderDatabaseAccessor: TestOrderBookDatabaseAccessor
+    protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
 
     @Autowired
     protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -87,9 +100,6 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var persistenceManager: TestPersistenceManager
 
-    protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
-
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
     protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
     protected val orderBookQueue = LinkedBlockingQueue<OrderBook>()
@@ -123,15 +133,19 @@ abstract class AbstractTest {
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
+    private var initialized = false
     protected open fun initServices() {
+        initialized = true
         testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
+        testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestOrderBookDatabaseAccessor
+        stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
         clearMessageQueues()
         assetsCache.update()
         assetPairsCache.update()
         applicationSettingsCache.update()
 
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService, persistenceManager)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService,
@@ -158,7 +172,7 @@ abstract class AbstractTest {
         marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder,
                 trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue,
                 lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
-        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
@@ -203,5 +217,42 @@ abstract class AbstractTest {
             assertEquals(reserved, balancesHolder.getReservedBalance(clientId, assetId))
             assertEquals(reserved, testWalletDatabaseAccessor.getReservedBalance(clientId, assetId))
         }
+    }
+
+    @After
+    open fun tearDown() {
+        if (initialized) {
+            val primaryDbOrders = ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders()
+            val secondaryDbOrders = ordersDatabaseAccessorsHolder.secondaryAccessor!!.loadLimitOrders()
+            val cacheOrders = genericLimitOrderService.getAllOrderBooks().values.flatMap {
+                val orders = mutableListOf<NewLimitOrder>()
+                orders.addAll(it.getOrderBook(false))
+                orders.addAll(it.getOrderBook(true))
+                orders
+            }
+            assertEqualsOrderLists(primaryDbOrders, cacheOrders)
+            assertEqualsOrderLists(secondaryDbOrders, cacheOrders)
+        }
+    }
+
+    private fun assertEqualsOrderLists(orders1: Collection<NewLimitOrder>, orders2: Collection<NewLimitOrder>) {
+        val ordersMap1 = orders1.groupBy { it.id }.mapValues { it.value.first() }
+        val ordersMap2 = orders2.groupBy { it.id }.mapValues { it.value.first() }
+        assertEquals(ordersMap1.size, ordersMap2.size)
+        ordersMap1.forEach { id, order1 ->
+            val order2 = ordersMap2[id]
+            assertNotNull(order2)
+            assertEqualsOrders(order1, order2!!)
+        }
+
+    }
+
+    private fun assertEqualsOrders(order1: NewLimitOrder, order2: NewLimitOrder) {
+        assertEquals(order1.id, order2.id)
+        assertEquals(order1.externalId, order2.externalId)
+        assertEquals(order1.status, order2.status)
+        assertEquals(order1.remainingVolume, order2.remainingVolume)
+        assertEquals(order1.lastMatchTime, order2.lastMatchTime)
+        assertEquals(order1.reservedLimitVolume, order2.reservedLimitVolume)
     }
 }

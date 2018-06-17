@@ -85,7 +85,9 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
         walletProcessor.preProcess(limitOrdersCancelResult.walletOperations)
         walletProcessor.preProcess(stopLimitOrdersResult.walletOperations)
-        val updated = walletProcessor.persistBalances(processedMessage)
+        val updated = walletProcessor.persistBalances(processedMessage,
+                limitOrdersCanceller.persistenceData(),
+                stopLimitOrdersCanceller.persistenceData())
         if (!updated) {
             return false
         }

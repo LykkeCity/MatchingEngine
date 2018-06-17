@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -43,7 +44,8 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             return this
         }
         val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
-        operations.forEach { operation ->
+        operations.filter { !(it.amount == 0.0 && applicationSettings.isTrustedClient(it.clientId)) }
+                .forEach { operation ->
             val key = key(operation)
             val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
                 TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
@@ -97,9 +99,14 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return balancesUpdater.persistenceData()
     }
 
-    fun persistBalances(processedMessage: ProcessedMessage?): Boolean {
+    fun persistBalances(processedMessage: ProcessedMessage?,
+                        orderBooksData: OrderBooksPersistenceData?,
+                        stopOrderBooksData: OrderBooksPersistenceData?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
-        return persistenceManager.persist(PersistenceData(persistenceData(), processedMessage))
+        return persistenceManager.persist(PersistenceData(persistenceData(),
+                processedMessage,
+                orderBooksData,
+                stopOrderBooksData))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {

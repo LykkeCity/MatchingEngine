@@ -10,7 +10,6 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
-import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -52,19 +51,13 @@ class RoundingTest: AbstractTest() {
 
     @Before
     fun setUp() {
-        testOrderDatabaseAccessor.clear()
-        tradesInfoQueue.clear()
-
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCLKK", "BTC", "LKK", 2))
-    }
-
-    @After
-    fun tearDown() {
+        initServices()
     }
 
     @Test
@@ -391,7 +384,7 @@ class RoundingTest: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.00043722)))
 
-        val limitOrder = testOrderDatabaseAccessor.getLastOrder("BTCEUR", true)
+        val limitOrder = testOrderDatabaseAccessor.getOrders("BTCEUR", true).singleOrNull()
         assertNotNull(limitOrder)
         Assert.assertEquals(1000.0 - 0.00043722, limitOrder!!.remainingVolume, DELTA)
     }

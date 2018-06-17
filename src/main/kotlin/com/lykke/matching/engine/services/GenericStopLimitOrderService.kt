@@ -1,15 +1,25 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.utils.logging.ThrottlingLogger
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
-class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                   private val genericLimitOrderService: GenericLimitOrderService): AbstractGenericLimitOrderService<AssetStopOrderBook> {
+class GenericStopLimitOrderService(stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
+                                   private val genericLimitOrderService: GenericLimitOrderService,
+                                   private val persistenceManager: PersistenceManager): AbstractGenericLimitOrderService<AssetStopOrderBook> {
+
+    companion object {
+        private val LOGGER = ThrottlingLogger.getLogger(GenericLimitOrderService::class.java.name)
+    }
 
     val initialStopOrdersCount: Int
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
@@ -46,7 +56,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         return ordersToRemove
     }
 
-    fun cancelStopLimitOrders(assetPairId: String, isBuy: Boolean, orders: Collection<NewLimitOrder>) {
+    fun cancelStopLimitOrders(assetPairId: String, orders: Collection<NewLimitOrder>) {
         val orderBook = getOrderBook(assetPairId)
         orders.forEach { order ->
             val uid = order.externalId
@@ -55,7 +65,6 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             orderBook.removeOrder(order)
             order.status = OrderStatus.Cancelled.name
         }
-        updateOrderBook(assetPairId, isBuy)
     }
 
     override fun cancelLimitOrders(orders: Collection<NewLimitOrder>) {
@@ -72,10 +81,6 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
 
     fun getOrder(uid: String) = stopLimitOrdersMap[uid]
 
-    override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {
-        stopOrderBookDatabaseAccessor.updateStopOrderBook(assetPairId, isBuy, getOrderBook(assetPairId).getOrderBook(isBuy))
-    }
-
     override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook){
         stopLimitOrdersQueues[assetPairId] = assetOrderBook
     }
@@ -83,7 +88,6 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
     fun addStopOrder(order: NewLimitOrder) {
         getOrderBook(order.assetPairId).addOrder(order)
         addOrder(order)
-        updateOrderBook(order.assetPairId, order.isBuySide())
     }
 
     fun getStopOrderForProcess(assetPairId: String): NewLimitOrder? {
@@ -109,10 +113,23 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
             }
         }
         if (order != null) {
+            val newStopOrderBook = stopOrderBook.getOrderBook(order.isBuySide()).toMutableList()
+            newStopOrderBook.remove(order)
+            val updated = persistenceManager.persist(PersistenceData(null,
+                    null,
+                    null,
+                    OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId,
+                            order.isBuySide(),
+                            newStopOrderBook)),
+                            emptyList(),
+                            listOf(order))))
+            if (!updated) {
+                LOGGER.error("Unable to save stop order book")
+                return null
+            }
             stopLimitOrdersMap.remove(order.externalId)
             removeFromClientMap(order.externalId, clientStopLimitOrdersMap)
             stopOrderBook.removeOrder(order)
-            updateOrderBook(order.assetPairId, order.isBuySide())
             order.price = orderPrice!!
             order.status = OrderStatus.InOrderBook.name
         }

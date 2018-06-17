@@ -4,15 +4,15 @@ import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
@@ -25,11 +25,9 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
     if (!config.me.correctReservedVolumes) {
         return
     }
-    val filePath = config.me.orderBookPath
-    val stopOrderBookPath = config.me.stopOrderBookPath
-    val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
-    ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
-    val orderBookDatabaseAccessor = applicationContext.getBean(OrderBookDatabaseAccessor::class.java)
+    val stopOrderBookDatabaseAccessor = applicationContext.getBean(StopOrdersDatabaseAccessorsHolder::class.java).primaryAccessor
+    ReservedVolumesRecalculator.teeLog("Starting order books analyze")
+    val orderBookDatabaseAccessor = applicationContext.getBean(OrdersDatabaseAccessorsHolder::class.java).primaryAccessor
     val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)
     ReservedVolumesRecalculator(
             orderBookDatabaseAccessor,

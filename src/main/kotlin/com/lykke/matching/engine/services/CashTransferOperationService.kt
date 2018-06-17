@@ -120,7 +120,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances(processedMessage)
+        val updated = walletProcessor.persistBalances(processedMessage, null, null)
         if (!updated) {
             throw Exception("Unable to save balance")
         }

@@ -6,13 +6,15 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -37,7 +39,6 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (PersistenceErrorTest.Config::class)])
@@ -105,7 +106,8 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     @After
-    fun tearDown() {
+    override fun tearDown() {
+        super.tearDown()
         persistenceManager.persistenceErrorMode = false
     }
 
@@ -159,8 +161,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertEquals(0, trustedClientsLimitOrdersQueue.size)
     }
 
-    /*
-    todo: enable this test then orders redis persistence will be done
     @Test
     fun testMultiLimitOrderCancel() {
         val messageWrapper = buildMultiLimitOrderCancelWrapper("TrustedClient", "EURUSD", false)
@@ -170,7 +170,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertEquals(0, clientsLimitOrdersQueue.size)
         assertEquals(0, trustedClientsLimitOrdersQueue.size)
     }
-    */
 
     @Test
     fun testClientMultiLimitOrderCancel() {
@@ -285,8 +284,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertLimitOrderResult()
     }
 
-    /*
-    todo: enable this test then orders redis persistence will be done
     @Test
     fun testOldMultiLimitOrder() {
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(
@@ -333,7 +330,7 @@ class PersistenceErrorTest : AbstractTest() {
         assertData()
         assertEquals(0, clientsLimitOrdersQueue.size)
         assertEquals(0, trustedClientsLimitOrdersQueue.size)
-    }*/
+    }
 
     @Test
     fun testClientMultiLimitOrder() {

@@ -6,9 +6,8 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.buildWallet
+import com.lykke.matching.engine.database.TestOrderBookDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -18,7 +17,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderW
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -49,6 +47,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
     @Before
     fun setUp() {
+        val testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestOrderBookDatabaseAccessor
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = 100.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0, volume = -1.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = 200.0))

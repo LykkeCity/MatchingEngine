@@ -59,8 +59,8 @@ class Connection(val socket: Socket,
             val now = Date()
             orderBooks.values.forEach {
                 val orderBook = it.copy()
-                writeOrderBook(OrderBook(orderBook.assetId, true, now, orderBook.getOrderBook(true)), outputStream)
-                writeOrderBook(OrderBook(orderBook.assetId, false, now, orderBook.getOrderBook(false)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)), outputStream)
             }
 
             while (true) {

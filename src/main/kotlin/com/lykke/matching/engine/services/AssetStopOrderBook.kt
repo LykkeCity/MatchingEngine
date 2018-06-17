@@ -6,8 +6,7 @@ import org.apache.log4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBook {
-
+class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairId) {
     companion object {
 
         private val LOGGER = Logger.getLogger(AssetStopOrderBook::class.java.name)
@@ -69,7 +68,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
     private val askOrderBook = ConcurrentHashMap<String, NewLimitOrder>(50)
     private val bidOrderBook = ConcurrentHashMap<String, NewLimitOrder>(50)
 
-    fun getOrderBook(isBuySide: Boolean) = (if (isBuySide) bidOrderBook else askOrderBook).values.toList()
+    override fun getOrderBook(isBuySide: Boolean) = (if (isBuySide) bidOrderBook else askOrderBook).values.toList()
 
     fun addOrder(order: NewLimitOrder) {
         if (order.assetPairId != assetPairId) {
@@ -137,7 +136,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
         }
         book.askOrderBook.putAll(askOrderBook)
         book.bidOrderBook.putAll(bidOrderBook)
-        return book;
+        return book
     }
 
     fun getOrder(price: Double, isBuySide: Boolean, isLowerSide: Boolean): NewLimitOrder? {

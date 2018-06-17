@@ -93,7 +93,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         val balancesUpdater = createUpdater()
         balancesUpdater.updateBalance(clientId, assetId, balance.toBigDecimal())
         val balancesData = balancesUpdater.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null))
         if (!persisted) {
             return false
         }
@@ -102,11 +102,15 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return true
     }
 
-    fun updateReservedBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true): Boolean {
+    fun updateReservedBalance(processedMessage: ProcessedMessage?,
+                              clientId: String,
+                              assetId: String,
+                              balance: Double,
+                              skipForTrustedClient: Boolean = true): Boolean {
         val balancesUpdater = createUpdater()
         balancesUpdater.updateReservedBalance(clientId, assetId, balance.toBigDecimal())
         val balancesData = balancesUpdater.persistenceData()
-         val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null))
         if (!persisted) {
             return false
         }
@@ -116,7 +120,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun insertOrUpdateWallets(wallets: Collection<Wallet>) {
-        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values })))
+        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }), null, null, null))
         update()
     }
 
