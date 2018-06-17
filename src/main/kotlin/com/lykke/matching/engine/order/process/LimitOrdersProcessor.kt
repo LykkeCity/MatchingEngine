@@ -111,8 +111,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-        val ordersToSave = mutableListOf<NewLimitOrder>()
-        val ordersToRemove = mutableListOf<NewLimitOrder>()
+        val ordersToSave = mutableListOf<LimitOrder>()
+        val ordersToRemove = mutableListOf<LimitOrder>()
         ordersToRemove.addAll(completedOrders)
         ordersToRemove.addAll(ordersToCancel)
         if (buySideOrderBookChanged) {

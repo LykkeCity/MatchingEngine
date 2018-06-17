@@ -174,8 +174,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
                     val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-                    val ordersToSave = mutableListOf<NewLimitOrder>()
-                    val ordersToRemove = mutableListOf<NewLimitOrder>()
+                    val ordersToSave = mutableListOf<LimitOrder>()
+                    val ordersToRemove = mutableListOf<LimitOrder>()
                     ordersToRemove.addAll(completedOrders)
                     ordersToRemove.addAll(ordersToCancel)
                     val updatedOrders = matchingEngine.updatedOrders(matchingResult.orderBook, emptyList())

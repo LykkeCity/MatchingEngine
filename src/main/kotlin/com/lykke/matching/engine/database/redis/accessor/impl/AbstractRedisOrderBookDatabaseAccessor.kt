@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
@@ -20,8 +20,8 @@ abstract class AbstractRedisOrderBookDatabaseAccessor(private val jedisPool: Jed
 
     private val conf = FSTConfiguration.createDefaultConfiguration()
 
-    protected fun loadOrders(): List<NewLimitOrder> {
-        val result = ArrayList<NewLimitOrder>()
+    protected fun loadOrders(): List<LimitOrder> {
+        val result = ArrayList<LimitOrder>()
         jedisPool.resource.use { jedis ->
             if (jedis.db != db.toLong()) {
                 jedis.select(db)
@@ -50,7 +50,7 @@ abstract class AbstractRedisOrderBookDatabaseAccessor(private val jedisPool: Jed
         return result
     }
 
-    fun updateOrders(transaction: Transaction, ordersToSave: Collection<NewLimitOrder>, ordersToRemove: Collection<NewLimitOrder>) {
+    fun updateOrders(transaction: Transaction, ordersToSave: Collection<LimitOrder>, ordersToRemove: Collection<LimitOrder>) {
         if (ordersToRemove.isNotEmpty()) {
             transaction.del(*ordersToRemove.map { orderKey(it).toByteArray() }.toTypedArray())
         }
@@ -63,14 +63,14 @@ abstract class AbstractRedisOrderBookDatabaseAccessor(private val jedisPool: Jed
 
     private fun orderBookKeyPrefix(assetPairId: String, isBuy: Boolean) = keyPrefix + assetPairId + KEY_SEPARATOR + isBuy + KEY_SEPARATOR
 
-    private fun orderKey(order: NewLimitOrder): String {
+    private fun orderKey(order: LimitOrder): String {
         return orderBookKeyPrefix(order.assetPairId, order.isBuySide()) + order.id
     }
 
-    private fun deserializeOrder(value: ByteArray): NewLimitOrder {
-        return conf.asObject(value) as NewLimitOrder
+    private fun deserializeOrder(value: ByteArray): LimitOrder {
+        return conf.asObject(value) as LimitOrder
     }
 
-    private fun serializeOrder(order: NewLimitOrder) = conf.asByteArray(order)
+    private fun serializeOrder(order: LimitOrder) = conf.asByteArray(order)
 
 }

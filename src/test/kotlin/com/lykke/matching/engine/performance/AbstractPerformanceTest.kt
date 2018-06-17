@@ -44,7 +44,6 @@ abstract class AbstractPerformanceTest {
         val REPEAT_TIMES = 100
     }
 
-    protected var testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
@@ -88,8 +87,6 @@ abstract class AbstractPerformanceTest {
 
 
     open fun initServices() {
-        testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
 

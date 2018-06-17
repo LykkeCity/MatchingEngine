@@ -27,8 +27,6 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-// todo check imports
-
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                               private val stopLimitOrderService: GenericStopLimitOrderService,
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
@@ -74,7 +72,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 walletOperationsProcessor.preProcess(listOf(WalletOperation(UUID.randomUUID().toString(),
                         order.externalId,
                         order.clientId,
-                        limitAsset.assetId, now, 0.0, -cancelVolume)))
+                        limitAsset.assetId, now, BigDecimal.ZERO, -cancelVolume)))
             }
             val orderBooksPersistenceData = if (ordersToCancel.isNotEmpty())
                 OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId, order.isBuySide(), newStopOrderBook)),
@@ -131,15 +129,15 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         walletOperations.add(WalletOperation(UUID.randomUUID().toString(),
                 order.externalId,
                 order.clientId,
-                limitAsset.assetId, now, 0.0, -cancelVolume))
+                limitAsset.assetId, now, BigDecimal.ZERO, -cancelVolume))
         walletOperations.add(WalletOperation(UUID.randomUUID().toString(),
                 order.externalId,
                 order.clientId,
-                limitAsset.assetId, now, 0.0, limitVolume.toDouble()))
+                limitAsset.assetId, now, BigDecimal.ZERO, limitVolume))
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         walletOperationsProcessor.preProcess(walletOperations)
 
-        order.reservedLimitVolume = limitVolume.toDouble()
+        order.reservedLimitVolume = limitVolume
         newStopOrderBook.add(order)
         messageWrapper.processedMessagePersisted = true
         val updated = walletOperationsProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
@@ -154,7 +152,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
 
         walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.LIMIT_ORDER.name, messageWrapper.messageId!!)
-        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, ordersToCancel)
+        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, ordersToCancel, now)
         stopLimitOrderService.addStopOrder(order)
 
         clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))

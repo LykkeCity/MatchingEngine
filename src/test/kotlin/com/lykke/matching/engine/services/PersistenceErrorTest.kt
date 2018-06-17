@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -288,9 +289,9 @@ class PersistenceErrorTest : AbstractTest() {
     fun testOldMultiLimitOrder() {
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(
                 "EURUSD", "TrustedClient",
-                listOf(VolumePrice(-1.0, 3.1),
-                        VolumePrice(-2.0, 3.19),
-                        VolumePrice(-3.0, 3.29)), cancel = true))
+                listOf(VolumePrice(BigDecimal.valueOf(-1.0), BigDecimal.valueOf(3.1)),
+                        VolumePrice(BigDecimal.valueOf(-2.0), BigDecimal.valueOf(3.19)),
+                        VolumePrice(BigDecimal.valueOf(-3.0), BigDecimal.valueOf(3.29))), cancel = true))
 
         assertData()
         assertEquals(0, clientsLimitOrdersQueue.size)
@@ -311,8 +312,8 @@ class PersistenceErrorTest : AbstractTest() {
                 .setCancelAllPreviousLimitOrders(cancel)
         volumes.forEach{ volume ->
             orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume)
-                    .setPrice(volume.price)
+                    .setVolume(volume.volume.toDouble())
+                    .setPrice(volume.price.toDouble())
                     .build())
         }
         return orderBuilder.build()

@@ -130,7 +130,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                            assetOrderBooks: Map<String, TAssetOrderBook>): TCancelResult
 
     fun persistenceData(): OrderBooksPersistenceData {
-        val ordersToRemove = mutableListOf<NewLimitOrder>()
+        val ordersToRemove = mutableListOf<LimitOrder>()
         ordersToRemove.addAll(ordersToCancel.values.flatMap { it.values.flatMap { it } })
         ordersToRemove.addAll(this.ordersToRemove.values.flatMap { it.values.flatMap { it } })
 

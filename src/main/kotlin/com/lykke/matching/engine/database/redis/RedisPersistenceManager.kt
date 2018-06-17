@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.database.redis
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
@@ -44,8 +44,8 @@ class RedisPersistenceManager(
         private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
 
-        fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<NewLimitOrder>): List<OrderBookPersistenceData> {
-            val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<NewLimitOrder>>>()
+        fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>): List<OrderBookPersistenceData> {
+            val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()
             orders.forEach { order ->
                 orderBooks.getOrPut(order.assetPairId) { mutableMapOf() }
                         .getOrPut(order.isBuySide()) { mutableListOf() }

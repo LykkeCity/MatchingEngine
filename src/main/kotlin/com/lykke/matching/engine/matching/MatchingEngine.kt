@@ -55,8 +55,8 @@ class MatchingEngine(private val LOGGER: Logger,
         copyWrappers.forEach { it.applyToOrigin() }
     }
 
-    fun updatedOrders(orderBook: Collection<NewLimitOrder>, newOrders: Collection<NewLimitOrder>): UpdatedOrders {
-        val updatedOrderBook = ArrayList<NewLimitOrder>(orderBook.size)
+    fun updatedOrders(orderBook: Collection<LimitOrder>, newOrders: Collection<LimitOrder>): UpdatedOrders {
+        val updatedOrderBook = ArrayList<LimitOrder>(orderBook.size)
         val updatedOrders = newOrders.toMutableSet()
         orderBook.forEach { order ->
             val updatedOrder = changedOrders[order]?.copy
@@ -307,7 +307,7 @@ class MatchingEngine(private val LOGGER: Logger,
         if (order.takePrice() != null && remainingVolume >  BigDecimal.ZERO) {
             if (originOrder.volume != remainingVolume) {
                 order.updateStatus(OrderStatus.Processing, now)
-                order.updateRemainingVolume(if (order.isBuySide() || remainingVolume == BigDecimal.ZERO) remainingVolume else -remainingVolume)
+                order.updateRemainingVolume(if (order.isBuySide() || remainingVolume.compareTo(BigDecimal.ZERO) == 0) remainingVolume else -remainingVolume)
             }
         } else {
             order.updateStatus(OrderStatus.Matched, now)

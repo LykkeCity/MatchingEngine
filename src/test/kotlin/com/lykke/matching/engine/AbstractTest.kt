@@ -2,7 +2,7 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
@@ -227,7 +227,7 @@ abstract class AbstractTest {
             val primaryDbOrders = ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders()
             val secondaryDbOrders = ordersDatabaseAccessorsHolder.secondaryAccessor!!.loadLimitOrders()
             val cacheOrders = genericLimitOrderService.getAllOrderBooks().values.flatMap {
-                val orders = mutableListOf<NewLimitOrder>()
+                val orders = mutableListOf<LimitOrder>()
                 orders.addAll(it.getOrderBook(false))
                 orders.addAll(it.getOrderBook(true))
                 orders
@@ -237,7 +237,7 @@ abstract class AbstractTest {
         }
     }
 
-    private fun assertEqualsOrderLists(orders1: Collection<NewLimitOrder>, orders2: Collection<NewLimitOrder>) {
+    private fun assertEqualsOrderLists(orders1: Collection<LimitOrder>, orders2: Collection<LimitOrder>) {
         val ordersMap1 = orders1.groupBy { it.id }.mapValues { it.value.first() }
         val ordersMap2 = orders2.groupBy { it.id }.mapValues { it.value.first() }
         assertEquals(ordersMap1.size, ordersMap2.size)
@@ -249,7 +249,7 @@ abstract class AbstractTest {
 
     }
 
-    private fun assertEqualsOrders(order1: NewLimitOrder, order2: NewLimitOrder) {
+    private fun assertEqualsOrders(order1: LimitOrder, order2: LimitOrder) {
         assertEquals(order1.id, order2.id)
         assertEquals(order1.externalId, order2.externalId)
         assertEquals(order1.status, order2.status)

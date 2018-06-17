@@ -45,7 +45,7 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             return this
         }
         val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
-        operations.filter { !(it.amount == 0.0 && applicationSettings.isTrustedClient(it.clientId)) }
+        operations.filter { !(it.amount.compareTo(BigDecimal.ZERO) == 0 && applicationSettings.isTrustedClient(it.clientId)) }
                 .forEach { operation ->
             val key = key(operation)
             val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
