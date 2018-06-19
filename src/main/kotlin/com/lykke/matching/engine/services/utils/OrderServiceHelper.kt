@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services.utils
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.matching.MatchingResult
 import com.lykke.matching.engine.order.OrderStatus
@@ -20,7 +20,9 @@ class OrderServiceHelper(private val genericLimitOrderService: GenericLimitOrder
             uncompletedLimitOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(listOf(uncompletedLimitOrder))
             walletOperations.addAll(result.walletOperations)
-            LOGGER.info("Order (id: ${uncompletedLimitOrder.externalId}) is cancelled due to min remaining volume (${NumberUtils.roundForPrint(uncompletedLimitOrder.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+            LOGGER.info("Order (id: ${uncompletedLimitOrder.externalId}) " +
+                    "is cancelled due to min remaining volume " +
+                    "(${NumberUtils.roundForPrint(uncompletedLimitOrder.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
             return false
         }
         return true
@@ -28,7 +30,7 @@ class OrderServiceHelper(private val genericLimitOrderService: GenericLimitOrder
 
     fun processUncompletedOrder(matchingResult: MatchingResult,
                                 preProcessUncompletedOrder: Boolean,
-                                ordersToCancel: MutableCollection<NewLimitOrder>) {
+                                ordersToCancel: MutableCollection<LimitOrder>) {
         val uncompletedLimitOrder = matchingResult.uncompletedLimitOrder ?: return
         if (!preProcessUncompletedOrder) {
             ordersToCancel.add(uncompletedLimitOrder)

@@ -1,13 +1,14 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
+import java.math.BigDecimal
 import java.util.Comparator
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
+class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
 
-    val SELL_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
+    val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
         var result = o1.price.compareTo(o2.price)
         if (result == 0) {
             result = o1.createdAt.compareTo(o2.createdAt)
@@ -16,7 +17,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
         result
     })
 
-    val BUY_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
+    val BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
         var result = o2.price.compareTo(o1.price)
         if (result == 0) {
             result = o1.createdAt.compareTo(o2.createdAt)
@@ -25,21 +26,21 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
         result
     })
 
-    private var askOrderBook = PriorityBlockingQueue<NewLimitOrder>(50, SELL_COMPARATOR)
-    private var bidOrderBook = PriorityBlockingQueue<NewLimitOrder>(50, BUY_COMPARATOR)
+    private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
+    private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
 
-    fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
+    override fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
 
-    fun setOrderBook(isBuySide: Boolean, queue: PriorityBlockingQueue<NewLimitOrder>) = if (isBuySide) bidOrderBook = queue else askOrderBook = queue
+    fun setOrderBook(isBuySide: Boolean, queue: PriorityBlockingQueue<LimitOrder>) = if (isBuySide) bidOrderBook = queue else askOrderBook = queue
 
-    fun addOrder(order: NewLimitOrder) = getOrderBook(order.isBuySide()).add(order)
+    fun addOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).add(order)
 
-    override fun removeOrder(order: NewLimitOrder) = getOrderBook(order.isBuySide()).remove(order)
+    override fun removeOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).remove(order)
 
-    fun getAskPrice() = askOrderBook.peek()?.price ?: 0.0
-    fun getBidPrice() = bidOrderBook.peek()?.price ?: 0.0
+    fun getAskPrice() = askOrderBook.peek()?.price ?: BigDecimal.ZERO
+    fun getBidPrice() = bidOrderBook.peek()?.price ?: BigDecimal.ZERO
 
-    fun leadToNegativeSpread(order: NewLimitOrder): Boolean {
+    fun leadToNegativeSpread(order: LimitOrder): Boolean {
         val book = getOrderBook(!order.isBuySide())
         if (book.isEmpty()) {
             return false
@@ -53,7 +54,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
         }
     }
 
-    fun leadToNegativeSpreadForClient(order: NewLimitOrder): Boolean {
+    fun leadToNegativeSpreadForClient(order: LimitOrder): Boolean {
         val book = getCopyOfOrderBook(!order.isBuySide())
         if (book.isEmpty()) {
             return false
@@ -70,7 +71,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
         return false
     }
 
-    fun leadToNegativeSpreadByOtherClient(order: NewLimitOrder): Boolean {
+    fun leadToNegativeSpreadByOtherClient(order: LimitOrder): Boolean {
         val book = getCopyOfOrderBook(!order.isBuySide())
         if (book.isEmpty()) {
             return false
@@ -88,7 +89,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
     }
 
     override fun copy() : AssetOrderBook {
-        val book = AssetOrderBook(assetId)
+        val book = AssetOrderBook(assetPairId)
 
         askOrderBook.forEach {
             book.askOrderBook.put(it)
@@ -103,7 +104,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
 
     fun getCopyOfOrderBook(isBuySide: Boolean) = if (isBuySide) copyQueue(bidOrderBook) else copyQueue(askOrderBook)
 
-    fun copyQueue(queue: PriorityBlockingQueue<NewLimitOrder>): PriorityBlockingQueue<NewLimitOrder> {
+    fun copyQueue(queue: PriorityBlockingQueue<LimitOrder>): PriorityBlockingQueue<LimitOrder> {
         return PriorityBlockingQueue(queue)
     }
 }

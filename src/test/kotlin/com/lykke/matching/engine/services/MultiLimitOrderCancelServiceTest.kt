@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -7,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestOrderBookDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -45,6 +46,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
 
     @Before
     fun setUp() {
+        val testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestOrderBookDatabaseAccessor
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
@@ -58,7 +60,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.3, price = 10500.0))
         val partiallyMatchedTrustedClientOrder = buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.7, price = 11500.0)
-        partiallyMatchedTrustedClientOrder.remainingVolume = -0.6
+        partiallyMatchedTrustedClientOrder.remainingVolume = BigDecimal.valueOf(-0.6)
         testOrderDatabaseAccessor.addLimitOrder(partiallyMatchedTrustedClientOrder)
 
         initServices()

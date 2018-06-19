@@ -9,8 +9,6 @@ import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
@@ -20,14 +18,13 @@ import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.keepalive.MeIsAliveResponseGetter
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -44,7 +41,6 @@ import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
-import com.lykke.matching.engine.performance.PerformanceStatsLogger
 import com.lykke.matching.engine.services.AbstractService
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
@@ -68,14 +64,11 @@ import com.lykke.matching.engine.services.validators.CashTransferOperationValida
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.QueueSizeLogger
-import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
-import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.AppVersion
-import com.lykke.utils.keepalive.http.KeepAliveStarter
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
@@ -115,7 +108,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
-    private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
     private val persistenceManager: PersistenceManager
 
@@ -147,7 +139,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private var hoursCandlesBuilder: Timer? = null
     private var historyTicksBuilder: Timer? = null
 
-    private val performanceStatsHolder = PerformanceStatsHolder()
+    private val performanceStatsHolder: PerformanceStatsHolder
 
     val appInitialData: AppInitialData
 
@@ -157,6 +149,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
+        performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
+
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
@@ -166,7 +160,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         this.limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
-        this.orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
@@ -175,8 +168,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
-        val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
 
+        val orderBookDatabaseAccessor = applicationContext.getBean(OrdersDatabaseAccessorsHolder::class.java).primaryAccessor
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
@@ -184,7 +177,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 tradesInfoQueue,
                 quotesNotificationQueue, applicationSettingsCache)
 
-        val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
+        val stopOrderBookDatabaseAccessor = applicationContext.getBean(StopOrdersDatabaseAccessorsHolder::class.java).primaryAccessor
+        val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService, persistenceManager)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder,
@@ -237,7 +231,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 rabbitClientLimitOrdersQueue,
                 orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
 
-        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
 
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
@@ -325,28 +319,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
                 queueSizeLogger.log()
             }
-
-            val healthService = MonitoringStatsCollector()
-            val monitoringDatabaseAccessor = applicationContext.getBean(MonitoringDatabaseAccessor::class.java)
-            fixedRateTimer(name = "Monitoring", initialDelay = 5 * 60 * 1000, period = 5 * 60 * 1000) {
-                val result = healthService.collectMonitoringResult()
-                if (result != null) {
-                    MONITORING_LOGGER.info("CPU: ${NumberUtils.roundForPrint2(result.vmCpuLoad)}/${NumberUtils.roundForPrint2(result.totalCpuLoad)}, " +
-                            "RAM: ${result.freeMemory}/${result.totalMemory}, " +
-                            "heap: ${result.freeHeap}/${result.totalHeap}/${result.maxHeap}, " +
-                            "swap: ${result.freeSwap}/${result.totalSwap}, " +
-                            "threads: ${result.threadsCount}")
-
-                    monitoringDatabaseAccessor.saveMonitoringResult(result)
-                }
-            }
-
-            val performanceStatsLogger = PerformanceStatsLogger(monitoringDatabaseAccessor)
-            fixedRateTimer(name = "PerformanceStatsLogger", initialDelay = config.me.performanceStatsInterval, period = config.me.performanceStatsInterval) {
-                performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
-            }
-
-            KeepAliveStarter.start(config.me.keepAlive, MeIsAliveResponseGetter(healthMonitor), AppVersion.VERSION)
         }
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)

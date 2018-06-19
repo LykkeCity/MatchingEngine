@@ -1,35 +1,72 @@
 package com.lykke.matching.engine.daos
 
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import java.io.Serializable
+import java.math.BigDecimal
 import java.util.Date
 
-open class Order: Serializable {
-    var id: String = ""
-    var externalId: String = ""
-    var assetPairId: String = ""
-    var clientId: String = ""
-    var volume: Double = 0.0
-    var status: String = ""
-    var createdAt: Date = Date()
-    var registered: Date = Date()
+abstract class Order(
+        val id: String,
+        val externalId: String,
+        val assetPairId: String,
+        val clientId: String,
+        val volume: BigDecimal,
+        status: String,
+        val createdAt: Date,
+        val registered: Date,
+        var reservedLimitVolume: BigDecimal?,
+        val fee: FeeInstruction?,
+        val fees: List<NewFeeInstruction>?,
+        statusDate: Date?
+) : Serializable, Copyable {
 
-    constructor()
-    constructor(id: String, externalId: String, assetPairId: String, clientId: String, volume: Double, status: String, createdAt: Date, registered: Date) {
-        this.id = id
-        this.externalId = externalId
-        this.assetPairId = assetPairId
-        this.clientId = clientId
-        this.volume = volume
-        this.status = status
-        this.createdAt = createdAt
-        this.registered = registered
-    }
+    var status = status
+        private set
 
-    fun getAbsVolume(): Double {
-        return Math.abs(volume)
+    var statusDate = statusDate
+        private set
+
+    fun getAbsVolume(): BigDecimal {
+        return volume.abs()
     }
 
     open fun isBuySide(): Boolean {
-        return volume > 0
+        return NumberUtils.isPositive(volume)
+    }
+
+    abstract fun isOrigBuySide(): Boolean
+    abstract fun isStraight(): Boolean
+    abstract fun calculateReservedVolume(): BigDecimal
+    abstract fun updateMatchTime(time: Date)
+    abstract fun takePrice(): BigDecimal?
+    abstract fun updatePrice(price: BigDecimal)
+    abstract fun updateRemainingVolume(volume: BigDecimal)
+
+    fun checkVolume(assetPair: AssetPair): Boolean {
+        val volume = getAbsVolume()
+        val minVolume = if (isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
+        return minVolume == null || volume >= minVolume
+    }
+
+    fun updateStatus(status: OrderStatus, date: Date) {
+        if (status.name != this.status) {
+            this.status = status.name
+            this.statusDate = date
+        }
+    }
+
+    fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
+        return checkVolume(assetsPairsHolder.getAssetPair(assetPairId))
+    }
+
+    override fun applyToOrigin(origin: Copyable) {
+        origin as Order
+        origin.status = status
+        origin.statusDate = statusDate
+        origin.reservedLimitVolume = reservedLimitVolume
     }
 }

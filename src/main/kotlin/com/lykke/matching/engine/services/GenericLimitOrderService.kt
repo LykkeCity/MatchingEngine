@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.BestPrice
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -12,6 +12,7 @@ import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
@@ -29,17 +30,24 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                applicationSettingsCache: ApplicationSettingsCache): AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
-        val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
+        private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
     }
 
     //asset -> orderBook
     private val limitOrdersQueues = ConcurrentHashMap<String, AssetOrderBook>()
-    private val limitOrdersMap = HashMap<String, NewLimitOrder>()
-    private val clientLimitOrdersMap = HashMap<String, MutableList<NewLimitOrder>>()
+    private val limitOrdersMap = HashMap<String, LimitOrder>()
+    private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
     private val walletOperationsCalculator: WalletOperationsCalculator = WalletOperationsCalculator(assetsPairsHolder, balancesHolder, applicationSettingsCache)
-    val initialOrdersCount: Int
+    var initialOrdersCount = 0
 
     init {
+        update()
+    }
+
+    fun update() {
+        limitOrdersQueues.clear()
+        limitOrdersMap.clear()
+        clientLimitOrdersMap.clear()
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
@@ -47,33 +55,29 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         initialOrdersCount = orders.size
     }
 
-    private fun addToOrderBook(order: NewLimitOrder) {
+    private fun addToOrderBook(order: LimitOrder) {
         val orderBook = limitOrdersQueues.getOrPut(order.assetPairId) { AssetOrderBook(order.assetPairId) }
         orderBook.addOrder(order)
         addOrder(order)
     }
 
-    fun addOrder(order: NewLimitOrder) {
+    fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
         quotesNotificationQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
-    fun addOrders(orders: List<NewLimitOrder>) {
+    fun addOrders(orders: List<LimitOrder>) {
         orders.forEach { order ->
             addOrder(order)
         }
     }
 
-    fun moveOrdersToDone(orders: List<NewLimitOrder>) {
+    fun moveOrdersToDone(orders: List<LimitOrder>) {
         orders.forEach { order ->
             limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)
         }
-    }
-
-    override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {
-        orderBookDatabaseAccessor.updateOrderBook(assetPairId, isBuy, getOrderBook(assetPairId).getCopyOfOrderBook(isBuy))
     }
 
     fun getAllOrderBooks() = limitOrdersQueues
@@ -84,11 +88,11 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         limitOrdersQueues[assetPairId] = assetOrderBook
     }
 
-    fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<NewLimitOrder>){
+    fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<LimitOrder>){
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
     }
 
-    fun checkAndReduceBalance(order: NewLimitOrder, volume: Double, limitBalances: MutableMap<String, Double>): Boolean {
+    fun checkAndReduceBalance(order: LimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
         val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
@@ -96,15 +100,15 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         val result = availableBalance >= volume
         LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
         if (result) {
-            limitBalances[order.clientId] = NumberUtils.parseDouble(availableBalance - volume, accuracy).toDouble()
+            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
         }
         return result
     }
 
     fun getOrder(uid: String) = limitOrdersMap[uid]
 
-    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<NewLimitOrder> {
-        val result = LinkedList<NewLimitOrder>()
+    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<LimitOrder> {
+        val result = LinkedList<LimitOrder>()
         clientLimitOrdersMap[clientId]?.forEach { limitOrder ->
             if (limitOrder.assetPairId == (assetPair ?: limitOrder.assetPairId) && limitOrder.isBuySide() == (isBuy ?: limitOrder.isBuySide())) {
                 result.add(limitOrder)
@@ -113,7 +117,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         return result
     }
 
-    fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): NewLimitOrder? {
+    fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): LimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
 
         if (removeFromClientMap) {
@@ -122,16 +126,15 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
         getOrderBook(order.assetPairId).removeOrder(order)
         order.updateStatus(Cancelled, date)
-        updateOrderBook(order.assetPairId, order.isBuySide())
         return order
     }
 
     private fun removeFromClientMap(uid: String): Boolean {
-        val order: NewLimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull{it.externalId == uid} ?: return false
+        val order: LimitOrder = clientLimitOrdersMap.values.firstOrNull { it.any { it.externalId == uid } }?.firstOrNull{it.externalId == uid} ?: return false
         return clientLimitOrdersMap[order.clientId]?.remove(order) ?: false
     }
 
-    override fun cancelLimitOrders(orders: Collection<NewLimitOrder>, date: Date) {
+    override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)
@@ -151,15 +154,15 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
         limitOrdersQueues.values.forEach { book ->
             val askPrice = book.getAskPrice()
             val bidPrice = book.getBidPrice()
-            if (askPrice > 0 || bidPrice > 0) {
-                result.add(BestPrice(book.assetId, askPrice, bidPrice))
+            if (askPrice > BigDecimal.ZERO || bidPrice > BigDecimal.ZERO) {
+                result.add(BestPrice(book.assetPairId, askPrice, bidPrice))
             }
         }
 
         return result
     }
 
-    fun calculateWalletOperationsForCancelledOrders(orders: List<NewLimitOrder>): CancelledOrdersOperationsResult {
+    fun calculateWalletOperationsForCancelledOrders(orders: List<LimitOrder>): CancelledOrdersOperationsResult {
         return walletOperationsCalculator.calculateForCancelledOrders(orders)
     }
 }

@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -48,24 +48,24 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             clientsLimitOrdersQueue,
             date)
 
-    fun preProcessLimitOrders(orders: Collection<NewLimitOrder>): GenericLimitOrdersCanceller {
+    fun preProcessLimitOrders(orders: Collection<LimitOrder>): GenericLimitOrdersCanceller {
         limitOrdersCanceller.preProcess(orders)
         return this
     }
 
-    fun preProcessStopLimitOrders(orders: Collection<NewLimitOrder>): GenericLimitOrdersCanceller {
+    fun preProcessStopLimitOrders(orders: Collection<LimitOrder>): GenericLimitOrdersCanceller {
         stopLimitOrdersCanceller.preProcess(orders)
         return this
     }
 
-    fun preProcessLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<NewLimitOrder>>>,
-                              ordersToRemove: Map<String, Map<Boolean, Collection<NewLimitOrder>>>): GenericLimitOrdersCanceller {
+    fun preProcessLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<LimitOrder>>>,
+                              ordersToRemove: Map<String, Map<Boolean, Collection<LimitOrder>>>): GenericLimitOrdersCanceller {
         limitOrdersCanceller.preProcess(ordersToCancel, ordersToRemove)
         return this
     }
 
-    fun preProcessStopLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<NewLimitOrder>>>,
-                                  ordersToRemove: Map<String, Map<Boolean, Collection<NewLimitOrder>>>): GenericLimitOrdersCanceller {
+    fun preProcessStopLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<LimitOrder>>>,
+                                  ordersToRemove: Map<String, Map<Boolean, Collection<LimitOrder>>>): GenericLimitOrdersCanceller {
         stopLimitOrdersCanceller.preProcess(ordersToCancel, ordersToRemove)
         return this
     }
@@ -85,7 +85,9 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
         walletProcessor.preProcess(limitOrdersCancelResult.walletOperations)
         walletProcessor.preProcess(stopLimitOrdersResult.walletOperations)
-        val updated = walletProcessor.persistBalances(processedMessage)
+        val updated = walletProcessor.persistBalances(processedMessage,
+                limitOrdersCanceller.persistenceData(),
+                stopLimitOrdersCanceller.persistenceData())
         if (!updated) {
             return false
         }

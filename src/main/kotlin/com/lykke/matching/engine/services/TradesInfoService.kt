@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -28,7 +29,7 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
 
     val candles = HashMap<String, HashMap<String, HashMap<Int, Tick>>>()
     val savedHoursCandles = limitOrderDatabaseAccessor.getHoursCandles()
-    val hoursCandles = HashMap<String, Double>()
+    val hoursCandles = HashMap<String, BigDecimal>()
 
     val bid = "Bid"
     val ask = "Ask"

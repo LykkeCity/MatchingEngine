@@ -1,18 +1,18 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBook {
-
+class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairId) {
     companion object {
 
         private val LOGGER = Logger.getLogger(AssetStopOrderBook::class.java.name)
 
-        private val LOWER_SELL_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
+        private val LOWER_SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
             var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)
             if (result == 0) {
                 result = o1.lowerPrice!!.compareTo(o2.lowerPrice!!)
@@ -24,7 +24,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
             result
         })
 
-        private val UPPER_SELL_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
+        private val UPPER_SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
             var result = o1.upperLimitPrice!!.compareTo(o2.upperLimitPrice!!)
             if (result == 0) {
                 result = o1.upperPrice!!.compareTo(o2.upperPrice!!)
@@ -36,7 +36,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
             result
         })
 
-        private val LOWER_BUY_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
+        private val LOWER_BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
             var result = o2.lowerLimitPrice!!.compareTo(o1.lowerLimitPrice!!)
             if (result == 0) {
                 result = o2.lowerPrice!!.compareTo(o1.lowerPrice!!)
@@ -48,7 +48,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
             result
         })
 
-        private val UPPER_BUY_COMPARATOR = Comparator<NewLimitOrder>({ o1, o2 ->
+        private val UPPER_BUY_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
             var result = o1.upperLimitPrice!!.compareTo(o2.upperLimitPrice!!)
             if (result == 0) {
                 result = o2.upperPrice!!.compareTo(o1.upperPrice!!)
@@ -61,17 +61,17 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
         })
     }
 
-    private var lowerAskOrderBook = PriorityBlockingQueue<NewLimitOrder>(50, LOWER_SELL_COMPARATOR)
-    private var upperAskOrderBook = PriorityBlockingQueue<NewLimitOrder>(50, UPPER_SELL_COMPARATOR)
-    private var lowerBidOrderBook = PriorityBlockingQueue<NewLimitOrder>(50, LOWER_BUY_COMPARATOR)
-    private var upperBidOrderBook = PriorityBlockingQueue<NewLimitOrder>(50, UPPER_BUY_COMPARATOR)
+    private var lowerAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_SELL_COMPARATOR)
+    private var upperAskOrderBook = PriorityBlockingQueue<LimitOrder>(50, UPPER_SELL_COMPARATOR)
+    private var lowerBidOrderBook = PriorityBlockingQueue<LimitOrder>(50, LOWER_BUY_COMPARATOR)
+    private var upperBidOrderBook = PriorityBlockingQueue<LimitOrder>(50, UPPER_BUY_COMPARATOR)
 
-    private val askOrderBook = ConcurrentHashMap<String, NewLimitOrder>(50)
-    private val bidOrderBook = ConcurrentHashMap<String, NewLimitOrder>(50)
+    private val askOrderBook = ConcurrentHashMap<String, LimitOrder>(50)
+    private val bidOrderBook = ConcurrentHashMap<String, LimitOrder>(50)
 
-    fun getOrderBook(isBuySide: Boolean) = (if (isBuySide) bidOrderBook else askOrderBook).values.toList()
+    override fun getOrderBook(isBuySide: Boolean) = (if (isBuySide) bidOrderBook else askOrderBook).values.toList()
 
-    fun addOrder(order: NewLimitOrder) {
+    fun addOrder(order: LimitOrder) {
         if (order.assetPairId != assetPairId) {
             LOGGER.error("Unable to add order ${order.externalId} (order asset pair: ${order.assetPairId}, order book asset pair: $assetPairId)")
             return
@@ -95,7 +95,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
         }
     }
 
-    override fun removeOrder(order: NewLimitOrder): Boolean {
+    override fun removeOrder(order: LimitOrder): Boolean {
         if (order.assetPairId != assetPairId) {
             LOGGER.error("Unable to remove order ${order.externalId} (order asset pair: ${order.assetPairId}, order book asset pair: $assetPairId)")
             return false
@@ -137,10 +137,10 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
         }
         book.askOrderBook.putAll(askOrderBook)
         book.bidOrderBook.putAll(bidOrderBook)
-        return book;
+        return book
     }
 
-    fun getOrder(price: Double, isBuySide: Boolean, isLowerSide: Boolean): NewLimitOrder? {
+    fun getOrder(price: BigDecimal, isBuySide: Boolean, isLowerSide: Boolean): LimitOrder? {
         val order = (if (isBuySide) {
             if (isLowerSide) lowerBidOrderBook else upperBidOrderBook
         } else {

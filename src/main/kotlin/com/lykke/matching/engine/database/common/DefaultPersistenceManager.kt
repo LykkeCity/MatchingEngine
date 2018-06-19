@@ -1,7 +1,9 @@
 package com.lykke.matching.engine.database.common
 
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -9,6 +11,8 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 
 class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor,
+                                private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+                                private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                 private val fileProcessedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor)
     : PersistenceManager {
 
@@ -18,8 +22,12 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     }
 
     override fun balancesQueueSize() = 0
+    override fun ordersQueueSize() = 0
 
     override fun persist(data: PersistenceData): Boolean {
+        if (data.isEmpty()) {
+            return true
+        }
         return try {
             persistData(data)
             true
@@ -41,8 +49,14 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     }
 
     private fun persistData(data: PersistenceData) {
-        if (data.balancesData != null) {
+        if (data.balancesData?.wallets?.isNotEmpty() == true) {
             walletDatabaseAccessor.insertOrUpdateWallets(data.balancesData.wallets.toList())
+        }
+        data.orderBooksData?.orderBooks?.forEach {
+            orderBookDatabaseAccessor.updateOrderBook(it.assetPairId, it.isBuy, it.orders)
+        }
+        data.stopOrderBooksData?.orderBooks?.forEach {
+            stopOrderBookDatabaseAccessor.updateStopOrderBook(it.assetPairId, it.isBuy, it.orders)
         }
         persistProcessedMessages(data.processedMessage)
     }

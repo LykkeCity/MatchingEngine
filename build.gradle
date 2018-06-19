@@ -43,6 +43,7 @@ ext {
     junit_version = '4.12'
     mockito_kotlin_version = '1.5.0'
     jedis_version = '2.9.0'
+    big_math_version = '2.0.0'
 }
 
 dependencies {
@@ -61,6 +62,7 @@ dependencies {
     compile "com.rabbitmq:amqp-client:$rabbit_mq_version"
     compile "de.ruedigermoeller:fst:$fst_version"
     compile "redis.clients:jedis:$jedis_version"
+    compile "ch.obermuhlner:big-math:$big_math_version"
 
     compile('org.springframework.boot:spring-boot-starter')
 
@@ -73,6 +75,7 @@ dependencies {
 compileKotlin {
     kotlinOptions {
         apiVersion = "1.2"
+        jvmTarget = "1.8"
     }
 }
 

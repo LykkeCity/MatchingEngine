@@ -21,10 +21,12 @@ class QueueSizeLogger(
 
     fun log() {
         val balancesQueueSize = persistenceManager.balancesQueueSize()
+        val ordersQueueSize = persistenceManager.ordersQueueSize()
         LOGGER.info("Incoming queue: ${queue.size}. " +
                 "Order Book queue: ${orderBookQueue.size}. " +
                 "Rabbit Order Book queue ${rabbitOrderBookQueue.size}. " +
-                "Balances queue $balancesQueueSize.")
+                "Balances queue $balancesQueueSize. " +
+                "Persistence orders queue $ordersQueueSize.")
 
         if (queue.size > queueSizeLimit) {
             METRICS_LOGGER.logError( "Internal queue size is higher than limit")
@@ -40,6 +42,10 @@ class QueueSizeLogger(
 
         if (balancesQueueSize > queueSizeLimit) {
             METRICS_LOGGER.logError( "Balances queue size is higher than limit")
+        }
+
+        if (ordersQueueSize > queueSizeLimit) {
+            METRICS_LOGGER.logError( "Persistence orders queue size is higher than limit")
         }
     }
 }

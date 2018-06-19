@@ -9,6 +9,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.*
 
 @Component
@@ -21,8 +22,12 @@ class CashSwapOperationValidatorImpl @Autowired constructor(private val balances
 
     override fun performValidation(message: ProtocolMessages.CashSwapOperation, operationId: String) {
         val operation = SwapOperation(operationId, message.id, Date(message.timestamp),
-                message.clientId1, message.assetId1, message.volume1,
-                message.clientId2, message.assetId2, message.volume2)
+                message.clientId1,
+                message.assetId1,
+                BigDecimal.valueOf(message.volume1),
+                message.clientId2,
+                message.assetId2,
+                BigDecimal.valueOf(message.volume2))
 
         isBalanceValid(message.clientId1, message.assetId1, message.volume1, operation)
         isBalanceValid(message.clientId2, message.assetId2, message.volume2, operation)
@@ -42,7 +47,8 @@ class CashSwapOperationValidatorImpl @Autowired constructor(private val balances
     }
 
     private fun isAccuracyValid(assetId: String, volume: Double, operation: SwapOperation) {
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(volume),
+                assetsHolder.getAsset(assetId).accuracy)
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy invalid, assetId: $assetId, clientId1 ${operation.clientId1}, " +
