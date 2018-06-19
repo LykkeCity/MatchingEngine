@@ -238,6 +238,7 @@ class FeeTest: AbstractTest() {
                             makerSize = 0.01,
                             targetClientId = "Client3",
                             assetIds = listOf("BTC"))!!))))
+            Thread.sleep(10)
         }
 
         assertEquals(5, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
@@ -274,6 +275,7 @@ class FeeTest: AbstractTest() {
                             makerSize = 0.01,
                             targetClientId = "Client3",
                             assetIds = listOf("BTC"))!!))))
+            Thread.sleep(10)
         }
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
@@ -426,6 +428,7 @@ class FeeTest: AbstractTest() {
                             makerSize = feeSize,
                             targetClientId = "Client3",
                             assetIds = listOf("BTC"))!!))))
+            Thread.sleep(10)
         }
 
         balanceUpdateHandlerTest.clear()
@@ -493,6 +496,7 @@ class FeeTest: AbstractTest() {
                             makerSize = feeSize,
                             targetClientId = "Client3",
                             assetIds = listOf("EUR"))!!))))
+            Thread.sleep(10)
         }
 
         balanceUpdateHandlerTest.clear()
