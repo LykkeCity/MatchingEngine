@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -28,7 +27,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             val updated = genericLimitOrdersCancellerFactory.create(LOGGER, now)
                     .preProcessLimitOrders(ordersToCancel)
                     .applyFull(message.uid, messageWrapper.messageId!!,
-                            ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                            messageWrapper.processedMessage(),
                             MessageType.MULTI_LIMIT_ORDER_CANCEL.name, false)
             messageWrapper.processedMessagePersisted = true
             if (!updated) {

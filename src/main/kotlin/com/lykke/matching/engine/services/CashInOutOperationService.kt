@@ -4,7 +4,6 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.Fee
 import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -73,7 +72,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
             return
         }
 
-        val updated = walletProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage())
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
