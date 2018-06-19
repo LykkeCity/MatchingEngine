@@ -41,7 +41,7 @@ class RedisPersistenceManager(
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
-        private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
+        private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.performance")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
 
         fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<NewLimitOrder>): List<OrderBookPersistenceData> {
