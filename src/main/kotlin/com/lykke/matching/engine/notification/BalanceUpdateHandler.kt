@@ -20,9 +20,13 @@ class BalanceUpdateHandler {
     private val connections = CopyOnWriteArrayList<ClientHandler>()
 
     @EventListener
-    fun processBalanceUpdate(notification: BalanceUpdateNotification) {
+    fun processBalanceUpdate(event: BalanceUpdateNotificationEvent) {
             if (connections.size > 0) {
-                val protoNotification = ProtocolMessages.BalanceNotification.newBuilder().setClientId(notification.clientId).build()
+                val protoNotification = ProtocolMessages.BalanceNotification
+                        .newBuilder()
+                        .setClientId(event.balanceUpdateNotification.clientId)
+                        .build()
+
                 val disconnected = LinkedList<ClientHandler>()
                 connections.forEach {
                     try {

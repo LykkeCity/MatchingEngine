@@ -84,7 +84,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
             feeInstruction = null
             feeInstructions = null
             MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
-                    Processing.name, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume))
+                    Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume))
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
@@ -95,14 +95,14 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     "straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
             MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
-                    Processing.name, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
+                    Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                     feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
         try {
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {
-            order.status = e.orderStatus.name
+            order.updateStatus(e.orderStatus, now)
             rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
             writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
             return
@@ -136,7 +136,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
                     val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
                         val cancelledOrder = it.copy
-                        cancelledOrder.status = OrderStatus.Cancelled.name
+                        cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                         cancelledOrder
                     })
                     cancelledOrdersWalletOperations.addAll(result.walletOperations)
@@ -155,7 +155,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     }
                     true
                 } catch (e: BalanceException) {
-                    order.status = OrderStatus.NotEnoughFunds.name
+                    order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
                     rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
                     LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
                     writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), e.message)
@@ -179,7 +179,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders.map { it.origin!! })
                     val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
                     orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
-                    genericLimitOrderService.cancelLimitOrders(ordersToCancel)
+                    genericLimitOrderService.cancelLimitOrders(ordersToCancel, matchingResult.timestamp)
 
                     trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)

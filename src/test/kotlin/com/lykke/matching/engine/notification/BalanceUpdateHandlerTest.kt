@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.rabbit.events.BalanceUpdateEvent
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.*
@@ -12,13 +13,13 @@ class BalanceUpdateHandlerTest {
     val balanceUpdateQueueNotification: Queue<BalanceUpdateNotification> = LinkedBlockingQueue()
 
     @EventListener
-    fun processBalanceUpdate(notification: BalanceUpdate) {
-        balanceUpdateQueue.add(notification)
+    fun processBalanceUpdate(event: BalanceUpdateEvent ) {
+        balanceUpdateQueue.add(event.balanceUpdate)
     }
 
     @EventListener
-    fun balanceUpdateNotification(balanceUpdateNotification: BalanceUpdateNotification) {
-        balanceUpdateQueueNotification.add(balanceUpdateNotification)
+    fun balanceUpdateNotification(event: BalanceUpdateNotificationEvent) {
+        balanceUpdateQueueNotification.add(event.balanceUpdateNotification)
     }
 
     fun getCountOfBalanceUpdate(): Int {

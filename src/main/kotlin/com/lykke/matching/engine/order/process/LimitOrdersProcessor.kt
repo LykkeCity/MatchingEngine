@@ -118,7 +118,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         matchingEngine.apply()
 
         genericLimitOrderService.moveOrdersToDone(completedOrders)
-        genericLimitOrderService.cancelLimitOrders(ordersToCancel)
+        genericLimitOrderService.cancelLimitOrders(ordersToCancel, date)
         genericLimitOrderService.addOrders(ordersToAdd)
         genericLimitOrderService.setOrderBook(assetPair.assetPairId, orderBook)
 
@@ -165,7 +165,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             validateLimitOrder(order, orderBook, assetPair, availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
             LOGGER.info(e.message)
-            order.status = e.orderStatus.name
+            order.updateStatus(e.orderStatus, date)
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, e.message))
             return
@@ -200,7 +200,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
                         val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
                             val cancelledOrder = it.copy
-                            cancelledOrder.status = OrderStatus.Cancelled.name
+                            cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                             cancelledOrder
                         })
                         cancelledOrdersWalletOperations.addAll(result.walletOperations)
@@ -213,7 +213,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     if (orderCopy.status == OrderStatus.Processing.name) {
                         if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
                             LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
-                            orderCopy.status = OrderStatus.Cancelled.name
+                            orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                         } else {
                             orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                             if (!isTrustedClient) {
@@ -233,7 +233,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     } catch (e: BalanceException) {
                         val message = "$orderInfo: Unable to process wallet operations after matching: ${e.message}"
                         LOGGER.error(message)
-                        order.status = OrderStatus.NotEnoughFunds.name
+                        order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
                         addToReportIfNotTrusted(order)
                         processedOrders.add(ProcessedOrder(order, false, message))
                         return
@@ -257,9 +257,26 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
                     lkkTrades.addAll(matchingResult.lkkTrades)
 
-                    clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order, matchingResult.marketOrderTrades.map { it ->
-                        LimitTradeInfo(it.tradeId, it.marketClientId, it.marketAsset, it.marketVolume, it.price, it.timestamp, it.limitOrderId, it.limitOrderExternalId, it.limitAsset, it.limitClientId, it.limitVolume, it.index, it.feeInstruction, it.feeTransfer, it.fees, it.absoluteSpread, it.relativeSpread)
-                    }.toMutableList()))
+                    clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order.copy(),
+                            matchingResult.marketOrderTrades.map { it ->
+                                LimitTradeInfo(it.tradeId,
+                                        it.marketClientId,
+                                        it.marketAsset,
+                                        it.marketVolume,
+                                        it.price,
+                                        it.timestamp,
+                                        it.limitOrderId,
+                                        it.limitOrderExternalId,
+                                        it.limitAsset,
+                                        it.limitClientId,
+                                        it.limitVolume,
+                                        it.index,
+                                        it.feeInstruction,
+                                        it.feeTransfer,
+                                        it.fees,
+                                        it.absoluteSpread,
+                                        it.relativeSpread)
+                            }.toMutableList()))
 
                     matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
                         var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.id == orderReport.order.id }
@@ -293,7 +310,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
         ordersToAdd.add(order)
-        addToReport(order)
+        addToReport(order.copy())
         processedOrders.add(ProcessedOrder(order, true))
 
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume

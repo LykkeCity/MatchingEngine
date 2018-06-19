@@ -17,7 +17,7 @@ class OrderServiceHelper(private val genericLimitOrderService: GenericLimitOrder
                                    walletOperations: MutableList<WalletOperation>): Boolean {
         val uncompletedLimitOrder = matchingResult.uncompletedLimitOrderCopy ?: return false
         if (assetPair.minVolume != null && uncompletedLimitOrder.getAbsRemainingVolume() < assetPair.minVolume) {
-            uncompletedLimitOrder.status = OrderStatus.Cancelled.name
+            uncompletedLimitOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(listOf(uncompletedLimitOrder))
             walletOperations.addAll(result.walletOperations)
             LOGGER.info("Order (id: ${uncompletedLimitOrder.externalId}) " +

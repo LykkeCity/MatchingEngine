@@ -97,7 +97,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         message.ordersList.forEach { currentOrder ->
             val uid = UUID.randomUUID().toString()
             orders.add(LimitOrder(uid, uid, message.assetPairId, message.clientId, BigDecimal.valueOf(currentOrder.volume),
-                    BigDecimal.valueOf(currentOrder.price), OrderStatus.InOrderBook.name, Date(message.timestamp), now, BigDecimal.valueOf(currentOrder.volume), null,
+                    BigDecimal.valueOf(currentOrder.price), OrderStatus.InOrderBook.name, now, Date(message.timestamp), now, BigDecimal.valueOf(currentOrder.volume), null,
                     type = LimitOrderType.LIMIT,
                     lowerLimitPrice = null,
                     lowerPrice = null,
@@ -158,7 +158,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 multiLimitOrderValidator.performValidation(order, assetPair, orderBook)
             } catch (e: OrderValidationException) {
                 orderValid = false
-                order.status = e.orderStatus.name
+                order.updateStatus(e.orderStatus, now)
             }
 
             if (orderValid && orderBook.leadToNegativeSpreadByOtherClient(order)) {
@@ -166,15 +166,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
-                        order.status = OrderStatus.NoLiquidity.name
+                        order.updateStatus(OrderStatus.NoLiquidity, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.NotEnoughFunds -> {
-                        order.status = OrderStatus.NotEnoughFunds.name
+                        order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.InvalidFee -> {
-                        order.status = OrderStatus.InvalidFee.name
+                        order.updateStatus(OrderStatus.InvalidFee, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
                     OrderStatus.Matched,
@@ -185,7 +185,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             cancelResult = limitOrderService.calculateWalletOperationsForCancelledOrders(
                                     matchingResult.cancelledLimitOrders.map {
                                         val cancelledOrder = it.copy
-                                        cancelledOrder.status = OrderStatus.Cancelled.name
+                                        cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                                         cancelledOrder
                                     })
                             cancelledOrdersWalletOperations.addAll(cancelResult.walletOperations)
@@ -263,7 +263,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                             if (matchingResult.order.status == OrderStatus.Processing.name) {
                                 if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
                                     LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${NumberUtils.roundForPrint(order.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
-                                    order.status = OrderStatus.Cancelled.name
+                                    order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                                 } else {
                                     ordersToAdd.add(order)
                                     orderBook.addOrder(order)
@@ -300,7 +300,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         matchingEngine.apply()
         lkkTradesQueue.put(trades)
         limitOrderService.moveOrdersToDone(completedOrders)
-        limitOrderService.cancelLimitOrders(ordersToCancel)
+        limitOrderService.cancelLimitOrders(ordersToCancel, now)
         limitOrderService.addOrders(ordersToAdd)
         limitOrderService.setOrderBook(assetPairId, orderBook)
         if (buySide || cancelBuySide) {
@@ -422,12 +422,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
 
         notFoundReplacements.values.forEach {
-            it.status = OrderStatus.NotFoundPrevious.name
+            it.updateStatus(OrderStatus.NotFoundPrevious, now)
         }
         ordersToReplace.forEach {
             LOGGER.info("Order (${it.externalId}) is replaced by (${(multiLimitOrder.buyReplacements[it.externalId]
                     ?: multiLimitOrder.sellReplacements[it.externalId])?.externalId})")
-            it.status = OrderStatus.Replaced.name
+            it.updateStatus(OrderStatus.Replaced, now)
         }
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
@@ -507,6 +507,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     BigDecimal.valueOf(currentOrder.volume),
                     BigDecimal.valueOf(currentOrder.price),
                     OrderStatus.InOrderBook.name,
+                    now,
                     Date(message.timestamp),
                     now,
                     BigDecimal.valueOf(currentOrder.volume),

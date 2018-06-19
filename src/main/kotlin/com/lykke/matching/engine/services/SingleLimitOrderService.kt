@@ -46,7 +46,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             val oldMessage = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrder
             val uid = UUID.randomUUID().toString()
             order = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
-                    BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, Date(oldMessage.timestamp), now, BigDecimal.valueOf(oldMessage.volume), null,
+                    BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, now, Date(oldMessage.timestamp), now, BigDecimal.valueOf(oldMessage.volume), null,
                     type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
             LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
@@ -107,6 +107,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 BigDecimal.valueOf(message.volume),
                 if (message.hasPrice()) BigDecimal.valueOf(message.price) else BigDecimal.ZERO,
                 status.name,
+                now,
                 Date(message.timestamp),
                 now,
                 BigDecimal.valueOf(message.volume),

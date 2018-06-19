@@ -38,13 +38,11 @@ class MessageBuilder {
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
                             previousExternalId: String? = null): LimitOrder =
-                LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf( volume), BigDecimal.valueOf(price), status, registered, registered, BigDecimal.valueOf(volume), null,
-                        if (reservedVolume != null) BigDecimal.valueOf(reservedVolume) else null,
-                        fee, fees,
-                        type, if (lowerLimitPrice != null)  BigDecimal.valueOf(lowerLimitPrice) else null,
-                        if (lowerPrice != null) BigDecimal.valueOf(lowerPrice) else null,
-                        if (upperLimitPrice != null) BigDecimal.valueOf (upperLimitPrice) else null,
-                        if (upperPrice != null) BigDecimal.valueOf(upperPrice) else null, previousExternalId)
+                LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf( volume), BigDecimal.valueOf(price), status, registered, registered, registered, BigDecimal.valueOf(volume), null,
+                        reservedVolume?.toBigDecimal(), fee, fees,
+                        type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
+                        upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
+                        previousExternalId)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -142,10 +140,9 @@ class MessageBuilder {
                              fee: FeeInstruction? = null,
                              fees: List<NewFeeInstruction> = listOf()): MarketOrder =
                 MarketOrder(rowKey, rowKey, assetId, clientId,
-                        BigDecimal.valueOf(volume),
-                        null, status, registered,
-                        Date(), null, straight,
-                        if (reservedVolume != null) BigDecimal.valueOf(reservedVolume) else null,
+                        BigDecimal.valueOf(volume), null, status, registered, registered, Date(),
+                        null, straight,
+                        reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
 
         fun buildLimitOrderWrapper(order: LimitOrder,
