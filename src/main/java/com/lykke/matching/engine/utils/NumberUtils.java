@@ -40,7 +40,7 @@ public class NumberUtils {
     }
 
     public static BigDecimal setScaleRoundDown(BigDecimal value, int accuracy) {
-        return value.setScale(Math.min(16, accuracy + 10), ROUND_HALF_UP)
+        return value.setScale(Math.min(MAX_SCALE, accuracy + 10), ROUND_HALF_UP)
                 .setScale(accuracy, ROUND_DOWN);
     }
 
