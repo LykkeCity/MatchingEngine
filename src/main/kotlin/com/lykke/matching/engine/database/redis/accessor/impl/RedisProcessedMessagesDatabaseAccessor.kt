@@ -3,7 +3,6 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.utils.SetUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
@@ -36,10 +35,6 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
      }
 
     fun save(transaction: Transaction, message: ProcessedMessage) {
-        if (ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
-            return
-        }
-
         transaction.select(dbIndex)
         val key = getKey(message)
         SetUtils.performAtomicSaveSetExpire(transaction, key, conf.asJsonString(message), timeToLive)

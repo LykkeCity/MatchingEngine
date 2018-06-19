@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -40,7 +39,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            val updated = balancesHolder.updateBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+            val updated = balancesHolder.updateBalance(messageWrapper.processedMessage(),
                     message.clientId, message.assetId, message.amount)
             messageWrapper.processedMessagePersisted = true
             if (updated) {
@@ -66,7 +65,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                 return
             }
 
-            val updated = balancesHolder.updateBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+            val updated = balancesHolder.updateBalance(messageWrapper.processedMessage(),
                     message.clientId, message.assetId, message.amount)
             messageWrapper.processedMessagePersisted = true
             if (!updated) {

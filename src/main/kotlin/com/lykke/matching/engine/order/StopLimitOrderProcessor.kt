@@ -4,7 +4,6 @@ package com.lykke.matching.engine.order
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.NewLimitOrder
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -69,7 +68,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             var updated = true
             if (cancelVolume > 0) {
                 val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume, limitAsset.accuracy).toDouble()
-                updated = balancesHolder.updateReservedBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
                         order.clientId, limitAsset.assetId, newReservedBalance)
                 if (updated) {
                     balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
@@ -113,7 +112,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.price = price
 
             genericLimitOrderProcessor.processLimitOrder(messageWrapper.messageId!!,
-                    ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                    messageWrapper.processedMessage(),
                     order,
                     now,
                     0.0)
@@ -121,7 +120,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
 
         val newReservedBalance = NumberUtils.parseDouble(reservedBalance - cancelVolume + limitVolume.toDouble(), limitAsset.accuracy).toDouble()
-        val updated = balancesHolder.updateReservedBalance(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
                 order.clientId, limitAsset.assetId, newReservedBalance)
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, order)

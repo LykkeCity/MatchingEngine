@@ -53,16 +53,16 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         processLimitOrder(messageId, null, order, now, payBackReserved)
     }
 
-    private fun processLimitOrder(messageId: String, processedMessage: ProcessedMessage, messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
+    private fun processLimitOrder(messageId: String, processedMessage: ProcessedMessage?, messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, messageId,
                 processedMessage,
-                messageWrapper =   messageWrapper)
+                messageWrapper = messageWrapper)
         checkAndProcessStopOrder(messageId, order.assetPairId, now)
     }
 
     fun processOrder(messageWrapper: MessageWrapper, order: NewLimitOrder, isCancelOrders: Boolean, now: Date) {
         when(order.type) {
-            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper.messageId!!, ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper.messageId!!, messageWrapper.processedMessage(),
                     messageWrapper, order, isCancelOrders, now)
             LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, order, isCancelOrders, now)
         }

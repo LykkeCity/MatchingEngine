@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.NewLimitOrder
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -48,7 +47,7 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
                 .preProcessStopLimitOrders(orders.stopOrders)
                 .applyFull(operationId,
                         messageId,
-                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                        messageWrapper.processedMessage(),
                         operationType,
                         false)
         messageWrapper.processedMessagePersisted = true

@@ -70,9 +70,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val fees = try {
             messageWrapper.processedMessagePersisted = true
-            processTransferOperation(operation, ProcessedMessage(messageWrapper.type,
-                    messageWrapper.timestamp!!,
-                    messageWrapper.messageId!!))
+            processTransferOperation(operation, messageWrapper.messageId!!, messageWrapper.processedMessage())
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, e.message)
             return
@@ -107,7 +105,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashTransferOperation.parseFrom(array)
     }
 
-    private fun processTransferOperation(operation: TransferOperation, processedMessage: ProcessedMessage): List<Fee> {
+    private fun processTransferOperation(operation: TransferOperation, messageId: String, processedMessage: ProcessedMessage?): List<Fee> {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,
@@ -124,7 +122,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         if (!updated) {
             throw Exception("Unable to save balance")
         }
-        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, processedMessage.messageId)
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
 
         return fees
     }

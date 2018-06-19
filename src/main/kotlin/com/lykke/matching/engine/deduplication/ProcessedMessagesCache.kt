@@ -26,9 +26,6 @@ class ProcessedMessagesCache @Autowired constructor(
     private val lock = ReentrantReadWriteLock()
 
     fun addMessage(message: ProcessedMessage) {
-        if (ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
-            return
-        }
         lock.write {
             typeToProcessedMessage.getOrPut(message.type) { HashSet() }.add(message)
         }
