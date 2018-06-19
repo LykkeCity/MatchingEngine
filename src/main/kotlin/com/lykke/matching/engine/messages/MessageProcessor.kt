@@ -72,6 +72,7 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
