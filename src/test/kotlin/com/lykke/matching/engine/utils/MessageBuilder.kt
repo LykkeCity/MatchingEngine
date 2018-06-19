@@ -37,7 +37,7 @@ class MessageBuilder {
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
                             previousExternalId: String? = null): NewLimitOrder =
-                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, reservedVolume, fee, fees,
+                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, registered, volume, null, reservedVolume, fee, fees,
                         type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice, previousExternalId)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
@@ -135,7 +135,7 @@ class MessageBuilder {
                              reservedVolume: Double? = null,
                              fee: FeeInstruction? = null,
                              fees: List<NewFeeInstruction> = listOf()): MarketOrder =
-                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, reservedVolume, fee = fee, fees = fees)
+                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, registered, Date(), null, straight, reservedVolume, fee = fee, fees = fees)
 
         fun buildLimitOrderWrapper(order: NewLimitOrder,
                                    cancel: Boolean = false): MessageWrapper {

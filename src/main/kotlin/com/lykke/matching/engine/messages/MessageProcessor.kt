@@ -277,23 +277,38 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
         val rabbitMqService = applicationContext.getBean(RabbitMqService::class.java)
 
-        startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService)
+        startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService, config.me.name, AppVersion.VERSION)
 
         val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue, null, rabbitMqService)
+        startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue, null,
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitClientLimitOrdersQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)), rabbitMqService)
+                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)),
+                rabbitMqService,
+                config.me.name,
+                AppVersion.VERSION)
 
         if(!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
@@ -326,8 +341,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private fun startRabbitMqPublisher(config: RabbitConfig,
                                        queue: BlockingQueue<JsonSerializable>,
                                        messageDatabaseLogger: MessageDatabaseLogger? = null,
-                                       rabbitMqService : RabbitMqService) {
-        rabbitMqService.startPublisher (config, queue, messageDatabaseLogger)
+                                       rabbitMqService : RabbitMqService,
+                                       appName: String,
+                                       appVersion: String) {
+        rabbitMqService.startPublisher (config, queue, appName, appVersion, messageDatabaseLogger)
     }
 
     override fun run() {

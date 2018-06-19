@@ -31,10 +31,10 @@ open class AppConfiguration {
     }
 
     @Bean
-    open fun azureStatusProcessor(@Value("\${app.name}") appName: String): Runnable {
+    open fun azureStatusProcessor(): Runnable {
         return AliveStatusProcessorFactory
                 .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
-                        appName = appName,
+                        appName = config.me.name,
                         config = config.me.aliveStatus)
     }
 

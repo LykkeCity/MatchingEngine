@@ -12,7 +12,11 @@ import java.util.concurrent.BlockingQueue
 @Service
 @Profile("default")
 class RabbitMqServiceImpl : RabbitMqService {
-    override fun startPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger?) {
-        RabbitMqPublisher(config.uri, config.exchange, queue, messageDatabaseLogger).start()
+    override fun startPublisher(config: RabbitConfig,
+                                queue: BlockingQueue<JsonSerializable>,
+                                appName: String,
+                                appVersion: String,
+                                messageDatabaseLogger: MessageDatabaseLogger?) {
+        RabbitMqPublisher(config.uri, config.exchange, queue, appName, appVersion,  messageDatabaseLogger).start()
     }
 }

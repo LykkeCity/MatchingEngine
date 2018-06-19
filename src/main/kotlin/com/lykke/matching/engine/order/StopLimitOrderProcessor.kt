@@ -63,7 +63,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             validateOrder(order, assetPair, availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
-            order.status = e.orderStatus.name
+            order.updateStatus(e.orderStatus, now)
             val messageStatus = MessageStatusUtils.toMessageStatus(e.orderStatus)
             var updated = true
             if (cancelVolume > 0) {
@@ -75,7 +75,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             }
 
             if (updated) {
-                stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel)
+                stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel, now)
                 messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(order.externalId)
                     .setMatchingEngineId(order.id)
@@ -105,7 +105,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         if (price != null) {
             LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} immediately (bestBidPrice=$bestBidPrice, bestAskPrice=$bestAskPrice)")
-            order.status = OrderStatus.InOrderBook.name
+            order.updateStatus(OrderStatus.InOrderBook, now)
             order.price = price
 
             genericLimitOrderProcessor.processLimitOrder(messageWrapper.messageId!!, order, now, 0.0)
@@ -129,7 +129,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         reservedBalance,
                         newReservedBalance)),
                 messageWrapper.messageId!!))
-        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel)
+        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel, now)
 
         order.reservedLimitVolume = limitVolume.toDouble()
         stopLimitOrderService.addStopOrder(order)

@@ -1141,4 +1141,49 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(1, clientsLimitOrdersQueue.size)
         assertEquals(OrderStatus.Matched.name, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.first {it.order.clientId == "Client1"}.order.status)
     }
+
+    @Test
+    fun testImmutableReportOrder1() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+                uid = "order1", clientId = "Client1", assetId = "EURUSD", volume = -1.0, price = 1.0
+        )))
+        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper(listOf("order1")))
+
+        assertEquals(2, clientsLimitOrdersQueue.size)
+
+        val report1 = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, report1.orders.size)
+        assertEquals(OrderStatus.InOrderBook.name, report1.orders.first().order.status)
+
+        val report2 = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, report2.orders.size)
+        assertEquals(OrderStatus.Cancelled.name, report2.orders.first().order.status)
+    }
+
+    @Test
+    fun testImmutableReportOrder2() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+                uid = "order1", clientId = "Client1", assetId = "EURUSD", volume = -1.0, price = 1.0
+        )))
+        clearMessageQueues()
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+                clientId = "Client2", assetId = "EURUSD", volume = 0.1, price = 1.0
+        )))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+                clientId = "Client2", assetId = "EURUSD", volume = 0.2, price = 1.0
+        )))
+
+        assertEquals(2, clientsLimitOrdersQueue.size)
+
+        val report1 = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, report1.orders.size)
+        val order1 = report1.orders.first { it.order.externalId == "order1" }.order
+        assertEquals(-0.9, order1.remainingVolume)
+
+        val report2 = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(2, report2.orders.size)
+        val order2 = report2.orders.first { it.order.externalId == "order1" }.order
+        assertEquals(-0.7, order2.remainingVolume)
+    }
 }
