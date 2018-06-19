@@ -285,7 +285,7 @@ class MatchingEngine(private val LOGGER: Logger,
             LOGGER.info("Not enough funds for order id: ${order.externalId}, " +
                     "client: ${order.clientId}, asset: ${order.assetPairId}, " +
                     "volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, " +
-                    "marketBalance: $marketBalance : $reservedBalance < ${NumberUtils.setScaleRoundUp((if(isBuy) totalLimitPrice else totalVolume).toDouble(), asset.accuracy, true)}")
+                    "marketBalance: $marketBalance : $reservedBalance < ${NumberUtils.setScaleRoundUp((if(isBuy) totalLimitPrice else totalVolume), asset.accuracy)}")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 

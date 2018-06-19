@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.order.OrderStatus
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
@@ -14,13 +15,20 @@ abstract class Order(
         val assetPairId: String,
         val clientId: String,
         val volume: BigDecimal,
-        var status: String,
+        status: String,
         val createdAt: Date,
         val registered: Date,
         var reservedLimitVolume: BigDecimal?,
         val fee: FeeInstruction?,
-        val fees: List<NewFeeInstruction>?
+        val fees: List<NewFeeInstruction>?,
+        statusDate: Date?
 ) : Serializable, Copyable {
+
+    var status = status
+        private set
+
+    var statusDate = statusDate
+        private set
 
     fun getAbsVolume(): BigDecimal {
         return volume.abs()
@@ -46,6 +54,13 @@ abstract class Order(
 
     fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
         return checkVolume(assetsPairsHolder.getAssetPair(assetPairId))
+    }
+
+    fun updateStatus(status: OrderStatus, date: Date) {
+        if (status.name != this.status) {
+            this.status = status.name
+            this.statusDate = date
+        }
     }
 
     override fun applyToOrigin(origin: Copyable) {

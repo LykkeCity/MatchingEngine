@@ -1185,11 +1185,11 @@ class LimitOrderServiceTest: AbstractTest() {
         val report1 = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, report1.orders.size)
         val order1 = report1.orders.first { it.order.externalId == "order1" }.order
-        assertEquals(-0.9, order1.remainingVolume)
+        assertEquals(BigDecimal.valueOf(-0.9), order1.remainingVolume)
 
         val report2 = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, report2.orders.size)
         val order2 = report2.orders.first { it.order.externalId == "order1" }.order
-        assertEquals(-0.7, order2.remainingVolume)
+        assertEquals(BigDecimal.valueOf(-0.7), order2.remainingVolume)
     }
 }

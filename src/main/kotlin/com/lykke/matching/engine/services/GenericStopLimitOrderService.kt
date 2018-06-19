@@ -94,7 +94,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
                 ?: getStopOrderForProcess(assetPairId, orderBook.getAskPrice(), true, date)
     }
 
-    private fun getStopOrderForProcess(assetPairId: String, price: Double, isBuySide: Boolean, date: Date): LimitOrder? {
+    private fun getStopOrderForProcess(assetPairId: String, price: BigDecimal, isBuySide: Boolean, date: Date): LimitOrder? {
         if (price <= BigDecimal.ZERO) {
             return null
         }

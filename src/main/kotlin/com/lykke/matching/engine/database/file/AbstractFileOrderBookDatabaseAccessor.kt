@@ -117,7 +117,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 .filter { it is LimitOrder || it is NewLimitOrder }
                 .map {
                     if (it is LimitOrder) {
-                          it
+                        it
                     } else {
                         oldFormatOrdersCount++
                         fromNewLimitOrderToLimitOrder(it as NewLimitOrder)
@@ -141,6 +141,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 BigDecimal.valueOf(order.volume),
                 BigDecimal.valueOf(order.price),
                 order.status,
+                order.statusDate,
                 order.createdAt,
                 order.registered,
                 BigDecimal.valueOf(order.remainingVolume),
