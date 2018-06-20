@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -32,8 +32,12 @@ import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import org.apache.log4j.Logger
-import java.util.*
+import java.math.BigDecimal
+import java.util.Date
+import java.util.LinkedList
+import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
@@ -79,8 +83,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
             feeInstruction = null
             feeInstructions = null
-            MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, now, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume)
+            MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
+                    Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume))
         } else {
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
             feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
@@ -90,8 +94,8 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     "asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, " +
                     "straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
-            MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, message.volume, null,
-                    Processing.name, now, Date(message.timestamp), now, null, message.straight, message.reservedLimitVolume,
+            MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
+                    Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                     feeInstruction, listOfFee(feeInstruction, feeInstructions))
         }
 
@@ -254,7 +258,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                     .setStatus(status.type)
 
             if (order.price != null) {
-                marketOrderResponse.price = order.price!!
+                marketOrderResponse.price = order.price!!.toDouble()
             } else if (reason != null) {
                 marketOrderResponse.statusReason = reason
             }

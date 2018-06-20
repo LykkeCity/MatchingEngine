@@ -1,3 +1,5 @@
 package com.lykke.matching.engine.daos
 
-class Tick(var openPrice: Double, var closePrice: Double, var highPrice: Double, var lowPrice: Double)
+import java.math.BigDecimal
+
+class Tick(var openPrice: BigDecimal, var closePrice: BigDecimal, var highPrice: BigDecimal, var lowPrice: BigDecimal)

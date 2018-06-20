@@ -3,7 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -36,7 +36,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            applicationSettingsCache: ApplicationSettingsCache,
-                           ordersToCancel: Collection<NewLimitOrder>,
+                           ordersToCancel: Collection<LimitOrder>,
                            private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -47,8 +47,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            private val clientId: String,
                            private val assetPair: AssetPair,
                            private val orderBook: AssetOrderBook,
-                           payBackBaseReserved: Double,
-                           payBackQuotingReserved: Double,
+                           payBackBaseReserved: BigDecimal,
+                           payBackQuotingReserved: BigDecimal,
                            clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            private val LOGGER: Logger) {
@@ -70,7 +70,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private val completedOrders = ordersToCancel.filter { it.status == OrderStatus.Replaced.name }.toMutableList()
 
     private val processedOrders = mutableListOf<ProcessedOrder>()
-    private val ordersToAdd = mutableListOf<NewLimitOrder>()
+    private val ordersToAdd = mutableListOf<LimitOrder>()
 
     private val lkkTrades = mutableListOf<LkkTrade>()
     private val clientsLimitOrdersWithTrades = clientsLimitOrdersWithTrades.toMutableList()
@@ -81,21 +81,21 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             throw IllegalArgumentException("Invalid order book asset pair: ${orderBook.assetId}")
         }
 
-        availableBalances[assetPair.baseAssetId] = NumberUtils.parseDouble(balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId, payBackBaseReserved), baseAsset.accuracy)
-        availableBalances[assetPair.quotingAssetId] = NumberUtils.parseDouble(balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId, payBackQuotingReserved), quotingAsset.accuracy)
+        availableBalances[assetPair.baseAssetId] = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId, payBackBaseReserved), baseAsset.accuracy)
+        availableBalances[assetPair.quotingAssetId] = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId, payBackQuotingReserved), quotingAsset.accuracy)
         val payBackReservedOperations = ArrayList<WalletOperation>(2)
         if (!isTrustedClient) {
-            if (payBackBaseReserved > 0) {
-                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.baseAssetId, date, 0.0, -payBackBaseReserved))
+            if (payBackBaseReserved > BigDecimal.ZERO) {
+                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.baseAssetId, date, BigDecimal.ZERO, -payBackBaseReserved))
             }
-            if (payBackQuotingReserved > 0) {
-                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.quotingAssetId, date, 0.0, -payBackQuotingReserved))
+            if (payBackQuotingReserved > BigDecimal.ZERO) {
+                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.quotingAssetId, date, BigDecimal.ZERO, -payBackQuotingReserved))
             }
         }
         walletOperationsProcessor.preProcess(payBackReservedOperations, true)
     }
 
-    fun preProcess(messageId: String, orders: Collection<NewLimitOrder>): LimitOrdersProcessor {
+    fun preProcess(messageId: String, orders: Collection<LimitOrder>): LimitOrdersProcessor {
         orders.forEach { preProcess(messageId, it) }
         return this
     }
@@ -153,10 +153,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         return OrderProcessResult(true, processedOrders)
     }
 
-    private fun preProcess(messageId: String, order: NewLimitOrder) {
+    private fun preProcess(messageId: String, order: LimitOrder) {
 
         val limitAsset = if (order.isBuySide()) quotingAsset else baseAsset
-        val limitVolume = BigDecimal.valueOf(if (order.isBuySide()) NumberUtils.round(order.getAbsVolume() * order.price, limitAsset.accuracy, true) else order.getAbsVolume())
+        val limitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundUp(order.getAbsVolume() * order.price, limitAsset.accuracy) else order.getAbsVolume()
 
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
@@ -172,8 +172,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageId, availableBalance.toDouble())
-            val orderCopy = matchingResult.order as NewLimitOrder
+            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageId, availableBalance)
+            val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
                 OrderStatus.NoLiquidity -> {
@@ -215,10 +215,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                             LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                             orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                         } else {
-                            orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.round(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy, false) else orderCopy.getAbsRemainingVolume()
+                            orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                             if (!isTrustedClient) {
-                                val newReservedBalance = NumberUtils.parseDouble(orderCopy.reservedLimitVolume!!, limitAsset.accuracy).toDouble()
-                                ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, 0.0, newReservedBalance))
+                                val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
+                                ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
                             }
                         }
                     }
@@ -292,7 +292,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                         ordersToAdd.add(order)
                     }
 
-                    availableBalances[limitAsset.assetId] = BigDecimal.valueOf(matchingResult.marketBalance!!)
+                    availableBalances[limitAsset.assetId] = matchingResult.marketBalance!!
 
                     buySideOrderBookChanged = true
                     sellSideOrderBookChanged = true
@@ -307,7 +307,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
 
-        order.reservedLimitVolume = limitVolume.toDouble()
+        order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
         ordersToAdd.add(order)
         addToReport(order.copy())
@@ -316,7 +316,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume
         if (!isTrustedClient) {
             walletOperationsProcessor.preProcess(listOf(
-                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, 0.0, NumberUtils.parseDouble(limitVolume.toDouble(), limitAsset.accuracy).toDouble())
+                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, BigDecimal.ZERO, NumberUtils.setScaleRoundHalfUp(limitVolume, limitAsset.accuracy))
             ), true)
         }
 
@@ -329,7 +329,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         LOGGER.info("$orderInfo added to order book")
     }
 
-    private fun validateLimitOrder(order: NewLimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
+    private fun validateLimitOrder(order: LimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (order.clientId != clientId) {
             throw OrderValidationException(OrderStatus.Cancelled, "${orderInfo(order)} has invalid clientId: ${order.clientId}")
         }
@@ -355,15 +355,15 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
     }
 
-    private fun orderInfo(order: NewLimitOrder) = "Limit order (id: ${order.externalId})"
+    private fun orderInfo(order: LimitOrder) = "Limit order (id: ${order.externalId})"
 
-    private fun addToReportIfNotTrusted(order: NewLimitOrder) {
+    private fun addToReportIfNotTrusted(order: LimitOrder) {
         if (!isTrustedClient) {
             clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
         }
     }
 
-    private fun addToReport(order: NewLimitOrder) {
+    private fun addToReport(order: LimitOrder) {
         if (isTrustedClient) {
             trustedClientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
         } else {

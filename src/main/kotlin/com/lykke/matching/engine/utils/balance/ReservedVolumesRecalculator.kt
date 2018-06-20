@@ -1,10 +1,9 @@
 package com.lykke.matching.engine.utils.balance
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
@@ -26,8 +25,7 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
         return
     }
     val filePath = config.me.orderBookPath
-    val stopOrderBookPath = config.me.stopOrderBookPath
-    val stopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(stopOrderBookPath)
+    val stopOrderBookDatabaseAccessor = applicationContext.getBean(FileStopOrderBookDatabaseAccessor::class.java)
     ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
     val orderBookDatabaseAccessor = applicationContext.getBean(OrderBookDatabaseAccessor::class.java)
     val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)
@@ -67,7 +65,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
 
-        val handleOrder: (order: NewLimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
+        val handleOrder: (order: LimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
             if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
                 try {
                     if (isStopOrder) {
@@ -82,7 +80,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                         order.reservedLimitVolume!!
                     } else {
                         val calculatedReservedVolume = if (order.isBuySide())
-                            NumberUtils.round(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
+                            NumberUtils.setScale(if (isStopOrder) order.volume * (order.upperPrice ?: order.lowerPrice)!!
                             else order.getAbsRemainingVolume() * order.price, asset.accuracy, false)
                         else order.getAbsRemainingVolume()
                         LOGGER.info("Null reserved volume, recalculated: $calculatedReservedVolume")
@@ -91,7 +89,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
 
                     val clientAssets = reservedBalances.getOrPut(order.clientId) { HashMap() }
                     val balance = clientAssets.getOrPut(asset.assetId) { ClientOrdersReservedVolume() }
-                    val newBalance = NumberUtils.parseDouble(balance.volume + reservedVolume, asset.accuracy).toDouble()
+                    val newBalance = NumberUtils.setScaleRoundHalfUp(balance.volume + reservedVolume, asset.accuracy)
                     balance.volume = newBalance
                     balance.orderIds.add(order.externalId)
                 } catch (e: Exception) {
@@ -118,19 +116,19 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
             val wallet = it.value
             val id = wallet.clientId
             wallet.balances.values.forEach {
-                val oldBalance = it.reserved.toDouble()
+                val oldBalance = it.reserved
                 val newBalance = reservedBalances[id]?.get(it.asset)
-                if (newBalance != null && newBalance.volume > 0.0) {
-                    if (oldBalance != newBalance.volume) {
+                if (newBalance != null && newBalance.volume > BigDecimal.ZERO) {
+                    if (!NumberUtils.equalsIgnoreScale(oldBalance, newBalance.volume)) {
                         val correction = ReservedVolumeCorrection(id, it.asset, newBalance.orderIds.joinToString(","), oldBalance, newBalance.volume)
                         corrections.add(correction)
                         teeLog("1 $id, ${it.asset} : Old $oldBalance New $newBalance")
-                        wallet.setReservedBalance(it.asset, newBalance.volume.toBigDecimal())
+                        wallet.setReservedBalance(it.asset, newBalance.volume)
                         updatedWallets.add(wallet)
                     }
-                } else if (oldBalance != 0.0) {
+                } else if (!NumberUtils.equalsIgnoreScale(oldBalance, BigDecimal.ZERO)) {
                     val orderIds = if (newBalance != null) newBalance.orderIds.joinToString(",") else null
-                    val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: 0.0)
+                    val correction = ReservedVolumeCorrection(id, it.asset, orderIds, oldBalance, newBalance?.volume ?: BigDecimal.ZERO)
                     corrections.add(correction)
                     teeLog("2 $id, ${it.asset} : Old $oldBalance New ${newBalance ?: 0.0}")
                     wallet.setReservedBalance(it.asset, BigDecimal.ZERO)

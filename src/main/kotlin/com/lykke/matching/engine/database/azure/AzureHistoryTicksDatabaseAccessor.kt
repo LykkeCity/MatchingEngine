@@ -9,7 +9,9 @@ import com.microsoft.azure.storage.blob.CloudBlob
 import com.microsoft.azure.storage.blob.CloudBlobContainer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.math.BigDecimal
 import java.util.LinkedList
+import java.util.stream.Collectors
 
 class AzureHistoryTicksDatabaseAccessor(connectionString: String, val frequency: Long) : HistoryTicksDatabaseAccessor {
 
@@ -104,8 +106,8 @@ class AzureHistoryTicksDatabaseAccessor(connectionString: String, val frequency:
 
         return TickBlobHolder(assetPair = assetPair,
                 tickUpdateInterval =  interval,
-                askTicks = askTicks,
-                bidTicks = bidTicks,
+                askTicks = askTicks.stream().map(BigDecimal::valueOf).collect(Collectors.toCollection(::LinkedList)),
+                bidTicks = bidTicks.stream().map(BigDecimal::valueOf).collect(Collectors.toCollection(::LinkedList)),
                 lastUpdate = blob.properties.lastModified.time,
                 frequency = frequency)
     }

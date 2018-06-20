@@ -2,8 +2,8 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.fee.Fee
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.Fee
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -16,13 +16,13 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
@@ -101,7 +101,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 message.id,
                 walletOperation.clientId,
                 walletOperation.dateTime,
-                walletOperation.amount.round(assetsHolder.getAsset(walletOperation.assetId).accuracy),
+                NumberUtils.setScaleRoundHalfUp(walletOperation.amount, assetsHolder.getAsset(walletOperation.assetId).accuracy).toPlainString(),
                 walletOperation.assetId,
                 messageId,
                 fees
@@ -110,7 +110,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     private fun getWalletOperation(operationId: String, message: ProtocolMessages.CashInOutOperation): WalletOperation {
         return WalletOperation(operationId, message.id, message.clientId, message.assetId,
-                Date(message.timestamp), message.volume, 0.0)
+                Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO)
     }
     private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashInOutOperation {
         if (messageWrapper.parsedMessage == null) {

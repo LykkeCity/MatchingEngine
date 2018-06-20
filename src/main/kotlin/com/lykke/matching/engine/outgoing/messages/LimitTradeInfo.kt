@@ -1,8 +1,9 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
-import com.lykke.matching.engine.daos.fee.Fee
+import com.lykke.matching.engine.daos.fee.v2.Fee
+import java.math.BigDecimal
 import java.util.Date
 
 class LimitTradeInfo(
@@ -10,7 +11,7 @@ class LimitTradeInfo(
         val clientId: String,
         val asset: String,
         val volume: String,
-        val price: Double,
+        val price: BigDecimal,
         val timestamp: Date,
 
         val oppositeOrderId: String,
@@ -22,6 +23,6 @@ class LimitTradeInfo(
         val feeInstruction: FeeInstruction?,
         val feeTransfer: FeeTransfer?,
         val fees: List<Fee>,
-        val absoluteSpread: Double?,
-        val relativeSpread: Double?
+        val absoluteSpread: BigDecimal?,
+        val relativeSpread: BigDecimal?
 )
