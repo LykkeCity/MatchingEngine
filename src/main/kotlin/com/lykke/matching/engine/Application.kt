@@ -22,6 +22,9 @@ class Application {
     lateinit var azureStatusProcessor: Runnable
 
     @Autowired
+    lateinit var accountsMigrationService: AccountsMigrationService
+
+    @Autowired
     lateinit var applicationContext: ApplicationContext
 
     fun run () {
@@ -33,8 +36,7 @@ class Application {
         }
 
         try {
-            val accountMigration = applicationContext.getBean(AccountsMigrationService::class.java)
-            accountMigration.migrateAccountsIfConfigured()
+            accountsMigrationService.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
             System.exit(1)
