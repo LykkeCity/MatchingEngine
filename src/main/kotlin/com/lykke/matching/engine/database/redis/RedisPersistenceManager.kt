@@ -77,8 +77,8 @@ class RedisPersistenceManager(
                         ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
                         ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
 
-                if (secondaryBalancesAccessor != null && data.balancesData != null) {
-                    updatedWalletsQueue.put(data.balancesData.wallets)
+                if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+                    updatedWalletsQueue.put(data.balancesData!!.wallets)
                 }
             } catch (e: Exception) {
                 transaction.clear()
