@@ -80,6 +80,21 @@ class MarketOrderServiceTest: AbstractTest() {
     }
 
     @Test
+    fun test20062018Accuracy() {
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "ETH", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 401.9451)
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 523.99, volume = -0.63, clientId = "Client1", assetId = "ETHUSD"))
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 526.531, volume = -0.5, clientId = "Client2", assetId = "ETHUSD"))
+        initServices()
+
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "ETHUSD", straight = false, volume = -401.9451)))
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+
+        assertEquals(Matched.name, marketOrderReport.order.status)
+    }
+
+    @Test
     fun testNoLiqudity() {
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1000.0, clientId = "Client1"))
         initServices()
