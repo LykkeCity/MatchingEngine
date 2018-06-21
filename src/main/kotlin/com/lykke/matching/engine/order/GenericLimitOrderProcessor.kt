@@ -48,14 +48,16 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     fun checkAndProcessStopOrder(messageId: String, assetPairId: String, now: Date) {
         val order = stopLimitOrderService.getStopOrderForProcess(assetPairId, now) ?: return
         val orderBook = limitOrderService.getOrderBook(assetPairId)
-        LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()})")
+        LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()}) due to message $messageId")
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
         processLimitOrder(messageId, null, order, now, payBackReserved)
     }
 
     private fun processLimitOrder(messageId: String, processedMessage: ProcessedMessage?, messageWrapper: MessageWrapper, order: LimitOrder, isCancelOrders: Boolean, now: Date) {
-        limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, messageId, processedMessage)
+        limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, messageId,
+                processedMessage,
+                messageWrapper = messageWrapper)
         checkAndProcessStopOrder(messageId, order.assetPairId, now)
     }
 
@@ -67,8 +69,8 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         }
     }
 
-    fun processLimitOrder(messageId: String, order: LimitOrder, now: Date, payBackReserved: BigDecimal) {
-        limitOrderProcessor.processLimitOrder(order, false, now, messageId, messageId, payBackReserved)
+    fun processLimitOrder(messageId: String, processedMessage: ProcessedMessage?, order: LimitOrder, now: Date, payBackReserved: BigDecimal) {
+        limitOrderProcessor.processLimitOrder(order, false, now, messageId, processedMessage, payBackReserved)
         checkAndProcessStopOrder(messageId, order.assetPairId, now)
     }
 
