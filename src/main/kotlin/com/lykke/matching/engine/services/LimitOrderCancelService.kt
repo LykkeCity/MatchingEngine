@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -24,7 +24,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
             val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
             LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
 
-            genericLimitOrderService.cancelLimitOrder(message.limitOrderId.toString(), true)
+            genericLimitOrderService.cancelLimitOrder(Date(), message.limitOrderId.toString(), true)
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
             return Orders.processed()
         }
@@ -40,8 +40,8 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
             return Orders.processed()
         }
 
-        val orders = LinkedList<NewLimitOrder>()
-        val stopOrders = LinkedList<NewLimitOrder>()
+        val orders = LinkedList<LimitOrder>()
+        val stopOrders = LinkedList<LimitOrder>()
         val notFoundOrderIds = LinkedList<String>()
         orderIds.forEach { orderId ->
             var isStopOrder = false

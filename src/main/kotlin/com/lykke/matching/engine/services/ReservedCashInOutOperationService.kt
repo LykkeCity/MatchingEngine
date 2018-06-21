@@ -10,7 +10,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.rabbit.events.ReservedCashOperationEvent
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -20,6 +19,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
@@ -43,7 +43,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
 
         val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
-                Date(message.timestamp), 0.0, message.reservedVolume)
+                Date(message.timestamp), BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
 
         try {
             reservedCashInOutOperationValidator.performValidation(message)
@@ -77,7 +77,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id,
                 operation.clientId,
                 operation.dateTime,
-                operation.reservedAmount.round(accuracy),
+                NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
                 operation.assetId,
                 messageWrapper.messageId!!)) )
 

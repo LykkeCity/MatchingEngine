@@ -13,6 +13,7 @@ import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAcce
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -158,7 +159,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    @Profile("default", "!local_config")
+    @Profile("default")
     open fun azureMonitoringDatabaseAccessor(@Value("\${azure.monitoring.table}") monitoringTable: String,
                                              @Value("\${azure.performance.table}") performanceTable: String)
             : MonitoringDatabaseAccessor {
@@ -184,5 +185,10 @@ open class DatabaseAccessorConfig {
 
     private fun getProcessedMessageTTL(): Int {
         return (config.me.processedMessagesInterval / 500).toInt()
+    }
+
+    @Bean
+    open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
+        return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
     }
 }

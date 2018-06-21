@@ -8,11 +8,14 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.updaters.BalancesUpdater
+import com.lykke.matching.engine.outgoing.rabbit.events.BalanceUpdateEvent
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
@@ -39,79 +42,79 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         initialBalancesCount = wallets.values.sumBy { it.balances.size }
     }
 
-    fun getBalance(clientId: String, assetId: String): Double {
+    fun getBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return balance.balance.toDouble()
+                return balance.balance
             }
         }
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun getReservedBalance(clientId: String, assetId: String): Double {
+    fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return balance.reserved.toDouble()
+                return balance.reserved
             }
         }
 
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: Double = 0.0): Double {
+    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: BigDecimal = BigDecimal.ZERO): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
-                return (if (balance.reserved.compareTo(reservedAdjustment.toBigDecimal()) == 1)
-                    balance.balance - balance.reserved + reservedAdjustment.toBigDecimal()
-                else balance.balance).toDouble()
+                return (if (balance.reserved > reservedAdjustment)
+                    balance.balance - balance.reserved + reservedAdjustment
+                else balance.balance)
             }
         }
 
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun getAvailableReservedBalance(clientId: String, assetId: String): Double {
+    fun getAvailableReservedBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
             if (balance != null) {
                 // reserved can be greater than base balance due to transfer with overdraft
-                return (if (balance.reserved.signum() == 1 && balance.reserved <= balance.balance) balance.reserved else balance.balance).toDouble()
+                return if (balance.reserved.signum() == 1 && balance.reserved <= balance.balance) balance.reserved else balance.balance
             }
         }
 
-        return 0.0
+        return BigDecimal.ZERO
     }
 
-    fun updateBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: Double): Boolean {
+    fun updateBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: BigDecimal): Boolean {
         val balancesUpdater = createUpdater()
-        balancesUpdater.updateBalance(clientId, assetId, balance.toBigDecimal())
+        balancesUpdater.updateBalance(clientId, assetId, balance)
         val balancesData = balancesUpdater.persistenceData()
         val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
         if (!persisted) {
             return false
         }
         balancesUpdater.apply()
-        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(clientId)))
         return true
     }
 
-    fun updateReservedBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: Double, skipForTrustedClient: Boolean = true): Boolean {
+    fun updateReservedBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: BigDecimal, skipForTrustedClient: Boolean = true): Boolean {
         val balancesUpdater = createUpdater()
-        balancesUpdater.updateReservedBalance(clientId, assetId, balance.toBigDecimal())
+        balancesUpdater.updateReservedBalance(clientId, assetId, balance)
         val balancesData = balancesUpdater.persistenceData()
          val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
         if (!persisted) {
             return false
         }
         balancesUpdater.apply()
-        applicationEventPublisher.publishEvent(BalanceUpdateNotification(clientId))
+        applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(clientId)))
         return true
     }
 
@@ -124,7 +127,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance != it.oldBalance || it.newReserved != it.oldReserved }
         if (balanceUpdate.balances.isNotEmpty()) {
             LOGGER.info(balanceUpdate.toString())
-            applicationEventPublisher.publishEvent(balanceUpdate)
+            applicationEventPublisher.publishEvent(BalanceUpdateEvent(balanceUpdate))
         }
     }
 

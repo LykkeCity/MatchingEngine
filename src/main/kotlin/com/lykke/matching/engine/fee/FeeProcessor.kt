@@ -1,21 +1,22 @@
 package com.lykke.matching.engine.fee
 
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.fee.Fee
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.Fee
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
@@ -33,9 +34,9 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
     fun processMakerFee(feeInstructions: List<FeeInstruction>,
                         receiptOperation: WalletOperation,
                         operations: MutableList<WalletOperation>,
-                        relativeSpread: Double? = null,
-                        convertPrices: Map<String, Double> = emptyMap(),
-                        balances: MutableMap<String, MutableMap<String, Double>>? = null) =
+                        relativeSpread: BigDecimal? = null,
+                        convertPrices: Map<String, BigDecimal> = emptyMap(),
+                        balances: MutableMap<String, MutableMap<String, BigDecimal>>? = null) =
             processFees(feeInstructions,
                     receiptOperation,
                     operations,
@@ -47,8 +48,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
     fun processFee(feeInstructions: List<FeeInstruction>?,
                    receiptOperation: WalletOperation,
                    operations: MutableList<WalletOperation>,
-                   convertPrices: Map<String, Double> = emptyMap(),
-                   balances: MutableMap<String, MutableMap<String, Double>>? = null) =
+                   convertPrices: Map<String, BigDecimal> = emptyMap(),
+                   balances: MutableMap<String, MutableMap<String, BigDecimal>>? = null) =
             processFees(feeInstructions,
                     receiptOperation,
                     operations,
@@ -61,16 +62,16 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                            receiptOperation: WalletOperation,
                            operations: MutableList<WalletOperation>,
                            feeCoefCalculator: FeeCoefCalculator,
-                           convertPrices: Map<String, Double>,
+                           convertPrices: Map<String, BigDecimal>,
                            isMakerFee: Boolean,
-                           externalBalances: MutableMap<String, MutableMap<String, Double>>? = null): List<Fee> {
+                           externalBalances: MutableMap<String, MutableMap<String, BigDecimal>>? = null): List<Fee> {
         if (feeInstructions?.isNotEmpty() != true) {
             return listOf()
         }
         val receiptOperationWrapper = ReceiptOperationWrapper(receiptOperation)
-        val balances = HashMap<String, MutableMap<String, Double>>() // clientId -> assetId -> balance
+        val balances = HashMap<String, MutableMap<String, BigDecimal>>() // clientId -> assetId -> balance
         externalBalances?.let {
-            balances.putAll(it.mapValues { HashMap<String, Double>(it.value) })
+            balances.putAll(it.mapValues { HashMap<String, BigDecimal>(it.value) })
         }
         val newOperations = LinkedList(operations)
         val fees = feeInstructions.map { feeInstruction ->
@@ -79,11 +80,13 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                 when (feeInstruction) {
                     is LimitOrderFeeInstruction -> {
                         feeCoefCalculator.feeModificator = null
-                        processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType, feeInstruction.makerSize, feeCoefCalculator.calculate(), balances, convertPrices)
+                        processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType,
+                                feeInstruction.makerSize, feeCoefCalculator.calculate(), balances, convertPrices)
                     }
                     is NewLimitOrderFeeInstruction -> {
                         feeCoefCalculator.feeModificator = feeInstruction.makerFeeModificator
-                        processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType, feeInstruction.makerSize, feeCoefCalculator.calculate(), balances, convertPrices)
+                        processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType, feeInstruction.makerSize,
+                                feeCoefCalculator.calculate(), balances, convertPrices)
                     }
                     else -> throw FeeException("Fee instruction should be instance of LimitOrderFeeInstruction")
                 }
@@ -92,12 +95,15 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             }
             Fee(feeInstruction, feeTransfer)
         }
-        val totalFeeAmount = fees.sumByDouble { fee ->
-            if (fee.instruction.type == FeeType.CLIENT_FEE && fee.transfer != null && fee.transfer.asset == receiptOperation.assetId)
-                fee.transfer.volume else 0.0
-        }
-        if (totalFeeAmount > 0 && totalFeeAmount > Math.abs(receiptOperation.amount)) {
-            throw FeeException("Total fee amount should be not more than ${if (receiptOperation.amount < 0) "abs " else ""}operation amount (total fee: ${NumberUtils.roundForPrint(totalFeeAmount)}, operation amount ${NumberUtils.roundForPrint(receiptOperation.amount)})")
+
+        val totalFeeAmount = fees.stream()
+                .map { if (it.instruction.type == FeeType.CLIENT_FEE && it.transfer != null && it.transfer.asset == receiptOperation.assetId)
+                    it.transfer.volume else BigDecimal.ZERO}
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+
+        if (totalFeeAmount > BigDecimal.ZERO && totalFeeAmount > receiptOperation.amount.abs()) {
+            throw FeeException("Total fee amount should be not more than " +
+                    "${if (receiptOperation.amount < BigDecimal.ZERO) "abs " else ""}operation amount (total fee: ${NumberUtils.roundForPrint(totalFeeAmount)}, operation amount ${NumberUtils.roundForPrint(receiptOperation.amount)})")
         }
         externalBalances?.putAll(balances)
         operations.clear()
@@ -109,14 +115,14 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                            receiptOperationWrapper: ReceiptOperationWrapper,
                            operations: MutableList<WalletOperation>,
                            feeSizeType: FeeSizeType?,
-                           feeSize: Double?,
-                           feeCoef: Double?,
-                           balances: MutableMap<String, MutableMap<String, Double>>,
-                           convertPrices: Map<String, Double>): FeeTransfer? {
+                           feeSize: BigDecimal?,
+                           feeCoef: BigDecimal?,
+                           balances: MutableMap<String, MutableMap<String, BigDecimal>>,
+                           convertPrices: Map<String, BigDecimal>): FeeTransfer? {
         if (feeInstruction.type == FeeType.NO_FEE || feeSize == null) {
             return null
         }
-        if (feeSizeType == null || feeSize < 0.0 || feeInstruction.targetClientId == null) {
+        if (feeSizeType == null || feeSize < BigDecimal.ZERO || feeInstruction.targetClientId == null) {
             throw FeeException("Invalid fee instruction (size type: $feeSizeType, size: $feeSize, targetClientId: ${feeInstruction.targetClientId })")
         }
         val receiptOperation = receiptOperationWrapper.baseReceiptOperation
@@ -124,14 +130,14 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         val feeAsset = getFeeAsset(feeInstruction, operationAsset)
         val isAnotherAsset = operationAsset.assetId != feeAsset.assetId
 
-        val absFeeAmount = NumberUtils.round(when (feeSizeType) {
+        val absFeeAmount = NumberUtils.setScaleRoundUp(when (feeSizeType) {
             FeeSizeType.PERCENTAGE -> {
                 // In case of cash out receipt operation has a negative amount, but fee amount should be positive
-                val absBaseAssetFeeAmount = Math.abs(receiptOperation.amount) * feeSize
-                (if (isAnotherAsset) absBaseAssetFeeAmount * computeInvertCoef(operationAsset.assetId, feeAsset.assetId, convertPrices) else absBaseAssetFeeAmount) * (feeCoef ?: 1.0)
+                val absBaseAssetFeeAmount = receiptOperation.amount.abs() * feeSize
+                (if (isAnotherAsset) absBaseAssetFeeAmount * computeInvertCoef(operationAsset.assetId, feeAsset.assetId, convertPrices) else absBaseAssetFeeAmount) * (feeCoef ?: BigDecimal.ONE)
             }
-            FeeSizeType.ABSOLUTE -> feeSize * (feeCoef ?: 1.0)
-        }, feeAsset.accuracy, true)
+            FeeSizeType.ABSOLUTE -> feeSize * (feeCoef ?: BigDecimal.ONE)
+        }, feeAsset.accuracy)
 
         return when (feeInstruction.type) {
             FeeType.CLIENT_FEE -> processClientFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances)
@@ -146,10 +152,10 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
     private fun processExternalFee(feeInstruction: FeeInstruction,
                                    receiptOperationWrapper: ReceiptOperationWrapper,
                                    operations: MutableList<WalletOperation>,
-                                   absFeeAmount: Double,
+                                   absFeeAmount: BigDecimal,
                                    feeAsset: Asset,
-                                   feeCoef: Double?,
-                                   balances: MutableMap<String, MutableMap<String, Double>>): FeeTransfer? {
+                                   feeCoef: BigDecimal?,
+                                   balances: MutableMap<String, MutableMap<String, BigDecimal>>): FeeTransfer? {
         if (feeInstruction.sourceClientId == null) {
             throw FeeException("Source client is null for external fee")
         }
@@ -159,20 +165,21 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
         }
         val receiptOperation = receiptOperationWrapper.baseReceiptOperation
-        clientBalances[feeAsset.assetId] = NumberUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
+        clientBalances[feeAsset.assetId] = NumberUtils.setScaleRoundHalfUp(balance - absFeeAmount, feeAsset.accuracy)
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.sourceClientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
         operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
-        return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
+        return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId,
+                receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
     }
 
     private fun processClientFee(feeInstruction: FeeInstruction,
                                  receiptOperationWrapper: ReceiptOperationWrapper,
                                  operations: MutableList<WalletOperation>,
-                                 absFeeAmount: Double,
+                                 absFeeAmount: BigDecimal,
                                  feeAsset: Asset,
                                  isAnotherAsset: Boolean,
-                                 feeCoef: Double?,
-                                 balances: MutableMap<String, MutableMap<String, Double>>): FeeTransfer? {
+                                 feeCoef: BigDecimal?,
+                                 balances: MutableMap<String, MutableMap<String, BigDecimal>>): FeeTransfer? {
         val receiptOperation = receiptOperationWrapper.currentReceiptOperation
         val clientBalances = balances.getOrPut(receiptOperation.clientId) { HashMap() }
         val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesHolder.getAvailableBalance(receiptOperation.clientId, feeAsset.assetId) }
@@ -181,23 +188,26 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             if (balance < absFeeAmount) {
                 throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
             }
-            clientBalances[feeAsset.assetId] = NumberUtils.parseDouble(balance - absFeeAmount, feeAsset.accuracy).toDouble()
+            clientBalances[feeAsset.assetId] = NumberUtils.setScaleRoundHalfUp(balance - absFeeAmount, feeAsset.accuracy)
             operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, receiptOperation.clientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
         } else {
             val baseReceiptOperationAmount = receiptOperationWrapper.baseReceiptOperation.amount
-            if (absFeeAmount > Math.abs(baseReceiptOperationAmount)) {
-                throw FeeException("Base asset fee amount ($absFeeAmount) should be in [0, ${Math.abs(baseReceiptOperationAmount)}]")
+            if (absFeeAmount > baseReceiptOperationAmount.abs()) {
+                throw FeeException("Base asset fee amount ($absFeeAmount) should be in [0, ${baseReceiptOperationAmount.abs()}]")
             }
-            val newReceiptAmount = if (baseReceiptOperationAmount > 0) receiptOperation.amount - absFeeAmount else receiptOperation.amount
+            val newReceiptAmount = if (baseReceiptOperationAmount > BigDecimal.ZERO) receiptOperation.amount - absFeeAmount else receiptOperation.amount
             operations.remove(receiptOperation)
-            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId, receiptOperation.assetId, receiptOperation.dateTime, NumberUtils.parseDouble(newReceiptAmount, feeAsset.accuracy).toDouble())
+            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId,
+                    receiptOperation.assetId, receiptOperation.dateTime, NumberUtils.setScaleRoundHalfUp(newReceiptAmount, feeAsset.accuracy))
             operations.add(newReceiptOperation)
             receiptOperationWrapper.currentReceiptOperation = newReceiptOperation
         }
 
-        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
+        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!,
+                feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
 
-        return FeeTransfer(receiptOperation.externalId, receiptOperation.clientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.parseDouble(feeCoef, FEE_COEF_ACCURACY).toDouble() else null)
+        return FeeTransfer(receiptOperation.externalId, receiptOperation.clientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount,
+                feeAsset.assetId, if (feeCoef != null) NumberUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
     }
 
     private fun getFeeAsset(feeInstruction: FeeInstruction, operationAsset: Asset): Asset {
@@ -208,7 +218,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         return if (assetIds.isNotEmpty()) assetsHolder.getAsset(assetIds.first()) else operationAsset
     }
 
-    private fun computeInvertCoef(operationAssetId: String, feeAssetId: String, convertPrices: Map<String, Double>): Double {
+    private fun computeInvertCoef(operationAssetId: String, feeAssetId: String, convertPrices: Map<String, BigDecimal>): BigDecimal {
         val assetPair = try {
             assetsPairsHolder.getAssetPair(operationAssetId, feeAssetId)
         } catch (e: Exception) {
@@ -220,12 +230,13 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             val orderBook = genericLimitOrderService.getOrderBook(assetPair.assetPairId)
             val askPrice = orderBook.getAskPrice()
             val bidPrice = orderBook.getBidPrice()
-            if (askPrice > 0.0 && bidPrice > 0.0) (askPrice + bidPrice) / 2 else 0.0
+            if (askPrice > BigDecimal.ZERO && bidPrice > BigDecimal.ZERO) NumberUtils.divideWithMaxScale((askPrice + bidPrice), BigDecimal.valueOf(2)) else BigDecimal.ZERO
         }
-        if (price <= 0.0) {
+
+        if (price <= BigDecimal.ZERO) {
             throw FeeException("Unable to get a price to convert to fee asset (price is not positive or order book is empty)")
         }
-        return if (assetPair.baseAssetId == feeAssetId) 1 / price else price
+        return if (assetPair.baseAssetId == feeAssetId) NumberUtils.divideWithMaxScale(BigDecimal.ONE, price) else price
     }
 
 }

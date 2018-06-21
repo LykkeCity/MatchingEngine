@@ -9,6 +9,7 @@ import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import java.math.BigDecimal
 import java.util.Date
 
 class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) : AbstractService {
@@ -27,7 +28,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
                 "reserved amount: ${NumberUtils.roundForPrint(message.reservedAmount)}")
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-        if (message.reservedAmount > balance) {
+        if (BigDecimal.valueOf(message.reservedAmount) > balance) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setStatus(MessageStatus.BALANCE_LOWER_THAN_RESERVED.type))
             LOGGER.info("Balance (client ${message.clientId}, asset ${message.assetId}, ${NumberUtils.roundForPrint(balance)}) is lower that reserved balance ${NumberUtils.roundForPrint(message.reservedAmount)}")
@@ -37,7 +38,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
         val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
-                message.clientId, message.assetId, message.reservedAmount, false)
+                message.clientId, message.assetId, BigDecimal.valueOf(message.reservedAmount), false)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.RUNTIME.type))
@@ -51,7 +52,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
                         message.assetId,
                         balance,
                         balance,
-                        currentReservedBalance, message.reservedAmount)), messageWrapper.messageId!!))
+                        currentReservedBalance, BigDecimal.valueOf(message.reservedAmount))), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(MessageStatus.OK.type))

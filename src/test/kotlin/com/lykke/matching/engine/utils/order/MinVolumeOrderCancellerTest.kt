@@ -25,7 +25,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.util.Date
+import java.math.BigDecimal
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
@@ -102,7 +105,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10001.0, volume = 0.001)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "BTCUSD",
-                volumes = listOf(VolumePrice(0.00102, 10002.0), VolumePrice(-0.00001, 11000.0)),
+                volumes = listOf(VolumePrice(BigDecimal.valueOf(0.00102), BigDecimal.valueOf(10002.0)),
+                        VolumePrice(BigDecimal.valueOf(-0.00001), BigDecimal.valueOf(11000.0))),
                 ordersFee = emptyList(), ordersFees = emptyList()))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "BTCUSD", price = 10002.0, volume = -0.001)))
@@ -115,14 +119,15 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order2", clientId = "Client2", assetId = "EURUSD", price = 1.1, volume = 4.09)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "TrustedClient", pair = "EURUSD",
-                volumes = listOf(VolumePrice(30.0, 1.1), VolumePrice(-30.0, 1.4)),
+                volumes = listOf(VolumePrice(BigDecimal.valueOf(30.0), BigDecimal.valueOf(1.1)),
+                        VolumePrice(BigDecimal.valueOf(-30.0), BigDecimal.valueOf(1.4))),
                 ordersFee = emptyList(), ordersFees = emptyList()))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "ClientForPartiallyMatching", assetId = "EURUSD", price = 1.2, volume = 6.0)))
 
 
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5, 0.0001))
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2, 5.0))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5, BigDecimal.valueOf(0.0001)))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2,  BigDecimal.valueOf(5.0)))
         initServices()
 
         trustedClientsLimitOrdersQueue.clear()
@@ -132,26 +137,26 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         orderBookQueue.clear()
         canceller.cancel()
 
-        assertEquals(2.001, testWalletDatabaseAccessor.getBalance("TrustedClient", "BTC"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.valueOf (2.001), testWalletDatabaseAccessor.getBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "BTC"))
 
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "USD"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "EUR"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "USD"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "EUR"))
 
-        assertEquals(1.0, testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(1.0), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(1.0), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
 
-        assertEquals(1007.2, testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(111.01, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(1007.2), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(111.01), testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
 
-        assertEquals(94.0, testWalletDatabaseAccessor.getBalance("Client1", "EUR"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "EUR"))
+        assertEquals(BigDecimal.valueOf(94.0), testWalletDatabaseAccessor.getBalance("Client1", "EUR"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "EUR"))
 
-        assertEquals(3000.0, testWalletDatabaseAccessor.getBalance("Client2", "USD"))
-        assertEquals(10.01, testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(3000.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
+        assertEquals(BigDecimal.valueOf(10.01), testWalletDatabaseAccessor.getReservedBalance("Client2", "USD"))
 
-        assertEquals(300.0, testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
+        assertEquals(BigDecimal.valueOf(300.0), testWalletDatabaseAccessor.getBalance("Client2", "EUR"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "EUR"))
 
         // BTCUSD
         assertEquals(1, testOrderDatabaseAccessor.getOrders("BTCUSD", true).filter { it.clientId == "Client1" }.size)
@@ -178,12 +183,12 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertFalse(testOrderDatabaseAccessor.getOrders("EURUSD", false).any { it.clientId == "Client2" })
 
         // check order is removed from ordersMap
-        assertNull(genericLimitOrderService.cancelLimitOrder("order1", false))
-        assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         assertEquals(1, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
-        assertEquals(11000.0, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.first().order.price)
+        assertEquals(BigDecimal.valueOf(11000.0), (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.first().order.price)
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         assertEquals(5, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
@@ -197,10 +202,11 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
     @Test
     fun testCancelOrdersWithRemovedAssetPair() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "order1", clientId = "Client1", assetId = "BTCEUR", price = 10000.0, volume = -1.0)))
-        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient", listOf(VolumePrice(-1.0, price = 10000.0)), emptyList(), emptyList(), listOf("order2")))
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "TrustedClient",
+                listOf(VolumePrice(BigDecimal.valueOf(-1.0), price = BigDecimal.valueOf(10000.0))), emptyList(), emptyList(), listOf("order2")))
 
-        assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
-        assertEquals(1.0, balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.valueOf( 1.0), balancesHolder.getReservedBalance("Client1", "BTC"))
         assertEquals(2, testOrderDatabaseAccessor.getOrders("BTCEUR", false).size)
         assertEquals(2, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)
 
@@ -212,17 +218,17 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(0, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)
 
         // check order is removed from ordersMap
-        assertNull(genericLimitOrderService.cancelLimitOrder("order1", false))
-        assertNull(genericLimitOrderService.cancelLimitOrder("order2", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
+        assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
         // check order is removed from clientOrdersMap
         assertEquals(0, genericLimitOrderService.searchOrders("Client1", "BTCEUR", false).size)
         assertEquals(0, genericLimitOrderService.searchOrders("TrustedClient", "BTCEUR", false).size)
 
-        assertEquals(1.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
-        assertEquals(1.0, balancesHolder.getReservedBalance("Client1", "BTC"))
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "BTC"))
-        assertEquals(0.0, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.valueOf(1.0), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.valueOf(1.0), balancesHolder.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "BTC"))
+        assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
         val recalculator = ReservedVolumesRecalculator(
@@ -232,7 +238,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
                 applicationContext)
 
         recalculator.recalculate()
-        assertEquals(0.0, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
+        assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }
 
 }

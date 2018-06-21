@@ -1,21 +1,22 @@
 package com.lykke.matching.engine.utils
 
-import com.lykke.matching.engine.daos.FeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.LimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.daos.fee.NewFeeInstruction
-import com.lykke.matching.engine.daos.fee.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
+import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
@@ -36,9 +37,12 @@ class MessageBuilder {
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
-                            previousExternalId: String? = null): NewLimitOrder =
-                NewLimitOrder(uid, uid, assetId, clientId, volume, price, status, registered, registered, volume, null, reservedVolume, fee, fees,
-                        type, lowerLimitPrice, lowerPrice, upperLimitPrice, upperPrice, previousExternalId)
+                            previousExternalId: String? = null): LimitOrder =
+                LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf( volume), BigDecimal.valueOf(price), status, registered, registered, registered, BigDecimal.valueOf(volume), null,
+                        reservedVolume?.toBigDecimal(), fee, fees,
+                        type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
+                        upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
+                        previousExternalId)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -46,7 +50,7 @@ class MessageBuilder {
                     .setTimestamp(order.createdAt.time)
                     .setClientId(order.clientId)
                     .setAssetPairId(order.assetPairId)
-                    .setVolume(order.volume)
+                    .setVolume(order.volume.toDouble())
                     .setStraight(order.straight)
             order.fee?.let {
                 builder.setFee(buildFee(it))
@@ -61,7 +65,7 @@ class MessageBuilder {
         fun buildFee(fee: FeeInstruction): ProtocolMessages.Fee {
             val builder = ProtocolMessages.Fee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
-                builder.size = it
+                builder.size = it.toDouble()
             }
             fee.sourceClientId?.let {
                 builder.setSourceClientId(it)
@@ -81,13 +85,13 @@ class MessageBuilder {
         fun buildLimitOrderFee(fee: LimitOrderFeeInstruction): ProtocolMessages.LimitOrderFee {
             val builder = ProtocolMessages.LimitOrderFee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
-                builder.takerSize = it
+                builder.takerSize = it.toDouble()
             }
             fee.sizeType?.let {
                 builder.takerSizeType = it.externalId
             }
             fee.makerSize?.let {
-                builder.makerSize = it
+                builder.makerSize = it.toDouble()
             }
             fee.makerSizeType?.let {
                 builder.makerSizeType = it.externalId
@@ -104,13 +108,13 @@ class MessageBuilder {
         fun buildNewLimitOrderFee(fee: NewLimitOrderFeeInstruction): ProtocolMessages.LimitOrderFee {
             val builder = ProtocolMessages.LimitOrderFee.newBuilder().setType(fee.type.externalId)
             fee.size?.let {
-                builder.takerSize = it
+                builder.takerSize = it.toDouble()
             }
             fee.sizeType?.let {
                 builder.takerSizeType = it.externalId
             }
             fee.makerSize?.let {
-                builder.makerSize = it
+                builder.makerSize = it.toDouble()
             }
             fee.makerSizeType?.let {
                 builder.makerSizeType = it.externalId
@@ -135,20 +139,24 @@ class MessageBuilder {
                              reservedVolume: Double? = null,
                              fee: FeeInstruction? = null,
                              fees: List<NewFeeInstruction> = listOf()): MarketOrder =
-                MarketOrder(rowKey, rowKey, assetId, clientId, volume, null, status, registered, Date(), null, straight, reservedVolume, fee = fee, fees = fees)
+                MarketOrder(rowKey, rowKey, assetId, clientId,
+                        BigDecimal.valueOf(volume), null, status, registered, registered, Date(),
+                        null, straight,
+                        reservedVolume?.toBigDecimal(),
+                        fee = fee, fees = fees)
 
-        fun buildLimitOrderWrapper(order: NewLimitOrder,
+        fun buildLimitOrderWrapper(order: LimitOrder,
                                    cancel: Boolean = false): MessageWrapper {
             val builder = ProtocolMessages.LimitOrder.newBuilder()
                     .setUid(order.externalId)
                     .setTimestamp(order.createdAt.time)
                     .setClientId(order.clientId)
                     .setAssetPairId(order.assetPairId)
-                    .setVolume(order.volume)
+                    .setVolume(order.volume.toDouble())
                     .setCancelAllPreviousLimitOrders(cancel)
                     .setType(order.type!!.externalId)
             if (order.type == LimitOrderType.LIMIT) {
-                builder.price = order.price
+                builder.price = order.price.toDouble()
             }
             order.fee?.let {
                 builder.setFee(buildLimitOrderFee(it as LimitOrderFeeInstruction))
@@ -156,10 +164,10 @@ class MessageBuilder {
             order.fees?.forEach {
                 builder.addFees(buildNewLimitOrderFee(it as NewLimitOrderFeeInstruction))
             }
-            order.lowerLimitPrice?.let { builder.setLowerLimitPrice(it) }
-            order.lowerPrice?.let { builder.setLowerPrice(it) }
-            order.upperLimitPrice?.let { builder.setUpperLimitPrice(it) }
-            order.upperPrice?.let { builder.setUpperPrice(it) }
+            order.lowerLimitPrice?.let { builder.setLowerLimitPrice(it.toDouble()) }
+            order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
+            order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
+            order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
             return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test")
         }
 
@@ -174,8 +182,8 @@ class MessageBuilder {
                                         cancelMode: OrderCancelMode? = null
         ): MessageWrapper {
             val orders = volumes.mapIndexed { i, volume ->
-                IncomingLimitOrder(volume.volume,
-                        volume.price,
+                IncomingLimitOrder(volume.volume.toDouble(),
+                        volume.price.toDouble(),
                         if (i < ordersUid.size) ordersUid[i] else UUID.randomUUID().toString(),
                         if (i < ordersFee.size) ordersFee[i] else null,
                         if (i < ordersFees.size) ordersFees[i] else emptyList(),
@@ -255,7 +263,9 @@ class MessageBuilder {
                                  targetClientId: String? = null,
                                  assetIds: List<String> = emptyList()): List<NewFeeInstruction> {
             return if (type == null) listOf()
-            else return listOf(NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, assetIds))
+            else return listOf(NewFeeInstruction(type, sizeType,
+                    if (size != null) BigDecimal.valueOf(size) else null,
+                    sourceClientId, targetClientId, assetIds))
         }
 
         fun buildFeeInstruction(type: FeeType? = null,
@@ -265,7 +275,9 @@ class MessageBuilder {
                                 targetClientId: String? = null,
                                 assetIds: List<String> = emptyList()): NewFeeInstruction? {
             return if (type == null) null
-            else return NewFeeInstruction(type, sizeType, size, sourceClientId, targetClientId, assetIds)
+            else return NewFeeInstruction(type, sizeType,
+                    if (size != null) BigDecimal.valueOf(size) else null,
+                    sourceClientId, targetClientId, assetIds)
         }
 
         fun buildLimitOrderFeeInstruction(type: FeeType? = null,
@@ -276,7 +288,12 @@ class MessageBuilder {
                                           sourceClientId: String? = null,
                                           targetClientId: String? = null): LimitOrderFeeInstruction? {
             return if (type == null) null
-            else return LimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId)
+            else return LimitOrderFeeInstruction(type, takerSizeType,
+                    if (takerSize != null) BigDecimal.valueOf(takerSize) else null,
+                    makerSizeType,
+                    if (makerSize != null) BigDecimal.valueOf(makerSize) else null,
+                    sourceClientId,
+                    targetClientId)
         }
 
         fun buildLimitOrderFeeInstructions(type: FeeType? = null,
@@ -289,7 +306,12 @@ class MessageBuilder {
                                            assetIds: List<String> = emptyList(),
                                            makerFeeModificator: Double? = null): List<NewLimitOrderFeeInstruction> {
             return if (type == null) listOf()
-            else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType, takerSize, makerSizeType, makerSize, sourceClientId, targetClientId, assetIds, makerFeeModificator))
+            else return listOf(NewLimitOrderFeeInstruction(type, takerSizeType,
+                    if(takerSize != null)  BigDecimal.valueOf(takerSize) else null,
+                    makerSizeType,
+                    if(makerSize != null) BigDecimal.valueOf(makerSize) else null,
+                    sourceClientId, targetClientId, assetIds,
+                    if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
 
         fun buildTransferWrapper(fromClientId: String,

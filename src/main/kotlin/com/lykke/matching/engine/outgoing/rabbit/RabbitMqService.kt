@@ -6,5 +6,9 @@ import com.lykke.matching.engine.utils.config.RabbitConfig
 import java.util.concurrent.BlockingQueue
 
 interface RabbitMqService {
-    fun startPublisher(config: RabbitConfig, queue: BlockingQueue<JsonSerializable>, messageDatabaseLogger: MessageDatabaseLogger? = null)
+    fun startPublisher(config: RabbitConfig,
+                       queue: BlockingQueue<JsonSerializable>,
+                       appName: String,
+                       appVersion: String,
+                       messageDatabaseLogger: MessageDatabaseLogger?)
 }

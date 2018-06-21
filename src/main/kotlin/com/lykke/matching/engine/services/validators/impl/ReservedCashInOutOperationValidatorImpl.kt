@@ -8,6 +8,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
@@ -31,7 +32,7 @@ class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
         val balance = balancesHolder.getBalance(message.clientId, message.assetId)
-        if (NumberUtils.parseDouble(balance - reservedBalance - message.reservedVolume, accuracy).toDouble() < 0.0) {
+        if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance - BigDecimal.valueOf(message.reservedVolume), accuracy) < BigDecimal.ZERO) {
             LOGGER.info("Reserved cash in operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: low balance $balance, " +
                     "current reserved balance $reservedBalance")
@@ -43,7 +44,7 @@ class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val
         val accuracy = assetsHolder.getAsset(message.assetId).accuracy
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-        if (NumberUtils.parseDouble(reservedBalance + message.reservedVolume, accuracy).toDouble() < 0.0) {
+        if (NumberUtils.setScaleRoundHalfUp(reservedBalance + BigDecimal.valueOf(message.reservedVolume), accuracy) < BigDecimal.ZERO) {
             LOGGER.info("Reserved cash out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: low reserved balance $reservedBalance")
             throw ValidationException(ValidationException.Validation.LOW_BALANCE)
@@ -53,7 +54,7 @@ class ReservedCashInOutOperationValidatorImpl @Autowired constructor(private val
     private fun isVolumeAccuracyValid(message: ProtocolMessages.ReservedCashInOutOperation) {
         val assetId = message.assetId
         val volume = message.reservedVolume
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(volume, assetsHolder.getAsset(assetId).accuracy)
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(volume), assetsHolder.getAsset(assetId).accuracy)
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy invalid, assetId $assetId, volume $volume")

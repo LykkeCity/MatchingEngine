@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
@@ -75,8 +76,8 @@ class NegativePriceTest : AbstractTest() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD",
                 "Client",
                 listOf(
-                        VolumePrice(1.0, 1.0),
-                        VolumePrice(1.0, -1.0)
+                        VolumePrice(BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0)),
+                        VolumePrice(BigDecimal.valueOf(1.0), BigDecimal.valueOf(-1.0))
                 ),
                 emptyList(),
                 emptyList(),
