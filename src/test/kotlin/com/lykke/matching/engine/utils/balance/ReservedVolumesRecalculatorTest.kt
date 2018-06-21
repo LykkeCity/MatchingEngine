@@ -34,14 +34,19 @@ import com.lykke.matching.engine.utils.assertEquals
 class ReservedVolumesRecalculatorTest {
 
     @Autowired
-    private lateinit var applicationEventPublisher: ApplicationEventPublisher
-
-    @Autowired
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
-    private val orderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    private val stopOrderBookDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
-    private val reservedVolumesDatabaseAccessor = TestReservedVolumesDatabaseAccessor()
+    @Autowired
+    private lateinit var orderBookDatabaseAccessor: TestFileOrderDatabaseAccessor
+
+    @Autowired
+    private lateinit var stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor
+
+    @Autowired
+    private lateinit var reservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor
+
+    @Autowired
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     @TestConfiguration
     open class Config {
@@ -133,8 +138,6 @@ class ReservedVolumesRecalculatorTest {
 
     @Test
     fun testRecalculate() {
-        val recalculator = ReservedVolumesRecalculator(orderBookDatabaseAccessor,
-                stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext, applicationEventPublisher)
         recalculator.recalculate()
 
         val testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor

@@ -1,14 +1,12 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
+import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
@@ -26,10 +24,7 @@ class Application {
     lateinit var accountsMigrationService: AccountsMigrationService
 
     @Autowired
-    lateinit var applicationContext: ApplicationContext
-
-    @Autowired
-    lateinit var applicationEventPublisher: ApplicationEventPublisher
+    lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     fun run () {
         try {
@@ -46,7 +41,7 @@ class Application {
             System.exit(1)
         }
 
-        correctReservedVolumesIfNeed(config, applicationContext, applicationEventPublisher)
+        reservedVolumesRecalculator.correctReservedVolumesIfNeed()
         socketServer.run()
     }
 }
