@@ -8,6 +8,7 @@ import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
@@ -24,6 +25,9 @@ class Application {
     @Autowired
     lateinit var applicationContext: ApplicationContext
 
+    @Autowired
+    lateinit var applicationEventPublisher: ApplicationEventPublisher
+
     fun run () {
         try {
             azureStatusProcessor.run()
@@ -39,7 +43,7 @@ class Application {
             System.exit(1)
         }
 
-        correctReservedVolumesIfNeed(config, applicationContext)
+        correctReservedVolumesIfNeed(config, applicationContext, applicationEventPublisher)
         socketServer.run()
     }
 }
