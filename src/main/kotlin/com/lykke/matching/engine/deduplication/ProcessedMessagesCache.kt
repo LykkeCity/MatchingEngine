@@ -3,6 +3,7 @@ package com.lykke.matching.engine.deduplication
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -17,6 +18,7 @@ import kotlin.concurrent.write
 
 @Component
 class ProcessedMessagesCache @Autowired constructor(
+        @Qualifier("MultiSourceProcessedMessageDatabaseAccessor")
         private val readOnlyProcessedMessagesDatabaseAccessor: ReadOnlyProcessedMessagesDatabaseAccessor,
         private val config: Config,
         private val taskScheduler: TaskScheduler) {
