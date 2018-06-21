@@ -108,7 +108,11 @@ class RedisPersistenceManager(
                 updatedWalletsQueue.put(data.balancesData!!.wallets)
             }
         } catch (e: Exception) {
-            transaction.clear()
+            try {
+                transaction.clear()
+            } catch (clearTxException: Exception) {
+                e.addSuppressed(clearTxException)
+            }
             throw e
         }
     }
