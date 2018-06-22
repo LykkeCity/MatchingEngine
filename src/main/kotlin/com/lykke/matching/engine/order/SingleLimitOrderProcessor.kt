@@ -2,7 +2,6 @@ package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus

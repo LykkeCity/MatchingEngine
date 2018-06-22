@@ -290,8 +290,10 @@ class MatchingEngine(private val LOGGER: Logger,
         }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
-            order.updateStatus(OrderStatus.Processing, now)
-            order.updateRemainingVolume(if (order.isBuySide() ||  NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO) ) remainingVolume else -remainingVolume)
+            if (originOrder.volume != remainingVolume) {
+                order.updateStatus(OrderStatus.Processing, now)
+                order.updateRemainingVolume(if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume)
+            }
         } else {
             order.updateStatus(OrderStatus.Matched, now)
             order.updateRemainingVolume(BigDecimal.ZERO)

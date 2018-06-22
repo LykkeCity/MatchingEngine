@@ -154,7 +154,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
-        performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
