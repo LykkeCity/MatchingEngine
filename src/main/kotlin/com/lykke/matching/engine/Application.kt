@@ -21,16 +21,10 @@ class Application {
     lateinit var azureStatusProcessor: Runnable
 
     @Autowired
-    lateinit var accountsMigrationService: AccountsMigrationService
-
-    @Autowired
     lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @Autowired
     lateinit var applicationContext: ApplicationContext
-
-    @Autowired
-    lateinit var applicationEventPublisher: ApplicationEventPublisher
 
     fun run () {
         try {
