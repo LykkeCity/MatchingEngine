@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component
 @Component
 class Application {
     @Autowired
-    private lateinit var config: Config
-
-    @Autowired
     lateinit var socketServer: Runnable
 
     @Autowired
