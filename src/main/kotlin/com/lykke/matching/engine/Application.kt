@@ -30,7 +30,7 @@ class Application {
         try {
             azureStatusProcessor.run()
         } catch (e: CheckAppInstanceRunningException) {
-            LOGGER.error(e.message)
+            AppInitializer.teeLog("Error occurred while starting application $e.message")
             System.exit(1)
         }
 
