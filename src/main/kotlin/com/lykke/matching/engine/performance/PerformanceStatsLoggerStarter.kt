@@ -21,6 +21,6 @@ class PerformanceStatsLoggerStarter @Autowired constructor(private val performan
             Thread.currentThread().name = "PerformanceStatsLogger"
             performanceStatsLogger.logStats(performanceStatsHolder.getStatsAndReset().values)
         }, ZonedDateTime.now().toInstant().plusMillis(config.me.performanceStatsInterval),
-        Duration.ofMillis(config.me.performanceStatsInterval))
+                Duration.ofMillis(config.me.performanceStatsInterval))
     }
 }
