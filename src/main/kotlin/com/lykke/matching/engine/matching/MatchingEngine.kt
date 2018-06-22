@@ -41,6 +41,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
     private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     private var tradeIndex: Long = 0
+    private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
 
     fun initTransaction(): MatchingEngine {
         tradeIndex = 0
@@ -54,7 +55,20 @@ class MatchingEngine(private val LOGGER: Logger,
         copyWrappers.forEach { it.applyToOrigin() }
     }
 
-    private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
+    fun updatedOrders(orderBook: Collection<LimitOrder>, newOrders: Collection<LimitOrder>): UpdatedOrders {
+        val updatedOrderBook = ArrayList<LimitOrder>(orderBook.size)
+        val updatedOrders = newOrders.toMutableSet()
+        orderBook.forEach { order ->
+            val updatedOrder = changedOrders[order]?.copy
+            if (updatedOrder != null) {
+                updatedOrders.add(updatedOrder)
+                updatedOrderBook.add(updatedOrder)
+            } else {
+                updatedOrderBook.add(order)
+            }
+        }
+        return UpdatedOrders(updatedOrderBook, updatedOrders)
+    }
 
     fun match(originOrder: Order, orderBook: PriorityBlockingQueue<LimitOrder>, messageId: String, balance: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)

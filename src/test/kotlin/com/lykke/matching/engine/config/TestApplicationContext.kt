@@ -9,6 +9,8 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.services.BalanceUpdateService
@@ -113,8 +115,22 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun persistenceManager(): PersistenceManager {
-        return TestPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor)
+    open fun ordersDatabaseAccessorsHolder(): OrdersDatabaseAccessorsHolder {
+        val secondaryDbAccessor = TestFileOrderDatabaseAccessor()
+        return OrdersDatabaseAccessorsHolder(TestOrderBookDatabaseAccessor(secondaryDbAccessor), secondaryDbAccessor)
+    }
+
+    @Bean
+    open fun stopOrdersDatabaseAccessorsHolder(): StopOrdersDatabaseAccessorsHolder {
+        return StopOrdersDatabaseAccessorsHolder(TestStopOrderBookDatabaseAccessor(), null)
+    }
+
+    @Bean
+    open fun persistenceManager(ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
+                                stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): PersistenceManager {
+        return TestPersistenceManager(balancesDatabaseAccessorsHolder().primaryAccessor,
+                ordersDatabaseAccessorsHolder,
+                stopOrdersDatabaseAccessorsHolder.primaryAccessor)
     }
 
     @Bean

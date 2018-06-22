@@ -6,6 +6,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestOrderBookDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -48,6 +49,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
     @Before
     fun setUp() {
+        val testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestOrderBookDatabaseAccessor
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = 100.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0, volume = -1.0))
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = 200.0))

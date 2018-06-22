@@ -4,9 +4,11 @@ import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
+import com.lykke.matching.engine.utils.migration.OrdersMigrationService
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
@@ -28,6 +30,9 @@ class Application {
     lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @Autowired
+    lateinit var applicationContext: ApplicationContext
+
+    @Autowired
     lateinit var applicationEventPublisher: ApplicationEventPublisher
 
     fun run () {
@@ -39,9 +44,16 @@ class Application {
         }
 
         try {
-            accountsMigrationService.migrateAccountsIfConfigured()
+            applicationContext.getBean(AccountsMigrationService::class.java).migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
+            System.exit(1)
+        }
+
+        try {
+            applicationContext.getBean(OrdersMigrationService::class.java).migrateOrdersIfConfigured()
+        } catch (e: Exception) {
+            AppInitializer.teeLog("Unable to migrate orders: ${e.message}")
             System.exit(1)
         }
 

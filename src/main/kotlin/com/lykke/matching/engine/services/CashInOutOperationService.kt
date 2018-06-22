@@ -72,7 +72,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage())
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null, null)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()

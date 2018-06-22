@@ -67,7 +67,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             }
 
             val updated = balancesHolder.updateBalance(messageWrapper.processedMessage(),
-                    message.clientId, message.assetId,  BigDecimal.valueOf(message.amount))
+                    message.clientId, message.assetId, BigDecimal.valueOf(message.amount))
             messageWrapper.processedMessagePersisted = true
             if (!updated) {
                 messageWrapper.writeNewResponse(
