@@ -15,9 +15,6 @@ import org.springframework.stereotype.Component
 @Component
 class Application {
     @Autowired
-    private lateinit var config: Config
-
-    @Autowired
     lateinit var socketServer: Runnable
 
     @Autowired
@@ -39,7 +36,7 @@ class Application {
         try {
             azureStatusProcessor.run()
         } catch (e: CheckAppInstanceRunningException) {
-            LOGGER.error(e.message)
+            AppInitializer.teeLog("Error occurred while starting application $e.message")
             System.exit(1)
         }
 
