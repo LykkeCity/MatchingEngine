@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache

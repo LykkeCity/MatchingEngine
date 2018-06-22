@@ -40,14 +40,14 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor :TestFileOrderDatabaseAccessor,
+    open fun reservedVolumesRecalculator(testOrderDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                          testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
                                          applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
 
-        return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
+        return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
                 "tset", false, applicationEventPublisher)
@@ -115,9 +115,14 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun ordersDatabaseAccessorsHolder(): OrdersDatabaseAccessorsHolder {
-        val secondaryDbAccessor = TestFileOrderDatabaseAccessor()
-        return OrdersDatabaseAccessorsHolder(TestOrderBookDatabaseAccessor(secondaryDbAccessor), secondaryDbAccessor)
+    open fun ordersDatabaseAccessorsHolder(testOrderBookDatabaseAccessor: TestOrderBookDatabaseAccessor,
+                                           testFileOrderDatabaseAccessor: TestFileOrderDatabaseAccessor): OrdersDatabaseAccessorsHolder {
+        return OrdersDatabaseAccessorsHolder(testOrderBookDatabaseAccessor, testFileOrderDatabaseAccessor)
+    }
+
+    @Bean
+    open fun testOrderBookDatabaseAccessor(testFileOrderDatabaseAccessor: TestFileOrderDatabaseAccessor): TestOrderBookDatabaseAccessor {
+        return TestOrderBookDatabaseAccessor(testFileOrderDatabaseAccessor)
     }
 
     @Bean

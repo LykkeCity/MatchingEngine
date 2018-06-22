@@ -18,8 +18,6 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -37,7 +35,7 @@ class ReservedVolumesRecalculatorTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var orderBookDatabaseAccessor: TestFileOrderDatabaseAccessor
+    private lateinit var orderBookDatabaseAccessor: TestOrderBookDatabaseAccessor
 
     @Autowired
     private lateinit var stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor
@@ -82,9 +80,6 @@ class ReservedVolumesRecalculatorTest {
     }
 
     @Autowired
-    lateinit var applicationContext: ApplicationContext
-
-    @Autowired
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
     @Autowired
@@ -95,8 +90,6 @@ class ReservedVolumesRecalculatorTest {
 
     @Before
     fun setUp() {
-
-
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "trustedClient", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
         orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.4))
