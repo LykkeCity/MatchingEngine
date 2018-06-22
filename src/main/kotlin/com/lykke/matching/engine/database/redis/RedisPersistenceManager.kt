@@ -62,7 +62,6 @@ class RedisPersistenceManager(
         }
     }
 
-    private var jedis: Jedis? = null
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
     private val updatedOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     private val updatedStopOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
