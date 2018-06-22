@@ -59,7 +59,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         }
 
         try {
-            processSwapOperation(operation, ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+            processSwapOperation(operation, messageWrapper.messageId!!, messageWrapper.processedMessage())
             messageWrapper.processedMessagePersisted = true
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
@@ -92,7 +92,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
                 "amount: ${NumberUtils.roundForPrint(message.volume2)} processed")
     }
 
-    private fun processSwapOperation(operation: SwapOperation, processedMessage: ProcessedMessage) {
+    private fun processSwapOperation(operation: SwapOperation, messageId: String, processedMessage: ProcessedMessage?) {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,
@@ -111,7 +111,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         if (!updated) {
             throw Exception("Unable to save balance")
         }
-        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, processedMessage.messageId)
+        walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_SWAP_OPERATION.name, messageId)
     }
 
     private fun parse(array: ByteArray): ProtocolMessages.CashSwapOperation {

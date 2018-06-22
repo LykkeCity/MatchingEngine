@@ -51,10 +51,11 @@ class MarketOrderServiceTest: AbstractTest() {
             testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
             testBackOfficeDatabaseAccessor.addAsset(Asset("GBP", 2))
             testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
-            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 4))
             testBackOfficeDatabaseAccessor.addAsset(Asset("JPY", 2))
             testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
             testBackOfficeDatabaseAccessor.addAsset(Asset("BTC1", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 8))
 
             return testBackOfficeDatabaseAccessor
         }
@@ -72,11 +73,27 @@ class MarketOrderServiceTest: AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("SLRBTC", "SLR", "BTC", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKEUR", "LKK", "EUR", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKKGBP", "LKK", "GBP", 5))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("ETHUSD", "ETH", "USD", 5))
         initServices()
     }
 
     @After
     fun tearDown() {
+    }
+
+    @Test
+    fun test20062018Accuracy() {
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "ETH", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 401.9451)
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 523.99, volume = -0.63, clientId = "Client1", assetId = "ETHUSD"))
+        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 526.531, volume = -0.5, clientId = "Client2", assetId = "ETHUSD"))
+        initServices()
+
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "ETHUSD", straight = false, volume = -401.9451)))
+        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+
+        assertEquals(Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -192,7 +209,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals("1000.00", marketOrderReport.trades.first().marketVolume)
         assertEquals("EUR", marketOrderReport.trades.first().marketAsset)
         assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        assertEquals("1500.00", marketOrderReport.trades.first().limitVolume)
+        assertEquals("1500.0000", marketOrderReport.trades.first().limitVolume)
         assertEquals("USD", marketOrderReport.trades.first().limitAsset)
         assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 

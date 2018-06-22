@@ -7,18 +7,17 @@ import com.lykke.utils.keepalive.http.IsAliveResponse
 import com.lykke.utils.keepalive.http.IsAliveResponseGetter
 import org.apache.http.HttpStatus
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 
-@Component
-class MeIsAliveResponseGetter @Autowired constructor (@Qualifier("GeneralHealthMonitor") private val healthMonitor: HealthMonitor,
+@Component("MeIsAliveResponseGetter")
+class MeIsAliveResponseGetter @Autowired constructor (private val generalHealthMonitor: HealthMonitor,
                                                       private val monitoringStatsCollector: MonitoringStatsCollector): IsAliveResponseGetter() {
 
     override fun getResponse(): IsAliveResponse {
         val monitoringResult = monitoringStatsCollector.collectMonitoringResult()
 
-        val ok = healthMonitor.ok()
+        val ok = generalHealthMonitor.ok()
         val code: Int
         val message: String?
         if (ok) {

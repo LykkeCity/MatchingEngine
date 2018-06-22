@@ -49,7 +49,9 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId, assetPair.quotingAssetId, assetPair.accuracy, BigDecimal.valueOf(assetPair.minVolume), BigDecimal.valueOf(assetPair.minInvertedVolume))
+                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId,
+                        assetPair.quotingAssetId, assetPair.accuracy,
+                        assetPair.minVolume?.toBigDecimal(), assetPair.minInvertedVolume?.toBigDecimal())
             }
         } catch(e: Exception) {
             if (throwException) {

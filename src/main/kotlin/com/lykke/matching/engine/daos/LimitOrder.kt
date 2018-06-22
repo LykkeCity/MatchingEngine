@@ -69,9 +69,9 @@ class LimitOrder(id: String,
 
     override fun copy(): LimitOrder {
         return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate, createdAt,
-                        registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
-                        fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
-                        upperPrice, previousExternalId)
+                registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
+                fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
+                upperPrice, previousExternalId)
     }
 
     override fun applyToOrigin(origin: Copyable) {

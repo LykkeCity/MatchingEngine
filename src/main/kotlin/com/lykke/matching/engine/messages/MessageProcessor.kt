@@ -21,8 +21,6 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -136,7 +134,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
-    private val notDeduplicateMessageTypes = setOf(MessageType.MULTI_LIMIT_ORDER, MessageType.OLD_MULTI_LIMIT_ORDER, MessageType.MULTI_LIMIT_ORDER_CANCEL)
     private val processedMessagesCache: ProcessedMessagesCache
 
     private var bestPriceBuilder: Timer? = null
@@ -157,6 +154,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
+        performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
+
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
 
@@ -400,11 +399,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
             service.processMessage(message)
 
-            if (!ProcessedMessageUtils.isDeduplicationNotNeeded(message.type)) {
-                val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
-                processedMessagesCache.addMessage(processedMessage)
+            message.processedMessage()?.let {
+                processedMessagesCache.addMessage(it)
                 if (!message.processedMessagePersisted) {
-                    persistenceManager.persist(PersistenceData(ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)))
+                    persistenceManager.persist(PersistenceData(it))
                 }
             }
 

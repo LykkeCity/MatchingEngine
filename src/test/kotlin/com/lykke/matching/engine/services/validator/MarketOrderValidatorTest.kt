@@ -199,7 +199,7 @@ class MarketOrderValidatorTest {
 
     private fun toMarketOrder(message: ProtocolMessages.MarketOrder): MarketOrder {
         val now = Date()
-        return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId,BigDecimal.valueOf( message.volume), null,
+        return MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
                 OrderStatus.Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
                 NewFeeInstruction.create(message.fee), listOf(NewFeeInstruction.create(message.fee)))
     }

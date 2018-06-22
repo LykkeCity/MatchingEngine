@@ -1,13 +1,12 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
+import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
@@ -23,7 +22,10 @@ class Application {
     lateinit var azureStatusProcessor: Runnable
 
     @Autowired
-    lateinit var applicationContext: ApplicationContext
+    lateinit var accountsMigrationService: AccountsMigrationService
+
+    @Autowired
+    lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @Autowired
     lateinit var applicationEventPublisher: ApplicationEventPublisher
@@ -37,14 +39,13 @@ class Application {
         }
 
         try {
-            val accountMigration = applicationContext.getBean(AccountsMigrationService::class.java)
-            accountMigration.migrateAccountsIfConfigured()
+            accountsMigrationService.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
             System.exit(1)
         }
 
-        correctReservedVolumesIfNeed(config, applicationContext, applicationEventPublisher)
+        reservedVolumesRecalculator.correctReservedVolumesIfNeed()
         socketServer.run()
     }
 }

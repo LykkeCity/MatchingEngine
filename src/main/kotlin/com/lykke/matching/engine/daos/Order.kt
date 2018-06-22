@@ -2,9 +2,9 @@ package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.order.OrderStatus
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
@@ -52,6 +52,10 @@ abstract class Order(
         return minVolume == null || volume >= minVolume
     }
 
+    fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
+        return checkVolume(assetsPairsHolder.getAssetPair(assetPairId))
+    }
+
     fun updateStatus(status: OrderStatus, date: Date) {
         if (status.name != this.status) {
             this.status = status.name
@@ -59,14 +63,9 @@ abstract class Order(
         }
     }
 
-    fun checkVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
-        return checkVolume(assetsPairsHolder.getAssetPair(assetPairId))
-    }
-
     override fun applyToOrigin(origin: Copyable) {
         origin as Order
         origin.status = status
-        origin.statusDate = statusDate
         origin.reservedLimitVolume = reservedLimitVolume
     }
 }

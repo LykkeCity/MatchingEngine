@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.order
 
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder

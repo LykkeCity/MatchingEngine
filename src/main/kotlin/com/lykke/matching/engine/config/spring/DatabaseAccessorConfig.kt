@@ -179,7 +179,7 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun fileProcessedMessagesDatabaseAccessor()
-            : ProcessedMessagesDatabaseAccessor {
+            : FileProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
     }
 

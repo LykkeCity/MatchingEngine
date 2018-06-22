@@ -18,7 +18,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AbstractFileOrderBookDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private const val PREV_ORDER_BOOK_FILE_PEFIX = "_prev_"
+        private const val PREV_ORDER_BOOK_FILE_PREFIX = "_prev_"
     }
 
     private val logPrefix = if (logPrefix.isNotEmpty()) "$logPrefix " else ""
@@ -42,7 +42,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                             !path
                                     .fileName
                                     .toString()
-                                    .startsWith(PREV_ORDER_BOOK_FILE_PEFIX) }
+                                    .startsWith(PREV_ORDER_BOOK_FILE_PREFIX) }
                     .flatMap {readOrderBookFileOrPrevFileOnFail(it).stream()}
                     .collect(Collectors.toList())
 
@@ -77,7 +77,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
     }
 
     private fun getPrevOrderBookFilePath(fileName: String): Path {
-        return Paths.get(ordersDir, "$PREV_ORDER_BOOK_FILE_PEFIX$fileName")
+        return Paths.get(ordersDir, "$PREV_ORDER_BOOK_FILE_PREFIX$fileName")
     }
 
     private fun getOrderBookFilePath(fileName: String): Path {
@@ -117,7 +117,7 @@ open class AbstractFileOrderBookDatabaseAccessor(private val ordersDir: String,
                 .filter { it is LimitOrder || it is NewLimitOrder }
                 .map {
                     if (it is LimitOrder) {
-                          it
+                        it
                     } else {
                         oldFormatOrdersCount++
                         fromNewLimitOrderToLimitOrder(it as NewLimitOrder)

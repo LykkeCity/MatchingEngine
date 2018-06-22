@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -289,7 +288,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val startPersistTime = System.nanoTime()
 
-        val updated = walletOperationsProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage())
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
@@ -448,7 +447,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
                 .apply(messageWrapper.messageId!!,
-                        ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                        messageWrapper.processedMessage(),
                         multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
         messageWrapper.processedMessagePersisted = true

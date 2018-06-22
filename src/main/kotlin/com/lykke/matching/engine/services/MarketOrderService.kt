@@ -4,7 +4,6 @@ import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -167,7 +166,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
                     messageWrapper.processedMessagePersisted = true
-                    val updated = walletOperationsProcessor.persistBalances(ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!))
+                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage())
                     if (!updated) {
                         val message = "Unable to save result data"
                         LOGGER.error("$order: $message")

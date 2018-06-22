@@ -7,6 +7,7 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.util.CollectionUtils
 
 class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseAccessor,
                                 private val fileProcessedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor)
@@ -41,8 +42,8 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
     }
 
     private fun persistData(data: PersistenceData) {
-        if (data.balancesData != null) {
-            walletDatabaseAccessor.insertOrUpdateWallets(data.balancesData.wallets.toList())
+        if (CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+            walletDatabaseAccessor.insertOrUpdateWallets(data.balancesData!!.wallets.toList())
         }
         persistProcessedMessages(data.processedMessage)
     }

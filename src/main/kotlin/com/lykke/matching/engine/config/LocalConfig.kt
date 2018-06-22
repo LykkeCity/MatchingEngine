@@ -6,7 +6,7 @@ import org.springframework.beans.factory.FactoryBean
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
-@Component
+@Component("Config")
 @Profile("local_config")
 class LocalConfig : FactoryBean<Config> {
     override fun getObject(): Config {
