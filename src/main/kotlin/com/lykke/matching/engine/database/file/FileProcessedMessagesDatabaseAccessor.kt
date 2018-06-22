@@ -54,7 +54,7 @@ class FileProcessedMessagesDatabaseAccessor constructor (private val filePath: S
             HashSet<ProcessedMessage>()
         }
 
-        LOGGER.info("Loaded ${result.size} processed messages")
+        LOGGER.info("Loaded ${result.size} processed messages from file")
         return result
     }
 

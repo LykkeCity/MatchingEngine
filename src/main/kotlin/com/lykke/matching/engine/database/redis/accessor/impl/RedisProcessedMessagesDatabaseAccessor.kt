@@ -3,6 +3,7 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.utils.SetUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
@@ -13,6 +14,7 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
                                              private val dbIndex: Int,
                                              private val timeToLive: Int): ReadOnlyProcessedMessagesDatabaseAccessor {
     companion object {
+        val LOGGER = ThrottlingLogger.getLogger(RedisProcessedMessagesDatabaseAccessor::class.java.name)
         private val DATE_FORMAT = SimpleDateFormat("yyyyMMddHH")
         private const val PREFIX = "message"
         private const val SEPARATOR = ":"
@@ -26,11 +28,14 @@ class RedisProcessedMessagesDatabaseAccessor(private val jedisPool: JedisPool,
 
             val keys = jedis.keys("$PREFIX$SEPARATOR*")
 
-            return keys
-                    .stream()
-                    .flatMap { jedis.smembers(it).stream() }
-                    .map {conf.asObject(it.toByteArray()) as ProcessedMessage}
-                    .collect(Collectors.toSet())
+             val result = keys
+                     .stream()
+                     .flatMap { jedis.smembers(it).stream() }
+                     .map { conf.asObject(it.toByteArray()) as ProcessedMessage }
+                     .collect(Collectors.toSet())
+
+             LOGGER.info("Loaded ${result.size} processed messages from redis")
+             return result
         }
      }
 
