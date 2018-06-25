@@ -28,7 +28,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
     }
 
     fun cancel() {
-        val operationId = UUID.randomUUID().toString()
+        val operationId = getOperationId()
         teeLog("Starting order books analyze to cancel min volume orders ($operationId)")
 
         val ordersToCancel = HashMap<AssetPair, MutableMap<Boolean, MutableList<LimitOrder>>>()
@@ -74,4 +74,6 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
 
         teeLog("Min volume orders cancellation is finished")
     }
+
+    private fun getOperationId() = UUID.randomUUID().toString()
 }
