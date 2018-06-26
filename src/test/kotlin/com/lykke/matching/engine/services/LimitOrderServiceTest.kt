@@ -131,7 +131,7 @@ class LimitOrderServiceTest: AbstractTest() {
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders.first().order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
-        assertEquals(-900.0, result.orders[1].order.remainingVolume)
+        assertEquals(BigDecimal.valueOf(-900.0), result.orders[1].order.remainingVolume)
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
     }
 
