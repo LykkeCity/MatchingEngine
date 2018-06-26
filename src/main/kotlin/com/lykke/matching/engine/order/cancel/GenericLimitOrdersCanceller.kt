@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.order.cancel
 
-import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -57,14 +56,14 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return this
     }
 
-    fun preProcessLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<LimitOrder>>>,
-                              ordersToRemove: Map<String, Map<Boolean, Collection<LimitOrder>>>): GenericLimitOrdersCanceller {
+    fun preProcessLimitOrders(ordersToCancel: List<LimitOrder>,
+                              ordersToRemove: List<LimitOrder>): GenericLimitOrdersCanceller {
         limitOrdersCanceller.preProcess(ordersToCancel, ordersToRemove)
         return this
     }
 
-    fun preProcessStopLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<LimitOrder>>>,
-                                  ordersToRemove: Map<String, Map<Boolean, Collection<LimitOrder>>>): GenericLimitOrdersCanceller {
+    fun preProcessStopLimitOrders(ordersToCancel: List<LimitOrder>,
+                                  ordersToRemove: List<LimitOrder>): GenericLimitOrdersCanceller {
         stopLimitOrdersCanceller.preProcess(ordersToCancel, ordersToRemove)
         return this
     }
