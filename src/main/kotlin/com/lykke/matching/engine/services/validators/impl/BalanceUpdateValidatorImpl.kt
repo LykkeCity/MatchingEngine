@@ -8,6 +8,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 
 @Component
 class BalanceUpdateValidatorImpl @Autowired constructor(private val balancesHolder: BalancesHolder,
@@ -25,7 +26,7 @@ class BalanceUpdateValidatorImpl @Autowired constructor(private val balancesHold
     private fun isBalanceValid(message: ProtocolMessages.BalanceUpdate) {
         val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-        if (reservedBalance > message.amount) {
+        if (reservedBalance > BigDecimal.valueOf(message.amount)) {
             LOGGER.info("Balance (client ${message.clientId}, " +
                     "asset ${message.assetId}, ${NumberUtils.roundForPrint(message.amount)}) " +
                     "is lower that reserved balance ${NumberUtils.roundForPrint(reservedBalance)}")
@@ -36,7 +37,7 @@ class BalanceUpdateValidatorImpl @Autowired constructor(private val balancesHold
     private fun isAmountAccuracyValid(message: ProtocolMessages.BalanceUpdate) {
         val amount = message.amount
         val assetId = message.assetId
-        val amountAccuracyValid = NumberUtils.isScaleSmallerOrEqual(amount, assetsHolder.getAsset(assetId).accuracy)
+        val amountAccuracyValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(amount), assetsHolder.getAsset(assetId).accuracy)
 
         if (!amountAccuracyValid) {
             LOGGER.info("Amount accuracy invalid client: ${message.clientId}, asset: $assetId, amount $amount")

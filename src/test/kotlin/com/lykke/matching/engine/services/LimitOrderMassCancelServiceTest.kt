@@ -26,7 +26,9 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 
 
 @RunWith(SpringRunner::class)
@@ -81,12 +83,12 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client1", assetId = "EURUSD", volume = 10.0, price = 1.1)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "TrustedClient", listOf(
-                VolumePrice(-5.0, 1.3),
-                VolumePrice(5.0, 1.1)
+                VolumePrice(BigDecimal.valueOf(-5.0), BigDecimal.valueOf(1.3)),
+                VolumePrice(BigDecimal.valueOf(5.0), BigDecimal.valueOf(1.1))
         ), emptyList(), emptyList(), listOf("m1", "m2")))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "TrustedClient", listOf(
-                VolumePrice(-1.0, 8500.0)
+                VolumePrice(BigDecimal.valueOf(-1.0), BigDecimal.valueOf(8500.0))
         ), emptyList(), emptyList()))
 
         assertOrderBookSize("BTCUSD", false, 3)
@@ -122,8 +124,8 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, balanceUpdate.type)
         assertEquals(1, balanceUpdate.balances.size)
         assertEquals("Client1", balanceUpdate.balances.first().id)
-        assertEquals(0.6, balanceUpdate.balances.first().oldReserved)
-        assertEquals(0.0, balanceUpdate.balances.first().newReserved)
+        assertEquals(BigDecimal.valueOf(0.6), balanceUpdate.balances.first().oldReserved)
+        assertEquals(BigDecimal.ZERO, balanceUpdate.balances.first().newReserved)
     }
 
     @Test
@@ -157,13 +159,13 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
 
         val btc = balanceUpdate.balances.first { it.asset == "BTC" }
         assertEquals("Client1", btc.id)
-        assertEquals(0.6, btc.oldReserved)
-        assertEquals(0.0, btc.newReserved)
+        assertEquals(BigDecimal.valueOf(0.6), btc.oldReserved)
+        assertEquals(BigDecimal.ZERO, btc.newReserved)
 
         val usd = balanceUpdate.balances.first { it.asset == "USD" }
         assertEquals("Client1", usd.id)
-        assertEquals(81.0, usd.oldReserved)
-        assertEquals(0.0, usd.newReserved)
+        assertEquals(BigDecimal.valueOf(81.0), usd.oldReserved)
+        assertEquals(BigDecimal.ZERO, usd.newReserved)
     }
 
     @Test

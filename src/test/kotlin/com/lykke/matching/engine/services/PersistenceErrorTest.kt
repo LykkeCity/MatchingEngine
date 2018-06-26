@@ -5,7 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.NewLimitOrder
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -71,7 +72,7 @@ class PersistenceErrorTest : AbstractTest() {
             testBalanceHolderWrapper.updateBalance(clientId, "BTC", 1.0)
         }
 
-        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.05))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, BigDecimal.valueOf(0.05)))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 5))
 
         initServices()
@@ -423,7 +424,7 @@ class PersistenceErrorTest : AbstractTest() {
         assertOrder(genericStopLimitOrderService.getOrder("stopOrder1"), OrderStatus.Pending)
     }
 
-    private fun assertOrder(order: NewLimitOrder?, status: OrderStatus) {
+    private fun assertOrder(order: LimitOrder?, status: OrderStatus) {
         assertNotNull(order)
         assertEquals(status.name, order!!.status)
     }

@@ -6,6 +6,7 @@ import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
 import org.junit.Test
+import java.math.BigDecimal
 
 @Ignore
 class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
@@ -89,7 +90,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         val counter = ActionTimeCounter()
         testBackOfficeDatabaseAccessor.addAsset(Asset("USD", 2))
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
-        counter.executeAction {  testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5, 0.1, 0.2))}
+        counter.executeAction {  testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5,
+                BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2)))}
         initServices()
 
         counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(volume = 0.09)))}

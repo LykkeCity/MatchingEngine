@@ -2,6 +2,7 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
@@ -30,11 +31,16 @@ open class AppConfiguration {
     }
 
     @Bean
-    open fun azureStatusProcessor(@Value("\${app.name}") appName: String): Runnable {
+    open fun azureStatusProcessor(): Runnable {
         return AliveStatusProcessorFactory
                 .createAzureProcessor(connectionString = config.me.db.matchingEngineConnString,
-                        appName = appName,
+                        appName = config.me.name,
                         config = config.me.aliveStatus)
+    }
+
+    @Bean
+    open fun monitoringStatsCollector(): MonitoringStatsCollector {
+        return MonitoringStatsCollector()
     }
 
     @PostConstruct

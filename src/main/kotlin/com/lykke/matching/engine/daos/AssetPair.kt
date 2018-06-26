@@ -1,12 +1,14 @@
 package com.lykke.matching.engine.daos
 
+import java.math.BigDecimal
+
 class AssetPair(
         val assetPairId: String,
         val baseAssetId: String,
         val quotingAssetId: String,
         val accuracy: Int,
-        val minVolume: Double? = null,
-        val minInvertedVolume: Double? = null
+        val minVolume: BigDecimal? = null,
+        val minInvertedVolume: BigDecimal? = null
 ) {
     override fun toString(): String {
         return "AssetPair(" +

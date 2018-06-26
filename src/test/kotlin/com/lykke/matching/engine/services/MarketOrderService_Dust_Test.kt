@@ -23,7 +23,9 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.math.BigDecimal
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderService_Dust_Test.Config::class)])
@@ -85,23 +87,23 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.02)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(1000.0, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(1000.0), marketOrderReport.order.price!!)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.02000000", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.02000000", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
+        assertEquals("USD", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.02, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(1480.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.000009, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
-        Assert.assertEquals(20.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        assertEquals(BigDecimal.valueOf(0.02), testWalletDatabaseAccessor.getBalance("Client3", "BTC"))
+        assertEquals(BigDecimal.valueOf(1480.0), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(0.000009), testWalletDatabaseAccessor.getBalance("Client4", "BTC"))
+        assertEquals(BigDecimal.valueOf(20.0), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 
     @Test
@@ -113,23 +115,23 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 88.23, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(610.96, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(610.96), marketOrderReport.order.price!!)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.14441208", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("88.23", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.14441208", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("88.23", marketOrderReport.trades.first().limitVolume)
+        assertEquals("USD", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.14441208, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
-        Assert.assertEquals(1500 - 88.23, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.00000287, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
-        Assert.assertEquals(88.23, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        assertEquals(BigDecimal.valueOf(0.14441208), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(1500 - 88.23), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(0.00000287), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(88.23), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 
     @Test
@@ -141,24 +143,24 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 20.0, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(598.916, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals("20.0", marketOrderReport.order.volume.toString())
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(598.916), marketOrderReport.order.price!!)
+        assertEquals("20.0", marketOrderReport.order.volume.toString())
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.03339367", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.03339367", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
+        assertEquals("USD", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.03339367, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
-        Assert.assertEquals(1500 - 20.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.00001333, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
-        Assert.assertEquals(20.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        assertEquals(BigDecimal.valueOf(0.03339367), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(1500 - 20.0), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(0.00001333), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(20.0), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 
     @Test
@@ -170,24 +172,24 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.54, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(593.644, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals("0.54", marketOrderReport.order.volume.toString())
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(593.644), marketOrderReport.order.price!!)
+        assertEquals("0.54", marketOrderReport.order.volume.toString())
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.00090964", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("0.54", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.00090964", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("0.54", marketOrderReport.trades.first().limitVolume)
+        assertEquals("USD", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.00090964, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"), DELTA)
-        Assert.assertEquals(1500 - 0.54, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(0.00001555, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"), DELTA)
-        Assert.assertEquals(0.54, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
+        assertEquals(BigDecimal.valueOf(0.00090964), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(1500 - 0.54), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(0.00001555), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(0.54), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 
     @Test
@@ -199,23 +201,23 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 20.0, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(1000.0, marketOrderReport.order.price!!, DELTA)
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(1000.0), marketOrderReport.order.price!!)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.02000000", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("USD", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.02000000", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("20.00", marketOrderReport.trades.first().limitVolume)
+        assertEquals("USD", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
 
-        Assert.assertEquals(0.02, testWalletDatabaseAccessor.getBalance("Client3", "BTC"), DELTA)
-        Assert.assertEquals(480.0, testWalletDatabaseAccessor.getBalance("Client3", "USD"), DELTA)
-        Assert.assertEquals(20.0, testWalletDatabaseAccessor.getBalance("Client4", "USD"), DELTA)
-        Assert.assertEquals(0.00001, testWalletDatabaseAccessor.getBalance("Client4", "BTC"), DELTA)
+        assertEquals(BigDecimal.valueOf(0.02), testWalletDatabaseAccessor.getBalance("Client3", "BTC"))
+        assertEquals(BigDecimal.valueOf(480.0), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(20.0), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(BigDecimal.valueOf(0.00001), testWalletDatabaseAccessor.getBalance("Client4", "BTC"))
     }
 
     @Test
@@ -227,9 +229,9 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0000272, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -241,18 +243,18 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = 127.87, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(127.87, marketOrderReport.order.volume, DELTA)
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(127.87), marketOrderReport.order.volume)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.00999944", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("127.87", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("SLR", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.00999944", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("127.87", marketOrderReport.trades.first().limitVolume)
+        assertEquals("SLR", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
     }
 
     @Test
@@ -264,18 +266,18 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "SLRBTC1", volume = -0.01, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
-        Assert.assertEquals(-0.01, marketOrderReport.order.volume, DELTA)
-        Assert.assertEquals(1, marketOrderReport.trades.size)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(BigDecimal.valueOf(-0.01), marketOrderReport.order.volume)
+        assertEquals(1, marketOrderReport.trades.size)
 
-        Assert.assertEquals("0.01000000", marketOrderReport.trades.first().marketVolume)
-        Assert.assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
-        Assert.assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
-        Assert.assertEquals("127.87", marketOrderReport.trades.first().limitVolume)
-        Assert.assertEquals("SLR", marketOrderReport.trades.first().limitAsset)
-        Assert.assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
+        assertEquals("0.01000000", marketOrderReport.trades.first().marketVolume)
+        assertEquals("BTC1", marketOrderReport.trades.first().marketAsset)
+        assertEquals("Client4", marketOrderReport.trades.first().marketClientId)
+        assertEquals("127.87", marketOrderReport.trades.first().limitVolume)
+        assertEquals("SLR", marketOrderReport.trades.first().limitAsset)
+        assertEquals("Client3", marketOrderReport.trades.first().limitClientId)
     }
 
     @Test
@@ -287,9 +289,9 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0000272, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -301,9 +303,9 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = 0.01, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -315,9 +317,9 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1LKK", volume = -0.01, straight = false)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
     }
 
     @Test
@@ -329,18 +331,18 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.04997355, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(1, clientsLimitOrdersQueue.size)
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
-        assertEquals(0.04997355, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
-        assertEquals(4950.02, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
-        assertEquals(10 - 0.04997355, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
-        assertEquals(49.98, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(0.04997355), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(4950.02), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(BigDecimal.valueOf(10 - 0.04997355), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(49.98), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
     }
 
     @Test
@@ -352,18 +354,18 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.04997355, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(1, clientsLimitOrdersQueue.size)
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
-        assertEquals(0.04997355, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
-        assertEquals(4950.03, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
-        assertEquals(10 - 0.04997355, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
-        assertEquals(49.97, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(BigDecimal.valueOf(0.04997355), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(4950.03), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(10 - 0.04997355), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(49.97), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 
     @Test
@@ -375,18 +377,18 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = 0.0499727, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(1, clientsLimitOrdersQueue.size)
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
-        assertEquals(0.0499727, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
-        assertEquals(4950.02, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
-        assertEquals(9.9500273, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
-        assertEquals(49.98, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(0.0499727), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(4950.02), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(BigDecimal.valueOf(9.9500273), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(49.98), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
     }
 
     @Test
@@ -398,17 +400,17 @@ class MarketOrderService_Dust_Test: AbstractTest() {
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTC1USD", volume = -0.0499727, straight = true)))
 
-        Assert.assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(1, rabbitSwapQueue.size)
         val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
-        Assert.assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
+        assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(1, clientsLimitOrdersQueue.size)
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
 
-        assertEquals(0.0499727, testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
-        assertEquals(4950.03, testWalletDatabaseAccessor.getBalance("Client3", "USD"))
-        assertEquals(9.9500273, testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
-        assertEquals(49.97, testWalletDatabaseAccessor.getBalance("Client4", "USD"))
+        assertEquals(BigDecimal.valueOf(0.0499727), testWalletDatabaseAccessor.getBalance("Client3", "BTC1"))
+        assertEquals(BigDecimal.valueOf(4950.03), testWalletDatabaseAccessor.getBalance("Client3", "USD"))
+        assertEquals(BigDecimal.valueOf(9.9500273), testWalletDatabaseAccessor.getBalance("Client4", "BTC1"))
+        assertEquals(BigDecimal.valueOf(49.97), testWalletDatabaseAccessor.getBalance("Client4", "USD"))
     }
 }

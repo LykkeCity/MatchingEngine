@@ -13,7 +13,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
 import com.lykke.matching.engine.outgoing.rabbit.events.CashSwapEvent
-import com.lykke.matching.engine.round
 import com.lykke.matching.engine.services.validators.CashSwapOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -23,6 +22,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -47,8 +47,8 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         val operationId = UUID.randomUUID().toString()
         val operation = SwapOperation(operationId, message.id, Date(message.timestamp),
-                message.clientId1, message.assetId1, message.volume1,
-                message.clientId2, message.assetId2, message.volume2)
+                message.clientId1, message.assetId1, BigDecimal.valueOf(message.volume1),
+                message.clientId2, message.assetId2, BigDecimal.valueOf(message.volume2))
 
         try {
             cashSwapOperationValidator.performValidation(message, operationId)
@@ -72,8 +72,13 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
         applicationEventPublisher.publishEvent(CashSwapEvent(CashSwapOperation(operation.externalId, operation.dateTime,
-                operation.clientId1, operation.asset1, operation.volume1.round(assetsHolder.getAsset(operation.asset1).accuracy),
-                operation.clientId2, operation.asset2, operation.volume2.round(assetsHolder.getAsset(operation.asset2).accuracy), messageWrapper.messageId!!)))
+                operation.clientId1,
+                operation.asset1,
+                NumberUtils.setScaleRoundHalfUp(operation.volume1, assetsHolder.getAsset(operation.asset1).accuracy).toPlainString(),
+                operation.clientId2,
+                operation.asset2,
+                NumberUtils.setScaleRoundHalfUp(operation.volume2, assetsHolder.getAsset(operation.asset2).accuracy).toPlainString(),
+                messageWrapper.messageId!!)))
 
         messageWrapper
                 .writeNewResponse(ProtocolMessages.NewResponse

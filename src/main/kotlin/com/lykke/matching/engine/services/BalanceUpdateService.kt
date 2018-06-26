@@ -15,6 +15,7 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.Date
 
 @Service
@@ -39,11 +40,11 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            val updated = balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
+            val updated = balancesHolder.updateBalance(message.clientId, message.assetId, BigDecimal.valueOf(message.amount))
             if (updated) {
                 balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
                     MessageType.BALANCE_UPDATE.name, Date(),
-                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, BigDecimal.valueOf(message.amount), reservedBalance, reservedBalance)), messageWrapper.messageId!!))
             }
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
 
@@ -63,7 +64,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                 return
             }
 
-            val updated = balancesHolder.updateBalance(message.clientId, message.assetId, message.amount)
+            val updated = balancesHolder.updateBalance(message.clientId, message.assetId, BigDecimal.valueOf(message.amount))
             if (!updated) {
                 messageWrapper.writeNewResponse(
                         ProtocolMessages.NewResponse.newBuilder()
@@ -75,7 +76,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                     MessageType.BALANCE_UPDATE.name,
                     Date(),
-                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, message.amount, reservedBalance, reservedBalance)), messageWrapper.messageId!!))
+                    listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, BigDecimal.valueOf( message.amount), reservedBalance, reservedBalance)), messageWrapper.messageId!!))
 
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.OK.type))
             LOGGER.debug("Balance updated for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)}")
