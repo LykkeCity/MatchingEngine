@@ -4,7 +4,9 @@ import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.common.PersistenceData
+import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -90,10 +92,11 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return BigDecimal.ZERO
     }
 
-    fun updateBalance(clientId: String, assetId: String, balance: BigDecimal): Boolean {
+    fun updateBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: BigDecimal): Boolean {
         val balancesUpdater = createUpdater()
         balancesUpdater.updateBalance(clientId, assetId, balance)
-        val persisted = persistenceManager.persist(balancesUpdater.persistenceData())
+        val balancesData = balancesUpdater.persistenceData()
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
         if (!persisted) {
             return false
         }
@@ -102,10 +105,11 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return true
     }
 
-    fun updateReservedBalance(clientId: String, assetId: String, balance: BigDecimal, skipForTrustedClient: Boolean = true): Boolean {
+    fun updateReservedBalance(processedMessage: ProcessedMessage?, clientId: String, assetId: String, balance: BigDecimal, skipForTrustedClient: Boolean = true): Boolean {
         val balancesUpdater = createUpdater()
         balancesUpdater.updateReservedBalance(clientId, assetId, balance)
-        val persisted = persistenceManager.persist(balancesUpdater.persistenceData())
+        val balancesData = balancesUpdater.persistenceData()
+         val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage))
         if (!persisted) {
             return false
         }
@@ -115,7 +119,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun insertOrUpdateWallets(wallets: Collection<Wallet>) {
-        persistenceManager.persist(PersistenceData(wallets, wallets.flatMap { it.balances.values }))
+        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values })))
         update()
     }
 

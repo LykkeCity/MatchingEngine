@@ -11,7 +11,6 @@ import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.ProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -19,11 +18,9 @@ import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.JedisHolder
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -78,10 +75,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
 import java.util.HashMap
 import java.util.Timer
 import java.util.concurrent.BlockingQueue
@@ -116,8 +110,8 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
-    private val processedMessagesDatabaseAccessor: ProcessedMessagesDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
+    private val persistenceManager: PersistenceManager
 
     private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
@@ -140,7 +134,6 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
-    private val notDeduplicateMessageTypes = setOf(MessageType.MULTI_LIMIT_ORDER, MessageType.OLD_MULTI_LIMIT_ORDER, MessageType.MULTI_LIMIT_ORDER_CANCEL)
     private val processedMessagesCache: ProcessedMessagesCache
 
     private var bestPriceBuilder: Timer? = null
@@ -154,14 +147,15 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val healthMonitor = GeneralHealthMonitor(listOf(applicationContext.getBean(JedisHolder::class.java)))
+    private val healthMonitor: GeneralHealthMonitor
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
+        healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        val persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
+        persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
 
         cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
@@ -267,9 +261,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val connectionsHolder = ConnectionsHolder(orderBooksQueue)
         connectionsHolder.start()
 
-        processedMessagesDatabaseAccessor = applicationContext.getBean(FileProcessedMessagesDatabaseAccessor::class.java)
-        processedMessagesCache = ProcessedMessagesCache(config.me.processedMessagesInterval,
-                processedMessagesDatabaseAccessor.loadProcessedMessages(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant())))
+        processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
 
         if (config.me.serverOrderBookPort != null) {
@@ -396,20 +388,20 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 return
             }
 
-            if (!notDeduplicateMessageTypes.contains(messageType)) {
-                if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
-                    service.writeResponse(message, MessageStatus.DUPLICATE)
-                    LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
-                    METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
-                    return
-                }
+            if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
+                service.writeResponse(message, MessageStatus.DUPLICATE)
+                LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
+                METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
+                return
             }
 
             service.processMessage(message)
-            if (!notDeduplicateMessageTypes.contains(messageType)) {
-                val processedMessage = ProcessedMessage(message.type, message.timestamp!!, message.messageId!!)
-                processedMessagesCache.addMessage(processedMessage)
-                processedMessagesDatabaseAccessor.saveProcessedMessage(processedMessage)
+
+            message.processedMessage()?.let {
+                processedMessagesCache.addMessage(it)
+                if (!message.processedMessagePersisted) {
+                    persistenceManager.persist(PersistenceData(it))
+                }
             }
 
             val endTime = System.nanoTime()

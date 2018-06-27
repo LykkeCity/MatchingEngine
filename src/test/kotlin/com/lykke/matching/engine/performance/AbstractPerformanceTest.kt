@@ -95,7 +95,7 @@ abstract class AbstractPerformanceTest {
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
-        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("", 0,0,false, null, 0))
+        balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null)
         persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
                 persistenceManager,
