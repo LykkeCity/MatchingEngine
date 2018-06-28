@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.outgoing.rabbit.events.QuotesUpdateEvent
@@ -24,10 +25,9 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
-import javax.annotation.PostConstruct
 
 @Component
-class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                                       private val assetsHolder: AssetsHolder,
                                                       private val assetsPairsHolder: AssetsPairsHolder,
                                                       private val balancesHolder: BalancesHolder,
@@ -54,7 +54,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         limitOrdersQueues.clear()
         limitOrdersMap.clear()
         clientLimitOrdersMap.clear()
-        val orders = orderBookDatabaseAccessor.loadLimitOrders()
+        val orders = orderBookDatabaseAccessorHolder.primaryAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
         }
