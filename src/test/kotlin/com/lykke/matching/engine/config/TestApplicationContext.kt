@@ -19,6 +19,7 @@ import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.config.RedisConfig
+import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
@@ -211,7 +212,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun minVolumeOrderCanceller(assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService,
-                                genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): MinVolumeOrderCanceller {
+                                     genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): MinVolumeOrderCanceller {
         return MinVolumeOrderCanceller(assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory, false)
     }
 
@@ -256,7 +257,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testOrderBookWrapper(genericLimitOrderService:  GenericLimitOrderService,
+    open fun testOrderBookWrapper(genericLimitOrderService: GenericLimitOrderService,
                                   testFileOrderDatabaseAccessor: TestFileOrderDatabaseAccessor,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor): TestOrderBookWrapper {
@@ -283,5 +284,12 @@ open class TestApplicationContext {
     @Bean
     open fun reservedVolumesDatabaseAccessor(): ReservedVolumesDatabaseAccessor {
         return TestReservedVolumesDatabaseAccessor()
+    }
+
+    @Bean
+    open fun allOrdersCanceller(assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService,
+                                genericStopLimitOrderService: GenericStopLimitOrderService, genericLimitOrdersCancellerFactory:
+                                GenericLimitOrdersCancellerFactory): AllOrdersCanceller {
+        return AllOrdersCanceller(assetsPairsHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, false)
     }
 }

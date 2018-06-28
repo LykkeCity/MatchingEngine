@@ -29,6 +29,8 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         initialStopOrdersCount = stopOrders.size
     }
 
+    fun getAllOrderBooks() = stopLimitOrdersQueues
+
     fun addOrder(order: LimitOrder) {
         stopLimitOrdersMap[order.externalId] = order
         clientStopLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
