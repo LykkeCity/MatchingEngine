@@ -19,7 +19,7 @@ import javax.naming.ConfigurationException
 
 val LOGGER = Logger.getLogger("HttpConfigParser")
 
-@Component
+@Component("Config")
 @Profile("default", "!local_config")
 class HttpConfigParser :  FactoryBean<Config> {
 

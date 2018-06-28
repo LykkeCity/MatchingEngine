@@ -110,11 +110,11 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertOrderBookSize("EURUSD", true, 2)
 
         assertBalance("Client1", "BTC", 1.0, 0.0)
-        assertEquals(1, orderBookQueue.size)
-        assertEquals(1, rabbitOrderBookQueue.size)
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, report.orders.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "2" }.order.status)
@@ -141,11 +141,11 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
 
         assertBalance("Client1", "BTC", 1.0, 0.0)
         assertBalance("Client1", "USD", 100.0, 0.0)
-        assertEquals(3, orderBookQueue.size)
-        assertEquals(3, rabbitOrderBookQueue.size)
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(3, testOrderBookListener.getCount())
+        assertEquals(3, testRabbitOrderBookListener.getCount())
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(4, report.orders.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "2" }.order.status)
@@ -179,12 +179,12 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertOrderBookSize("EURUSD", false, 0)
         assertOrderBookSize("EURUSD", true, 1)
 
-        assertEquals(2, orderBookQueue.size)
-        assertEquals(2, rabbitOrderBookQueue.size)
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(1, trustedClientsLimitOrdersQueue.size)
+        assertEquals(2, testOrderBookListener.getCount())
+        assertEquals(2, testRabbitOrderBookListener.getCount())
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
 
-        val report = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testTrustedClientsLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, report.orders.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "m1" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "m2" }.order.status)

@@ -24,7 +24,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     fun testSellLimitOrderFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "USD", 121.12)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.21111, volume = 100.0,
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.21111, volume = 100.0,
                 fee = buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.0211111,
@@ -77,7 +77,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     fun testBuyLimitOrderFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.02,
@@ -120,7 +120,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     fun testSellMarketOrderFee() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 120.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0,
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.02,
@@ -163,7 +163,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
     fun testBuyMarketOrderFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
                         makerSize = 0.02,

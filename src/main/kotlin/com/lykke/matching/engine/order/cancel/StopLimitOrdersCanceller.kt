@@ -5,27 +5,24 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.services.AssetStopOrderBook
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 
 class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                assetsPairsHolder: AssetsPairsHolder,
                                balancesHolder: BalancesHolder,
                                genericStopLimitOrderService: GenericStopLimitOrderService,
-                               trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                               clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                               applicationEventPublisher: ApplicationEventPublisher,
                                date: Date) :
         AbstractLimitOrdersCanceller<AssetStopOrderBook, StopLimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
                 balancesHolder,
                 genericStopLimitOrderService,
-                trustedClientsLimitOrdersQueue,
-                clientsLimitOrdersQueue,
+                applicationEventPublisher,
                 date) {
 
     override fun processChangedOrderBook(orderBookCopy: AssetStopOrderBook, isBuy: Boolean) {

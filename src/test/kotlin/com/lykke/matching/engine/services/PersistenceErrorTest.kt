@@ -138,22 +138,22 @@ class PersistenceErrorTest : AbstractTest() {
         // Limit Order
         limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("order1"))
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
 
         // Stop Limit Order
         limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("stopOrder1"))
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
 
     @Test
     fun testLimitOrderMassCancel() {
         limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
 
     /*
@@ -164,8 +164,8 @@ class PersistenceErrorTest : AbstractTest() {
         multiLimitOrderCancelService.parseMessage(messageWrapper)
         multiLimitOrderCancelService.processMessage(messageWrapper)
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
     */
 
@@ -175,8 +175,8 @@ class PersistenceErrorTest : AbstractTest() {
         multiLimitOrderCancelService.parseMessage(messageWrapper)
         multiLimitOrderCancelService.processMessage(messageWrapper)
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
 
     @Test
@@ -293,8 +293,8 @@ class PersistenceErrorTest : AbstractTest() {
                         VolumePrice(-3.0, 3.29)), cancel = true))
 
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
@@ -328,8 +328,8 @@ class PersistenceErrorTest : AbstractTest() {
                         IncomingLimitOrder(-3.0, 3.29)), cancel = true))
 
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }*/
 
     @Test
@@ -357,9 +357,9 @@ class PersistenceErrorTest : AbstractTest() {
 
     private fun assertMarketOrderResult() {
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
-        assertEquals(0, rabbitSwapQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
+        assertEquals(0, rabbitSwapListener.getCount())
     }
 
     private fun assertLimitOrderResult() {
@@ -368,9 +368,9 @@ class PersistenceErrorTest : AbstractTest() {
 
     private fun assertMultiLimitOrderResult() {
         assertData()
-        assertEquals(0, clientsLimitOrdersQueue.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
-        assertEquals(0, rabbitSwapQueue.size)
+        assertEquals(0, testClientLimitOrderListener.getCount())
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
+        assertEquals(0, rabbitSwapListener.getCount())
     }
 
     private fun assertData() {

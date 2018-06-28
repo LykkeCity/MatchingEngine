@@ -240,7 +240,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance(client, "EUR", 700.04)
         testBalanceHolderWrapper.updateBalance(marketMaker, "BTC", 2.0)
 
-        testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
+        testOrderBookWrapper.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
         initServices()
 
         counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, volumes =
@@ -260,7 +260,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         val order = MessageBuilder.buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
         order.reservedLimitVolume = BigDecimal.valueOf(1.19)
-        testOrderDatabaseAccessor.addLimitOrder(order)
+        testOrderBookWrapper.addLimitOrder(order)
 
         initServices()
 

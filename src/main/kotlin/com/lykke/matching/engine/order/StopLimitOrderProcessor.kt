@@ -13,22 +13,22 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.rabbit.events.LimitOrdersReportEvent
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                               private val stopLimitOrderService: GenericStopLimitOrderService,
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
-                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                              private val applicationEventPublisher: ApplicationEventPublisher,
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
@@ -83,7 +83,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         .setStatus(messageStatus.type))
 
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+                applicationEventPublisher.publishEvent(LimitOrdersReportEvent(clientLimitOrdersReport))
             } else {
                 writePersistenceErrorResponse(messageWrapper, order)
             }
@@ -140,7 +140,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         LOGGER.info("${orderInfo(order)} added to stop order book")
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
-            clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+            applicationEventPublisher.publishEvent(LimitOrdersReportEvent(clientLimitOrdersReport))
         }
     }
 

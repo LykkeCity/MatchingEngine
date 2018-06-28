@@ -8,13 +8,20 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
+import javax.annotation.PostConstruct
 
-class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
-                              private val genericLimitOrderService: GenericLimitOrderService,
-                              private val cancellerFactory: GenericLimitOrdersCancellerFactory) {
+@Component
+class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
+                                                     private val genericLimitOrderService: GenericLimitOrderService,
+                                                     private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                                     @Value("#{Config.me.cancelMinVolumeOrders}")
+                                                     private val cancelMinVolumeOrders: Boolean) {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
@@ -29,16 +36,22 @@ class MinVolumeOrderCanceller(private val assetsPairsHolder: AssetsPairsHolder,
         CANCEL, REMOVE, SKIP
     }
 
+    @PostConstruct
+    fun process() {
+        if (cancelMinVolumeOrders) {
+            cancel()
+        }
+    }
+
     fun cancel() {
         val operationId = getOperationId()
         teeLog("Starting order books analyze to cancel min volume orders ($operationId)")
-
 
         val operationToOrder = getOperationToOrder()
 
         teeLog("Starting orders cancellation (orders count: ${operationToOrder.values.size})")
         try {
-            cancellerFactory.create(LOGGER, Date())
+            genericLimitOrdersCancellerFactory.create(LOGGER, Date())
                     .preProcessLimitOrders(operationToOrder[OrderOperation.CANCEL] ?: emptyList(),
                             operationToOrder[OrderOperation.REMOVE] ?: emptyList())
                     .applyFull(operationId, operationId, MessageType.LIMIT_ORDER.name, true)
