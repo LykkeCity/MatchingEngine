@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -31,23 +32,9 @@ import com.lykke.matching.engine.utils.assertEquals
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ReservedVolumesRecalculatorTest {
 
-    @Autowired
-    protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-    @Autowired
-    private lateinit var orderBookDatabaseAccessor: TestOrderBookDatabaseAccessor
-
-    @Autowired
-    private lateinit var stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor
-
-    @Autowired
-    private lateinit var reservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor
-
-    @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
     @TestConfiguration
     open class Config {
+
         @Bean
         @Primary
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
@@ -58,7 +45,6 @@ class ReservedVolumesRecalculatorTest {
 
             return testBackOfficeDatabaseAccessor
         }
-
         @Bean
         @Primary
         open fun testDictionariesDatabaseAccessor(): TestDictionariesDatabaseAccessor {
@@ -77,10 +63,14 @@ class ReservedVolumesRecalculatorTest {
             testSettingsDatabaseAccessor.addTrustedClient("trustedClient2")
             return testSettingsDatabaseAccessor
         }
+
     }
 
     @Autowired
-    protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
+    lateinit var testOrderBookWrapper: TestOrderBookWrapper
+
+    @Autowired private
+    lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -88,16 +78,25 @@ class ReservedVolumesRecalculatorTest {
     @Autowired
     lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
+    @Autowired
+    lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
+
+    @Autowired
+    lateinit var reservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor
+
+    @Autowired
+    lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
+
     @Before
     fun setUp() {
-        orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "trustedClient", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
-        orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
-        orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.4))
-        orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.3))
-        orderBookDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "trustedClient", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.5))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.4))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "EURUSD", price = 10000.0, volume = -1.0, reservedVolume = 0.3))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10000.0, volume = -1.0, reservedVolume = 1.0))
 
-        stopOrderBookDatabaseAccessor.addStopLimitOrder(buildLimitOrder(uid = "3", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 9000.0, lowerPrice = 9900.0, reservedVolume = 990.0))
-        stopOrderBookDatabaseAccessor.addStopLimitOrder(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 10000.0, lowerPrice = 10900.0))
+        testOrderBookWrapper.addStopLimitOrder(buildLimitOrder(uid = "3", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 9000.0, lowerPrice = 9900.0, reservedVolume = 990.0))
+        testOrderBookWrapper.addStopLimitOrder(buildLimitOrder(uid = "4", clientId = "Client2", assetId = "BTCUSD", type = LimitOrderType.STOP_LIMIT, volume = 0.1, lowerLimitPrice = 10000.0, lowerPrice = 10900.0))
 
         testBalanceHolderWrapper.updateBalance("trustedClient", "BTC", 10.0)
         testBalanceHolderWrapper.updateReservedBalance("trustedClient", "BTC", 2.0, false)
@@ -131,7 +130,7 @@ class ReservedVolumesRecalculatorTest {
 
     @Test
     fun testRecalculate() {
-        recalculator.recalculate()
+        reservedVolumesRecalculator.recalculate()
 
         val testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("trustedClient", "BTC"))

@@ -9,7 +9,6 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -31,7 +30,6 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertFails
@@ -45,9 +43,10 @@ import kotlin.test.assertTrue
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FeeProcessorTest {
 
-    private val testOrderBookDatabaseAccessor = TestFileOrderDatabaseAccessor()
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     private lateinit var feeProcessor: FeeProcessor
+
+    @Autowired
     private lateinit var genericLimitOrderService: GenericLimitOrderService
 
     @Autowired
@@ -88,14 +87,6 @@ class FeeProcessorTest {
     }
 
     private fun initServices() {
-        genericLimitOrderService = GenericLimitOrderService(testOrderBookDatabaseAccessor,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                LinkedBlockingQueue(),
-                LinkedBlockingQueue(),
-                applicationSettingsCache)
-
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 

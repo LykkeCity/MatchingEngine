@@ -1,30 +1,47 @@
 package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.rabbit.events.OrderBookEvent
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 import java.util.ArrayList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.LinkedBlockingQueue
+import javax.annotation.PostConstruct
 import kotlin.concurrent.fixedRateTimer
+import kotlin.concurrent.thread
 
-class ConnectionsHolder(val orderBookQueue: BlockingQueue<OrderBook>) : Thread(ConnectionsHolder::class.java.name) {
+@Component
+class ConnectionsHolder {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(ConnectionsHolder::class.java.name)
     }
 
-    val connections = CopyOnWriteArraySet<Connection>()
+    private val connections = CopyOnWriteArraySet<Connection>()
+    private val  orderBookQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
 
-    override fun run() {
-        init()
-        while (true) {
-            val orderBook = orderBookQueue.take()
-            connections.forEach { connection -> connection.inputQueue.put(orderBook) }
-        }
+    fun getOrderBookQueueSize(): Int {
+        return orderBookQueue.size
     }
 
-    fun init() {
+    @EventListener
+    fun process(orderBookEvent: OrderBookEvent) {
+        orderBookQueue.put(orderBookEvent.orderBook)
+    }
+
+    @PostConstruct
+    fun initialize() {
         fixedRateTimer(name = "OrderBookActiveConnectionsCheck", initialDelay = 300000, period = 300000) {
             checkConnections()
+        }
+
+        thread(start = true, name = ConnectionsHolder::class.java.name) {
+            while (true) {
+                val orderBook = orderBookQueue.take()
+                connections.forEach { connection -> connection.inputQueue.put(orderBook) }
+            }
         }
     }
 

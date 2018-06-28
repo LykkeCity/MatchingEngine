@@ -31,6 +31,9 @@ class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
 
     override fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
 
+    fun getBuyOrderBook() = bidOrderBook
+    fun getSellOrderBook() = askOrderBook
+
     fun setOrderBook(isBuySide: Boolean, queue: PriorityBlockingQueue<LimitOrder>) = if (isBuySide) bidOrderBook = queue else askOrderBook = queue
 
     fun addOrder(order: LimitOrder) = getOrderBook(order.isBuySide()).add(order)

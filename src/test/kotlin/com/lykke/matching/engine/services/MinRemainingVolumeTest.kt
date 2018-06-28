@@ -82,9 +82,9 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.1), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(3, report.orders.size)
         assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "order1" }.order.status)
@@ -109,9 +109,9 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf( 0.1), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
         assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getBalance("Client2", "BTC"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(3, report.orders.size)
         assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "order1" }.order.status)
@@ -135,9 +135,9 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(680.0), testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(BigDecimal.valueOf(680.0), balancesHolder.getReservedBalance("Client1", "USD"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, report.orders.size)
         assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "order1" }.order.status)
@@ -163,9 +163,9 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.1), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getReservedBalance("Client1", "BTC"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, report.orders.filter { it.order.externalId == "order1" }.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "order1" }.order.status)
     }
@@ -190,9 +190,9 @@ class MinRemainingVolumeTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.1), testWalletDatabaseAccessor.getBalance("TrustedClient", "BTC"))
         assertEquals(BigDecimal.valueOf(0.1), balancesHolder.getBalance("TrustedClient", "BTC"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, report.orders.filter { it.order.externalId == "order2" }.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "order2" }.order.status)
     }

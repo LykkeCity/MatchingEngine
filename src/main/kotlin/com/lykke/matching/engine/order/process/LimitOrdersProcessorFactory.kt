@@ -8,26 +8,22 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 
+@Component
 class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                                   private val assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
                                   private val genericLimitOrderService: GenericLimitOrderService,
                                   private val applicationSettingsCache: ApplicationSettingsCache,
-                                  private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                                  private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                                  private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                  private val orderBookQueue: BlockingQueue<OrderBook>,
-                                  private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>) {
+                                  private val applicationEventPublisher: ApplicationEventPublisher) {
 
     fun create(matchingEngine: MatchingEngine,
                date: Date,
@@ -47,11 +43,7 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                     genericLimitOrderService,
                     applicationSettingsCache,
                     ordersToCancel,
-                    trustedClientsLimitOrdersQueue,
-                    clientsLimitOrdersQueue,
-                    lkkTradesQueue,
-                    orderBookQueue,
-                    rabbitOrderBookQueue,
+                    applicationEventPublisher,
                     matchingEngine,
                     date,
                     clientId,

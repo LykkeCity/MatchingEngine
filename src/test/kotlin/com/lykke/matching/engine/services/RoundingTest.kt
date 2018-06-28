@@ -51,6 +51,8 @@ class RoundingTest: AbstractTest() {
 
     @Before
     fun setUp() {
+        tradesInfoListener.clear()
+
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))
@@ -62,15 +64,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testStraightBuy() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = -1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.11548, volume = -1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(1.11548), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -90,15 +92,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testStraightSell() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.11548, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(1.11548), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -118,15 +120,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightBuy() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.11548, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = 1.0, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(1.11548), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -146,15 +148,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightSell() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.11548, volume = -1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.11548, volume = -1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1.0, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(1.11548), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -174,15 +176,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightSellRoundingError() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 909.727, volume = -1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 909.727, volume = -1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client4", "CHF", 1.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCCHF", volume = 	-0.38, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(909.727), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -202,15 +204,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testStraightBuyBTC() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = -1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = -1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(678.229), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -230,15 +232,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testStraightSellBTC() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(678.229), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -258,15 +260,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightBuyBTC() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = 1.0, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(678.229), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -286,15 +288,15 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightSellBTC() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = -1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", price = 678.229, volume = -1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1500.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -1.0, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(678.229), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -314,17 +316,17 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightSellBTCMultiLevel() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14925.09, volume = -1.34, clientId = "Client3"))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14950.18, volume = -1.34, clientId = "Client3"))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14975.27, volume = -1.34, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14925.09, volume = -1.34, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14950.18, volume = -1.34, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCLKK", price = 14975.27, volume = -1.34, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "LKK", 50800.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCLKK", volume = -50800.0, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(14945.93), marketOrderReport.order.price!!)
         assertEquals(3, marketOrderReport.trades.size)
@@ -335,29 +337,29 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testNotStraightBuyEURJPY() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 116.356, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "EURJPY", price = 116.356, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "JPY", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 0.00999999999999999)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURJPY", volume = 1.16, straight = false)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.NotEnoughFunds.name, marketOrderReport.order.status)
     }
 
     @Test
     fun testStraightSellBTCEUR() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 597.169, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 597.169, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 1.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCEUR", volume = -0.0001)))
 
-        assertEquals(1, rabbitSwapQueue.size)
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        assertEquals(1, rabbitSwapListener.getCount())
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals(OrderStatus.Matched.name, marketOrderReport.order.status)
         assertEquals(BigDecimal.valueOf(597.169), marketOrderReport.order.price!!)
         assertEquals(1, marketOrderReport.trades.size)
@@ -377,7 +379,7 @@ class RoundingTest: AbstractTest() {
 
     @Test
     fun testLimitOrderRounding() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 1121.509, volume = 1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCEUR", price = 1121.509, volume = 1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 1.0)
         testBalanceHolderWrapper.updateBalance("Client4", "BTC", 1.0)
         initServices()
