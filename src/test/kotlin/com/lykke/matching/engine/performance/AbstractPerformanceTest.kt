@@ -3,14 +3,7 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
-import com.lykke.matching.engine.database.TestPersistenceManager
-import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.TestWalletDatabaseAccessor
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
@@ -69,8 +62,9 @@ abstract class AbstractPerformanceTest {
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
     private lateinit var ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder
     private lateinit var stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder
-    protected val testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestFileOrderDatabaseAccessor
+    protected val testFileOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestFileOrderDatabaseAccessor
     protected val stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
+    protected val testOrderBookDatabaseAccessor = TestOrderBookDatabaseAccessor(testFileOrderDatabaseAccessor)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -88,7 +82,7 @@ abstract class AbstractPerformanceTest {
 
 
     open fun initServices() {
-        testOrderBookWrapper = TestOrderBookWrapper(genericLimitOrderService, testOrderDatabaseAccessor, genericStopLimitOrderService, stopOrderDatabaseAccessor )
+        testOrderBookWrapper = TestOrderBookWrapper(genericLimitOrderService, testOrderBookDatabaseAccessor, genericStopLimitOrderService, stopOrderDatabaseAccessor )
 
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
@@ -117,7 +111,7 @@ abstract class AbstractPerformanceTest {
         tradesInfoQueue = LinkedBlockingQueue()
         quotesNotificationQueue = LinkedBlockingQueue()
 
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor,
+        genericLimitOrderService = GenericLimitOrderService(testFileOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,

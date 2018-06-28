@@ -210,7 +210,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun genericLimitOrderService(testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor, assetsHolder: AssetsHolder,
+    open fun genericLimitOrderService(testOrderDatabaseAccessor: TestOrderBookDatabaseAccessor, assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                       applicationEventPublisher: ApplicationEventPublisher, applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, applicationEventPublisher, applicationSettingsCache)
@@ -302,10 +302,10 @@ open class TestApplicationContext {
 
     @Bean
     open fun testOrderBookWrapper(genericLimitOrderService: GenericLimitOrderService,
-                                  testFileOrderDatabaseAccessor: TestFileOrderDatabaseAccessor,
+                                  testOrderBookDatabaseAccessor: TestOrderBookDatabaseAccessor,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor): TestOrderBookWrapper {
-        return TestOrderBookWrapper(genericLimitOrderService, testFileOrderDatabaseAccessor, genericStopLimitOrderService, stopOrderBookDatabaseAccessor)
+        return TestOrderBookWrapper(genericLimitOrderService, testOrderBookDatabaseAccessor, genericStopLimitOrderService, stopOrderBookDatabaseAccessor)
     }
 
     @Bean
@@ -316,11 +316,6 @@ open class TestApplicationContext {
     @Bean
     open fun tradeInfoListener(): TradeInfoListener {
         return TradeInfoListener()
-    }
-
-    @Bean
-    open fun reservedVolumesDatabaseAccessor(): ReservedVolumesDatabaseAccessor {
-        return TestReservedVolumesDatabaseAccessor()
     }
 
     @Bean
