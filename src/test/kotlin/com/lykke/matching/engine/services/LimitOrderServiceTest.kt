@@ -112,7 +112,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 2000.0)))
-        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(OrderStatus.InOrderBook.name, result.orders.first().order.status)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
@@ -128,7 +128,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", false).size)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", price = 1.2, volume = 100.0)))
-        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders.first().order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
         assertEquals(BigDecimal.valueOf(-900.0), result.orders[1].order.remainingVolume)
@@ -647,8 +647,8 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.1750629), testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHBTC",  uid = "4", price = 0.07958, volume = -0.041938)))
-        assertEquals(1, testClientLimitOrderListener.size)
-        result = testClientLimitOrderListener.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
 

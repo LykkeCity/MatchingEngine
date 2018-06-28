@@ -24,10 +24,8 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
-import com.lykke.matching.engine.utils.config.RedisConfig
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
-import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -64,18 +62,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testStopOrderBookDatabaseAccessor(): TestStopOrderBookDatabaseAccessor {
-        return TestStopOrderBookDatabaseAccessor()
-    }
-
-    @Bean
     open fun testReservedVolumesDatabaseAccessor(): TestReservedVolumesDatabaseAccessor {
         return TestReservedVolumesDatabaseAccessor()
-    }
-
-    @Bean
-    open fun testFileOrderDatabaseAccessor(): TestFileOrderDatabaseAccessor {
-        return TestFileOrderDatabaseAccessor()
     }
 
     @Bean
@@ -271,8 +259,10 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun genericStopLimitOrderService(stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor, genericLimitOrderService: GenericLimitOrderService): GenericStopLimitOrderService {
-        return GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
+    open fun genericStopLimitOrderService(persistenceManager: TestPersistenceManager,
+                                          stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
+                                          genericLimitOrderService: GenericLimitOrderService): GenericStopLimitOrderService {
+        return GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService, persistenceManager)
     }
 
     @Bean
@@ -326,13 +316,6 @@ open class TestApplicationContext {
     @Bean
     open fun tradeInfoListener(): TradeInfoListener {
         return TradeInfoListener()
-    }
-
-    @Bean
-    open fun reservedVolumesRecalculator(orderBookDatabaseAccessor: OrderBookDatabaseAccessor, stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                         reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor, applicationContext: ApplicationContext, applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
-        return ReservedVolumesRecalculator(orderBookDatabaseAccessor,
-                stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext, applicationEventPublisher)
     }
 
     @Bean

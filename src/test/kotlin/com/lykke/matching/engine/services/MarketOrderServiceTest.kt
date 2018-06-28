@@ -86,7 +86,7 @@ class MarketOrderServiceTest: AbstractTest() {
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "ETHUSD", straight = false, volume = -401.9451)))
-        val marketOrderReport = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        val marketOrderReport = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
 
         assertEquals(Matched.name, marketOrderReport.order.status)
     }
