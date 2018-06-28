@@ -210,7 +210,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun genericLimitOrderService(testOrderDatabaseAccessor: TestOrderBookDatabaseAccessor, assetsHolder: AssetsHolder,
+    open fun genericLimitOrderService(testOrderDatabaseAccessor: OrdersDatabaseAccessorsHolder, assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                       applicationEventPublisher: ApplicationEventPublisher, applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, applicationEventPublisher, applicationSettingsCache)

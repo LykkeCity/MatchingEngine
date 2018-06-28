@@ -111,7 +111,7 @@ abstract class AbstractPerformanceTest {
         tradesInfoQueue = LinkedBlockingQueue()
         quotesNotificationQueue = LinkedBlockingQueue()
 
-        genericLimitOrderService = GenericLimitOrderService(testFileOrderDatabaseAccessor,
+        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
