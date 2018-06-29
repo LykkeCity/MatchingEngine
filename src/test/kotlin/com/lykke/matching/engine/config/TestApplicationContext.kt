@@ -62,12 +62,12 @@ open class TestApplicationContext {
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
-                                         applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
+                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                "tset", false, applicationEventPublisher)
+                "tset", false, balanceUpdateNotificationQueue)
     }
 
     @Bean
