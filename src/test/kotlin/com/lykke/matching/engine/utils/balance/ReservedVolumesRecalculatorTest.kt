@@ -158,7 +158,7 @@ class ReservedVolumesRecalculatorTest {
         assertBalanceUpdateNotification("Client1", "EUR", 10.0, 3.0, 0.7, balanceUpdate.balances)
         assertBalanceUpdateNotification("Client2", "USD", 990.0, 1.0, 2080.0, balanceUpdate.balances)
 
-        assertEquals(5, balanceUpdateHandlerTest.balanceUpdateQueueNotification.size)
+        assertEquals(5, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
     }
 
     private fun assertBalanceUpdateNotification(clientId: String, assetId: String, balance: Double, oldReserved: Double, newReserved: Double, balanceUpdates: Collection<ClientBalanceUpdate>) {

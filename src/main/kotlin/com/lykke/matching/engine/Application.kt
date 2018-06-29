@@ -1,5 +1,6 @@
 package com.lykke.matching.engine
 
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
@@ -8,8 +9,8 @@ import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.util.concurrent.BlockingQueue
 
 @Component
 class Application {
@@ -26,7 +27,7 @@ class Application {
     lateinit var applicationContext: ApplicationContext
 
     @Autowired
-    lateinit var applicationEventPublisher: ApplicationEventPublisher
+    lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
 
     fun run () {
         try {
@@ -43,7 +44,7 @@ class Application {
             System.exit(1)
         }
 
-        correctReservedVolumesIfNeed(config, applicationContext, applicationEventPublisher)
+        correctReservedVolumesIfNeed(config, applicationContext, balanceUpdateNotificationQueue)
         socketServer.run()
     }
 }

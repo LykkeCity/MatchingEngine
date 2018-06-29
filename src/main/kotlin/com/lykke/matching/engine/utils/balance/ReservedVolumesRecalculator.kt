@@ -14,21 +14,20 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
-fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext, applicationEventPublisher: ApplicationEventPublisher) {
+fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext, balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
     if (!config.me.correctReservedVolumes) {
         return
     }
@@ -42,7 +41,7 @@ fun correctReservedVolumesIfNeed(config: Config, applicationContext: Application
             stopOrderBookDatabaseAccessor,
             reservedVolumesDatabaseAccessor,
             applicationContext,
-            applicationEventPublisher).recalculate()
+            balanceUpdateNotificationQueue).recalculate()
 }
 
 
@@ -50,7 +49,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                                   private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                   private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                   private val applicationContext: ApplicationContext,
-                                  private val applicationEventPublisher: ApplicationEventPublisher) {
+                                  private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
 
 
     companion object {
@@ -169,7 +168,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balanceHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             updatedWallets.map { it.clientId }.toSet().forEach {
-                applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it)))
+                balanceUpdateNotificationQueue.add(BalanceUpdateNotification(it))
             }
         }
     }

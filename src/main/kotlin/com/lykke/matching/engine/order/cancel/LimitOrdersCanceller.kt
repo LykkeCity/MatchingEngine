@@ -7,30 +7,33 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.rabbit.events.OrderBookEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitorderBookEvent
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.*
+import java.util.concurrent.BlockingQueue
 
 class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                            assetsPairsHolder: AssetsPairsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                           private val applicationEventPublisher: ApplicationEventPublisher,
+                           private val orderBookQueue: BlockingQueue<JsonSerializable>,
+                           private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                           clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                           trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                            private val date: Date,
                            LOGGER: Logger) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
                 balancesHolder,
                 genericLimitOrderService,
-                applicationEventPublisher,
+                clientLimitOrdersQueue,
+                trustedClientsLimitOrderQueue,
                 date) {
 
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
@@ -52,8 +55,8 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         orderBooks.values.forEach { orderBook ->
             genericLimitOrderService.putTradeInfo(TradeInfo(orderBook.assetPair, orderBook.isBuy, orderBook.prices.firstOrNull()?.price
                     ?: BigDecimal.ZERO, date))
-            applicationEventPublisher.publishEvent(OrderBookEvent(orderBook))
-            applicationEventPublisher.publishEvent(RabbitorderBookEvent(orderBook))
+            orderBookQueue.add(orderBook)
+            rabbitOrderBookQueue.add(orderBook)
         }
     }
 

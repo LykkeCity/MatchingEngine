@@ -14,22 +14,18 @@ import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.LimitOrderValidator
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
-import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
-import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.rabbit.events.*
+import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationEventPublisher
 import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
 class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            assetsPairsHolder: AssetsPairsHolder,
@@ -37,7 +33,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            applicationSettingsCache: ApplicationSettingsCache,
                            ordersToCancel: Collection<LimitOrder>,
-                           private val applicationEventPublisher: ApplicationEventPublisher,
+                           private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                           private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                           private val orderBookQueue: BlockingQueue<JsonSerializable>,
+                           private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                           private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                            private val matchingEngine: MatchingEngine,
                            private val date: Date,
                            private val clientId: String,
@@ -119,7 +119,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         genericLimitOrderService.setOrderBook(assetPair.assetPairId, orderBook)
 
         if (lkkTrades.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(LkkTradesEvent(lkkTrades))
+            lkkTradesQueue.add(lkkTrades)
         }
 
         val orderBookCopy = orderBook.copy()
@@ -127,23 +127,23 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             genericLimitOrderService.updateOrderBook(assetPair.assetPairId, true)
             val newOrderBook = OrderBook(assetPair.assetPairId, true, date, orderBookCopy.getOrderBook(true))
             genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBookCopy.getBidPrice(), date))
-            applicationEventPublisher.publishEvent(OrderBookEvent(newOrderBook))
-            applicationEventPublisher.publishEvent(RabbitorderBookEvent(newOrderBook))
+            orderBookQueue.add(newOrderBook)
+            rabbitOrderBookQueue.add(newOrderBook)
         }
         if (sellSideOrderBookChanged) {
             genericLimitOrderService.updateOrderBook(assetPair.assetPairId, false)
             val newOrderBook = OrderBook(assetPair.assetPairId, false, date, orderBookCopy.getOrderBook(false))
             genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBookCopy.getAskPrice(), date))
-            applicationEventPublisher.publishEvent(OrderBookEvent(newOrderBook))
-            applicationEventPublisher.publishEvent(RabbitorderBookEvent(newOrderBook))
+            orderBookQueue.add(newOrderBook)
+            rabbitOrderBookQueue.add(newOrderBook)
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(TrustedLimitOrdersReportEvent(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades)))
+            trustedClientsLimitOrderQueue.add(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(LimitOrdersReportEvent(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades)))
+            clientLimitOrdersQueue.add(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
         }
 
         return OrderProcessResult(true, processedOrders)

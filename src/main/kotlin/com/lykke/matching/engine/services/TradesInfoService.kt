@@ -5,11 +5,9 @@ import com.lykke.matching.engine.daos.HourCandle
 import com.lykke.matching.engine.daos.Tick
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.outgoing.rabbit.events.TradeInfoEvent
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
@@ -18,7 +16,7 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
@@ -29,7 +27,8 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
         val LOGGER = Logger.getLogger(TradesInfoService::class.java.name)
     }
 
-    private val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
+    @Autowired
+    private lateinit var tradeInfoQueue: BlockingQueue<TradeInfo>
 
     val formatter = SimpleDateFormat("yyyyMMddHHmm")
 
@@ -53,11 +52,6 @@ class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAcc
                 process(tradeInfoQueue.take())
             }
         }
-    }
-
-    @EventListener
-    fun processEvent(infoEvent: TradeInfoEvent) {
-        tradeInfoQueue.add(infoEvent.tradeInfo)
     }
 
     fun process(info: TradeInfo) {

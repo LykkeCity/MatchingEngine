@@ -1,26 +1,20 @@
 package com.lykke.matching.engine.notification
 
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 
-abstract class AbstractEventListener<E, V> {
-    private val eventQueue: BlockingQueue<V> = LinkedBlockingQueue()
+abstract class AbstractEventListener<V> {
 
-    open fun process(event: E) {
-        eventQueue.add(extract(event))
-    }
+    abstract fun getProcessingQueue(): BlockingQueue<*>
 
     fun getCount(): Int {
-        return eventQueue.size
+        return getProcessingQueue().size
     }
 
     fun getQueue(): BlockingQueue<V> {
-        return eventQueue
+        return getProcessingQueue() as BlockingQueue<V>
     }
 
     fun clear() {
-        eventQueue.clear()
+        getProcessingQueue().clear()
     }
-
-    abstract fun extract(t: E): V
 }

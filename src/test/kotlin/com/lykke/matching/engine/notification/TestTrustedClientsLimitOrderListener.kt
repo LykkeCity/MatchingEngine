@@ -1,16 +1,15 @@
 package com.lykke.matching.engine.notification
 
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.rabbit.events.TrustedLimitOrdersReportEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.BlockingQueue
 
-class TestTrustedClientsLimitOrderListener : AbstractEventListener<TrustedLimitOrdersReportEvent, LimitOrdersReport>() {
-    override fun extract(t: TrustedLimitOrdersReportEvent): LimitOrdersReport {
-        return t.limitOrdersReport
-    }
+class TestTrustedClientsLimitOrderListener : AbstractEventListener<LimitOrdersReport>() {
+    @Autowired
+    private lateinit var trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>
 
-    @EventListener
-    override fun process(event: TrustedLimitOrdersReportEvent) {
-        super.process(event)
+    override fun getProcessingQueue(): BlockingQueue<*> {
+        return trustedClientsLimitOrderQueue
     }
 }

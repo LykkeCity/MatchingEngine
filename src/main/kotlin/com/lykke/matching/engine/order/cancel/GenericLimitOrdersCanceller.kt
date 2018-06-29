@@ -5,19 +5,23 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationEventPublisher
 import java.util.Date
+import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
+                                  orderBookQueue: BlockingQueue<JsonSerializable>,
+                                  rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                                  clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                  trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                  applicationEventPublisher: ApplicationEventPublisher,
                                   date: Date,
                                   LOGGER: Logger) {
 
@@ -26,7 +30,10 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             balancesHolder,
             genericLimitOrderService,
             genericLimitOrderProcessorFactory,
-            applicationEventPublisher,
+            orderBookQueue,
+            rabbitOrderBookQueue,
+            clientLimitOrdersQueue,
+            trustedClientsLimitOrderQueue,
             date,
             LOGGER)
 
@@ -34,7 +41,8 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             assetsPairsHolder,
             balancesHolder,
             genericStopLimitOrderService,
-            applicationEventPublisher,
+            clientLimitOrdersQueue,
+            trustedClientsLimitOrderQueue,
             date)
 
     fun preProcessLimitOrders(orders: Collection<LimitOrder>): GenericLimitOrdersCanceller {

@@ -1,16 +1,15 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.outgoing.rabbit.events.TradeInfoEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.BlockingQueue
 
-class TradeInfoListener: AbstractEventListener<TradeInfoEvent, TradeInfo>() {
-    override fun extract(t: TradeInfoEvent): TradeInfo {
-        return t.tradeInfo
-    }
+class TradeInfoListener: AbstractEventListener<TradeInfo>() {
 
-    @EventListener
-    override fun process(event: TradeInfoEvent) {
-        super.process(event)
+    @Autowired
+    private lateinit var tradeInfoQueue: BlockingQueue<TradeInfo>
+
+    override fun getProcessingQueue(): BlockingQueue<*> {
+        return tradeInfoQueue
     }
 }

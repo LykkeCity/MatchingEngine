@@ -19,13 +19,13 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -34,8 +34,6 @@ import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.utils.config.RedisConfig
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
-import org.mockito.Mockito
-import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.LinkedBlockingQueue
 
 abstract class AbstractPerformanceTest {
@@ -71,17 +69,35 @@ abstract class AbstractPerformanceTest {
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
-    protected val applicationEventPublicher = Mockito.mock(ApplicationEventPublisher::class.java)
     protected lateinit var persistenceManager: PersistenceManager
 
-    protected lateinit var tradesInfoQueue: LinkedBlockingQueue<TradeInfo>
-    protected lateinit var quotesNotificationQueue: LinkedBlockingQueue<QuotesUpdate>
-    protected lateinit var clientsLimitOrdersQueue: LinkedBlockingQueue<JsonSerializable>
-    protected lateinit var trustedClientsLimitOrdersQueue: LinkedBlockingQueue<JsonSerializable>
-    protected lateinit var lkkTradesQueue: LinkedBlockingQueue<List<LkkTrade>>
-    protected lateinit var orderBookQueue: LinkedBlockingQueue<OrderBook>
-    protected lateinit var rabbitOrderBookQueue: LinkedBlockingQueue<JsonSerializable>
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+
+    val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
+
+    val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
+
+
+    val cashSwapQueue  = LinkedBlockingQueue<JsonSerializable>()
+
+    val clientLimitOrdersQueue  = LinkedBlockingQueue<JsonSerializable>()
+
+    val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
+
+    val orderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+
+    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+
+    val rabbitSwapQueue  = LinkedBlockingQueue<JsonSerializable>()
+
+    val reservedCashOperationQueue  = LinkedBlockingQueue<JsonSerializable>()
+
+    val trustedClientsLimitOrderQueue  = LinkedBlockingQueue<JsonSerializable>()
+
+    val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
+
+    val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
+
 
 
     open fun initServices() {
@@ -102,7 +118,7 @@ abstract class AbstractPerformanceTest {
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
                 persistenceManager,
                 assetsHolder,
-                applicationEventPublicher,
+                balanceUpdateNotificationQueue, balanceUpdateQueue,
                 applicationSettingsCache)
 
         testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(), balancesHolder)
@@ -110,48 +126,41 @@ abstract class AbstractPerformanceTest {
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
 
-        tradesInfoQueue = LinkedBlockingQueue()
-        quotesNotificationQueue = LinkedBlockingQueue()
+
 
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationEventPublicher,
+                quotesUpdateQueue, tradeInfoQueue,
                 applicationSettingsCache)
 
-        clientsLimitOrdersQueue = LinkedBlockingQueue()
 
         stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService)
 
-        trustedClientsLimitOrdersQueue = LinkedBlockingQueue()
-        lkkTradesQueue = LinkedBlockingQueue()
-        orderBookQueue = LinkedBlockingQueue()
-        rabbitOrderBookQueue = LinkedBlockingQueue()
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder, assetsPairsHolder, balancesHolder,
-                genericLimitOrderService, applicationSettingsCache, applicationEventPublicher)
+                genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrderQueue, applicationSettingsCache)
 
         genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
                 genericStopLimitOrderService,
                 limitOrdersProcessorFactory,
-                applicationEventPublicher,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationSettingsCache)
+                applicationSettingsCache, clientLimitOrdersQueue)
 
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder,
                 balancesHolder, genericLimitOrderService, genericStopLimitOrderService,
-                genericLimitOrderProcessorFactory, applicationEventPublicher)
+                genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrderQueue)
 
         val multiLimitOrderValidatorImpl = MultiLimitOrderValidatorImpl(assetsHolder)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService,
                 genericLimitOrdersCancellerFactory,
                 limitOrdersProcessorFactory,
-                applicationEventPublicher,
+                clientLimitOrdersQueue, trustedClientsLimitOrderQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
@@ -163,7 +172,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                applicationEventPublicher,
+                clientLimitOrdersQueue, trustedClientsLimitOrderQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue,
                 genericLimitOrderProcessorFactory, marketOrderValidator)
 
     }

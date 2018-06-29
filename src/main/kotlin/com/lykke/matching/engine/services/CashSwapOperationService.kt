@@ -12,7 +12,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
-import com.lykke.matching.engine.outgoing.rabbit.events.CashSwapEvent
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.validators.CashSwapOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -20,18 +20,18 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
 @Service
 class CashSwapOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                        private val assetsHolder: AssetsHolder,
                                                        private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
-                                                       private val applicationEventPublisher: ApplicationEventPublisher,
+                                                       private val cashSwapQueue: BlockingQueue<JsonSerializable>,
                                                        private val cashSwapOperationValidator: CashSwapOperationValidator) : AbstractService {
 
     companion object {
@@ -71,14 +71,14 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
             return
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
-        applicationEventPublisher.publishEvent(CashSwapEvent(CashSwapOperation(operation.externalId, operation.dateTime,
+        cashSwapQueue.add(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1,
                 operation.asset1,
                 NumberUtils.setScaleRoundHalfUp(operation.volume1, assetsHolder.getAsset(operation.asset1).accuracy).toPlainString(),
                 operation.clientId2,
                 operation.asset2,
                 NumberUtils.setScaleRoundHalfUp(operation.volume2, assetsHolder.getAsset(operation.asset2).accuracy).toPlainString(),
-                messageWrapper.messageId!!)))
+                messageWrapper.messageId!!))
 
         messageWrapper
                 .writeNewResponse(ProtocolMessages.NewResponse

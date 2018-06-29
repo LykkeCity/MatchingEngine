@@ -1,16 +1,15 @@
 package com.lykke.matching.engine.notification
 
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.rabbit.events.OrderBookEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.BlockingQueue
 
-class TestOrderBookListener : AbstractEventListener<OrderBookEvent, OrderBook>() {
-    override fun extract(t: OrderBookEvent): OrderBook {
-        return t.orderBook
-    }
+class TestOrderBookListener : AbstractEventListener<OrderBook>() {
+    @Autowired
+    private lateinit var orderBookQueue: BlockingQueue<JsonSerializable>
 
-    @EventListener
-    override fun process(event: OrderBookEvent) {
-        super.process(event)
+    override fun getProcessingQueue(): BlockingQueue<*> {
+        return orderBookQueue
     }
 }

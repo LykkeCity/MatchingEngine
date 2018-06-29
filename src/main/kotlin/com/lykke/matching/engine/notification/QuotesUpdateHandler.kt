@@ -2,15 +2,14 @@ package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.rabbit.events.QuotesUpdateEvent
 import com.lykke.matching.engine.socket.ClientHandler
 import com.lykke.matching.engine.utils.ByteHelper
 import org.apache.log4j.Logger
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.LinkedList
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
@@ -22,7 +21,9 @@ class QuotesUpdateHandler {
     }
 
     private val connections = CopyOnWriteArrayList<ClientHandler>()
-    private val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
+
+    @Autowired
+    private lateinit var quotesUpdateQueue: BlockingQueue<QuotesUpdate>
 
     @PostConstruct
     fun initialize() {
@@ -31,11 +32,6 @@ class QuotesUpdateHandler {
                 process(quotesUpdateQueue.take())
             }
         }
-    }
-
-    @EventListener
-    fun processEven(quotesUpdateEvent: QuotesUpdateEvent) {
-        quotesUpdateQueue.add(quotesUpdateEvent.quotesUpdate)
     }
 
     private fun process(notification: QuotesUpdate) {

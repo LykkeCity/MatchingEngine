@@ -5,17 +5,16 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.rabbit.events.LimitOrdersReportEvent
-import com.lykke.matching.engine.outgoing.rabbit.events.TrustedLimitOrdersReportEvent
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
-import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
@@ -24,7 +23,8 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val assetsPairsHolder: AssetsPairsHolder,
                                                                           private val balancesHolder: BalancesHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
-                                                                          private val applicationEventPublisher: ApplicationEventPublisher,
+                                                                          private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                                                          private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                                                                           private val date: Date) {
 
     private var ordersToRemove: List<LimitOrder> = LinkedList()
@@ -122,10 +122,10 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
 
     private fun sendReports(messageId: String, result: TCancelResult) {
         if (result.clientsOrdersWithTrades.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(LimitOrdersReportEvent(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList())))
+            clientLimitOrdersQueue.add(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(TrustedLimitOrdersReportEvent(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList())))
+            trustedClientsLimitOrderQueue.add(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
     }
 
