@@ -77,8 +77,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun balanceUpdateHandler(): BalanceUpdateHandlerTest {
-        return BalanceUpdateHandlerTest()
+    open fun balanceUpdateHandler(balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
+                                  balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): BalanceUpdateHandlerTest {
+        return BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue)
     }
 
     @Bean
