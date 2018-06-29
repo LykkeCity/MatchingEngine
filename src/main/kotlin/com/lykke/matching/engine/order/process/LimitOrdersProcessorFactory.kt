@@ -8,7 +8,6 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -29,7 +28,7 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                                   private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                   private val orderBookQueue: BlockingQueue<OrderBook>,
                                   private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                  private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                                  private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                   private val applicationSettingsCache: ApplicationSettingsCache) {
 
     fun create(matchingEngine: MatchingEngine,

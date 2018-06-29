@@ -77,9 +77,6 @@ abstract class AbstractPerformanceTest {
 
     val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
-
-    val cashSwapQueue  = LinkedBlockingQueue<CashSwapOperation>()
-
     val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
@@ -88,11 +85,9 @@ abstract class AbstractPerformanceTest {
 
     val rabbitOrderBookQueue = LinkedBlockingQueue<OrderBook>()
 
-    val rabbitSwapQueue  = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
 
-    val reservedCashOperationQueue  = LinkedBlockingQueue<JsonSerializable>()
-
-    val trustedClientsLimitOrderQueue  = LinkedBlockingQueue<JsonSerializable>()
+    val trustedClientsLimitOrderQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
     val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
 

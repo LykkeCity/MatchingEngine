@@ -17,10 +17,7 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
@@ -158,7 +155,7 @@ open class TestApplicationContext {
     @Bean
     open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
                                         assetsHolder: AssetsHolder,
-                                        reservedCashOperationQueue: BlockingQueue<JsonSerializable>,
+                                        reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                         reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, balancesHolder, reservedCashOperationQueue, reservedCashInOutOperationValidator)
     }
@@ -195,7 +192,7 @@ open class TestApplicationContext {
                                          lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                          orderBookQueue: BlockingQueue<OrderBook>,
                                          rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                         trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>): LimitOrdersProcessorFactory {
+                                         trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>): LimitOrdersProcessorFactory {
         return LimitOrdersProcessorFactory(assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService, clientLimitOrdersQueue,
                 lkkTradesQueue,
                 orderBookQueue,
@@ -216,7 +213,7 @@ open class TestApplicationContext {
     open fun multiLimitOrderService(genericLimitOrderService: GenericLimitOrderService, genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                     limitOrderProcessorFactory: LimitOrdersProcessorFactory,
                                     clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                                    trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                     orderBookQueue: BlockingQueue<OrderBook>,
                                     rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                     lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -230,10 +227,10 @@ open class TestApplicationContext {
     @Bean
     open fun marketOrderService(genericLimitOrderService: GenericLimitOrderService, assetsHolder: AssetsHolder,
                                 assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder, clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                                trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                 orderBookQueue: BlockingQueue<OrderBook>,
                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                rabbitSwapQueue: BlockingQueue<JsonSerializable>,
+                                rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
                                 lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                 genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, marketOrderValidator: MarketOrderValidator): MarketOrderService {
         return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrderQueue,
@@ -247,7 +244,7 @@ open class TestApplicationContext {
                                                 orderBookQueue: BlockingQueue<OrderBook>,
                                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>): GenericLimitOrdersCancellerFactory {
+                                                trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>): GenericLimitOrdersCancellerFactory {
         return GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService,
                 genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrderQueue)
     }

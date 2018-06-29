@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
@@ -24,7 +23,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val balancesHolder: BalancesHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
                                                                           private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                                          private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                                                                          private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                                                           private val date: Date) {
 
     private var ordersToRemove: List<LimitOrder> = LinkedList()

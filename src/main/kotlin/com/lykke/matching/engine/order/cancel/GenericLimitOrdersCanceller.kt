@@ -5,7 +5,6 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -20,7 +19,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   orderBookQueue: BlockingQueue<OrderBook>,
                                   rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                   clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                                  trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,

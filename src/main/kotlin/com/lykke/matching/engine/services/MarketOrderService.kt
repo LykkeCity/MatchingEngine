@@ -44,11 +44,11 @@ class MarketOrderService @Autowired constructor(
         private val assetsPairsHolder: AssetsPairsHolder,
         private val balancesHolder: BalancesHolder,
         private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-        private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+        private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
         private val orderBookQueue: BlockingQueue<OrderBook>,
         private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-        private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
+        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
         private val marketOrderValidator: MarketOrderValidator) : AbstractService {
 

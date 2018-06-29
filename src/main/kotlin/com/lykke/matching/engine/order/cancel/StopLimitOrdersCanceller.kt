@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AssetStopOrderBook
@@ -19,7 +18,7 @@ class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabas
                                balancesHolder: BalancesHolder,
                                genericStopLimitOrderService: GenericStopLimitOrderService,
                                clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                               trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                               trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                date: Date) :
         AbstractLimitOrdersCanceller<AssetStopOrderBook, StopLimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,

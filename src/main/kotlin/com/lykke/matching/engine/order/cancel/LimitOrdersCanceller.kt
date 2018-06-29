@@ -7,7 +7,6 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -26,7 +25,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                            private val orderBookQueue: BlockingQueue<OrderBook>,
                            private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                            clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                           trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                           trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                            private val date: Date,
                            LOGGER: Logger) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,

@@ -49,18 +49,18 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun rabbitSwapQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun rabbitSwapQueue(): BlockingQueue<MarketOrderWithTrades> {
+        return LinkedBlockingQueue<MarketOrderWithTrades>()
     }
 
     @Bean
-    open fun reservedCashOperationQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun reservedCashOperationQueue(): BlockingQueue<ReservedCashOperation> {
+        return LinkedBlockingQueue<ReservedCashOperation>()
     }
 
     @Bean
-    open fun trustedClientsLimitOrderQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun trustedClientsLimitOrderQueue(): BlockingQueue<LimitOrdersReport> {
+        return LinkedBlockingQueue<LimitOrdersReport>()
     }
 
     @Bean

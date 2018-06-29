@@ -42,7 +42,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
                                                     private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                                     private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                                     private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                    private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
+                                                    private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
                                                     private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                                     private val orderBookQueue: BlockingQueue<OrderBook>,
                                                     private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
