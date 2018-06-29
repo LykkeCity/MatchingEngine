@@ -12,7 +12,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashSwapOperation
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.validators.CashSwapOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -31,7 +30,7 @@ import java.util.concurrent.BlockingQueue
 class CashSwapOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                        private val assetsHolder: AssetsHolder,
                                                        private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
-                                                       private val cashSwapQueue: BlockingQueue<JsonSerializable>,
+                                                       private val cashSwapQueue: BlockingQueue<CashSwapOperation>,
                                                        private val cashSwapOperationValidator: CashSwapOperationValidator) : AbstractService {
 
     companion object {

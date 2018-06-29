@@ -9,7 +9,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                  private val stopLimitOrderService: GenericStopLimitOrderService,
-                                 clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                  limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                  assetsHolder: AssetsHolder,
                                  assetsPairsHolder: AssetsPairsHolder,

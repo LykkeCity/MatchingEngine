@@ -25,7 +25,7 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -73,20 +73,20 @@ abstract class AbstractPerformanceTest {
 
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
-    val balanceUpdateQueue = LinkedBlockingQueue<JsonSerializable>()
+    val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
     val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
 
-    val cashSwapQueue  = LinkedBlockingQueue<JsonSerializable>()
+    val cashSwapQueue  = LinkedBlockingQueue<CashSwapOperation>()
 
-    val clientLimitOrdersQueue  = LinkedBlockingQueue<JsonSerializable>()
+    val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
 
-    val orderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val orderBookQueue = LinkedBlockingQueue<OrderBook>()
 
-    val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
+    val rabbitOrderBookQueue = LinkedBlockingQueue<OrderBook>()
 
     val rabbitSwapQueue  = LinkedBlockingQueue<JsonSerializable>()
 

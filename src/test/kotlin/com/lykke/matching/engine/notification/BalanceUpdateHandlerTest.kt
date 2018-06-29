@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.notification
 
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
@@ -9,7 +9,7 @@ import java.util.concurrent.BlockingQueue
 class BalanceUpdateHandlerTest {
 
     @Autowired
-    lateinit var balanceUpdateQueue: BlockingQueue<JsonSerializable>
+    lateinit var balanceUpdateQueue: BlockingQueue<BalanceUpdate>
 
     @Autowired
     lateinit var  balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>

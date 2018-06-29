@@ -24,7 +24,7 @@ import java.util.concurrent.BlockingQueue
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                               private val stopLimitOrderService: GenericStopLimitOrderService,
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
-                              private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                              private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,

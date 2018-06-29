@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppVersion
@@ -12,7 +12,7 @@ import javax.annotation.PostConstruct
 @Component
 class RabbitOrderBookListener {
     @Autowired
-    private lateinit var rabbitOrderBookQueue: BlockingQueue<JsonSerializable>
+    private lateinit var rabbitOrderBookQueue: BlockingQueue<OrderBook>
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService

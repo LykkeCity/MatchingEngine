@@ -23,7 +23,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val assetsPairsHolder: AssetsPairsHolder,
                                                                           private val balancesHolder: BalancesHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
-                                                                          private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                                                          private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                                           private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                                                                           private val date: Date) {
 

@@ -7,6 +7,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AssetStopOrderBook
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import java.math.BigDecimal
@@ -17,7 +18,7 @@ class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabas
                                assetsPairsHolder: AssetsPairsHolder,
                                balancesHolder: BalancesHolder,
                                genericStopLimitOrderService: GenericStopLimitOrderService,
-                               clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                               clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                                date: Date) :
         AbstractLimitOrdersCanceller<AssetStopOrderBook, StopLimitOrdersCancelResult>(dictionariesDatabaseAccessor,

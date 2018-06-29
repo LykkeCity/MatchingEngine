@@ -2,7 +2,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppVersion
@@ -16,7 +16,7 @@ import javax.annotation.PostConstruct
 class BalanceUpdatesListener {
 
     @Autowired
-    private lateinit var  balanceUpdateQueue: BlockingQueue<JsonSerializable>
+    private lateinit var  balanceUpdateQueue: BlockingQueue<BalanceUpdate>
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService

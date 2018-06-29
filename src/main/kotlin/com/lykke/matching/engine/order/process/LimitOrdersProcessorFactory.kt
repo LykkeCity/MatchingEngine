@@ -10,6 +10,8 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
@@ -23,10 +25,10 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                                   private val assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
                                   private val genericLimitOrderService: GenericLimitOrderService,
-                                  private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                  private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                  private val orderBookQueue: BlockingQueue<JsonSerializable>,
-                                  private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                                  private val orderBookQueue: BlockingQueue<OrderBook>,
+                                  private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                   private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                                   private val applicationSettingsCache: ApplicationSettingsCache) {
 

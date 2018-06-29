@@ -6,6 +6,8 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
@@ -15,9 +17,9 @@ import java.util.concurrent.BlockingQueue
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
-                                  orderBookQueue: BlockingQueue<JsonSerializable>,
-                                  rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                                  clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                  orderBookQueue: BlockingQueue<OrderBook>,
+                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                                  clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,

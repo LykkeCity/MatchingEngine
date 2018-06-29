@@ -7,7 +7,6 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.PersistenceData
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.updaters.BalancesUpdater
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
@@ -19,7 +18,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
-                     private val balanceUpdateQueue: BlockingQueue<JsonSerializable>,
+                     private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                      private val applicationSettingsCache: ApplicationSettingsCache) {
 
     companion object {

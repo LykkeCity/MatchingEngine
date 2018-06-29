@@ -5,6 +5,8 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
@@ -20,9 +22,9 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val dict
                                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
                                                                 private val genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                                                private val orderBookQueue: BlockingQueue<JsonSerializable>,
-                                                                private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                                                                private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                                                                private val orderBookQueue: BlockingQueue<OrderBook>,
+                                                                private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                                                                private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                                 private val trustedClientsLimitOrderQueue: BlockingQueue<JsonSerializable>) {
 
     fun create(logger: Logger, date: Date): GenericLimitOrdersCanceller {

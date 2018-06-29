@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.*
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.BlockingQueue
@@ -14,8 +14,8 @@ import java.util.concurrent.LinkedBlockingQueue
 open class QueueConfig {
 
     @Bean
-    open fun balanceUpdateQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun balanceUpdateQueue(): BlockingQueue<BalanceUpdate> {
+        return LinkedBlockingQueue<BalanceUpdate>()
     }
 
     @Bean
@@ -24,13 +24,13 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun cashSwapQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun cashSwapQueue(): BlockingQueue<CashSwapOperation> {
+        return LinkedBlockingQueue<CashSwapOperation>()
     }
 
     @Bean
-    open fun clientLimitOrdersQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun clientLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
+        return LinkedBlockingQueue<LimitOrdersReport>()
     }
 
     @Bean
@@ -39,13 +39,13 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun orderBookQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun orderBookQueue(): BlockingQueue<OrderBook> {
+        return LinkedBlockingQueue<OrderBook>()
     }
 
     @Bean
-    open fun rabbitOrderBookQueue(): BlockingQueue<JsonSerializable> {
-        return LinkedBlockingQueue<JsonSerializable>()
+    open fun rabbitOrderBookQueue(): BlockingQueue<OrderBook> {
+        return LinkedBlockingQueue<OrderBook>()
     }
 
     @Bean

@@ -6,7 +6,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
@@ -22,7 +22,7 @@ class GenericLimitOrderProcessorFactory @Autowired constructor(private val gener
                                                                private val assetsPairsHolder: AssetsPairsHolder,
                                                                private val balancesHolder: BalancesHolder,
                                                                private val applicationSettingsCache: ApplicationSettingsCache,
-                                                               private val clientLimitOrdersQueue: BlockingQueue<JsonSerializable>) {
+                                                               private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>) {
 
     fun create(logger: Logger): GenericLimitOrderProcessor {
         return GenericLimitOrderProcessor(genericLimitOrderService,
