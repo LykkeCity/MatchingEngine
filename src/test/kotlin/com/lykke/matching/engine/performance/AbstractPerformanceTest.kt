@@ -93,8 +93,6 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
-
-
     open fun initServices() {
         testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testOrderBookWrapper = TestOrderBookWrapper(genericLimitOrderService, testOrderDatabaseAccessor, genericStopLimitOrderService, stopOrderDatabaseAccessor )
