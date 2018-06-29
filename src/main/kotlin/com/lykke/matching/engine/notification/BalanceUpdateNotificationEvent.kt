@@ -1,3 +1,0 @@
-package com.lykke.matching.engine.notification
-
-class BalanceUpdateNotificationEvent(val balanceUpdateNotification: BalanceUpdateNotification)

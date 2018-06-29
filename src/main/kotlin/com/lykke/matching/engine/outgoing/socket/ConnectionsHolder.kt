@@ -1,14 +1,12 @@
 package com.lykke.matching.engine.outgoing.socket
 
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.rabbit.events.OrderBookEvent
 import com.lykke.utils.logging.ThrottlingLogger
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.ArrayList
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.fixedRateTimer
 import kotlin.concurrent.thread
@@ -20,15 +18,12 @@ class ConnectionsHolder {
     }
 
     private val connections = CopyOnWriteArraySet<Connection>()
-    private val  orderBookQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
+
+    @Autowired
+    private lateinit var  orderBookQueue: BlockingQueue<OrderBook>
 
     fun getOrderBookQueueSize(): Int {
         return orderBookQueue.size
-    }
-
-    @EventListener
-    fun process(orderBookEvent: OrderBookEvent) {
-        orderBookQueue.put(orderBookEvent.orderBook)
     }
 
     @PostConstruct

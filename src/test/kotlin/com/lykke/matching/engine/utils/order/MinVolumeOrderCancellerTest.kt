@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -30,6 +30,7 @@ import java.util.Date
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import java.util.concurrent.BlockingQueue
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
@@ -66,6 +67,9 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
     lateinit var applicationContext: ApplicationContext
+
+    @Autowired
+    lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
 
     @Before
     fun setUp() {

@@ -1,16 +1,14 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.outgoing.rabbit.events.RabbitSwapEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.BlockingQueue
 
-class RabbitSwapListener: AbstractEventListener<RabbitSwapEvent, MarketOrderWithTrades>() {
-    override fun extract(t: RabbitSwapEvent): MarketOrderWithTrades {
-        return t.marketOrderWithTrades
-    }
+class RabbitSwapListener: AbstractQueueWrapper<MarketOrderWithTrades>() {
+    @Autowired
+    private lateinit var rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>
 
-    @EventListener
-    override fun process(event: RabbitSwapEvent) {
-        super.process(event)
+    override fun getProcessingQueue(): BlockingQueue<MarketOrderWithTrades> {
+        return rabbitSwapQueue
     }
 }

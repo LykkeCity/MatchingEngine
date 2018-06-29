@@ -2,12 +2,10 @@ package com.lykke.matching.engine.outgoing.database
 
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.outgoing.rabbit.events.LkkTradesEvent
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
@@ -18,7 +16,8 @@ class LkkTradeSaveService @Autowired constructor(private val marketOrderDatabase
         private val LOGGER = ThrottlingLogger.getLogger(LkkTradeSaveService::class.java.name)
     }
 
-    private val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
+    @Autowired
+    private lateinit var lkkTradesQueue: BlockingQueue<List<LkkTrade>>
 
     @PostConstruct
     fun initialize() {
@@ -27,11 +26,6 @@ class LkkTradeSaveService @Autowired constructor(private val marketOrderDatabase
                 process(lkkTradesQueue.take())
             }
         }
-    }
-
-    @EventListener
-    private fun processEvent(lkkTradesEvent: LkkTradesEvent) {
-        lkkTradesQueue.add(lkkTradesEvent.trades)
     }
 
     fun process(lkkTrades: List<LkkTrade>) {

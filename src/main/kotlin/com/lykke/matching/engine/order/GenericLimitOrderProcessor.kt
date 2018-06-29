@@ -10,17 +10,18 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.util.Date
+import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                  private val stopLimitOrderService: GenericStopLimitOrderService,
+                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                  limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
-                                 applicationEventPublisher: ApplicationEventPublisher,
                                  assetsHolder: AssetsHolder,
                                  assetsPairsHolder: AssetsPairsHolder,
                                  balancesHolder: BalancesHolder,
@@ -37,7 +38,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     private val stopLimitOrderProcessor = StopLimitOrderProcessor(limitOrderService,
             stopLimitOrderService,
             this,
-            applicationEventPublisher,
+            clientLimitOrdersQueue,
             assetsHolder,
             assetsPairsHolder,
             balancesHolder,

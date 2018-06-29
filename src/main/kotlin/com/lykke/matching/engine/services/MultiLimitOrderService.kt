@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -21,20 +22,15 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.outgoing.rabbit.events.*
+import com.lykke.matching.engine.outgoing.messages.*
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.ArrayList
@@ -47,7 +43,11 @@ import java.util.concurrent.BlockingQueue
 class MultiLimitOrderService @Autowired constructor(private val limitOrderService: GenericLimitOrderService,
                                                     private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                                     private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
-                                                    private val applicationEventPublisher: ApplicationEventPublisher,
+                                                    private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                                    private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                                    private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                                                    private val orderBookQueue: BlockingQueue<OrderBook>,
+                                                    private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                     assetsHolder: AssetsHolder,
                                                     private val assetsPairsHolder: AssetsPairsHolder,
                                                     private val balancesHolder: BalancesHolder,
@@ -317,7 +317,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         walletOperationsProcessor.apply().sendNotification(messageUid, MessageType.MULTI_LIMIT_ORDER.name, messageWrapper.messageId!!)
 
         matchingEngine.apply()
-        applicationEventPublisher.publishEvent(LkkTradesEvent(trades))
+        lkkTradesQueue.add(trades)
         limitOrderService.moveOrdersToDone(completedOrders)
         limitOrderService.cancelLimitOrders(ordersToCancel, now)
         limitOrderService.addOrders(ordersToAdd)
@@ -328,14 +328,14 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         if (buySide || cancelBuySide) {
             val newOrderBook = OrderBook(assetPairId, true, now, orderBookCopy.getOrderBook(true))
             limitOrderService.putTradeInfo(TradeInfo(assetPairId, true, orderBook.getBidPrice(), now))
-            applicationEventPublisher.publishEvent(OrderBookEvent(newOrderBook))
-            applicationEventPublisher.publishEvent(RabbitorderBookEvent(newOrderBook))
+            orderBookQueue.add(newOrderBook)
+            rabbitOrderBookQueue.add(newOrderBook)
         }
         if (sellSide || cancelSellSide) {
             val newOrderBook = OrderBook(assetPairId, false, now, orderBookCopy.getOrderBook(false))
             limitOrderService.putTradeInfo(TradeInfo(assetPairId, false, orderBook.getAskPrice(), now))
-            applicationEventPublisher.publishEvent(OrderBookEvent(newOrderBook))
-            applicationEventPublisher.publishEvent(RabbitorderBookEvent(newOrderBook))
+            orderBookQueue.add(newOrderBook)
+            rabbitOrderBookQueue.add(newOrderBook)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -356,11 +356,11 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         }
 
         if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(TrustedLimitOrdersReportEvent(trustedClientLimitOrdersReport))
+            trustedClientsLimitOrderQueue.add(trustedClientLimitOrdersReport)
         }
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(LimitOrdersReportEvent(clientLimitOrdersReport))
+            clientLimitOrdersQueue.add(clientLimitOrdersReport)
         }
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,

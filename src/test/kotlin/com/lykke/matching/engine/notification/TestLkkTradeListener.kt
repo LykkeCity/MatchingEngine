@@ -1,16 +1,14 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.outgoing.rabbit.events.LkkTradesEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.BlockingQueue
 
-class TestLkkTradeListener : AbstractEventListener<LkkTradesEvent, List<LkkTrade>>() {
-    override fun extract(t: LkkTradesEvent): List<LkkTrade> {
-        return t.trades
-    }
+class TestLkkTradeListener : AbstractQueueWrapper<List<LkkTrade>>() {
+    @Autowired
+    private lateinit var lkkTradesQueue: BlockingQueue<List<LkkTrade>>
 
-    @EventListener
-    override fun process(event: LkkTradesEvent) {
-        super.process(event)
+    override fun getProcessingQueue(): BlockingQueue<*> {
+        return lkkTradesQueue
     }
 }

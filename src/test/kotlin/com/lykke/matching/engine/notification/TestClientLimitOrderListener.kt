@@ -1,16 +1,15 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.rabbit.events.LimitOrdersReportEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.BlockingQueue
 
-class TestClientLimitOrderListener: AbstractEventListener<LimitOrdersReportEvent, LimitOrdersReport>() {
-    override fun extract(t: LimitOrdersReportEvent): LimitOrdersReport {
-        return t.limitOrdersReport
+class TestClientLimitOrderListener: AbstractQueueWrapper<LimitOrdersReport>() {
+    @Autowired
+    lateinit var clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>
+
+    override fun getProcessingQueue(): BlockingQueue<LimitOrdersReport> {
+        return clientLimitOrdersQueue
     }
 
-    @EventListener
-    override fun process(event: LimitOrdersReportEvent) {
-        super.process(event)
-    }
 }

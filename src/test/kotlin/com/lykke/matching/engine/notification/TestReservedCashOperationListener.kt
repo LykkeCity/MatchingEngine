@@ -1,18 +1,16 @@
 package com.lykke.matching.engine.notification
 
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
-import com.lykke.matching.engine.outgoing.rabbit.events.ReservedCashOperationEvent
-import org.springframework.context.event.EventListener
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.util.concurrent.BlockingQueue
 
 @Component
-class TestReservedCashOperationListener: AbstractEventListener<ReservedCashOperationEvent, ReservedCashOperation>() {
-    override fun extract(t: ReservedCashOperationEvent): ReservedCashOperation {
-        return t.reservedCashOperation
-    }
+class TestReservedCashOperationListener: AbstractQueueWrapper<ReservedCashOperation>() {
+    @Autowired
+    private lateinit var reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>
 
-    @EventListener
-    override fun process(event: ReservedCashOperationEvent) {
-        super.process(event)
+    override fun getProcessingQueue(): BlockingQueue<*> {
+        return reservedCashOperationQueue
     }
 }

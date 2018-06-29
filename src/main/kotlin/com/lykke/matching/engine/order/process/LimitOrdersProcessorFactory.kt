@@ -9,21 +9,27 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
+import java.util.concurrent.BlockingQueue
 
 @Component
 class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                                   private val assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
                                   private val genericLimitOrderService: GenericLimitOrderService,
-                                  private val applicationSettingsCache: ApplicationSettingsCache,
-                                  private val applicationEventPublisher: ApplicationEventPublisher) {
+                                  private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                  private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                                  private val orderBookQueue: BlockingQueue<OrderBook>,
+                                  private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                                  private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                  private val applicationSettingsCache: ApplicationSettingsCache) {
 
     fun create(matchingEngine: MatchingEngine,
                date: Date,
@@ -43,7 +49,11 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                     genericLimitOrderService,
                     applicationSettingsCache,
                     ordersToCancel,
-                    applicationEventPublisher,
+                    clientLimitOrdersQueue,
+                    lkkTradesQueue,
+                    orderBookQueue,
+                    rabbitOrderBookQueue,
+                    trustedClientsLimitOrderQueue,
                     matchingEngine,
                     date,
                     clientId,

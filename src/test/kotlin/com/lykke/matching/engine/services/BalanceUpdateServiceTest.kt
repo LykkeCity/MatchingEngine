@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
@@ -121,11 +122,11 @@ class BalanceUpdateServiceTest: AbstractTest() {
         assertUpdateResult(clientId, assetId, BigDecimal.valueOf(balance), BigDecimal.valueOf(reserved))
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        val notification = balanceUpdateHandlerTest.balanceUpdateQueueNotification.poll()
+        val notification = balanceUpdateHandlerTest.balanceUpdateNotificationQueue.poll()
         assertEquals(clientId, notification.clientId)
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll()
+        val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(messageType.name, balanceUpdate.type)
 
         assertEquals(1, balanceUpdate.balances.size)
