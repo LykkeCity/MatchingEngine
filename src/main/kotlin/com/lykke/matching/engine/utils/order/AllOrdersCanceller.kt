@@ -10,18 +10,19 @@ import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
-import javax.annotation.PostConstruct
 
 @Component
 class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
                                                 private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                                @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean){
+                                                @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean): ApplicationRunner{
 
     private val genericLimitOrdersCanceller: GenericLimitOrdersCanceller
 
@@ -42,8 +43,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
         genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, Date())
     }
 
-    @PostConstruct
-    fun initialize() {
+    override fun run(args: ApplicationArguments?) {
         if(cancelAllOrders) {
             cancelAllOrders()
         }

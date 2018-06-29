@@ -10,18 +10,19 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
-import javax.annotation.PostConstruct
 
 @Component
 class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                      private val genericLimitOrderService: GenericLimitOrderService,
                                                      private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                                      @Value("#{Config.me.cancelMinVolumeOrders}")
-                                                     private val cancelMinVolumeOrders: Boolean) {
+                                                     private val cancelMinVolumeOrders: Boolean): ApplicationRunner {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
@@ -36,8 +37,8 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
         CANCEL, REMOVE, SKIP
     }
 
-    @PostConstruct
-    fun process() {
+
+    override fun run(args: ApplicationArguments?) {
         if (cancelMinVolumeOrders) {
             cancel()
         }
