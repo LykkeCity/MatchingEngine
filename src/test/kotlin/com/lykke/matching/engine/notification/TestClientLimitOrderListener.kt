@@ -5,7 +5,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.BlockingQueue
 
-class TestClientLimitOrderListener: AbstractEventListener<LimitOrdersReport>() {
+class TestClientLimitOrderListener: AbstractQueueWrapper<LimitOrdersReport>() {
     @Autowired
     lateinit var clientLimitOrdersQueue: BlockingQueue<JsonSerializable>
 

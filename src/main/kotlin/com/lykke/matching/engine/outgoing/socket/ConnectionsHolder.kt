@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.outgoing.socket
 
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,7 +21,7 @@ class ConnectionsHolder {
     private val connections = CopyOnWriteArraySet<Connection>()
 
     @Autowired
-    private lateinit var  orderBookQueue: BlockingQueue<OrderBook>
+    private lateinit var  orderBookQueue: BlockingQueue<JsonSerializable>
 
     fun getOrderBookQueueSize(): Int {
         return orderBookQueue.size
@@ -35,7 +36,7 @@ class ConnectionsHolder {
         thread(start = true, name = ConnectionsHolder::class.java.name) {
             while (true) {
                 val orderBook = orderBookQueue.take()
-                connections.forEach { connection -> connection.inputQueue.put(orderBook) }
+                connections.forEach { connection -> connection.inputQueue.put(orderBook as OrderBook) }
             }
         }
     }

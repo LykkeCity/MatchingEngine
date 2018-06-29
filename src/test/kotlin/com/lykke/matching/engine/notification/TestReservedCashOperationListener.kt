@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
-class TestReservedCashOperationListener: AbstractEventListener<ReservedCashOperation>() {
+class TestReservedCashOperationListener: AbstractQueueWrapper<ReservedCashOperation>() {
     @Autowired
     private lateinit var reservedCashOperationQueue: BlockingQueue<JsonSerializable>
 

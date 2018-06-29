@@ -7,7 +7,7 @@ import java.util.concurrent.BlockingQueue
 
 interface RabbitMqService {
     fun startPublisher(config: RabbitConfig,
-                       queue: BlockingQueue<JsonSerializable>,
+                       queue: BlockingQueue<out JsonSerializable>,
                        appName: String,
                        appVersion: String,
                        messageDatabaseLogger: MessageDatabaseLogger?)

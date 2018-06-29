@@ -2,7 +2,7 @@ package com.lykke.matching.engine.notification
 
 import java.util.concurrent.BlockingQueue
 
-abstract class AbstractEventListener<V> {
+abstract class AbstractQueueWrapper<V> {
 
     abstract fun getProcessingQueue(): BlockingQueue<*>
 

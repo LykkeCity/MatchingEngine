@@ -5,7 +5,7 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.BlockingQueue
 
-class RabbitSwapListener: AbstractEventListener<MarketOrderWithTrades>() {
+class RabbitSwapListener: AbstractQueueWrapper<MarketOrderWithTrades>() {
     @Autowired
     private lateinit var rabbitSwapQueue: BlockingQueue<JsonSerializable>
 

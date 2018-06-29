@@ -5,7 +5,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.BlockingQueue
 
-class TestOrderBookListener : AbstractEventListener<OrderBook>() {
+class TestOrderBookListener : AbstractQueueWrapper<OrderBook>() {
     @Autowired
     private lateinit var orderBookQueue: BlockingQueue<JsonSerializable>
 

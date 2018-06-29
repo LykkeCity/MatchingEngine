@@ -17,7 +17,7 @@ import java.util.concurrent.BlockingQueue
 class RabbitMqPublisher(
         private val uri: String,
         private val exchangeName: String,
-        private val queue: BlockingQueue<JsonSerializable>,
+        private val queue: BlockingQueue<out JsonSerializable>,
         private val appName: String,
         private val appVersion: String,
         /** null if do not need to log */
