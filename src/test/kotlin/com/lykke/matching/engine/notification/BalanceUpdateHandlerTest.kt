@@ -6,13 +6,8 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
-class BalanceUpdateHandlerTest {
-
-    @Autowired
-    lateinit var balanceUpdateQueue: BlockingQueue<BalanceUpdate>
-
-    @Autowired
-    lateinit var  balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
+class BalanceUpdateHandlerTest @Autowired constructor(val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
+                                                      val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
 
     fun getCountOfBalanceUpdate(): Int {
         return balanceUpdateQueue.size

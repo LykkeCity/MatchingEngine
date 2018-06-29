@@ -19,7 +19,6 @@ import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
-import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
@@ -38,7 +37,6 @@ abstract class AbstractPerformanceTest {
 
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected lateinit var  testOrderBookWrapper: TestOrderBookWrapper
     protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
     protected lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
@@ -91,8 +89,7 @@ abstract class AbstractPerformanceTest {
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     open fun initServices() {
-        testOrderBookWrapper = TestOrderBookWrapper(genericLimitOrderService, testOrderBookDatabaseAccessor, genericStopLimitOrderService, stopOrderDatabaseAccessor )
-
+        testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
 
@@ -112,7 +109,7 @@ abstract class AbstractPerformanceTest {
                 balanceUpdateNotificationQueue, balanceUpdateQueue,
                 applicationSettingsCache)
 
-        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(), balancesHolder)
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
