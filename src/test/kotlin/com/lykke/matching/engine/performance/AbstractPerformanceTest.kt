@@ -89,7 +89,6 @@ abstract class AbstractPerformanceTest {
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     open fun initServices() {
-        testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
 
