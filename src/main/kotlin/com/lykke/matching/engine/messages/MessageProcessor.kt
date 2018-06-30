@@ -254,7 +254,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
         this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashInOutQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        cashInOutPreprocessor.start()
+        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        cashTransferPreprocessor.start()
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
 

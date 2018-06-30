@@ -136,14 +136,8 @@ class RedisPersistenceManager(
         redisProcessedMessagesDatabaseAccessor.save(transaction, processedMessage)
     }
 
-    private fun persistProcessedCashMessage(transaction: Transaction, processedMessage: ProcessedMessage?) {
+    private fun persistProcessedCashMessage(transaction: Transaction, processedMessage: ProcessedMessage) {
         LOGGER.trace("Start to persist processed cash messages in redis")
-
-        if (processedMessage == null) {
-            LOGGER.trace("Processed cash message is empty, skip persisting")
-            return
-        }
-
         redisProcessedCashOperationIdDatabaseAccessor.save(transaction, processedMessage)
     }
 
