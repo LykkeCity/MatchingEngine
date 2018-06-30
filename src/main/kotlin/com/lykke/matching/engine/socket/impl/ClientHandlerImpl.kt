@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.socket.impl
 
+import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.ClientHandler
@@ -12,12 +13,9 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.Socket
 import java.time.LocalDateTime
-import java.util.concurrent.BlockingQueue
-
-
 
 class ClientHandlerImpl(
-        private val queue: BlockingQueue<MessageWrapper>,
+        private val messageRouter: MessageRouter,
         private val socket: Socket,
         private val socketServer: SocketServer): Thread(ClientHandlerImpl::class.java.name), ClientHandler {
 
@@ -83,7 +81,7 @@ class ClientHandlerImpl(
         val serializedData = ByteArray(size)
         inputStream.readFully(serializedData, 0, size)
         incomingSize += 1 + size
-        queue.put(MessageWrapper(clientHostName, type, serializedData, this))
+        messageRouter.process(MessageWrapper(clientHostName, type, serializedData, this))
     }
 
     override fun writeOutput(byteArray: ByteArray) {

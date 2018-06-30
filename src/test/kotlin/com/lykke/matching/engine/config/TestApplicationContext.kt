@@ -15,7 +15,7 @@ import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
-import com.lykke.matching.engine.utils.config.RedisConfig
+import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -35,6 +35,35 @@ open class TestApplicationContext {
     @Bean
     open fun assetHolder(backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): AssetsHolder {
         return AssetsHolder(assetCache(backOfficeDatabaseAccessor))
+    }
+
+    @Bean
+    open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor :TestFileOrderDatabaseAccessor,
+                                         testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
+                                         testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
+                                         assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
+                                         balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
+                                         applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
+
+        return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
+                testReservedVolumesDatabaseAccessor,  assetHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache,
+                "tset", false, applicationEventPublisher)
+    }
+
+    @Bean
+    open fun testStopOrderBookDatabaseAccessor(): TestStopOrderBookDatabaseAccessor {
+        return TestStopOrderBookDatabaseAccessor()
+    }
+
+    @Bean
+    open fun testReservedVolumesDatabaseAccessor(): TestReservedVolumesDatabaseAccessor {
+        return TestReservedVolumesDatabaseAccessor()
+    }
+
+    @Bean
+    open fun testFileOrderDatabaseAccessor(): TestFileOrderDatabaseAccessor {
+        return TestFileOrderDatabaseAccessor()
     }
 
     @Bean
@@ -80,7 +109,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
-        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("",0,0,false,null,0))
+        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null)
     }
 
     @Bean
@@ -134,7 +163,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun reservedCashInOutOperationValidator(balancesHolder: BalancesHolder,
-                   assetsHolder: AssetsHolder): ReservedCashInOutOperationValidator {
+                                                 assetsHolder: AssetsHolder): ReservedCashInOutOperationValidator {
         return ReservedCashInOutOperationValidatorImpl(assetsHolder, balancesHolder)
     }
 
@@ -142,7 +171,7 @@ open class TestApplicationContext {
     open fun reservedCashInOutOperation(balancesHolder: BalancesHolder,
                                         assetsHolder: AssetsHolder,
                                         applicationEventPublisher: ApplicationEventPublisher,
-                                        reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator) :ReservedCashInOutOperationService {
+                                        reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator): ReservedCashInOutOperationService {
         return ReservedCashInOutOperationService(assetsHolder, balancesHolder, applicationEventPublisher, reservedCashInOutOperationValidator)
     }
 
@@ -152,7 +181,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun balanceUpdateValidator (balancesHolder: BalancesHolder, assetsHolder: AssetsHolder): BalanceUpdateValidator {
+    open fun balanceUpdateValidator(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder): BalanceUpdateValidator {
         return BalanceUpdateValidatorImpl(balancesHolder, assetsHolder)
     }
 

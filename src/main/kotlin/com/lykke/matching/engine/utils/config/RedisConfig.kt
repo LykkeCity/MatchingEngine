@@ -6,5 +6,8 @@ data class RedisConfig(
     val timeout: Int,
     val useSsl: Boolean,
     val password: String?,
-    val balanceDatabase: Int
+    val balanceDatabase: Int,
+    val processedMessageDatabase: Int,
+    val processedCashMessageDatabase: Int,
+    val pingDatabase: Int
 )

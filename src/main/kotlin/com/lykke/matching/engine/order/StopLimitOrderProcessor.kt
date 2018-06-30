@@ -68,9 +68,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             var updated = true
             if (cancelVolume > BigDecimal.ZERO) {
                 val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume, limitAsset.accuracy)
-                updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+                updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
+                        order.clientId, limitAsset.assetId, newReservedBalance)
                 if (updated) {
-                    balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(), listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)), messageWrapper.messageId!!))
+                    balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
+                            listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)),
+                            messageWrapper.messageId!!))
                 }
             }
 
@@ -108,12 +111,17 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.updateStatus(OrderStatus.InOrderBook, now)
             order.price = price
 
-            genericLimitOrderProcessor.processLimitOrder(messageWrapper.messageId!!, order, now, BigDecimal.ZERO)
+            genericLimitOrderProcessor.processLimitOrder(messageWrapper.messageId!!,
+                    messageWrapper.processedMessage(),
+                    order,
+                    now,
+                    BigDecimal.ZERO)
             return
         }
 
         val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy)
-        val updated = balancesHolder.updateReservedBalance(order.clientId, limitAsset.assetId, newReservedBalance)
+        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
+                order.clientId, limitAsset.assetId, newReservedBalance)
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, order)
             return

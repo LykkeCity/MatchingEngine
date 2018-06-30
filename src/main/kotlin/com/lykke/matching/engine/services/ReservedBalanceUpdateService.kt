@@ -37,7 +37,9 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-        val updated = balancesHolder.updateReservedBalance(message.clientId, message.assetId, BigDecimal.valueOf(message.reservedAmount), false)
+        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
+                message.clientId, message.assetId, BigDecimal.valueOf(message.reservedAmount), false)
+        messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.RUNTIME.type))
             LOGGER.info("Unable to save balance (client ${message.clientId}, asset ${message.assetId}, reserved ${NumberUtils.roundForPrint(message.reservedAmount)})")
@@ -46,7 +48,11 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid,
                 MessageType.RESERVED_BALANCE_UPDATE.name,
                 Date(),
-                listOf(ClientBalanceUpdate(message.clientId, message.assetId, balance, balance, currentReservedBalance,  BigDecimal.valueOf(message.reservedAmount))), messageWrapper.messageId!!))
+                listOf(ClientBalanceUpdate(message.clientId,
+                        message.assetId,
+                        balance,
+                        balance,
+                        currentReservedBalance, BigDecimal.valueOf(message.reservedAmount))), messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(MessageStatus.OK.type))

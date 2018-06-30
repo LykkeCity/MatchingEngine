@@ -39,7 +39,7 @@ import kotlin.test.assertNull
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
-    private lateinit var applicationEventPublisher: ApplicationEventPublisher
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     private lateinit var canceller: MinVolumeOrderCanceller
 
@@ -231,13 +231,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
-        val recalculator = ReservedVolumesRecalculator(
-                testOrderDatabaseAccessor,
-                TestStopOrderBookDatabaseAccessor(),
-                TestReservedVolumesDatabaseAccessor(),
-                applicationContext,
-                applicationEventPublisher)
-
         recalculator.recalculate()
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }
