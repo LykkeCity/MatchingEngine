@@ -61,7 +61,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
-        quotesUpdateQueue.add(QuotesUpdate(order.assetPairId, order.price, order.volume))
+        quotesUpdateQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
     fun addOrders(orders: List<LimitOrder>) {
@@ -147,7 +147,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun putTradeInfo(tradeInfo: TradeInfo) {
-        tradeInfoQueue.add(tradeInfo)
+        tradeInfoQueue.put(tradeInfo)
     }
 
     fun buildMarketProfile(): List<BestPrice> {

@@ -168,7 +168,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balanceHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             updatedWallets.map { it.clientId }.toSet().forEach {
-                balanceUpdateNotificationQueue.add(BalanceUpdateNotification(it))
+                balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }
         }
     }

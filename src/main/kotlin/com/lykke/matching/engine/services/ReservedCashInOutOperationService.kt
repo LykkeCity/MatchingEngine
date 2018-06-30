@@ -72,7 +72,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
         walletProcessor.apply().sendNotification(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
-        reservedCashOperationQueue.add(ReservedCashOperation(message.id,
+        reservedCashOperationQueue.put(ReservedCashOperation(message.id,
                 operation.clientId,
                 operation.dateTime,
                 NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),

@@ -79,7 +79,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         .setStatus(messageStatus.type))
 
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                clientLimitOrdersQueue.add(clientLimitOrdersReport)
+                clientLimitOrdersQueue.put(clientLimitOrdersReport)
             } else {
                 writePersistenceErrorResponse(messageWrapper, order)
             }
@@ -136,7 +136,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         LOGGER.info("${orderInfo(order)} added to stop order book")
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
-            clientLimitOrdersQueue.add(clientLimitOrdersReport)
+            clientLimitOrdersQueue.put(clientLimitOrdersReport)
         }
     }
 
