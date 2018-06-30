@@ -5,10 +5,12 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
@@ -24,6 +26,7 @@ class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
+        private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val redisHealthStatusHolder: RedisHealthStatusHolder,
         private val jedisPool: JedisPool,
         private val config: Config): PersistenceManager {
@@ -95,6 +98,11 @@ class RedisPersistenceManager(
             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
 
+            if (data.processedMessage?.type == MessageType.CASH_IN_OUT_OPERATION.type ||
+                    data.processedMessage?.type == MessageType.CASH_TRANSFER_OPERATION.type) {
+                persistProcessedCashMessage(transaction, data.processedMessage)
+            }
+
             val persistTime = System.nanoTime()
 
             transaction.exec()
@@ -126,6 +134,17 @@ class RedisPersistenceManager(
         }
 
         redisProcessedMessagesDatabaseAccessor.save(transaction, processedMessage)
+    }
+
+    private fun persistProcessedCashMessage(transaction: Transaction, processedMessage: ProcessedMessage?) {
+        LOGGER.trace("Start to persist processed cash messages in redis")
+
+        if (processedMessage == null) {
+            LOGGER.trace("Processed cash message is empty, skip persisting")
+            return
+        }
+
+        redisProcessedCashOperationIdDatabaseAccessor.save(transaction, processedMessage)
     }
 
     private fun persistBalances(transaction: Transaction, assetBalances: Collection<AssetBalance>?) {

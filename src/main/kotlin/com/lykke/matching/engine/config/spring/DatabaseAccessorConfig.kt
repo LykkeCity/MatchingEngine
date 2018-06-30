@@ -1,7 +1,21 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
+import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
@@ -15,7 +29,7 @@ import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
@@ -28,7 +42,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
-import java.util.*
+import java.util.Optional
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -40,7 +54,8 @@ open class DatabaseAccessorConfig {
     open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                                 jedisPool: Optional<JedisPool>,
                                 redisHealthStatusHolder: RedisHealthStatusHolder,
-                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>): PersistenceManager {
+                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
+                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
@@ -48,6 +63,7 @@ open class DatabaseAccessorConfig {
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         redisHealthStatusHolder,
                         jedisPool.get(),
                         config
@@ -111,6 +127,20 @@ open class DatabaseAccessorConfig {
         return RedisProcessedMessagesDatabaseAccessor(jedisPool.get(),
                 config.me.redis.processedMessageDatabase,
                 getProcessedMessageTTL())
+    }
+
+    @Bean
+    open fun cashOperationIdDatabaseAccessor(jedisPool: Optional<JedisPool>): CashOperationIdDatabaseAccessor? {
+        return when (config.me.storage) {
+            Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
+            Storage.Redis -> {
+                if (!jedisPool.isPresent) {
+                    return null
+                }
+                return RedisCashOperationIdDatabaseAccessor(jedisPool.get(),
+                        config.me.redis.processedCashMessageDatabase)
+            }
+        }
     }
 
     @Bean

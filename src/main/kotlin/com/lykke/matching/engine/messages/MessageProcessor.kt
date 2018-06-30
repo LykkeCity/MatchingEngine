@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
@@ -26,6 +27,9 @@ import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.incoming.MessageRouter
+import com.lykke.matching.engine.incoming.preprocessor.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.CashTransferPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -52,8 +56,8 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.HistoryTicksService
 import com.lykke.matching.engine.services.LimitOrderCancelService
-import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.LimitOrderMassCancelService
+import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedBalanceUpdateService
@@ -82,7 +86,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
-class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, applicationContext: ApplicationContext)
+class MessageProcessor(config: Config, messageRouter: MessageRouter, applicationContext: ApplicationContext)
     : Thread(MessageProcessor::class.java.name) {
 
     companion object {
@@ -91,7 +95,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val messagesQueue: BlockingQueue<MessageWrapper> = queue
+    private val cashInOutPreprocessor: CashInOutPreprocessor
+    private val cashTransferPreprocessor: CashTransferPreprocessor
+
+    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.defaultMessagesQueue
     private val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
     private val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
     private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
@@ -245,6 +252,10 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
             MinVolumeOrderCanceller(dictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory).cancel()
         }
 
+        val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
+        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashInOutQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
@@ -353,7 +364,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private fun processMessage(message: MessageWrapper) {
         val startTime = System.nanoTime()
         try {
-            val messageType = MessageType.Companion.valueOf(message.type)
+            val messageType = MessageType.valueOf(message.type)
             if (messageType == null) {
                 LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
                 METRICS_LOGGER.logError("Unknown message type: ${message.type}")
@@ -378,7 +389,9 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
                 return
             }
 
-            service.parseMessage(message)
+            if (message.parsedMessage == null) {
+                service.parseMessage(message)
+            }
 
             if (!healthMonitor.ok()) {
                 service.writeResponse(message, MessageStatus.RUNTIME)
