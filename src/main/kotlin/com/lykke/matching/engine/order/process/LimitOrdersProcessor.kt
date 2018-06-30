@@ -139,29 +139,29 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         genericLimitOrderService.setOrderBook(assetPair.assetPairId, orderBook)
 
         if (lkkTrades.isNotEmpty()) {
-            lkkTradesQueue.add(lkkTrades)
+            lkkTradesQueue.put(lkkTrades)
         }
 
         val orderBookCopy = orderBook.copy()
         if (buySideOrderBookChanged) {
             val newOrderBook = OrderBook(assetPair.assetPairId, true, date, orderBookCopy.getOrderBook(true))
             genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBookCopy.getBidPrice(), date))
-            orderBookQueue.add(newOrderBook)
-            rabbitOrderBookQueue.add(newOrderBook)
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSideOrderBookChanged) {
             val newOrderBook = OrderBook(assetPair.assetPairId, false, date, orderBookCopy.getOrderBook(false))
             genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBookCopy.getAskPrice(), date))
-            orderBookQueue.add(newOrderBook)
-            rabbitOrderBookQueue.add(newOrderBook)
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrderQueue.add(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
+            trustedClientsLimitOrderQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
-            clientLimitOrdersQueue.add(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
+            clientLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
         }
 
         return OrderProcessResult(true, processedOrders)

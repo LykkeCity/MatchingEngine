@@ -317,7 +317,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         walletOperationsProcessor.apply().sendNotification(messageUid, MessageType.MULTI_LIMIT_ORDER.name, messageWrapper.messageId!!)
 
         matchingEngine.apply()
-        lkkTradesQueue.add(trades)
+        lkkTradesQueue.put(trades)
         limitOrderService.moveOrdersToDone(completedOrders)
         limitOrderService.cancelLimitOrders(ordersToCancel, now)
         limitOrderService.addOrders(ordersToAdd)
@@ -328,14 +328,14 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         if (buySide || cancelBuySide) {
             val newOrderBook = OrderBook(assetPairId, true, now, orderBookCopy.getOrderBook(true))
             limitOrderService.putTradeInfo(TradeInfo(assetPairId, true, orderBook.getBidPrice(), now))
-            orderBookQueue.add(newOrderBook)
-            rabbitOrderBookQueue.add(newOrderBook)
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSide || cancelSellSide) {
             val newOrderBook = OrderBook(assetPairId, false, now, orderBookCopy.getOrderBook(false))
             limitOrderService.putTradeInfo(TradeInfo(assetPairId, false, orderBook.getAskPrice(), now))
-            orderBookQueue.add(newOrderBook)
-            rabbitOrderBookQueue.add(newOrderBook)
+            orderBookQueue.put(newOrderBook)
+            rabbitOrderBookQueue.put(newOrderBook)
         }
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -356,11 +356,11 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         }
 
         if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
-            trustedClientsLimitOrderQueue.add(trustedClientLimitOrdersReport)
+            trustedClientsLimitOrderQueue.put(trustedClientLimitOrdersReport)
         }
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
-            clientLimitOrdersQueue.add(clientLimitOrdersReport)
+            clientLimitOrdersQueue.put(clientLimitOrdersReport)
         }
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,

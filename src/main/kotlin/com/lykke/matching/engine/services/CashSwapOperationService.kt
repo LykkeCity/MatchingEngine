@@ -72,7 +72,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
             return
         }
         cashOperationsDatabaseAccessor.insertSwapOperation(operation)
-        cashSwapQueue.add(CashSwapOperation(operation.externalId, operation.dateTime,
+        cashSwapQueue.put(CashSwapOperation(operation.externalId, operation.dateTime,
                 operation.clientId1,
                 operation.asset1,
                 NumberUtils.setScaleRoundHalfUp(operation.volume1, assetsHolder.getAsset(operation.asset1).accuracy).toPlainString(),

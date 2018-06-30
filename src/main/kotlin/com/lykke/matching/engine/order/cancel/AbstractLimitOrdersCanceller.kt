@@ -147,10 +147,10 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
 
     private fun sendReports(messageId: String, result: TCancelResult) {
         if (result.clientsOrdersWithTrades.isNotEmpty()) {
-            clientLimitOrdersQueue.add(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
+            clientLimitOrdersQueue.put(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrderQueue.add(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
+            trustedClientsLimitOrderQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
     }
 

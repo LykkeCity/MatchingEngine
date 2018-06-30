@@ -58,8 +58,8 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         orderBooks.values.forEach { orderBook ->
             genericLimitOrderService.putTradeInfo(TradeInfo(orderBook.assetPair, orderBook.isBuy, orderBook.prices.firstOrNull()?.price
                     ?: BigDecimal.ZERO, date))
-            orderBookQueue.add(orderBook)
-            rabbitOrderBookQueue.add(orderBook)
+            orderBookQueue.put(orderBook)
+            rabbitOrderBookQueue.put(orderBook)
         }
     }
 

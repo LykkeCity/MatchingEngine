@@ -100,7 +100,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         balancesUpdater.apply()
-        balanceUpdateNotificationQueue.add(BalanceUpdateNotification(clientId))
+        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
 
@@ -117,7 +117,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         balancesUpdater.apply()
-        balanceUpdateNotificationQueue.add(BalanceUpdateNotification(clientId))
+        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
 
@@ -130,7 +130,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance != it.oldBalance || it.newReserved != it.oldReserved }
         if (balanceUpdate.balances.isNotEmpty()) {
             LOGGER.info(balanceUpdate.toString())
-            balanceUpdateQueue.add(balanceUpdate)
+            balanceUpdateQueue.put(balanceUpdate)
         }
     }
 
