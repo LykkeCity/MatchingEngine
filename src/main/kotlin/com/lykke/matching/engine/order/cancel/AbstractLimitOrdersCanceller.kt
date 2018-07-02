@@ -31,13 +31,13 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val date: Date) {
 
     protected class OrdersProcessingInfo {
-        val assetPair: AssetPair
+        val assetPairId: String
         val allOrders = LinkedList<LimitOrder>()
         val buyOrders: List<LimitOrder>
         val sellOrders: List<LimitOrder>
 
-        constructor(buyOrders: List<LimitOrder>, sellOrders: List<LimitOrder>, assetPairId: AssetPair) {
-            this.assetPair = assetPairId
+        constructor(buyOrders: List<LimitOrder>, sellOrders: List<LimitOrder>, assetPairId: String) {
+            this.assetPairId = assetPairId
             allOrders.addAll(sellOrders)
             allOrders.addAll(buyOrders)
             this.buyOrders = buyOrders
@@ -86,12 +86,12 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         val walletOperations = LinkedList<WalletOperation>()
 
         orders.forEach { orderInfo ->
-            val assetPair = orderInfo.assetPair
+            val assetPair = assetsPairsHolder.getAssetPair(orderInfo.assetPairId)
             orderInfo.allOrders.forEach { order ->
                 val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
 
                 if (!isTrustedClientOrder) {
-                    val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+                    val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair!!.baseAssetId
                     val limitVolume = getOrderLimitVolume(order)
                     val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
 
@@ -158,8 +158,8 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     private fun removeOrdersFromCache() {
         allOrders
                 .forEach {
-                    removeOrdersFromCache(it.buyOrders, it.assetPair.assetPairId)
-                    removeOrdersFromCache(it.sellOrders, it.assetPair.assetPairId)
+                    removeOrdersFromCache(it.buyOrders, it.assetPairId)
+                    removeOrdersFromCache(it.sellOrders, it.assetPairId)
                 }
     }
 
@@ -178,8 +178,8 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         val changedSellOrderBooks = HashSet<TAssetOrderBook>()
 
         orders.forEach { ordersInfo ->
-            val assetOrderBook = assetOrderBooks.getOrPut(ordersInfo.assetPair.assetPairId) {
-                genericLimitOrderService.getOrderBook(ordersInfo.assetPair.assetPairId).copy() as TAssetOrderBook
+            val assetOrderBook = assetOrderBooks.getOrPut(ordersInfo.assetPairId) {
+                genericLimitOrderService.getOrderBook(ordersInfo.assetPairId).copy() as TAssetOrderBook
             }
 
             ordersInfo.allOrders.forEach {
@@ -236,7 +236,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                             .collect(Collectors.groupingBy(LimitOrder::isBuySide))
                     OrdersProcessingInfo(sideToOrder[true] ?: emptyList(),
                             sideToOrder[false] ?: emptyList(),
-                            assetsPairsHolder.getAssetPair(it.key))
+                            it.key)
                 }.collect(Collectors.toList())
     }
 }
