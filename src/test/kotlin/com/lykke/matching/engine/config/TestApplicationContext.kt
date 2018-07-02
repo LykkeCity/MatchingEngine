@@ -193,12 +193,12 @@ open class TestApplicationContext {
                                          lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                          orderBookQueue: BlockingQueue<OrderBook>,
                                          rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                         trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>): LimitOrdersProcessorFactory {
+                                         trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>): LimitOrdersProcessorFactory {
         return LimitOrdersProcessorFactory(assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService, clientLimitOrdersQueue,
                 lkkTradesQueue,
                 orderBookQueue,
                 rabbitOrderBookQueue,
-                trustedClientsLimitOrderQueue, applicationSettingsCache)
+                trustedClientsLimitOrdersQueue, applicationSettingsCache)
     }
 
     @Bean
@@ -214,27 +214,27 @@ open class TestApplicationContext {
     open fun multiLimitOrderService(genericLimitOrderService: GenericLimitOrderService, genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                     limitOrderProcessorFactory: LimitOrdersProcessorFactory,
                                     clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                    trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                     orderBookQueue: BlockingQueue<OrderBook>,
                                     rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                     lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                     assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                     genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, multiLimitOrderValidator: MultiLimitOrderValidator): MultiLimitOrderService {
         return MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrderProcessorFactory,
-                clientLimitOrdersQueue, trustedClientsLimitOrderQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
+                clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
                 assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, multiLimitOrderValidator)
     }
 
     @Bean
     open fun marketOrderService(genericLimitOrderService: GenericLimitOrderService, assetsHolder: AssetsHolder,
                                 assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder, clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                 orderBookQueue: BlockingQueue<OrderBook>,
                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                 rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
                                 lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                 genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, marketOrderValidator: MarketOrderValidator): MarketOrderService {
-        return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrderQueue,
+        return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
                 lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
     }
 
@@ -245,9 +245,9 @@ open class TestApplicationContext {
                                                 orderBookQueue: BlockingQueue<OrderBook>,
                                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>): GenericLimitOrdersCancellerFactory {
+                                                trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>): GenericLimitOrdersCancellerFactory {
         return GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService,
-                genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrderQueue)
+                genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue)
     }
 
     @Bean

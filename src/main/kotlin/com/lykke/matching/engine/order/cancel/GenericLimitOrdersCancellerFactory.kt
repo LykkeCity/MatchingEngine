@@ -24,7 +24,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val dict
                                                                 private val orderBookQueue: BlockingQueue<OrderBook>,
                                                                 private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                                 private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                                private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>) {
+                                                                private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>) {
 
     fun create(logger: Logger, date: Date): GenericLimitOrdersCanceller {
         return GenericLimitOrdersCanceller(dictionariesDatabaseAccessor,
@@ -33,7 +33,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val dict
                 orderBookQueue,
                 rabbitOrderBookQueue,
                 clientLimitOrdersQueue,
-                trustedClientsLimitOrderQueue,
+                trustedClientsLimitOrdersQueue,
                 genericLimitOrderService,
                 genericStopLimitOrderService,
                 genericLimitOrderProcessorFactory,

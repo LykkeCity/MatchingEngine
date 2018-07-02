@@ -18,14 +18,14 @@ class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabas
                                balancesHolder: BalancesHolder,
                                genericStopLimitOrderService: GenericStopLimitOrderService,
                                clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                               trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                               trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                date: Date) :
         AbstractLimitOrdersCanceller<AssetStopOrderBook, StopLimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
                 balancesHolder,
                 genericStopLimitOrderService,
                 clientLimitOrdersQueue,
-                trustedClientsLimitOrderQueue,
+                trustedClientsLimitOrdersQueue,
                 date) {
 
     override fun processChangedOrderBook(orderBookCopy: AssetStopOrderBook, isBuy: Boolean) {

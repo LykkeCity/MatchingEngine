@@ -44,7 +44,7 @@ class MarketOrderService @Autowired constructor(
         private val assetsPairsHolder: AssetsPairsHolder,
         private val balancesHolder: BalancesHolder,
         private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-        private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+        private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
         private val orderBookQueue: BlockingQueue<OrderBook>,
         private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
@@ -197,7 +197,7 @@ class MarketOrderService @Autowired constructor(
 
                     clientLimitOrdersQueue.put(clientLimitOrdersReport)
                     if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
-                        trustedClientsLimitOrderQueue.put(trustedClientLimitOrdersReport)
+                        trustedClientsLimitOrdersQueue.put(trustedClientLimitOrdersReport)
                     }
 
                     val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide()))

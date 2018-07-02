@@ -59,7 +59,7 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun trustedClientsLimitOrderQueue(): BlockingQueue<LimitOrdersReport> {
+    open fun trustedClientsLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
         return LinkedBlockingQueue<LimitOrdersReport>()
     }
 

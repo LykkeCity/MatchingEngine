@@ -25,7 +25,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                            private val orderBookQueue: BlockingQueue<OrderBook>,
                            private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                            clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                           trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                           trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val date: Date,
                            LOGGER: Logger) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,
@@ -33,7 +33,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                 balancesHolder,
                 genericLimitOrderService,
                 clientLimitOrdersQueue,
-                trustedClientsLimitOrderQueue,
+                trustedClientsLimitOrdersQueue,
                 date) {
 
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
