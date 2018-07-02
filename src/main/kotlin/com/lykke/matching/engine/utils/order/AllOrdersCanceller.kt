@@ -22,7 +22,7 @@ import java.util.stream.Stream
 class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
-                                                private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                                genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                                 @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean): ApplicationRunner{
 
     private val genericLimitOrdersCanceller: GenericLimitOrdersCanceller
