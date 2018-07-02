@@ -115,8 +115,9 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     }
 
     fun getPersistenceData(): OrderBooksPersistenceData {
-        val ordersToRemove = Stream
-                .concat(ordersToCancel.stream(), ordersToRemove.stream())
+        val ordersToRemove = allOrders
+                .stream()
+                .flatMap { it.allOrders.stream() }
                 .collect(Collectors.toList())
 
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
@@ -163,8 +164,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     private fun removeOrdersFromCache() {
         allOrders
                 .forEach {
-                    removeOrdersFromCache(it.buyOrders, it.assetPairId, true)
-                    removeOrdersFromCache(it.sellOrders, it.assetPairId, false)
+                    removeOrdersFromCache(it.allOrders, it.assetPairId)
                 }
     }
 
@@ -206,17 +206,9 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
 
     protected abstract fun processChangedOrderBook(orderBookCopy: TAssetOrderBook, isBuy: Boolean)
 
-    private fun removeOrdersFromCache(orders: List<LimitOrder>, assetPairId: String, isBuy: Boolean) {
+    private fun removeOrdersFromCache(orders: List<LimitOrder>, assetPairId: String) {
         genericLimitOrderService.cancelLimitOrders(orders, date)
         genericLimitOrderService.setOrderBook(assetPairId, assetOrderBooks[assetPairId]!!)
-    }
-
-    private fun removeOrdersFromCache(order: List<LimitOrder>, buy: Boolean) {
-        val assetPairIdToLimitOrder: Map<String, List<LimitOrder>> = order
-                .stream()
-                .collect(Collectors.groupingBy { it.assetPairId })
-
-        assetPairIdToLimitOrder.forEach { assetPairId, orders -> removeOrdersFromCache(orders, assetPairId, buy) }
     }
 
     private fun calculateOrdersWithTrades(orders: List<OrdersProcessingInfo>): OrdersWithTrades {
