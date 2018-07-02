@@ -7,7 +7,7 @@ import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBook {
+class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairId) {
     companion object {
 
         private val LOGGER = Logger.getLogger(AssetStopOrderBook::class.java.name)

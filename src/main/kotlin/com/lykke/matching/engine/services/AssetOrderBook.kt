@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.util.Comparator
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetOrderBook(val assetPairId: String): AbstractAssetOrderBook {
+class AssetOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairId) {
 
     val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
         var result = o1.price.compareTo(o2.price)
