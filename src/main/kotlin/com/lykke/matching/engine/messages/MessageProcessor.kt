@@ -109,7 +109,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val marketStateCache: MarketStateCache
     private val applicationSettingsCache: ApplicationSettingsCache
 
-    private var quotesUpdateHandler: QuotesUpdateHandler
+    private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
