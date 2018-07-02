@@ -117,7 +117,7 @@ class MessageProcessor(config: Config, queue: BlockingQueue<MessageWrapper>, app
     private val marketStateCache: MarketStateCache
     private val applicationSettingsCache: ApplicationSettingsCache
 
-    private var quotesUpdateHandler: QuotesUpdateHandler
+    private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
     private val notDeduplicateMessageTypes = setOf(MessageType.MULTI_LIMIT_ORDER, MessageType.OLD_MULTI_LIMIT_ORDER, MessageType.MULTI_LIMIT_ORDER_CANCEL)
