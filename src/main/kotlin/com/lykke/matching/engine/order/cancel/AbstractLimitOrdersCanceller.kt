@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.order.OrderOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
@@ -32,10 +33,6 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     private val assetOrderBooks = HashMap<String, TAssetOrderBook>()
 
     private val walletOperations = LinkedList<WalletOperation>()
-
-    private enum class OrderOperation {
-        CANCEL, REMOVE
-    }
 
     fun preProcess(orders: Collection<LimitOrder>): AbstractLimitOrdersCanceller<TAssetOrderBook, TCancelResult> {
         val operationToOrders: Map<OrderOperation, List<LimitOrder>> = orders

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.order
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.order.OrderOperation
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCanceller
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -33,10 +34,6 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
             println(message)
             LOGGER.info(message)
         }
-    }
-
-    enum class OrderOperation {
-        CANCEL, REMOVE
     }
 
     init {

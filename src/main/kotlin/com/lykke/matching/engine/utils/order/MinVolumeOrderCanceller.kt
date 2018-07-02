@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.order.OrderOperation
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
@@ -32,11 +33,6 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
             LOGGER.info(message)
         }
     }
-
-    private enum class OrderOperation {
-        CANCEL, REMOVE, SKIP
-    }
-
 
     override fun run(args: ApplicationArguments?) {
         if (cancelMinVolumeOrders) {
@@ -70,25 +66,26 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
                 .stream()
                 .map { it.copy() }
                 .flatMap {Stream.concat(it.getSellOrderBook().stream(), it.getBuyOrderBook().stream())}
-                .collect(Collectors.groupingBy(::getOrderOperation))
+                .filter{getOrderOperation(it).isPresent}
+                .collect(Collectors.groupingBy { getOrderOperation(it).get() })
     }
 
-    private fun getOrderOperation(order: LimitOrder): OrderOperation {
+    private fun getOrderOperation(order: LimitOrder): Optional<OrderOperation> {
         try {
             val assetPair = assetsPairsHolder.getAssetPairAllowNulls(order.assetPairId)
 
             if (assetPair == null) {
                 // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)
                 teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")
-                return OrderOperation.REMOVE
+                return Optional.of(OrderOperation.REMOVE)
             } else if (isOrderVolumeTooSmall(assetPair, order)) {
                 teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
-                return OrderOperation.CANCEL
+                return Optional.of(OrderOperation.CANCEL)
             }
         } catch (e: Exception) {
             teeLog("Unable to check order (${order.externalId}): ${e.message}. Skipped.")
         }
-        return OrderOperation.SKIP
+        return Optional.empty()
     }
 
     private fun isOrderVolumeTooSmall(assetPair: AssetPair, order: LimitOrder) =
