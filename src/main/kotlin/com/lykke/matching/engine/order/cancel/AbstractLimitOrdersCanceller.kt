@@ -27,7 +27,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val balancesHolder: BalancesHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
                                                                           private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                                          private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                                                          private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                                           private val date: Date) {
 
     protected class OrdersProcessingInfo {
@@ -168,7 +168,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
             clientLimitOrdersQueue.put(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
         }
         if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrderQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
         }
     }
 

@@ -20,7 +20,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   orderBookQueue: BlockingQueue<OrderBook>,
                                   rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                   clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                  trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
@@ -35,7 +35,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             orderBookQueue,
             rabbitOrderBookQueue,
             clientLimitOrdersQueue,
-            trustedClientsLimitOrderQueue,
+            trustedClientsLimitOrdersQueue,
             date,
             LOGGER)
 
@@ -44,7 +44,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             balancesHolder,
             genericStopLimitOrderService,
             clientLimitOrdersQueue,
-            trustedClientsLimitOrderQueue,
+            trustedClientsLimitOrdersQueue,
             date)
 
     fun preProcessLimitOrders(orders: Collection<LimitOrder>): GenericLimitOrdersCanceller {

@@ -44,7 +44,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
                                                     private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                                     private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                                     private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                    private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                                                    private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                     private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                                     private val orderBookQueue: BlockingQueue<OrderBook>,
                                                     private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
@@ -356,7 +356,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         }
 
         if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
-            trustedClientsLimitOrderQueue.put(trustedClientLimitOrdersReport)
+            trustedClientsLimitOrdersQueue.put(trustedClientLimitOrdersReport)
         }
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {

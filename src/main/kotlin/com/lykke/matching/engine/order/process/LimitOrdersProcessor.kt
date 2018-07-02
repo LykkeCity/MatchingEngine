@@ -38,7 +38,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
                            private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                           private val trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>,
+                           private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val matchingEngine: MatchingEngine,
                            private val date: Date,
                            private val clientId: String,
@@ -157,7 +157,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrderQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {

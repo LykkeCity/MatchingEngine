@@ -13,7 +13,7 @@ import javax.annotation.PostConstruct
 class TrustedClientsLimitOrdersListener {
 
     @Autowired
-    private lateinit var trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>
+    private lateinit var trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService
@@ -23,7 +23,7 @@ class TrustedClientsLimitOrdersListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.limitOrders, trustedClientsLimitOrderQueue,
+        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.limitOrders, trustedClientsLimitOrdersQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 null)

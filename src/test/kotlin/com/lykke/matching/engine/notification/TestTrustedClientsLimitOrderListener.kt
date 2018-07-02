@@ -6,9 +6,9 @@ import java.util.concurrent.BlockingQueue
 
 class TestTrustedClientsLimitOrderListener : AbstractQueueWrapper<LimitOrdersReport>() {
     @Autowired
-    private lateinit var trustedClientsLimitOrderQueue: BlockingQueue<LimitOrdersReport>
+    private lateinit var trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>
 
     override fun getProcessingQueue(): BlockingQueue<*> {
-        return trustedClientsLimitOrderQueue
+        return trustedClientsLimitOrdersQueue
     }
 }
