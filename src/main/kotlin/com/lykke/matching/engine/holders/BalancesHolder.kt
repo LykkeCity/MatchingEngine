@@ -8,20 +8,19 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.updaters.BalancesUpdater
-import com.lykke.matching.engine.outgoing.rabbit.events.BalanceUpdateEvent
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
+import java.util.concurrent.BlockingQueue
 
 @Component
 class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAccessorsHolder,
                      private val persistenceManager: PersistenceManager,
                      private val assetsHolder: AssetsHolder,
-                     private val applicationEventPublisher: ApplicationEventPublisher,
+                     private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
+                     private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
                      private val applicationSettingsCache: ApplicationSettingsCache) {
 
     companion object {
@@ -101,7 +100,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         balancesUpdater.apply()
-        applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(clientId)))
+        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
 
@@ -118,7 +117,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
             return false
         }
         balancesUpdater.apply()
-        applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(clientId)))
+        balanceUpdateNotificationQueue.put(BalanceUpdateNotification(clientId))
         return true
     }
 
@@ -131,7 +130,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance != it.oldBalance || it.newReserved != it.oldReserved }
         if (balanceUpdate.balances.isNotEmpty()) {
             LOGGER.info(balanceUpdate.toString())
-            applicationEventPublisher.publishEvent(BalanceUpdateEvent(balanceUpdate))
+            balanceUpdateQueue.put(balanceUpdate)
         }
     }
 
@@ -141,7 +140,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return WalletOperationsProcessor(this,
                 applicationSettingsCache,
                 persistenceManager,
-                applicationEventPublisher,
+                balanceUpdateNotificationQueue,
                 assetsHolder,
                 validate,
                 logger)

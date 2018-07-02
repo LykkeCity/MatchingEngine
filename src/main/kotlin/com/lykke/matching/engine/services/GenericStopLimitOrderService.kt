@@ -8,6 +8,8 @@ import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceDat
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
@@ -15,9 +17,10 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
-class GenericStopLimitOrderService(stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                   private val genericLimitOrderService: GenericLimitOrderService,
-                                   private val persistenceManager: PersistenceManager): AbstractGenericLimitOrderService<AssetStopOrderBook> {
+@Component
+class GenericStopLimitOrderService @Autowired constructor(stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
+                                                          private val genericLimitOrderService: GenericLimitOrderService,
+                                                          private val persistenceManager: PersistenceManager) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(GenericLimitOrderService::class.java.name)
@@ -37,7 +40,9 @@ class GenericStopLimitOrderService(stopOrderBookDatabaseAccessor: StopOrderBookD
         initialStopOrdersCount = stopOrders.size
     }
 
-    private fun addOrder(order: LimitOrder) {
+    fun getAllOrderBooks() = stopLimitOrdersQueues
+
+    fun addOrder(order: LimitOrder) {
         stopLimitOrdersMap[order.externalId] = order
         clientStopLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
     }
@@ -83,7 +88,7 @@ class GenericStopLimitOrderService(stopOrderBookDatabaseAccessor: StopOrderBookD
 
     fun getOrder(uid: String) = stopLimitOrdersMap[uid]
 
-    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook){
+    override fun setOrderBook(assetPairId: String, assetOrderBook: AssetStopOrderBook) {
         stopLimitOrdersQueues[assetPairId] = assetOrderBook
     }
 

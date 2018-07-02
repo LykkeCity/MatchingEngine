@@ -8,14 +8,14 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
@@ -23,18 +23,18 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                           trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                           clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
-                           private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                           private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                           clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                           trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val date: Date,
                            LOGGER: Logger) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
                 balancesHolder,
                 genericLimitOrderService,
+                clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
-                clientsLimitOrdersQueue,
                 date) {
 
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
@@ -64,12 +64,12 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
     }
 
     private fun checkAndProcessStopOrders(messageId: String) {
-        val assetPairs = HashSet(ordersToCancel.keys)
-        if (assetPairs.isNotEmpty()) {
-            assetPairs.forEach { assetPair ->
-                genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, assetPair.assetPairId, date)
-            }
-        }
+        ordersToCancel.stream()
+                .map { it.assetPairId }
+                .filter(Objects::nonNull)
+                .forEach {
+                    genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, it, date)
+                }
     }
 
     override fun getOrderLimitVolume(order: LimitOrder): BigDecimal {

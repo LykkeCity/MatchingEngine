@@ -34,6 +34,10 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
     private val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
     private val connections = CopyOnWriteArraySet<ClientHandler>()
 
+    fun getMessageQueueSize(): Int {
+        return messagesQueue.size
+    }
+
     override fun run() {
         val maxConnections = config.me.socket.maxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)

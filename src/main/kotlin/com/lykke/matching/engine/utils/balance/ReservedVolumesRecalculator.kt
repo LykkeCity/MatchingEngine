@@ -13,17 +13,16 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
+import java.util.concurrent.BlockingQueue
 
 @Component
 class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
@@ -35,7 +34,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val applicationSettingsCache: ApplicationSettingsCache,
                                                          @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
-                                                         private val applicationEventPublisher: ApplicationEventPublisher) {
+                                                         private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
@@ -158,7 +157,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             updatedWallets.map { it.clientId }.toSet().forEach {
-                applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it)))
+                balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }
         }
     }

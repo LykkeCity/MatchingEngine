@@ -9,7 +9,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
-import com.lykke.matching.engine.outgoing.rabbit.events.ReservedCashOperationEvent
 import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -17,16 +16,16 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
 @Service
 class ReservedCashInOutOperationService @Autowired constructor (private val assetsHolder: AssetsHolder,
                                                                 private val balancesHolder: BalancesHolder,
-                                                                private val applicationEventPublisher: ApplicationEventPublisher,
+                                                                private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>,
                                                                 private val reservedCashInOutOperationValidator: ReservedCashInOutOperationValidator) : AbstractService {
 
     companion object {
@@ -74,12 +73,12 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
         walletProcessor.apply().sendNotification(message.id, MessageType.RESERVED_CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
-        applicationEventPublisher.publishEvent(ReservedCashOperationEvent(ReservedCashOperation(message.id,
+        reservedCashOperationQueue.put(ReservedCashOperation(message.id,
                 operation.clientId,
                 operation.dateTime,
                 NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
                 operation.assetId,
-                messageWrapper.messageId!!)) )
+                messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(operation.id)
