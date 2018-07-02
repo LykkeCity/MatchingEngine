@@ -171,6 +171,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
                 balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }
         }
+        teeLog("Reserved volume recalculation finished")
     }
 
 }
