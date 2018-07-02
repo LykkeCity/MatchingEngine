@@ -32,7 +32,6 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val assetsPairsHolder :AssetsPairsHolder,
                                                          private val balancesHolder: BalancesHolder,
                                                          private val applicationSettingsCache: ApplicationSettingsCache,
-                                                         @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
                                                          private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
 
@@ -50,8 +49,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             return
         }
 
-        val filePath = orderBookPath
-        teeLog("Starting order books analyze, path: $filePath")
+        teeLog("Starting order books analyze")
         recalculate()
     }
 
@@ -160,6 +158,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                 balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }
         }
+        teeLog("Reserved volume recalculation finished")
     }
 
 }
