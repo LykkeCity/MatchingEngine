@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.order.cancel
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
@@ -30,13 +31,13 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val date: Date) {
 
     protected class OrdersProcessingInfo {
-        val assetPairId: String
+        val assetPair: AssetPair
         val allOrders = LinkedList<LimitOrder>()
         val buyOrders: List<LimitOrder>
         val sellOrders: List<LimitOrder>
 
-        constructor(buyOrders: List<LimitOrder>, sellOrders: List<LimitOrder>, assetPairId: String) {
-            this.assetPairId = assetPairId
+        constructor(buyOrders: List<LimitOrder>, sellOrders: List<LimitOrder>, assetPairId: AssetPair) {
+            this.assetPair = assetPairId
             allOrders.addAll(sellOrders)
             allOrders.addAll(buyOrders)
             this.buyOrders = buyOrders
@@ -44,24 +45,18 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         }
     }
 
-
     private var allOrders: List<OrdersProcessingInfo> = LinkedList()
     protected var ordersToCancel: List<OrdersProcessingInfo> = LinkedList()
-
 
     private val assetOrderBooks = HashMap<String, TAssetOrderBook>()
 
     private val changeBuyAssetPairsOrderBooks = HashSet<String>()
     private val changeSellAssetPairsOrderBooks = HashSet<String>()
 
-    private val walletOperations = LinkedList<WalletOperation>()
-
     fun preProcess(orders: Collection<LimitOrder>): AbstractLimitOrdersCanceller<TAssetOrderBook, TCancelResult> {
         val operationToOrders: Map<OrderOperation, List<LimitOrder>> = orders
                 .stream()
                 .collect(Collectors.groupingBy { getOrderOperation(it) })
-
-
 
         return preProcess(operationToOrders[OrderOperation.CANCEL] ?: emptyList(),
                 operationToOrders[OrderOperation.REMOVE] ?: emptyList())
@@ -84,7 +79,6 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
 
         this.allOrders = convertOrdersToOrderProcessingInfo(allOrders)
 
-        walletOperations.addAll(calculateWalletOperations(this.ordersToCancel, date))
         return this
     }
 
@@ -92,7 +86,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         val walletOperations = LinkedList<WalletOperation>()
 
         orders.forEach { orderInfo ->
-            val assetPair = assetsPairsHolder.getAssetPair(orderInfo.assetPairId)
+            val assetPair = orderInfo.assetPair
             orderInfo.allOrders.forEach { order ->
                 val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
 
@@ -146,7 +140,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         clientsLimitOrders.addAll(ordersWithTrades.clientsOrders)
         trustedClientsLimitOrders.addAll(ordersWithTrades.trustedClientsOrders)
 
-        return getCancelResult(walletOperations, clientsLimitOrders, trustedClientsLimitOrders, assetOrderBooks)
+        return getCancelResult(calculateWalletOperations(this.ordersToCancel, date), clientsLimitOrders, trustedClientsLimitOrders, assetOrderBooks)
     }
 
     protected abstract fun getCancelResult(walletOperations: List<WalletOperation>,
@@ -164,7 +158,8 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     private fun removeOrdersFromCache() {
         allOrders
                 .forEach {
-                    removeOrdersFromCache(it.allOrders, it.assetPairId)
+                    removeOrdersFromCache(it.buyOrders, it.assetPair.assetPairId)
+                    removeOrdersFromCache(it.sellOrders, it.assetPair.assetPairId)
                 }
     }
 
@@ -183,8 +178,8 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         val changedSellOrderBooks = HashSet<TAssetOrderBook>()
 
         orders.forEach { ordersInfo ->
-            val assetOrderBook = assetOrderBooks.getOrPut(ordersInfo.assetPairId) {
-                genericLimitOrderService.getOrderBook(ordersInfo.assetPairId).copy() as TAssetOrderBook
+            val assetOrderBook = assetOrderBooks.getOrPut(ordersInfo.assetPair.assetPairId) {
+                genericLimitOrderService.getOrderBook(ordersInfo.assetPair.assetPairId).copy() as TAssetOrderBook
             }
 
             ordersInfo.allOrders.forEach {
@@ -241,7 +236,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                             .collect(Collectors.groupingBy(LimitOrder::isBuySide))
                     OrdersProcessingInfo(sideToOrder[true] ?: emptyList(),
                             sideToOrder[false] ?: emptyList(),
-                            it.key)
+                            assetsPairsHolder.getAssetPair(it.key))
                 }.collect(Collectors.toList())
     }
 }
