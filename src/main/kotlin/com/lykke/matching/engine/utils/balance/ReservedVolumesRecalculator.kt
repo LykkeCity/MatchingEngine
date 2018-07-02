@@ -160,6 +160,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                 balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }
         }
+        teeLog("Reserved volume recalculation finished")
     }
 
 }
