@@ -80,30 +80,32 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         ordersInfo.forEach { orderInfo ->
             val assetPair = assetsPairsHolder.getAssetPairAllowNulls(orderInfo.assetPairId)
             if (assetPair != null) {
-                calculateWalletOperation(orderInfo, assetPair, date).ifPresent{walletOperations.add(it)}
+                walletOperations.addAll(calculateWalletOperation(orderInfo, assetPair, date))
             }
         }
         return walletOperations
     }
 
-    private fun calculateWalletOperation(orderInfo: OrdersProcessingInfo, assetPair: AssetPair, date: Date): Optional<WalletOperation> {
+    private fun calculateWalletOperation(orderInfo: OrdersProcessingInfo, assetPair: AssetPair, date: Date): List<WalletOperation> {
+        val walletOperations = LinkedList<WalletOperation>()
+
         orderInfo.allOrders.forEach { order ->
             val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
 
             if (!isTrustedClientOrder) {
-                val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair!!.baseAssetId
+                val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
                 val limitVolume = getOrderLimitVolume(order)
                 val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
 
                 if (reservedBalance > BigDecimal.ZERO) {
-                    return Optional.of(
+                    walletOperations.add(
                             WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, BigDecimal.ZERO,
                                     if (limitVolume > reservedBalance) -reservedBalance else -limitVolume))
                 }
             }
         }
 
-        return Optional.empty()
+        return walletOperations
     }
 
     protected abstract fun getOrderLimitVolume(order: LimitOrder): BigDecimal
