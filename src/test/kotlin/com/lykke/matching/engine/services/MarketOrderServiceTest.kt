@@ -87,7 +87,7 @@ class MarketOrderServiceTest: AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "ETH", 1.0)
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 401.9451)
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 523.99, volume = -0.63, clientId = "Client1", assetId = "ETHUSD"))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 526.531, volume = -0.5, clientId = "Client2", assetId = "ETHUSD"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 526.531, volume = -0.5, clientId = "Client2", assetId = "ETHUSD"))
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client3", assetId = "ETHUSD", straight = false, volume = -401.9451)))

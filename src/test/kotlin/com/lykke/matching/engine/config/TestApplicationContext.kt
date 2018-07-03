@@ -335,11 +335,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun reservedVolumesDatabaseAccessor(): ReservedVolumesDatabaseAccessor {
-        return TestReservedVolumesDatabaseAccessor()
-    }
-
-    @Bean
     open fun allOrdersCanceller(assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService,
                                 genericStopLimitOrderService: GenericStopLimitOrderService, genericLimitOrdersCancellerFactory:
                                 GenericLimitOrdersCancellerFactory): AllOrdersCanceller {
