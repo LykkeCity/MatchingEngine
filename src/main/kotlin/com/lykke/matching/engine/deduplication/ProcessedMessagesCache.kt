@@ -1,52 +1,91 @@
 package com.lykke.matching.engine.deduplication
 
-import java.util.Date
-import java.util.HashMap
-import java.util.HashSet
+import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.utils.config.Config
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.scheduling.TaskScheduler
+import org.springframework.stereotype.Component
+import java.time.Duration
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.fixedRateTimer
+import javax.annotation.PostConstruct
+import kotlin.collections.HashMap
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class ProcessedMessagesCache(
-        expirationTime: Long,
-        messages: List<ProcessedMessage>
-) {
-    private var prevPeriodMessageMap = HashMap<Byte, MutableSet<ProcessedMessage>>()
-    private var messagesMap = HashMap<Byte, MutableSet<ProcessedMessage>>()
+@Component
+class ProcessedMessagesCache @Autowired constructor(
+        @Qualifier("MultiSourceProcessedMessageDatabaseAccessor")
+        private val readOnlyProcessedMessagesDatabaseAccessor: ReadOnlyProcessedMessagesDatabaseAccessor,
+        private val config: Config,
+        private val taskScheduler: TaskScheduler) {
 
+    private var typeToProcessedMessage = HashMap<Byte, MutableSet<ProcessedMessage>>()
+    private var prevTypeToProcessedMessage = HashMap<Byte, MutableSet<ProcessedMessage>>()
     private val lock = ReentrantReadWriteLock()
 
     fun addMessage(message: ProcessedMessage) {
         lock.write {
-            messagesMap.getOrPut(message.type) { HashSet() }.add(message)
+            typeToProcessedMessage.getOrPut(message.type) { HashSet() }.add(message)
         }
     }
 
     fun isProcessed(type: Byte, messageId: String): Boolean {
-        lock.read {
-            return messagesMap[type]?.find { it.messageId == messageId } != null ||
-                   prevPeriodMessageMap[type]?.find { it.messageId == messageId } != null
+        if (ProcessedMessageUtils.isDeduplicationNotNeeded(type)) {
+            return false
         }
+
+        lock.read {
+            return containsMessageId(typeToProcessedMessage[type], messageId)
+                    || containsMessageId(prevTypeToProcessedMessage[type], messageId)
+        }
+    }
+
+    private fun containsMessageId(processedMessages: Set<ProcessedMessage>?, messageId: String): Boolean {
+        if (processedMessages == null) {
+            return false
+        }
+
+        return processedMessages.find { it.messageId == messageId } != null
+    }
+
+    @PostConstruct
+    private fun initCache() {
+        val cutoffTime = getCutoffTime()
+        readOnlyProcessedMessagesDatabaseAccessor.get().forEach {
+            if (it.timestamp > cutoffTime) {
+                typeToProcessedMessage.getOrPut(it.type) { HashSet() }.add(it)
+            }
+        }
+
+        scheduleCleaning()
     }
 
     private fun clean() {
         lock.write {
-            prevPeriodMessageMap = messagesMap
-            messagesMap = HashMap()
+            prevTypeToProcessedMessage = typeToProcessedMessage
+            typeToProcessedMessage = HashMap()
         }
     }
 
-    init {
-        val cutoffTime = Date().time - expirationTime
-        messages.forEach {
-            if (it.timestamp > cutoffTime) {
-                messagesMap.getOrPut(it.type) { HashSet() }.add(it)
-            }
-        }
+    private fun scheduleCleaning() {
+        taskScheduler.scheduleAtFixedRate(
+                {
+                    Thread.currentThread().name = "ProcessedMessagesCacheCleaner"
+                    clean()
+                },
+                getStarCleaningTime(),
+                Duration.ofMillis(config.me.processedMessagesInterval))
+    }
 
-        fixedRateTimer(name = "ProcessedMessagesCacheCleaner", initialDelay = expirationTime, period = expirationTime) {
-            clean()
-        }
+    private fun getStarCleaningTime(): Instant {
+        return ZonedDateTime.now().toInstant().plusMillis(config.me.processedMessagesInterval)
+    }
+
+    private fun getCutoffTime(): Long {
+        return Date().time - config.me.processedMessagesInterval
     }
 }

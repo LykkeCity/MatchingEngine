@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.socket
 
 import com.lykke.matching.engine.AppInitialData
+import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.messages.MessageProcessor
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.impl.ClientHandlerImpl
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
@@ -11,10 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 
 @Component
@@ -31,7 +29,6 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val messagesQueue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue<MessageWrapper>()
     private val connections = CopyOnWriteArraySet<ClientHandler>()
 
     fun getMessageQueueSize(): Int {
@@ -42,7 +39,9 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
         val maxConnections = config.me.socket.maxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
 
-        val messageProcessor = MessageProcessor(config, messagesQueue, applicationContext)
+        val messageRouter = applicationContext.getBean(MessageRouter::class.java)
+
+        val messageProcessor = MessageProcessor(config, messageRouter, applicationContext)
 
         messageProcessor.start()
 
@@ -55,7 +54,7 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
             while (true) {
                 val clientConnection = socket.accept()
                 if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
-                    val handler = ClientHandlerImpl(messagesQueue, clientConnection, this)
+                    val handler = ClientHandlerImpl(messageRouter, clientConnection, this)
                     clientHandlerThreadPool.submit(handler)
                     connect(handler)
                 } else {

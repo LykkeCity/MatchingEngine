@@ -1,22 +1,17 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.utils.balance.correctReservedVolumesIfNeed
-import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
-import com.lykke.matching.engine.utils.migration.migrateAccountsIfConfigured
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
 class Application {
-    @Autowired
-    private lateinit var config: Config
-
     @Autowired
     lateinit var socketServer: Runnable
 
@@ -24,27 +19,30 @@ class Application {
     lateinit var azureStatusProcessor: Runnable
 
     @Autowired
-    lateinit var applicationContext: ApplicationContext
+    lateinit var accountsMigrationService: AccountsMigrationService
 
     @Autowired
     lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
+
+    @Autowired
+    lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     fun run () {
         try {
             azureStatusProcessor.run()
         } catch (e: CheckAppInstanceRunningException) {
-            LOGGER.error(e.message)
+            AppInitializer.teeLog("Error occurred while starting application ${e.message}")
             System.exit(1)
         }
 
         try {
-            migrateAccountsIfConfigured(applicationContext)
+            accountsMigrationService.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
             System.exit(1)
         }
 
-        correctReservedVolumesIfNeed(config, applicationContext, balanceUpdateNotificationQueue)
+        reservedVolumesRecalculator.correctReservedVolumesIfNeed()
         socketServer.run()
     }
 }

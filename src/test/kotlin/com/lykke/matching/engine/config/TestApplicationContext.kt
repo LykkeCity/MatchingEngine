@@ -22,6 +22,7 @@ import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import org.springframework.context.ApplicationEventPublisher
 import com.lykke.matching.engine.utils.config.RedisConfig
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
@@ -49,6 +50,35 @@ open class TestApplicationContext {
     @Bean
     open fun assetHolder(backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor): AssetsHolder {
         return AssetsHolder(assetCache(backOfficeDatabaseAccessor))
+    }
+
+    @Bean
+    open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor :TestFileOrderDatabaseAccessor,
+                                         testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
+                                         testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
+                                         assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
+                                         balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
+                                         applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
+
+        return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
+                testReservedVolumesDatabaseAccessor,  assetHolder,
+                assetsPairsHolder, balancesHolder, applicationSettingsCache,
+                "tset", false, applicationEventPublisher)
+    }
+
+    @Bean
+    open fun testStopOrderBookDatabaseAccessor(): TestStopOrderBookDatabaseAccessor {
+        return TestStopOrderBookDatabaseAccessor()
+    }
+
+    @Bean
+    open fun testReservedVolumesDatabaseAccessor(): TestReservedVolumesDatabaseAccessor {
+        return TestReservedVolumesDatabaseAccessor()
+    }
+
+    @Bean
+    open fun testFileOrderDatabaseAccessor(): TestFileOrderDatabaseAccessor {
+        return TestFileOrderDatabaseAccessor()
     }
 
     @Bean
@@ -95,7 +125,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun balancesDatabaseAccessorsHolder(): BalancesDatabaseAccessorsHolder {
-        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null, RedisConfig("", 0, 0, false, null, 0))
+        return BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null)
     }
 
     @Bean

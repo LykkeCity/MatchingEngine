@@ -287,7 +287,8 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
 
         val startPersistTime = System.nanoTime()
 
-        val updated = walletOperationsProcessor.persistBalances()
+        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage())
+        messageWrapper.processedMessagePersisted = true
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -349,7 +350,8 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
             clientLimitOrdersQueue.put(clientLimitOrdersReport)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                assetPair.assetPairId, now)
     }
 
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
@@ -443,9 +445,11 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
 
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
-                .apply(messageWrapper.messageId!!, multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
+                .apply(messageWrapper.messageId!!,
+                        messageWrapper.processedMessage(),
+                        multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
-
+        messageWrapper.processedMessagePersisted = true
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
 
         if (!result.success) {
@@ -476,7 +480,8 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                assetPair.assetPairId, now)
     }
 
     private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder): MultiLimitOrder {

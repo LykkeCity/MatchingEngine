@@ -21,12 +21,12 @@ val LOGGER = Logger.getLogger("HttpConfigParser")
 
 @Component("Config")
 @Profile("default", "!local_config")
-class HttpConfigParser :  FactoryBean<Config> {
+class HttpConfigParser : FactoryBean<Config> {
 
     @Autowired
     private lateinit var enviroment: Environment
 
-    private  lateinit var config: Config
+    private lateinit var config: Config
 
     override fun getObjectType(): Class<*> {
         return Config::class.java

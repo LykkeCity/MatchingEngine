@@ -8,7 +8,6 @@ import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -17,40 +16,28 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
-import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
-import org.springframework.context.ApplicationContext
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
-import java.util.concurrent.BlockingQueue
 
-fun correctReservedVolumesIfNeed(config: Config, applicationContext: ApplicationContext, balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
-    if (!config.me.correctReservedVolumes) {
-        return
-    }
-    val filePath = config.me.orderBookPath
-    val stopOrderBookDatabaseAccessor = applicationContext.getBean(FileStopOrderBookDatabaseAccessor::class.java)
-    ReservedVolumesRecalculator.teeLog("Starting order books analyze, path: $filePath")
-    val orderBookDatabaseAccessor = applicationContext.getBean(OrderBookDatabaseAccessor::class.java)
-    val reservedVolumesDatabaseAccessor = applicationContext.getBean(ReservedVolumesDatabaseAccessor::class.java)
-    ReservedVolumesRecalculator(
-            orderBookDatabaseAccessor,
-            stopOrderBookDatabaseAccessor,
-            reservedVolumesDatabaseAccessor,
-            applicationContext,
-            balanceUpdateNotificationQueue).recalculate()
-}
-
-
-class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
-                                  private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                  private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
-                                  private val applicationContext: ApplicationContext,
-                                  private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
-
+@Component
+class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+                                                         private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
+                                                         private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
+                                                         private val assetsHolder: AssetsHolder,
+                                                         private val assetsPairsHolder :AssetsPairsHolder,
+                                                         private val balancesHolder: BalancesHolder,
+                                                         private val applicationSettingsCache: ApplicationSettingsCache,
+                                                         @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
+                                                         @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
+                                                         private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>) {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
@@ -61,12 +48,17 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
         }
     }
 
-    fun recalculate() {
-        val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
-        val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
-        val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
+    fun correctReservedVolumesIfNeed() {
+        if (!correctReservedVolumes) {
+            return
+        }
 
-        val applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
+        val filePath = orderBookPath
+        teeLog("Starting order books analyze, path: $filePath")
+        recalculate()
+    }
+
+    fun recalculate() {
 
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
@@ -122,7 +114,7 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
         val corrections = LinkedList<ReservedVolumeCorrection>()
         val updatedWallets = mutableSetOf<Wallet>()
         val balanceUpdates = mutableListOf<ClientBalanceUpdate>()
-        balanceHolder.wallets.forEach {
+        balancesHolder.wallets.forEach {
             val wallet = it.value
             val id = wallet.clientId
             wallet.balances.values.forEach {
@@ -164,9 +156,9 @@ class ReservedVolumesRecalculator(private val orderBookDatabaseAccessor: OrderBo
             val now = Date()
             val operationId = UUID.randomUUID().toString()
             LOGGER.info("Starting balances update, operationId: $operationId")
-            balanceHolder.insertOrUpdateWallets(updatedWallets)
+            balancesHolder.insertOrUpdateWallets(updatedWallets)
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
-            balanceHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
+            balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             updatedWallets.map { it.clientId }.toSet().forEach {
                 balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }

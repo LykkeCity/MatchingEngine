@@ -30,7 +30,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false),"test")
 
-        assertLimitOrderMatchingResult(matchingResult)
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -50,7 +50,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, orderBookSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, orderBookSize = 1, status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -61,7 +61,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, orderBookSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, orderBookSize = 1, status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -84,7 +84,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("BTCUSD", false),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, orderBookSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, orderBookSize = 1, status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -96,7 +96,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, skipSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, skipSize = 1, status = OrderStatus.InOrderBook)
         assertEquals(1, getOrderBook("EURUSD", false).size)
     }
 
@@ -121,7 +121,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1, status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -135,7 +135,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1, status = OrderStatus.InOrderBook)
     }
 
     @Test

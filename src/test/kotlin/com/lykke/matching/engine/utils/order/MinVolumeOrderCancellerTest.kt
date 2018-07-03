@@ -39,6 +39,9 @@ import kotlin.test.assertNull
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
+    @Autowired
+    private lateinit var recalculator: ReservedVolumesRecalculator
+
     @TestConfiguration
     open class Config {
         @Bean
@@ -225,13 +228,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("TrustedClient", "BTC"))
 
         // recalculate reserved volumes to reset locked reservedAmount
-        val recalculator = ReservedVolumesRecalculator(
-                testOrderDatabaseAccessor,
-                TestStopOrderBookDatabaseAccessor(),
-                TestReservedVolumesDatabaseAccessor(),
-                applicationContext,
-                balanceUpdateNotificationQueue)
-
         recalculator.recalculate()
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "BTC"))
     }

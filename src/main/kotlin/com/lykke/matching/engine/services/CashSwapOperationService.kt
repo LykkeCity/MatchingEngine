@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.SwapOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -57,7 +58,8 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
         }
 
         try {
-            processSwapOperation(operation, messageWrapper.messageId!!)
+            processSwapOperation(operation, messageWrapper.messageId!!, messageWrapper.processedMessage())
+            messageWrapper.processedMessagePersisted = true
         } catch (e: BalanceException) {
             LOGGER.info("Cash swap operation (${message.id}) failed due to invalid balance: ${e.message}")
             writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
@@ -89,7 +91,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
                 "amount: ${NumberUtils.roundForPrint(message.volume2)} processed")
     }
 
-    private fun processSwapOperation(operation: SwapOperation, messageId: String) {
+    private fun processSwapOperation(operation: SwapOperation, messageId: String, processedMessage: ProcessedMessage?) {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,
@@ -104,7 +106,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances()
+        val updated = walletProcessor.persistBalances(processedMessage)
         if (!updated) {
             throw Exception("Unable to save balance")
         }

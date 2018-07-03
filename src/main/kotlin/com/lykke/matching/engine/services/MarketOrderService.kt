@@ -163,7 +163,8 @@ class MarketOrderService @Autowired constructor(
                 val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
-                    val updated = walletOperationsProcessor.persistBalances()
+                    messageWrapper.processedMessagePersisted = true
+                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage())
                     if (!updated) {
                         val message = "Unable to save result data"
                         LOGGER.error("$order: $message")
@@ -210,7 +211,9 @@ class MarketOrderService @Autowired constructor(
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
+                assetPair.assetPairId,
+                now)
 
         val endTime = System.nanoTime()
 

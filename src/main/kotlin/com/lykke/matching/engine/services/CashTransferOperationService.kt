@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.fee.v2.Fee
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
@@ -71,7 +72,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val fees = try {
-            processTransferOperation(operation, messageWrapper.messageId!!)
+            messageWrapper.processedMessagePersisted = true
+            processTransferOperation(operation, messageWrapper.messageId!!, messageWrapper.processedMessage())
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, e.message)
             return
@@ -106,7 +108,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         return ProtocolMessages.CashTransferOperation.parseFrom(array)
     }
 
-    private fun processTransferOperation(operation: TransferOperation, messageId: String): List<Fee> {
+    private fun processTransferOperation(operation: TransferOperation, messageId: String, processedMessage: ProcessedMessage?): List<Fee> {
         val operations = LinkedList<WalletOperation>()
 
         operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,
@@ -119,7 +121,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER, false)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances()
+        val updated = walletProcessor.persistBalances(processedMessage)
         if (!updated) {
             throw Exception("Unable to save balance")
         }
