@@ -58,27 +58,17 @@ open class TestApplicationContext {
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
-                                         applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
+                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                "tset", false, applicationEventPublisher)
-    }
-
-    @Bean
-    open fun testStopOrderBookDatabaseAccessor(): TestStopOrderBookDatabaseAccessor {
-        return TestStopOrderBookDatabaseAccessor()
+                "test", false, balanceUpdateNotificationQueue)
     }
 
     @Bean
     open fun testReservedVolumesDatabaseAccessor(): TestReservedVolumesDatabaseAccessor {
         return TestReservedVolumesDatabaseAccessor()
-    }
-
-    @Bean
-    open fun testFileOrderDatabaseAccessor(): TestFileOrderDatabaseAccessor {
-        return TestFileOrderDatabaseAccessor()
     }
 
     @Bean
@@ -342,13 +332,6 @@ open class TestApplicationContext {
     @Bean
     open fun tradeInfoListener(): TradeInfoListener {
         return TradeInfoListener()
-    }
-
-    @Bean
-    open fun reservedVolumesRecalculator(orderBookDatabaseAccessor: OrderBookDatabaseAccessor, stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                         reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor, applicationContext: ApplicationContext, balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): ReservedVolumesRecalculator {
-        return ReservedVolumesRecalculator(orderBookDatabaseAccessor,
-                stopOrderBookDatabaseAccessor, reservedVolumesDatabaseAccessor, applicationContext, balanceUpdateNotificationQueue)
     }
 
     @Bean

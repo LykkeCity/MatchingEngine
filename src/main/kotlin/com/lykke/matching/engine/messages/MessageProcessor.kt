@@ -2,12 +2,7 @@ package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -85,6 +80,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val cashInOutPreprocessor: CashInOutPreprocessor
     private val cashTransferPreprocessor: CashTransferPreprocessor
+
+    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.defaultMessagesQueue
 
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()

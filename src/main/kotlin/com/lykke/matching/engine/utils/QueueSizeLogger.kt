@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.utils
 
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.outgoing.rabbit.impl.listeners.RabbitOrderBookListener
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.utils.config.Config
@@ -8,7 +9,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import com.lykke.matching.engine.socket.SocketServer
 import org.springframework.context.annotation.Profile
 import javax.annotation.PostConstruct
 import kotlin.concurrent.fixedRateTimer
@@ -16,7 +16,7 @@ import kotlin.concurrent.fixedRateTimer
 @Component
 @Profile("default", "!local_config")
 class QueueSizeLogger @Autowired constructor(
-        val socketServer: SocketServer,
+        val messageRouter: MessageRouter,
         val connectionHandler: ConnectionsHolder,
         val rabbitOrderBookListener: RabbitOrderBookListener,
         val persistenceManager: PersistenceManager,
@@ -36,12 +36,12 @@ class QueueSizeLogger @Autowired constructor(
 
     private fun log() {
         val balancesQueueSize = persistenceManager.balancesQueueSize()
-        LOGGER.info("Incoming queue: ${socketServer.getMessageQueueSize()}. " +
+        LOGGER.info("Incoming queue: ${messageRouter.defaultMessagesQueue.size}. " +
                 "Order Book queue: ${connectionHandler.getOrderBookQueueSize()}. " +
                 "Rabbit Order Book queue ${rabbitOrderBookListener.getOrderBookQueueSize()}. " +
                 "Balances queue $balancesQueueSize.")
 
-        if (socketServer.getMessageQueueSize() > config.me.queueSizeLimit) {
+        if (messageRouter.defaultMessagesQueue.size > config.me.queueSizeLimit) {
             METRICS_LOGGER.logError("Internal queue size is higher than limit")
         }
 

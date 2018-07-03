@@ -24,6 +24,9 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
     @Autowired
     private lateinit var applicationContext: ApplicationContext
 
+    @Autowired
+    private lateinit var messageRouter: MessageRouter
+
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -31,15 +34,9 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
 
     private val connections = CopyOnWriteArraySet<ClientHandler>()
 
-    fun getMessageQueueSize(): Int {
-        return messagesQueue.size
-    }
-
     override fun run() {
         val maxConnections = config.me.socket.maxConnections
         val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
-
-        val messageRouter = applicationContext.getBean(MessageRouter::class.java)
 
         val messageProcessor = MessageProcessor(config, messageRouter, applicationContext)
 

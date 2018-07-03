@@ -19,13 +19,13 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
 @Component
 class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
