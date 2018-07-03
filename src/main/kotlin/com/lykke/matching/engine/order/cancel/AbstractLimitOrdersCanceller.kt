@@ -12,9 +12,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.math.BigDecimal
-import java.util.Date
-import java.util.LinkedList
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 
@@ -76,30 +74,36 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         return this
     }
 
-    private fun calculateWalletOperations(orders: Collection<OrdersProcessingInfo>, date: Date): List<WalletOperation> {
+    private fun calculateWalletOperations(ordersInfo: Collection<OrdersProcessingInfo>, date: Date): List<WalletOperation> {
         val walletOperations = LinkedList<WalletOperation>()
 
-        orders.forEach { orderInfo ->
-            val assetPair = assetsPairsHolder.getAssetPair(orderInfo.assetPairId)
-            orderInfo.allOrders.forEach { order ->
-                val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
-
-                if (!isTrustedClientOrder) {
-                    val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair!!.baseAssetId
-                    val limitVolume = getOrderLimitVolume(order)
-                    val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
-
-                    if (reservedBalance > BigDecimal.ZERO) {
-                        walletOperations.add(
-                                WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, BigDecimal.ZERO,
-                                        if (limitVolume > reservedBalance) -reservedBalance else -limitVolume)
-                        )
-                    }
-                }
+        ordersInfo.forEach { orderInfo ->
+            val assetPair = assetsPairsHolder.getAssetPairAllowNulls(orderInfo.assetPairId)
+            if (assetPair != null) {
+                calculateWalletOperation(orderInfo, assetPair, date).ifPresent{walletOperations.add(it)}
             }
-
         }
         return walletOperations
+    }
+
+    private fun calculateWalletOperation(orderInfo: OrdersProcessingInfo, assetPair: AssetPair, date: Date): Optional<WalletOperation> {
+        orderInfo.allOrders.forEach { order ->
+            val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
+
+            if (!isTrustedClientOrder) {
+                val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair!!.baseAssetId
+                val limitVolume = getOrderLimitVolume(order)
+                val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
+
+                if (reservedBalance > BigDecimal.ZERO) {
+                    return Optional.of(
+                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, BigDecimal.ZERO,
+                                    if (limitVolume > reservedBalance) -reservedBalance else -limitVolume))
+                }
+            }
+        }
+
+        return Optional.empty()
     }
 
     protected abstract fun getOrderLimitVolume(order: LimitOrder): BigDecimal
