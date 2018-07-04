@@ -29,7 +29,8 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -52,7 +53,9 @@ class MarketOrderService @Autowired constructor(
         private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
-        private val marketOrderValidator: MarketOrderValidator) : AbstractService {
+        private val marketOrderValidator: MarketOrderValidator,
+        private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+        private val messageSender: MessageSender) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
@@ -103,7 +106,14 @@ class MarketOrderService @Autowired constructor(
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {
             order.updateStatus(e.orderStatus, now)
-            rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
+            val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+            rabbitSwapQueue.put(marketOrderWithTrades)
+            val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                    messageWrapper.messageId!!,
+                    messageWrapper.id!!,
+                    now,
+                    MessageType.MARKET_ORDER, marketOrderWithTrades)
+            messageSender.sendMessage(outgoingMessage)
             writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
             return
         }
@@ -113,19 +123,51 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.initTransaction().match(order, getOrderBook(order), messageWrapper.messageId!!)
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
+                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+                rabbitSwapQueue.put(marketOrderWithTrades)
+                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                        messageWrapper.messageId!!,
+                        messageWrapper.id!!,
+                        now,
+                        MessageType.MARKET_ORDER,
+                        marketOrderWithTrades)
+                messageSender.sendMessage(outgoingMessage)
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             ReservedVolumeGreaterThanBalance -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
+                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+                rabbitSwapQueue.put(marketOrderWithTrades)
+                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                        messageWrapper.messageId!!,
+                        messageWrapper.id!!,
+                        now,
+                        MessageType.MARKET_ORDER,
+                        marketOrderWithTrades)
+                messageSender.sendMessage(outgoingMessage)
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
             }
             NotEnoughFunds -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
+                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+                rabbitSwapQueue.put(marketOrderWithTrades)
+                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                        messageWrapper.messageId!!,
+                        messageWrapper.id!!,
+                        now,
+                        MessageType.MARKET_ORDER,
+                        marketOrderWithTrades)
+                messageSender.sendMessage(outgoingMessage)
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             InvalidFee -> {
-                rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
+                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+                rabbitSwapQueue.put(marketOrderWithTrades)
+                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                        messageWrapper.messageId!!,
+                        messageWrapper.id!!,
+                        now,
+                        MessageType.MARKET_ORDER,
+                        marketOrderWithTrades)
+                messageSender.sendMessage(outgoingMessage)
                 writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
             }
             Matched -> {
@@ -155,7 +197,15 @@ class MarketOrderService @Autowired constructor(
                     true
                 } catch (e: BalanceException) {
                     order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
-                    rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order))
+                    val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+                    rabbitSwapQueue.put(marketOrderWithTrades)
+                    val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                            messageWrapper.messageId!!,
+                            messageWrapper.id!!,
+                            now,
+                            MessageType.MARKET_ORDER,
+                            marketOrderWithTrades)
+                    messageSender.sendMessage(outgoingMessage)
                     LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
                     writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), e.message)
                     false
@@ -179,10 +229,17 @@ class MarketOrderService @Autowired constructor(
                     orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, !order.isBuySide(), updatedOrders.fullOrderBook))
                     ordersToSave.addAll(updatedOrders.updatedOrders)
 
+                    trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
+
+                    val sequenceNumber = messageSequenceNumberHolder.getNewValue()
+                    val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
+                        messageSequenceNumberHolder.getNewValue() else null
+
                     messageWrapper.processedMessagePersisted = true
                     val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
                             OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
-                            null)
+                            null,
+                            trustedClientsSequenceNumber ?: sequenceNumber)
                     if (!updated) {
                         val message = "Unable to save result data"
                         LOGGER.error("$order: $message")
@@ -197,7 +254,6 @@ class MarketOrderService @Autowired constructor(
                     genericLimitOrderService.cancelLimitOrders(ordersToCancel, matchingResult.timestamp)
                     genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
 
-                    trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
 
 
@@ -206,7 +262,8 @@ class MarketOrderService @Autowired constructor(
 
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
-                    rabbitSwapQueue.put(MarketOrderWithTrades(messageWrapper.messageId!!, order, matchingResult.marketOrderTrades.toMutableList()))
+                    val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order, matchingResult.marketOrderTrades.toMutableList())
+                    rabbitSwapQueue.put(marketOrderWithTrades)
 
                     matchingResult.limitOrdersReport?.let {
                         clientLimitOrdersReport.orders.addAll(it.orders)
@@ -215,6 +272,26 @@ class MarketOrderService @Autowired constructor(
                     clientLimitOrdersQueue.put(clientLimitOrdersReport)
                     if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
                         trustedClientsLimitOrdersQueue.put(trustedClientLimitOrdersReport)
+                    }
+
+                    val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
+                            messageWrapper.messageId!!,
+                            messageWrapper.id!!,
+                            now,
+                            MessageType.MARKET_ORDER,
+                            walletOperationsProcessor.getClientBalanceUpdates(),
+                            clientLimitOrdersReport.orders,
+                            marketOrderWithTrades)
+                    messageSender.sendMessage(outgoingMessage)
+
+                    if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
+                        val trustedClientsOutgoingMessage = EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
+                                messageWrapper.messageId!!,
+                                messageWrapper.id!!,
+                                now,
+                                MessageType.MARKET_ORDER,
+                                trustedClientLimitOrdersReport.orders)
+                        messageSender.sendTrustedClientsMessage(trustedClientsOutgoingMessage)
                     }
 
                     val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide()))

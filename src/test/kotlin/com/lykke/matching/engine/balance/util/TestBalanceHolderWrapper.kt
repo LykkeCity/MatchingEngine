@@ -9,12 +9,12 @@ class TestBalanceHolderWrapper @Autowired constructor (private val balanceUpdate
                                                        private val balancesHolder: BalancesHolder)  {
 
     fun updateBalance(clientId: String, assetId: String, balance: Double) {
-        balancesHolder.updateBalance(null, clientId, assetId, BigDecimal.valueOf(balance))
+        balancesHolder.updateBalance(null, null, clientId, assetId, BigDecimal.valueOf(balance))
         balanceUpdateHandlerTest.clear()
     }
 
     fun updateReservedBalance(clientId: String, assetId: String, reservedBalance: Double, skip: Boolean = false) {
-        balancesHolder.updateReservedBalance(null, clientId, assetId, BigDecimal.valueOf(reservedBalance), skip)
+        balancesHolder.updateReservedBalance(null, null, clientId, assetId, BigDecimal.valueOf(reservedBalance), skip)
         balanceUpdateHandlerTest.clear()
     }
 }

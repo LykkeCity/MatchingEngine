@@ -8,6 +8,7 @@ import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.INVALID_FEE
 import com.lykke.matching.engine.messages.MessageStatus.OK
@@ -16,6 +17,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
@@ -31,7 +33,9 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
                                 private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
                                 private val feeProcessor: FeeProcessor,
-                                private val cashInOutOperationValidator: CashInOutOperationValidator) : AbstractService {
+                                private val cashInOutOperationValidator: CashInOutOperationValidator,
+                                private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                private val messageSender: MessageSender) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
@@ -46,6 +50,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 " amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
 
         val operationId = UUID.randomUUID().toString()
+        val now = Date()
 
         val walletOperation = getWalletOperation(operationId, message)
         val operations = mutableListOf(walletOperation)
@@ -72,7 +77,8 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null, null)
+        val sequenceNumber = messageSequenceNumberHolder.getNewValue()
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null, null, sequenceNumber)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
@@ -84,6 +90,27 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         walletProcessor.apply().sendNotification(message.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
         publishRabbitMessage(message, walletOperation, fees, messageWrapper.messageId!!)
+
+        val outgoingMessage = if (message.volume > 0.0) {
+            EventFactory.createCashInEvent(sequenceNumber,
+                    messageWrapper.messageId!!,
+                    messageWrapper.id!!,
+                    now,
+                    MessageType.CASH_IN_OUT_OPERATION,
+                    walletProcessor.getClientBalanceUpdates(),
+                    walletOperation,
+                    fees)
+        } else {
+            EventFactory.createCashOutEvent(sequenceNumber,
+                    messageWrapper.messageId!!,
+                    messageWrapper.id!!,
+                    now,
+                    MessageType.CASH_IN_OUT_OPERATION,
+                    walletProcessor.getClientBalanceUpdates(),
+                    walletOperation,
+                    fees)
+        }
+        messageSender.sendMessage(outgoingMessage)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(walletOperation.id)

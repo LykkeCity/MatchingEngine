@@ -12,6 +12,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -23,7 +24,9 @@ import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
+import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
 import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
@@ -56,17 +59,35 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun messageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor: MessageSequenceNumberDatabaseAccessor): MessageSequenceNumberHolder {
+        return MessageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor)
+    }
+
+    @Bean
+    open fun notificationSender(clientsEventsQueue: BlockingQueue<AbstractEvent<*>>,
+                                trustedClientsEventsQueue: BlockingQueue<AbstractEvent<*>>): MessageSender {
+        return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
+    }
+
+    @Bean
     open fun reservedVolumesRecalculator(testOrderDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                          testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
-                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): ReservedVolumesRecalculator {
+                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
+                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                         messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                false, balanceUpdateNotificationQueue)
+                false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
+    }
+
+    @Bean
+    open fun testMessageSequenceNumberDatabaseAccessor(): TestMessageSequenceNumberDatabaseAccessor {
+        return TestMessageSequenceNumberDatabaseAccessor()
     }
 
     @Bean

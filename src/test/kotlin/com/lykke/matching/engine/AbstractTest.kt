@@ -13,13 +13,16 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.notification.*
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
@@ -31,6 +34,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertNotNull
+import java.util.concurrent.BlockingQueue
 
 abstract class AbstractTest {
     @Autowired
@@ -136,6 +140,21 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var tradesInfoListener: TradeInfoListener
 
+    @Autowired
+    protected lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
+
+    @Autowired
+    protected lateinit var messageSender: MessageSender
+
+    @Autowired
+    protected lateinit var clientsEventsQueue: BlockingQueue<AbstractEvent<*>>
+
+    @Autowired
+    protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
+
+    protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
+    protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
+
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
@@ -172,10 +191,10 @@ abstract class AbstractTest {
         cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
                 dbTransferOperationQueue,
                 FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService),
-                cashTransferOperationValidator)
+                cashTransferOperationValidator, messageSequenceNumberHolder, messageSender)
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator)
+        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
@@ -198,6 +217,9 @@ abstract class AbstractTest {
 
         testLkkTradeListener.clear()
         rabbitSwapListener.clear()
+
+        clientsEventsQueue.clear()
+        trustedClientsEventsQueue.clear()
     }
 
     protected fun assertOrderBookSize(assetPairId: String, isBuySide: Boolean, size: Int) {

@@ -11,6 +11,7 @@ import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
@@ -39,6 +40,7 @@ class RedisPersistenceManager(
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
         private val secondaryStopOrdersAccessor: StopOrderBookDatabaseAccessor?,
         private val redisHealthStatusHolder: RedisHealthStatusHolder,
+        private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val jedisPool: JedisPool,
         private val config: Config): PersistenceManager {
 
@@ -140,6 +142,8 @@ class RedisPersistenceManager(
             data.orderBooksData?.let { persistOrders(transaction, it) }
             data.stopOrderBooksData?.let { persistStopOrders(transaction, it) }
 
+            persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
+
             val persistTime = System.nanoTime()
 
             transaction.exec()
@@ -207,6 +211,13 @@ class RedisPersistenceManager(
         }
         transaction.select(config.me.redis.ordersDatabase)
         primaryStopOrdersAccessor.updateOrders(transaction, data.ordersToSave, data.ordersToRemove)
+    }
+
+    private fun persistMessageSequenceNumber(transaction: Transaction, sequenceNumber: Long?) {
+        if (sequenceNumber == null) {
+            return
+        }
+        redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
     }
 
     private fun startSecondaryBalancesUpdater() {

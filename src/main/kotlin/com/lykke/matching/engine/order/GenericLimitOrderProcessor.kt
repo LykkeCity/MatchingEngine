@@ -7,12 +7,14 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
@@ -27,6 +29,8 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
                                  balancesHolder: BalancesHolder,
                                  applicationSettingsCache: ApplicationSettingsCache,
                                  matchingEngine: MatchingEngine,
+                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                 messageSender: MessageSender,
                                  private val LOGGER: Logger) {
 
     private val limitOrderProcessor = SingleLimitOrderProcessor(limitOrderService,
@@ -43,6 +47,8 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
             assetsPairsHolder,
             balancesHolder,
             applicationSettingsCache,
+            messageSequenceNumberHolder,
+            messageSender,
             LOGGER)
 
     fun checkAndProcessStopOrder(messageId: String, assetPairId: String, now: Date) {

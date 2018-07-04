@@ -1,5 +1,5 @@
 package com.lykke.matching.engine.logging
 
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 
-data class MessageWrapper(val message: JsonSerializable, val json: String)
+data class MessageWrapper(val message: OutgoingMessage, val stringValue: String)

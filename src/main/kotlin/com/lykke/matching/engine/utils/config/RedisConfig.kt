@@ -10,5 +10,6 @@ data class RedisConfig(
     val processedMessageDatabase: Int,
     val processedCashMessageDatabase: Int,
     val ordersDatabase: Int,
-    val pingDatabase: Int
+    val pingDatabase: Int,
+    val sequenceNumberDatabase: Int
 )

@@ -9,6 +9,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
+import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
 import java.util.Date
 import java.util.UUID
 
@@ -18,14 +19,18 @@ class MessageDatabaseLogger(dbAccessor: MessageLogDatabaseAccessor<Message>) : D
         val baseMessage = message.message
         val type = baseMessage::class.java.simpleName
         return when (baseMessage) {
-            is BalanceUpdate -> Message(baseMessage.id, type, baseMessage.timestamp, message.json)
-            is CashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.json)
-            is CashSwapOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.json)
-            is CashTransferOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.json)
-            is LimitOrdersReport -> Message(UUID.randomUUID().toString(), type, Date(), message.json)
+            is BalanceUpdate -> Message(baseMessage.id, type, baseMessage.timestamp, message.stringValue)
+            is CashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is CashSwapOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is CashTransferOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is LimitOrdersReport -> Message(UUID.randomUUID().toString(), type, Date(), message.stringValue)
             is MarketOrderWithTrades ->
-                Message(baseMessage.order.id, type, Date(), message.json)
-            is ReservedCashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.json)
+                Message(baseMessage.order.id, type, Date(), message.stringValue)
+            is ReservedCashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is AbstractEvent<*> -> {
+                val header = baseMessage.header
+                Message(header.messageId, header.eventType, header.timestamp, message.stringValue)
+            }
             else -> {
                 throw IllegalArgumentException("Unknown message type: ${message::class.java.name}")
             }
