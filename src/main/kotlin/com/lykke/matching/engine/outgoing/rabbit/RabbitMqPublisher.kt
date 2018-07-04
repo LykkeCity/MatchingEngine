@@ -9,6 +9,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
@@ -76,13 +77,31 @@ class RabbitMqPublisher(
                 val startTime = System.nanoTime()
                 val stringValue: String
                 val byteArrayValue: ByteArray
+                val routingKey: String
+                val props: AMQP.BasicProperties
                 if (item is JsonSerializable) {
                     stringValue = item.toJson()
                     byteArrayValue = stringValue.toByteArray()
+                    routingKey = ""
+                    props = MessageProperties.MINIMAL_PERSISTENT_BASIC
                 } else {
                     item as AbstractEvent<*>
                     stringValue = item.toString()
                     byteArrayValue = item.buildGeneratedMessage().toByteArray()
+                    routingKey = item.header.messageType.name
+                    val headers = mapOf(Pair("MessageType", item.header.messageType.name),
+                            Pair("SequenceNumber", item.header.sequenceNumber),
+                            Pair("MessageId", item.header.messageId),
+                            Pair("RequestId", item.header.requestId),
+                            Pair("Version", item.header.version),
+                            Pair("Timestamp", item.header.timestamp.time),
+                            Pair("EventType", item.header.eventType))
+
+                    // MINIMAL_PERSISTENT_BASIC + headers
+                    props = AMQP.BasicProperties.Builder()
+                            .deliveryMode(2)
+                            .headers(headers)
+                            .build()
                 }
                 messageDatabaseLogger?.let {
                     if (!isLogged) {
@@ -92,7 +111,7 @@ class RabbitMqPublisher(
                     }
                 }
                 val startPersistTime = System.nanoTime()
-                channel!!.basicPublish(exchangeName, "", MessageProperties.MINIMAL_PERSISTENT_BASIC, byteArrayValue)
+                channel!!.basicPublish(exchangeName, routingKey, props, byteArrayValue)
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
