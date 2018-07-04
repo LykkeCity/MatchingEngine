@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
@@ -206,8 +207,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
-                OrderStatus.Matched,
                 OrderStatus.InOrderBook,
+                OrderStatus.Matched,
                 OrderStatus.Processing -> {
                     if (!processMatchingResult(matchingResult, orderCopy, orderInfo, order, limitAsset)) return
                 }

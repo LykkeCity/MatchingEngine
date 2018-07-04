@@ -245,6 +245,7 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", false).size)
         assertEquals(1, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
         assertEquals(BigDecimal.valueOf(0.04), balancesHolder.getBalance("Client1", "ETH"))
+        assertEquals(BigDecimal.valueOf(275.0), balancesHolder.getReservedBalance("Client2", "USD"))
         assertEquals(BigDecimal.ZERO, balancesHolder.getReservedBalance("Client1", "ETH"))
         assertEquals(BigDecimal.valueOf(275.0), balancesHolder.getReservedBalance("Client2", "USD"))
         assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client2", "ETH"))

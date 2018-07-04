@@ -10,12 +10,14 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
@@ -31,6 +33,7 @@ class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
+        private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
         private val secondaryOrdersAccessor: OrderBookDatabaseAccessor?,
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
@@ -62,11 +65,10 @@ class RedisPersistenceManager(
         }
     }
 
+    private var jedis: Jedis? = null
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
     private val updatedOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     private val updatedStopOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
-
-    private var jedis: Jedis? = null
 
     init {
         startSecondaryBalancesUpdater()
@@ -129,6 +131,12 @@ class RedisPersistenceManager(
         try {
             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
+
+            if (data.processedMessage?.type == MessageType.CASH_IN_OUT_OPERATION.type ||
+                    data.processedMessage?.type == MessageType.CASH_TRANSFER_OPERATION.type) {
+                persistProcessedCashMessage(transaction, data.processedMessage)
+            }
+
             data.orderBooksData?.let { persistOrders(transaction, it) }
             data.stopOrderBooksData?.let { persistStopOrders(transaction, it) }
 
@@ -168,6 +176,11 @@ class RedisPersistenceManager(
         }
 
         redisProcessedMessagesDatabaseAccessor.save(transaction, processedMessage)
+    }
+
+    private fun persistProcessedCashMessage(transaction: Transaction, processedMessage: ProcessedMessage) {
+        LOGGER.trace("Start to persist processed cash messages in redis")
+        redisProcessedCashOperationIdDatabaseAccessor.save(transaction, processedMessage)
     }
 
     private fun persistBalances(transaction: Transaction, assetBalances: Collection<AssetBalance>?) {

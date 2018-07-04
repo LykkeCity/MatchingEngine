@@ -30,7 +30,6 @@ import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -67,7 +66,7 @@ open class TestApplicationContext {
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                "tset", false, balanceUpdateNotificationQueue)
+                false, balanceUpdateNotificationQueue)
     }
 
     @Bean
