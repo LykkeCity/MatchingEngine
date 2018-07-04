@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -10,6 +9,8 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -94,6 +95,18 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         val previousOrders = genericLimitOrderService.searchOrders("Client1", "EURUSD", true)
         assertEquals(4, previousOrders.size)
         assertFalse(previousOrders.any { it.externalId == "3" })
+
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, executionEvent.balanceUpdates?.size)
+        assertEquals("Client1", executionEvent.balanceUpdates!!.first().walletId)
+        assertEquals("EUR", executionEvent.balanceUpdates!!.first().assetId)
+        assertEquals("1000", executionEvent.balanceUpdates!!.first().oldBalance)
+        assertEquals("1000", executionEvent.balanceUpdates!!.first().newBalance)
+        assertEquals("1", executionEvent.balanceUpdates!!.first().oldReserved)
+        assertEquals("0", executionEvent.balanceUpdates!!.first().newReserved)
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
     }
 
     @Test
@@ -141,5 +154,24 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals("Client2", usd.id)
         assertEquals(BigDecimal.valueOf(800.0), usd.oldReserved)
         assertEquals(BigDecimal.ZERO, usd.newReserved)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, executionEvent.balanceUpdates?.size)
+
+        val btc1 = executionEvent.balanceUpdates!!.first { it.assetId == "BTC" }
+        assertEquals("Client2", btc1.walletId)
+        assertEquals("1", btc1.oldReserved)
+        assertEquals("0.2", btc1.newReserved)
+
+        val usd1 = executionEvent.balanceUpdates!!.first { it.assetId == "USD" }
+        assertEquals("Client2", usd1.walletId)
+        assertEquals("800", usd1.oldReserved)
+        assertEquals("0", usd1.newReserved)
+
+        assertEquals(3, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[0].status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[1].status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[2].status)
     }
 }

@@ -8,6 +8,7 @@ import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
 import com.google.gson.JsonSyntaxException
+import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.text.DateFormat
@@ -18,7 +19,7 @@ import java.util.Locale
 import java.util.TimeZone
 
 
-open class JsonSerializable {
+open class JsonSerializable: OutgoingMessage {
 
     companion object {
         private val gson = GsonBuilder()

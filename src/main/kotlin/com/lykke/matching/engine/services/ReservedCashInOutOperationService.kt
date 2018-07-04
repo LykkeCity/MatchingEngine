@@ -63,7 +63,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage())
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()

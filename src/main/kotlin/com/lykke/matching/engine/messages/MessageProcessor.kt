@@ -27,6 +27,7 @@ import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.CashTransferPreprocessor
@@ -60,6 +61,7 @@ import com.lykke.matching.engine.services.LimitOrderMassCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
@@ -155,11 +157,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
     private val healthMonitor: GeneralHealthMonitor
+    private val messageSequenceNumberHolder: MessageSequenceNumberHolder
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
+
+        val messageSender = applicationContext.getBean(MessageSender::class.java)
+        messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
@@ -199,7 +205,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 rabbitClientLimitOrdersQueue,
                 lkkTradesQueue,
                 orderBooksQueue,
-                rabbitOrderBooksQueue)
+                rabbitOrderBooksQueue,
+                messageSequenceNumberHolder,
+                messageSender)
 
         val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
                 genericStopLimitOrderService,
@@ -208,7 +216,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 assetsHolder,
                 assetsPairsHolder,
                 balanceHolder,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                messageSequenceNumberHolder,
+                messageSender)
 
         val genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
@@ -219,26 +229,45 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 rabbitTrustedClientsLimitOrdersQueue,
                 rabbitClientLimitOrdersQueue,
                 orderBooksQueue,
-                rabbitOrderBooksQueue)
+                rabbitOrderBooksQueue,
+                messageSequenceNumberHolder,
+                messageSender)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
-        this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, rabbitCashInOutQueue, feeProcessor, cashInOutOperationValidator)
+        this.cashInOutOperationService = CashInOutOperationService(assetsHolder,
+                balanceHolder,
+                rabbitCashInOutQueue,
+                feeProcessor,
+                cashInOutOperationValidator,
+                messageSequenceNumberHolder,
+                messageSender)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder,  rabbitTransferQueue, dbTransferOperationQueue, feeProcessor, cashTransferOperationValidator)
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder,
+                assetsHolder,
+                rabbitTransferQueue,
+                dbTransferOperationQueue,
+                feeProcessor,
+                cashTransferOperationValidator,
+                messageSequenceNumberHolder,
+                messageSender)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
 
         val multiLimitOrderValidator = applicationContext.getBean(MultiLimitOrderValidator::class.java)
         this.multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, rabbitTrustedClientsLimitOrdersQueue,
-                rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue, genericLimitOrderProcessorFactory, multiLimitOrderValidator)
+                rabbitClientLimitOrdersQueue, orderBooksQueue, rabbitOrderBooksQueue, assetsHolder, assetsPairsHolder, balanceHolder, lkkTradesQueue, genericLimitOrderProcessorFactory, multiLimitOrderValidator,
+                messageSequenceNumberHolder,
+                messageSender)
         val marketOrderValidator = applicationContext.getBean(MarketOrderValidator::class.java)
         this.marketOrderService = MarketOrderService(backOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder,
                 assetsPairsHolder, balanceHolder, rabbitTrustedClientsLimitOrdersQueue,
                 rabbitClientLimitOrdersQueue,
-                orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
+                orderBooksQueue, rabbitOrderBooksQueue, rabbitSwapQueue, lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator,
+                messageSequenceNumberHolder,
+                messageSender)
 
         this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
@@ -415,7 +444,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             message.processedMessage()?.let {
                 processedMessagesCache.addMessage(it)
                 if (!message.processedMessagePersisted) {
-                    persistenceManager.persist(PersistenceData(it))
+                    persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
                 }
             }
 

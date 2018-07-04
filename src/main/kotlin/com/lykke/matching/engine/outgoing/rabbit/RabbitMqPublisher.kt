@@ -3,6 +3,8 @@ package com.lykke.matching.engine.outgoing.rabbit
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -17,7 +19,7 @@ import java.util.concurrent.BlockingQueue
 class RabbitMqPublisher(
         private val uri: String,
         private val exchangeName: String,
-        private val queue: BlockingQueue<JsonSerializable>,
+        private val queue: BlockingQueue<out OutgoingMessage>,
         private val appName: String,
         private val appVersion: String,
         /** null if do not need to log */
@@ -67,12 +69,21 @@ class RabbitMqPublisher(
         }
     }
 
-    private fun publish(item: JsonSerializable) {
+    private fun publish(item: OutgoingMessage) {
         var isLogged = false
         while (true) {
             try {
                 val startTime = System.nanoTime()
-                val stringValue = item.toJson()
+                val stringValue: String
+                val byteArrayValue: ByteArray
+                if (item is JsonSerializable) {
+                    stringValue = item.toJson()
+                    byteArrayValue = stringValue.toByteArray()
+                } else {
+                    item as AbstractEvent<*>
+                    stringValue = item.toString()
+                    byteArrayValue = item.buildGeneratedMessage().toByteArray()
+                }
                 messageDatabaseLogger?.let {
                     if (!isLogged) {
                         MESSAGES_LOGGER.info("$exchangeName : $stringValue")
@@ -81,7 +92,7 @@ class RabbitMqPublisher(
                     }
                 }
                 val startPersistTime = System.nanoTime()
-                channel!!.basicPublish(exchangeName, "", MessageProperties.MINIMAL_PERSISTENT_BASIC, stringValue.toByteArray())
+                channel!!.basicPublish(exchangeName, "", MessageProperties.MINIMAL_PERSISTENT_BASIC, byteArrayValue)
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
