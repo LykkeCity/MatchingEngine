@@ -32,7 +32,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                                   private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                   private val messageSender: MessageSender,
-                                  date: Date,
+                                  private val date: Date,
                                   LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
@@ -89,8 +89,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                   messageId: String,
                   processedMessage: ProcessedMessage?,
                   messageType: MessageType,
-                  validateBalances: Boolean,
-                  messageDate: Date): Boolean {
+                  validateBalances: Boolean): Boolean {
         val limitOrdersCancelResult = processLimitOrders()
         val stopLimitOrdersResult = processStopLimitOrders()
 
@@ -132,7 +131,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
                     messageId,
                     operationId,
-                    messageDate,
+                    date,
                     messageType,
                     trustedClientsLimitOrdersWithTrades))
         }
@@ -141,7 +140,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
                     messageId,
                     operationId,
-                    messageDate,
+                    date,
                     messageType,
                     walletProcessor.getClientBalanceUpdates(),
                     limitOrdersWithTrades))

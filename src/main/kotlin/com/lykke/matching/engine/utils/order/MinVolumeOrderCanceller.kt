@@ -71,8 +71,7 @@ class MinVolumeOrderCanceller(private val dictionariesDatabaseAccessor: Dictiona
                             operationId,
                             null,
                             MessageType.LIMIT_ORDER,
-                            true,
-                            now)
+                            true)
         } catch (e: BalanceException) {
             teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
             return
