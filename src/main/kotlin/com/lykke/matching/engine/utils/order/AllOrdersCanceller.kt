@@ -26,6 +26,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
                                                 @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean): ApplicationRunner{
 
     private val genericLimitOrdersCanceller: GenericLimitOrdersCanceller
+    private val now = Date()
 
     companion object {
         private val LOGGER = Logger.getLogger(AllOrdersCanceller::class.java.name)
@@ -37,7 +38,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
     }
 
     init {
-        genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, Date())
+        genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, now)
     }
 
     override fun run(args: ApplicationArguments?) {
@@ -53,7 +54,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
         preProcessLimitOrders()
         preProcessStopOrders()
 
-        genericLimitOrdersCanceller.applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER.name, true)
+        genericLimitOrdersCanceller.applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER, true, now)
         teeLog("Completed to cancel all orders")
     }
 

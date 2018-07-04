@@ -39,6 +39,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
                                 newOrderBook.getCopyOfOrderBook(order.isBuySide()))),
                                 emptyList(),
                                 listOf(order)),
+                        null,
                         null))
                 if (updated) {
                     genericLimitOrderService.cancelLimitOrder(Date(), message.limitOrderId.toString(), true)

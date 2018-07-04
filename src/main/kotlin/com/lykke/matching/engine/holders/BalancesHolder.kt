@@ -126,7 +126,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return true
     }
 
-    fun insertOrUpdateWallets(wallets: Collection<Wallet>) {
+    fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
         persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }), null, null, null,
                 messageSequenceNumber = messageSequenceNumber))
         update()

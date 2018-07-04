@@ -17,12 +17,19 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.notification.RabbitSwapListener
+import com.lykke.matching.engine.notification.TestClientLimitOrderListener
+import com.lykke.matching.engine.notification.TestLkkTradeListener
+import com.lykke.matching.engine.notification.TestOrderBookListener
+import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
+import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
+import com.lykke.matching.engine.notification.TradeInfoListener
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
 import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
-import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
@@ -151,9 +158,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
-
-    protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 

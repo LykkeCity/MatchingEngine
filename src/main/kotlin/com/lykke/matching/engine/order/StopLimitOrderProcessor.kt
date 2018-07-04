@@ -14,9 +14,6 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -74,7 +71,6 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.updateStatus(e.orderStatus, now)
             val messageStatus = MessageStatusUtils.toMessageStatus(e.orderStatus)
-            var updated = true
             val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
             if (cancelVolume > BigDecimal.ZERO) {
                 walletOperationsProcessor.preProcess(listOf(WalletOperation(UUID.randomUUID().toString(),
@@ -109,8 +105,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         messageWrapper.id!!,
                         now,
                         MessageType.LIMIT_ORDER,
-                        //todo
-                        walletOperationsProcessor.,
+                        walletOperationsProcessor.getClientBalanceUpdates(),
                         clientLimitOrdersReport.orders)
                 messageSender.sendMessage(outgoingMessage)
             } else {
@@ -188,8 +183,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 messageWrapper.id!!,
                 now,
                 MessageType.LIMIT_ORDER,
-                //todo
-                walletOperationsProcessor.,
+                walletOperationsProcessor.getClientBalanceUpdates(),
                 clientLimitOrdersReport.orders)
         messageSender.sendMessage(outgoingMessage)
     }
