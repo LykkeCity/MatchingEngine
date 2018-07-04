@@ -34,6 +34,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -105,7 +106,7 @@ abstract class AbstractPerformanceTest {
 
     val rabbitEventsQueue = LinkedBlockingQueue<AbstractEvent<*>>()
 
-    val rabbitTrustedClientsEventsQueue = LinkedBlockingQueue<AbstractEvent<*>>()
+    val rabbitTrustedClientsEventsQueue = LinkedBlockingQueue<ExecutionEvent>()
 
     open fun initServices() {
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()

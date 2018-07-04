@@ -126,7 +126,6 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
 
         walletProcessor.apply().sendNotification(operationId, messageType.name, messageId)
         stopLimitOrdersCanceller.apply(messageId, processedMessage, stopLimitOrdersResult)
-
         limitOrdersCanceller.apply(messageId, processedMessage, limitOrdersCancelResult)
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
@@ -147,6 +146,8 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                     walletProcessor.getClientBalanceUpdates(),
                     limitOrdersWithTrades))
         }
+
+        limitOrdersCanceller.checkAndProcessStopOrders(messageId)
 
         return true
     }
