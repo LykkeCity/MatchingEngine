@@ -7,12 +7,14 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -29,7 +31,9 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                                   private val orderBookQueue: BlockingQueue<OrderBook>,
                                   private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                   private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  private val applicationSettingsCache: ApplicationSettingsCache) {
+                                  private val applicationSettingsCache: ApplicationSettingsCache,
+                                  private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                  private val messageSender: MessageSender) {
 
     fun create(matchingEngine: MatchingEngine,
                date: Date,
@@ -63,5 +67,7 @@ class LimitOrdersProcessorFactory(private val assetsHolder: AssetsHolder,
                     payBackQuotingReserved,
                     clientsLimitOrdersWithTrades,
                     trustedClientsLimitOrdersWithTrades,
+                    messageSequenceNumberHolder,
+                    messageSender,
                     LOGGER)
 }

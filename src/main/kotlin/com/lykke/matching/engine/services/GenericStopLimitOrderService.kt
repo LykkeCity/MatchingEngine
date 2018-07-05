@@ -129,7 +129,8 @@ class GenericStopLimitOrderService @Autowired constructor(stopOrderBookDatabaseA
                             order.isBuySide(),
                             newStopOrderBook)),
                             emptyList(),
-                            listOf(order))))
+                            listOf(order)),
+                    null))
             if (!updated) {
                 LOGGER.error("Unable to save stop order book")
                 return null

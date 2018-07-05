@@ -12,6 +12,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -23,7 +24,10 @@ import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
@@ -56,17 +60,35 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun messageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor: ReadOnlyMessageSequenceNumberDatabaseAccessor): MessageSequenceNumberHolder {
+        return MessageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor)
+    }
+
+    @Bean
+    open fun notificationSender(clientsEventsQueue: BlockingQueue<Event<*>>,
+                                trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>): MessageSender {
+        return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
+    }
+
+    @Bean
     open fun reservedVolumesRecalculator(testOrderDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                          testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
-                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): ReservedVolumesRecalculator {
+                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
+                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                         messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                false, balanceUpdateNotificationQueue)
+                false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
+    }
+
+    @Bean
+    open fun testMessageSequenceNumberDatabaseAccessor(): TestMessageSequenceNumberDatabaseAccessor {
+        return TestMessageSequenceNumberDatabaseAccessor()
     }
 
     @Bean
@@ -235,21 +257,29 @@ open class TestApplicationContext {
                                          lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                          orderBookQueue: BlockingQueue<OrderBook>,
                                          rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                         trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>): LimitOrdersProcessorFactory {
+                                         trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                         messageSender: MessageSender): LimitOrdersProcessorFactory {
         return LimitOrdersProcessorFactory(assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderService, clientLimitOrdersQueue,
                 lkkTradesQueue,
                 orderBookQueue,
                 rabbitOrderBookQueue,
-                trustedClientsLimitOrdersQueue, applicationSettingsCache)
+                trustedClientsLimitOrdersQueue, applicationSettingsCache,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean
     open fun genericLimitOrderProcessorFactory(genericLimitOrderService: GenericLimitOrderService, genericStopLimitOrderService: GenericStopLimitOrderService,
                                                limitOrderProcessorFactory: LimitOrdersProcessorFactory,
                                                assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
-                                               applicationSettingsCache: ApplicationSettingsCache, clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>): GenericLimitOrderProcessorFactory {
+                                               applicationSettingsCache: ApplicationSettingsCache, clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                               messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                               messageSender: MessageSender): GenericLimitOrderProcessorFactory {
         return GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrderProcessorFactory, assetsHolder, assetsPairsHolder, balancesHolder,
-                applicationSettingsCache, clientLimitOrdersQueue)
+                applicationSettingsCache, clientLimitOrdersQueue,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean
@@ -261,10 +291,14 @@ open class TestApplicationContext {
                                     rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                     lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                     assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
-                                    genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, multiLimitOrderValidator: MultiLimitOrderValidator): MultiLimitOrderService {
+                                    genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, multiLimitOrderValidator: MultiLimitOrderValidator,
+                                    messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                    messageSender: MessageSender): MultiLimitOrderService {
         return MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrderProcessorFactory,
                 clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, multiLimitOrderValidator)
+                assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, multiLimitOrderValidator,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean
@@ -275,9 +309,13 @@ open class TestApplicationContext {
                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                 rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
                                 lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, marketOrderValidator: MarketOrderValidator): MarketOrderService {
+                                genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, marketOrderValidator: MarketOrderValidator,
+                                messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                messageSender: MessageSender): MarketOrderService {
         return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator)
+                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean
@@ -287,9 +325,13 @@ open class TestApplicationContext {
                                                 orderBookQueue: BlockingQueue<OrderBook>,
                                                 rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>): GenericLimitOrdersCancellerFactory {
+                                                trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                                messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                messageSender: MessageSender): GenericLimitOrdersCancellerFactory {
         return GenericLimitOrdersCancellerFactory(dictionariesDatabaseAccessor, assetsPairsHolder, balancesHolder, genericLimitOrderService,
-                genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue)
+                genericStopLimitOrderService, genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean

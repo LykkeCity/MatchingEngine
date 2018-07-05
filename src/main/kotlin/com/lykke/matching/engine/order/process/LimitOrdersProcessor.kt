@@ -11,14 +11,23 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.matching.MatchingResult
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.LimitOrderValidator
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
-import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
+import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -49,6 +58,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            payBackQuotingReserved: BigDecimal,
                            clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
+                           private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                           private val messageSender: MessageSender,
                            private val LOGGER: Logger) {
 
     private val validator = LimitOrderValidator(assetsPairsHolder, assetsHolder, applicationSettingsCache)
@@ -101,7 +112,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     fun apply(messageId: String,
               processedMessage: ProcessedMessage?,
               operationId: String,
-              operationType: String,
+              messageType: MessageType,
               pBuySideOrderBookChanged: Boolean,
               pSellSideOrderBookChanged: Boolean): OrderProcessResult {
 
@@ -124,13 +135,26 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             ordersToSave.addAll(updatedOrders.updatedOrders)
         }
 
+        var sequenceNumber: Long? = null
+        var clientsSequenceNumber: Long? = null
+        var trustedClientsSequenceNumber: Long? = null
+        if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
+            trustedClientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
+            sequenceNumber = trustedClientsSequenceNumber
+        }
+        if (clientsLimitOrdersWithTrades.isNotEmpty()) {
+            clientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
+            sequenceNumber = clientsSequenceNumber
+        }
+
         val updated = walletOperationsProcessor.persistBalances(processedMessage,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
-                null)
+                null,
+                sequenceNumber)
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }
-        walletOperationsProcessor.apply().sendNotification(operationId, operationType, messageId)
+        walletOperationsProcessor.apply().sendNotification(operationId, messageType.name, messageId)
 
         matchingEngine.apply()
 
@@ -159,10 +183,23 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
             trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
+            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
+                    messageId,
+                    operationId,
+                    date,
+                    messageType,
+                    trustedClientsLimitOrdersWithTrades))
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
             clientLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
+            messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
+                    messageId,
+                    operationId,
+                    date,
+                    messageType,
+                    walletOperationsProcessor.getClientBalanceUpdates(),
+                    clientsLimitOrdersWithTrades))
         }
 
         return OrderProcessResult(true, processedOrders)
@@ -325,7 +362,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                             it.feeTransfer,
                             it.fees,
                             it.absoluteSpread,
-                            it.relativeSpread)
+                            it.relativeSpread,
+                            TradeRole.TAKER)
                 }.toMutableList()))
 
         matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->

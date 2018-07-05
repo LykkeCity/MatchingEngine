@@ -28,7 +28,13 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
+import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -52,7 +58,9 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
                                                     private val assetsPairsHolder: AssetsPairsHolder,
                                                     private val balancesHolder: BalancesHolder,
                                                     genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
-                                                    private val multiLimitOrderValidator: MultiLimitOrderValidator) : AbstractService {
+                                                    private val multiLimitOrderValidator: MultiLimitOrderValidator,
+                                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                    private val messageSender: MessageSender) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)
@@ -249,7 +257,8 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
                                         it.feeTransfer,
                                         it.fees,
                                         it.absoluteSpread,
-                                        it.relativeSpread)
+                                        it.relativeSpread,
+                                        TradeRole.TAKER)
                             })
 
                             matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
@@ -304,9 +313,23 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
             orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, updatedOrders.fullOrderBook))
             ordersToSave.addAll(updatedOrders.updatedOrders)
         }
+
+        var sequenceNumber: Long? = null
+        var clientsSequenceNumber: Long? = null
+        var trustedClientsSequenceNumber: Long? = null
+        if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
+            trustedClientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
+            sequenceNumber = trustedClientsSequenceNumber
+        }
+        if (clientLimitOrdersReport.orders.isNotEmpty()) {
+            clientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
+            sequenceNumber = clientsSequenceNumber
+        }
+
         val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
-                null)
+                null,
+                sequenceNumber)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
@@ -357,10 +380,25 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
 
         if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
             trustedClientsLimitOrdersQueue.put(trustedClientLimitOrdersReport)
+            val outgoingMessage = EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
+                    messageWrapper.messageId!!,
+                    messageWrapper.id!!,
+                    now,
+                    MessageType.MULTI_LIMIT_ORDER,
+                    trustedClientLimitOrdersReport.orders)
+            messageSender.sendTrustedClientsMessage(outgoingMessage)
         }
 
         if (clientLimitOrdersReport.orders.isNotEmpty()) {
             clientLimitOrdersQueue.put(clientLimitOrdersReport)
+            val outgoingMessage = EventFactory.createExecutionEvent(clientsSequenceNumber!!,
+                    messageWrapper.messageId!!,
+                    messageWrapper.id!!,
+                    now,
+                    MessageType.MULTI_LIMIT_ORDER,
+                    walletOperationsProcessor.getClientBalanceUpdates(),
+                    clientLimitOrdersReport.orders)
+            messageSender.sendMessage(outgoingMessage)
         }
 
         genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
@@ -460,7 +498,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
                 .apply(messageWrapper.messageId!!,
                         messageWrapper.processedMessage(),
-                        multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER.name,
+                        multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
         messageWrapper.processedMessagePersisted = true
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()

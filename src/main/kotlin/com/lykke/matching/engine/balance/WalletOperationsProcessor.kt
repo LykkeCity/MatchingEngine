@@ -14,6 +14,7 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
@@ -101,12 +102,14 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     fun persistBalances(processedMessage: ProcessedMessage?,
                         orderBooksData: OrderBooksPersistenceData?,
-                        stopOrderBooksData: OrderBooksPersistenceData?): Boolean {
+                        stopOrderBooksData: OrderBooksPersistenceData?,
+                        messageSequenceNumber: Long?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
         return persistenceManager.persist(PersistenceData(persistenceData(),
                 processedMessage,
                 orderBooksData,
-                stopOrderBooksData))
+                stopOrderBooksData,
+                messageSequenceNumber))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {
@@ -114,6 +117,10 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         if (updates.isNotEmpty()) {
             balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
         }
+    }
+
+    fun getClientBalanceUpdates(): List<ClientBalanceUpdate> {
+        return updates.values.toList()
     }
 
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {

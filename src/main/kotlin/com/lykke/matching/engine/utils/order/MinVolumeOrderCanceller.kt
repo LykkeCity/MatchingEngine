@@ -3,7 +3,6 @@ package com.lykke.matching.engine.utils.order
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderOperation
@@ -49,10 +48,11 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
 
         teeLog("Starting orders cancellation (orders count: ${operationToOrder.values.size})")
         try {
-            genericLimitOrdersCancellerFactory.create(LOGGER, Date())
+            val now = Date()
+            genericLimitOrdersCancellerFactory.create(LOGGER, now)
                     .preProcessLimitOrders(operationToOrder[OrderOperation.CANCEL] ?: emptyList(),
                             operationToOrder[OrderOperation.REMOVE] ?: emptyList())
-                    .applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER.name, true)
+                    .applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER, true)
         } catch (e: BalanceException) {
             teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
             return

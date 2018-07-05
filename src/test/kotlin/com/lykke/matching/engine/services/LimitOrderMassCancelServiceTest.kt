@@ -13,6 +13,8 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
@@ -126,6 +128,15 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals("Client1", balanceUpdate.balances.first().id)
         assertEquals(BigDecimal.valueOf(0.6), balanceUpdate.balances.first().oldReserved)
         assertEquals(BigDecimal.ZERO, balanceUpdate.balances.first().newReserved)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.6", "0", event.balanceUpdates!!)
     }
 
     @Test
@@ -166,6 +177,18 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals("Client1", usd.id)
         assertEquals(BigDecimal.valueOf(81.0), usd.oldReserved)
         assertEquals(BigDecimal.ZERO, usd.newReserved)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(4, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "3" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "4" }.status)
+        assertEquals(2, event.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.6", "0", event.balanceUpdates!!)
+        assertEventBalanceUpdate("Client1", "USD", "100", "100", "81", "0", event.balanceUpdates!!)
     }
 
     @Test
@@ -190,6 +213,15 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "m2" }.order.status)
 
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
+
+        assertEquals(0, clientsEventsQueue.size)
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(MessageType.LIMIT_ORDER_MASS_CANCEL.name, event.header.eventType)
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m2" }.status)
     }
 
 }

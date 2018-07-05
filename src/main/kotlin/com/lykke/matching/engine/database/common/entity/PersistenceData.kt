@@ -6,9 +6,10 @@ import org.springframework.util.CollectionUtils
 class PersistenceData(val balancesData: BalancesData?,
                       val processedMessage: ProcessedMessage? = null,
                       val orderBooksData: OrderBooksPersistenceData?,
-                      val stopOrderBooksData: OrderBooksPersistenceData?) {
+                      val stopOrderBooksData: OrderBooksPersistenceData?,
+                      val messageSequenceNumber: Long?) {
 
-    constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null)
+    constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber)
 
     fun details(): String {
         val result = StringBuilder()
@@ -17,6 +18,7 @@ class PersistenceData(val balancesData: BalancesData?,
         append(result, "b: ", balancesData?.balances?.size)
         append(result, "o: ", orderBooksData?.orderBooks?.size)
         append(result, "so: ", stopOrderBooksData?.orderBooks?.size)
+        append(result, "sn: ", messageSequenceNumber)
         return result.toString()
     }
 
@@ -24,6 +26,7 @@ class PersistenceData(val balancesData: BalancesData?,
         return CollectionUtils.isEmpty(balancesData?.balances) &&
                 CollectionUtils.isEmpty(balancesData?.wallets) &&
                 processedMessage == null &&
+                messageSequenceNumber == null &&
                 CollectionUtils.isEmpty(orderBooksData?.orderBooks) &&
                 CollectionUtils.isEmpty(orderBooksData?.ordersToSave) &&
                 CollectionUtils.isEmpty(orderBooksData?.ordersToRemove) &&

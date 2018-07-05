@@ -38,7 +38,11 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
         val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
-                message.clientId, message.assetId, BigDecimal.valueOf(message.reservedAmount), false)
+                null,
+                message.clientId,
+                message.assetId,
+                BigDecimal.valueOf(message.reservedAmount),
+                false)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.RUNTIME.type))

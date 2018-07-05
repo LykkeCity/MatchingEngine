@@ -5,11 +5,16 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import org.apache.log4j.Logger
 import java.util.Date
 import java.util.concurrent.BlockingQueue
@@ -24,7 +29,9 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                  date: Date,
+                                  private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                  private val messageSender: MessageSender,
+                                  private val date: Date,
                                   LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
@@ -77,24 +84,71 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return stopLimitOrdersCanceller.process()
     }
 
-    fun applyFull(operationId: String, messageId: String, processedMessage: ProcessedMessage?, operationType: String, validateBalances: Boolean): Boolean {
+    fun applyFull(operationId: String,
+                  messageId: String,
+                  processedMessage: ProcessedMessage?,
+                  messageType: MessageType,
+                  validateBalances: Boolean): Boolean {
         val limitOrdersCancelResult = processLimitOrders()
         val stopLimitOrdersResult = processStopLimitOrders()
 
         val walletProcessor = balancesHolder.createWalletProcessor(null, validateBalances)
         walletProcessor.preProcess(limitOrdersCancelResult.walletOperations)
         walletProcessor.preProcess(stopLimitOrdersResult.walletOperations)
+
+        val limitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
+        limitOrdersWithTrades.addAll(stopLimitOrdersResult.clientsOrdersWithTrades)
+        limitOrdersWithTrades.addAll(limitOrdersCancelResult.clientsOrdersWithTrades)
+
+        val trustedClientsLimitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
+        trustedClientsLimitOrdersWithTrades.addAll(stopLimitOrdersResult.trustedClientsOrdersWithTrades)
+        trustedClientsLimitOrdersWithTrades.addAll(limitOrdersCancelResult.trustedClientsOrdersWithTrades)
+
+        var sequenceNumber: Long? = null
+        var clientsSequenceNumber: Long? = null
+        var trustedClientsSequenceNumber: Long? = null
+        if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
+            trustedClientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
+            sequenceNumber = trustedClientsSequenceNumber
+        }
+        if (limitOrdersWithTrades.isNotEmpty()) {
+            clientsSequenceNumber = messageSequenceNumberHolder.getNewValue()
+            sequenceNumber = clientsSequenceNumber
+        }
+
         val updated = walletProcessor.persistBalances(processedMessage,
                 limitOrdersCanceller.getPersistenceData(),
-                stopLimitOrdersCanceller.getPersistenceData())
+                stopLimitOrdersCanceller.getPersistenceData(),
+                sequenceNumber)
         if (!updated) {
             return false
         }
 
-        walletProcessor.apply().sendNotification(operationId, operationType, messageId)
+        walletProcessor.apply().sendNotification(operationId, messageType.name, messageId)
         stopLimitOrdersCanceller.apply(messageId, processedMessage, stopLimitOrdersResult)
-
         limitOrdersCanceller.apply(messageId, processedMessage, limitOrdersCancelResult)
+
+        if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
+            messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
+                    messageId,
+                    operationId,
+                    date,
+                    messageType,
+                    trustedClientsLimitOrdersWithTrades))
+        }
+
+        if (limitOrdersWithTrades.isNotEmpty()) {
+            messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
+                    messageId,
+                    operationId,
+                    date,
+                    messageType,
+                    walletProcessor.getClientBalanceUpdates(),
+                    limitOrdersWithTrades))
+        }
+
+        limitOrdersCanceller.checkAndProcessStopOrders(messageId)
+
         return true
     }
 }
