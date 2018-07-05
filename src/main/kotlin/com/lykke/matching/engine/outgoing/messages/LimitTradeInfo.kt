@@ -3,7 +3,7 @@ package com.lykke.matching.engine.outgoing.messages
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.FeeTransfer
 import com.lykke.matching.engine.daos.fee.v2.Fee
-import com.lykke.matching.engine.outgoing.messages.v2.TradeRole
+import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import java.math.BigDecimal
 import java.util.Date
 

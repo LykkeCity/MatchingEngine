@@ -1,3 +1,5 @@
 package com.lykke.matching.engine.outgoing.messages.v2
 
-interface OutgoingMessage
+interface OutgoingMessage {
+    fun isNewMessageFormat(): Boolean = true
+}

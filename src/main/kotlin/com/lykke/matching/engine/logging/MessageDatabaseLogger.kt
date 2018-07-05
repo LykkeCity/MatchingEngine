@@ -9,7 +9,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import java.util.Date
 import java.util.UUID
 
@@ -27,7 +27,7 @@ class MessageDatabaseLogger(dbAccessor: MessageLogDatabaseAccessor<Message>) : D
             is MarketOrderWithTrades ->
                 Message(baseMessage.order.id, type, Date(), message.stringValue)
             is ReservedCashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
-            is AbstractEvent<*> -> {
+            is Event<*> -> {
                 val header = baseMessage.header
                 Message(header.messageId, header.eventType, header.timestamp, message.stringValue)
             }

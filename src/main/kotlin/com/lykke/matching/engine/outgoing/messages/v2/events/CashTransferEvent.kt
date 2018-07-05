@@ -1,10 +1,13 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.Header
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.CashTransfer
 
 class CashTransferEvent(header: Header,
                         val balanceUpdates: List<BalanceUpdate>,
-                        val cashTransfer: CashTransfer) : AbstractEvent<OutgoingMessages.CashTransferEvent>(header) {
+                        val cashTransfer: CashTransfer) : Event<OutgoingMessages.CashTransferEvent>(header) {
 
     override fun buildGeneratedMessage(): OutgoingMessages.CashTransferEvent {
         val builder = OutgoingMessages.CashTransferEvent.newBuilder()

@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.outgoing.messages.v2.builders
 
-import com.lykke.matching.engine.outgoing.messages.v2.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.CashTransfer
-import com.lykke.matching.engine.outgoing.messages.v2.CashTransferEvent
-import com.lykke.matching.engine.outgoing.messages.v2.Header
-import com.lykke.matching.engine.outgoing.messages.v2.MessageType
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.CashTransfer
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.Header
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType
 
 class CashTransferEventBuilder : EventBuilder<CashTransferData, CashTransferEvent>() {
 

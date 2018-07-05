@@ -18,9 +18,8 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.CashInEvent
-import com.lykke.matching.engine.outgoing.messages.v2.CashOutEvent
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -167,8 +166,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             LOGGER.info("Starting balances update, operationId: $operationId")
 
             var sequenceNumber: Long? = null
-            val cashInEvents = mutableListOf<CashInEvent>()
-            val cashOutEvents = mutableListOf<CashOutEvent>()
+            val cashInOutEvents = mutableListOf<Event<*>>()
             balanceUpdates.forEach { clientBalanceUpdate ->
                 sequenceNumber = messageSequenceNumberHolder.getNewValue()
                 val walletOperation = WalletOperation(UUID.randomUUID().toString(),
@@ -179,27 +177,15 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                         BigDecimal.ZERO,
                         clientBalanceUpdate.newReserved - clientBalanceUpdate.oldReserved
                 )
-                if (clientBalanceUpdate.newReserved.compareTo(clientBalanceUpdate.oldReserved) == -1) {
-                    val cashOutEvent = EventFactory.createCashOutEvent(sequenceNumber!!,
-                            operationId,
-                            operationId,
-                            now,
-                            MessageType.LIMIT_ORDER,
-                            listOf(clientBalanceUpdate),
-                            walletOperation,
-                            emptyList())
-                    cashOutEvents.add(cashOutEvent)
-                } else {
-                    val cashInEvent = EventFactory.createCashInEvent(sequenceNumber!!,
-                            operationId,
-                            operationId,
-                            now,
-                            MessageType.LIMIT_ORDER,
-                            listOf(clientBalanceUpdate),
-                            walletOperation,
-                            emptyList())
-                    cashInEvents.add(cashInEvent)
-                }
+                cashInOutEvents.add(EventFactory.createCashInOutEvent(clientBalanceUpdate.newReserved - clientBalanceUpdate.oldReserved,
+                        sequenceNumber!!,
+                        operationId,
+                        operationId,
+                        now,
+                        MessageType.LIMIT_ORDER,
+                        listOf(clientBalanceUpdate),
+                        walletOperation,
+                        emptyList()))
             }
 
             balancesHolder.insertOrUpdateWallets(updatedWallets, sequenceNumber)
@@ -208,8 +194,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             updatedWallets.map { it.clientId }.toSet().forEach {
                 applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it)))
             }
-            cashInEvents.forEach { messageSender.sendMessage(it) }
-            cashOutEvents.forEach { messageSender.sendMessage(it) }
+            cashInOutEvents.forEach { messageSender.sendMessage(it) }
 
         }
     }

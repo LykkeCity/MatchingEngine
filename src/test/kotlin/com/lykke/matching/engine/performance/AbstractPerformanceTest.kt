@@ -27,8 +27,8 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
-import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -84,7 +84,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var orderBookQueue: LinkedBlockingQueue<OrderBook>
     protected lateinit var rabbitOrderBookQueue: LinkedBlockingQueue<JsonSerializable>
     protected lateinit var rabbitSwapQueue: LinkedBlockingQueue<JsonSerializable>
-    protected lateinit var rabbitEventsQueue: LinkedBlockingQueue<AbstractEvent<*>>
+    protected lateinit var rabbitEventsQueue: LinkedBlockingQueue<Event<*>>
     protected lateinit var rabbitTrustedClientsEventsQueue: LinkedBlockingQueue<ExecutionEvent>
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 

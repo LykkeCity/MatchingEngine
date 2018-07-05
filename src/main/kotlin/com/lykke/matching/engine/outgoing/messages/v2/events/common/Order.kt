@@ -1,6 +1,11 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events.common
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderSide
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
+import com.lykke.matching.engine.outgoing.messages.v2.createProtobufTimestampBuilder
 import java.util.Date
 
 class Order(val orderType: OrderType,
@@ -24,7 +29,7 @@ class Order(val orderType: OrderType,
             val upperPrice: String?,
             val straight: Boolean?,
             val fees: List<FeeInstruction>?,
-            val trades: List<Trade>?) : AbstractEventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
+            val trades: List<Trade>?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.ExecutionEvent.Order.Builder {
         val builder = OutgoingMessages.ExecutionEvent.Order.newBuilder()

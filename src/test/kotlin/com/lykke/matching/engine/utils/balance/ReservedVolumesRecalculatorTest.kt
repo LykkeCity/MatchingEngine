@@ -10,9 +10,9 @@ import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
-import com.lykke.matching.engine.outgoing.messages.v2.CashInEvent
-import com.lykke.matching.engine.outgoing.messages.v2.CashOutEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -38,7 +37,7 @@ import java.util.concurrent.BlockingQueue
 class ReservedVolumesRecalculatorTest {
 
     @Autowired
-    protected lateinit var clientsEventsQueue: BlockingQueue<AbstractEvent<*>>
+    protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
@@ -194,7 +193,7 @@ class ReservedVolumesRecalculatorTest {
         assertEquals(BigDecimal.valueOf(newReserved), balanceUpdate.newReserved, message)
     }
 
-    private fun assertEvent(isCashIn: Boolean, clientId: String, assetId: String, balance: String, oldReserved: String, newReserved: String, events: Collection<AbstractEvent<*>>) {
+    private fun assertEvent(isCashIn: Boolean, clientId: String, assetId: String, balance: String, oldReserved: String, newReserved: String, events: Collection<Event<*>>) {
         val event = events.single {
             isCashIn && it is CashInEvent && it.cashIn.walletId == clientId && it.cashIn.assetId == assetId
                     || !isCashIn && it is CashOutEvent && it.cashOut.walletId == clientId && it.cashOut.assetId == assetId
