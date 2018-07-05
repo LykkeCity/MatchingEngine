@@ -12,6 +12,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
@@ -112,6 +113,26 @@ class FeeTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.005), balancesHolder.getBalance("Client2", "BTC"))
         assertEquals(BigDecimal.valueOf(0.09975), balancesHolder.getBalance("Client4", "BTC"))
         assertEquals(BigDecimal.valueOf(8.5), balancesHolder.getBalance("Client4", "USD"))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        val taker = event.orders.single { it.walletId == "Client2" }
+        assertEquals(1, taker.trades?.size)
+        assertEquals(2, taker.fees?.size)
+        val takerTrade = taker.trades!!.first()
+        assertEquals(2, takerTrade.fees?.size)
+
+        val feeInstruction1 = taker.fees!!.single { it.size == "0.03" }
+        val feeTransfer1 = takerTrade.fees!!.single { it.index == feeInstruction1.index }
+        assertEquals("2.25", feeTransfer1.volume)
+        assertEquals("USD", feeTransfer1.assetId)
+        assertEquals("Client3", feeTransfer1.targetWalletId)
+        val feeInstruction2 = taker.fees!!.single { it.size == "0.02" }
+        val feeTransfer2 = takerTrade.fees!!.single { it.index == feeInstruction2.index }
+        assertEquals("1.5", feeTransfer2.volume)
+        assertEquals("USD", feeTransfer2.assetId)
+        assertEquals("Client3", feeTransfer2.targetWalletId)
     }
 
     @Test
