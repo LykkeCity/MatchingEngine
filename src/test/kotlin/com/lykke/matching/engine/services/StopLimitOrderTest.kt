@@ -153,7 +153,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PENDING, executionEvent.orders.first().status)
         assertNull(executionEvent.orders.first().rejectReason)
         assertEquals(1, executionEvent.balanceUpdates!!.size)
-        assertEquals("0.01", executionEvent.balanceUpdates!!.first().newReserved)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0", "0.01", executionEvent.balanceUpdates!!)
     }
 
     @Test
@@ -190,8 +190,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, executionEvent.orders.filter { it.status == OutgoingOrderStatus.PENDING }.size)
         assertEquals(1, executionEvent.orders.filter { it.status == OutgoingOrderStatus.CANCELLED }.size)
         assertEquals(1, executionEvent.balanceUpdates!!.size)
-        assertEquals("0.01", executionEvent.balanceUpdates!!.first().oldReserved)
-        assertEquals("0.02", executionEvent.balanceUpdates!!.first().newReserved)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.01", "0.02", executionEvent.balanceUpdates!!)
     }
 
     @Test
@@ -221,8 +220,7 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
         assertNull(executionEvent.orders.first().rejectReason)
         assertEquals(1, executionEvent.balanceUpdates!!.size)
-        assertEquals("0.01", executionEvent.balanceUpdates!!.first().oldReserved)
-        assertEquals("0", executionEvent.balanceUpdates!!.first().newReserved)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "1", "0.01", "0", executionEvent.balanceUpdates!!)
     }
 
     @Test
@@ -269,8 +267,7 @@ class StopLimitOrderTest : AbstractTest() {
         val eventStopOrder = executionEvent.orders.single { it.externalId == "order2" }
         assertEquals(OutgoingOrderStatus.MATCHED, eventStopOrder.status)
         assertEquals(4, executionEvent.balanceUpdates!!.size)
-        assertEquals("0.04", executionEvent.balanceUpdates!!.single { it.walletId == "Client1" && it.assetId == "BTC" }.oldReserved)
-        assertEquals("0.01", executionEvent.balanceUpdates!!.single { it.walletId == "Client1" && it.assetId == "BTC" }.newReserved)
+        assertEventBalanceUpdate("Client1", "BTC", "1", "0.97", "0.04", "0.01", executionEvent.balanceUpdates!!)
     }
 
     @Test
