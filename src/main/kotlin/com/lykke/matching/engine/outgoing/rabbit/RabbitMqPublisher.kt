@@ -90,7 +90,7 @@ class RabbitMqPublisher(
                     item as Event<*>
                     stringValue = item.toString()
                     byteArrayValue = item.buildGeneratedMessage().toByteArray()
-                    routingKey = item.header.messageType.name
+                    routingKey = item.header.messageType.id.toString()
                     val headers = mapOf(Pair("MessageType", item.header.messageType.id),
                             Pair("SequenceNumber", item.header.sequenceNumber),
                             Pair("MessageId", item.header.messageId),
