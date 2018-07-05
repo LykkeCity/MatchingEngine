@@ -21,6 +21,8 @@ import java.util.TimeZone
 
 open class JsonSerializable: OutgoingMessage {
 
+    override fun isNewMessageFormat() = false
+
     companion object {
         private val gson = GsonBuilder()
                 .registerTypeAdapter(Date::class.java, GmtDateTypeAdapter())

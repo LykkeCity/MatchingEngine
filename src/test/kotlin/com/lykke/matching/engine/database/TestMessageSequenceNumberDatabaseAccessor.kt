@@ -1,5 +1,5 @@
 package com.lykke.matching.engine.database
 
-class TestMessageSequenceNumberDatabaseAccessor : MessageSequenceNumberDatabaseAccessor {
+class TestMessageSequenceNumberDatabaseAccessor : ReadOnlyMessageSequenceNumberDatabaseAccessor {
     override fun getSequenceNumber() = 0L
 }

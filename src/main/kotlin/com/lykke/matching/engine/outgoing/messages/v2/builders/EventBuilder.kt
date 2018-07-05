@@ -1,12 +1,12 @@
 package com.lykke.matching.engine.outgoing.messages.v2.builders
 
 import com.lykke.matching.engine.messages.MessageType as IncomingMessageType
-import com.lykke.matching.engine.outgoing.messages.v2.Header
-import com.lykke.matching.engine.outgoing.messages.v2.MessageType
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.Header
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import java.util.Date
 
-abstract class EventBuilder<in TEventData : EventData, out TResult : AbstractEvent<*>> {
+abstract class EventBuilder<in TEventData : EventData, out TResult : Event<*>> {
 
     companion object {
         private const val VERSION = "1"

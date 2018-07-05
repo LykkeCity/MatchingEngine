@@ -33,8 +33,8 @@ import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
-import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -104,7 +104,7 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
-    val rabbitEventsQueue = LinkedBlockingQueue<AbstractEvent<*>>()
+    val rabbitEventsQueue = LinkedBlockingQueue<Event<*>>()
 
     val rabbitTrustedClientsEventsQueue = LinkedBlockingQueue<ExecutionEvent>()
 

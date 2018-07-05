@@ -91,25 +91,16 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
         publishRabbitMessage(message, walletOperation, fees, messageWrapper.messageId!!)
 
-        val outgoingMessage = if (message.volume > 0.0) {
-            EventFactory.createCashInEvent(sequenceNumber,
-                    messageWrapper.messageId!!,
-                    messageWrapper.id!!,
-                    now,
-                    MessageType.CASH_IN_OUT_OPERATION,
-                    walletProcessor.getClientBalanceUpdates(),
-                    walletOperation,
-                    fees)
-        } else {
-            EventFactory.createCashOutEvent(sequenceNumber,
-                    messageWrapper.messageId!!,
-                    messageWrapper.id!!,
-                    now,
-                    MessageType.CASH_IN_OUT_OPERATION,
-                    walletProcessor.getClientBalanceUpdates(),
-                    walletOperation,
-                    fees)
-        }
+        val outgoingMessage = EventFactory.createCashInOutEvent(message.volume.toBigDecimal(),
+                sequenceNumber,
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.CASH_IN_OUT_OPERATION,
+                walletProcessor.getClientBalanceUpdates(),
+                walletOperation,
+                fees)
+
         messageSender.sendMessage(outgoingMessage)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()

@@ -1,11 +1,11 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events.common
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
 
 class CashIn(val walletId: String,
              val assetId: String,
              val volume: String,
-             val fees: List<Fee>?) : AbstractEventPart<OutgoingMessages.CashInEvent.CashIn.Builder> {
+             val fees: List<Fee>?) : EventPart<OutgoingMessages.CashInEvent.CashIn.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.CashInEvent.CashIn.Builder {
         val builder = OutgoingMessages.CashInEvent.CashIn.newBuilder()

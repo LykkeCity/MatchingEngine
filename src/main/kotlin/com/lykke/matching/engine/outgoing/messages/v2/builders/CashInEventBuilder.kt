@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.outgoing.messages.v2.builders
 
-import com.lykke.matching.engine.outgoing.messages.v2.BalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.CashIn
-import com.lykke.matching.engine.outgoing.messages.v2.CashInEvent
-import com.lykke.matching.engine.outgoing.messages.v2.Header
-import com.lykke.matching.engine.outgoing.messages.v2.MessageType
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.CashIn
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.Header
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType
 
 class CashInEventBuilder : EventBuilder<CashInEventData, CashInEvent>() {
 

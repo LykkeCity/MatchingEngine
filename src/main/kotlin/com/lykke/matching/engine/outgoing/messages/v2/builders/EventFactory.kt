@@ -7,13 +7,14 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.v2.CashInEvent
-import com.lykke.matching.engine.outgoing.messages.v2.CashOutEvent
-import com.lykke.matching.engine.outgoing.messages.v2.CashTransferEvent
-import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import java.math.BigDecimal
 import java.util.Date
 
 class EventFactory {
@@ -68,7 +69,38 @@ class EventFactory {
             }
         }
 
-        fun createCashInEvent(sequenceNumber: Long,
+        fun createCashInOutEvent(volume: BigDecimal,
+                                 sequenceNumber: Long,
+                                 messageId: String,
+                                 requestId: String,
+                                 date: Date,
+                                 messageType: MessageType,
+                                 clientBalanceUpdates: List<ClientBalanceUpdate>,
+                                 cashInOperation: WalletOperation,
+                                 internalFees: List<Fee>): Event<*> {
+            return if (volume > BigDecimal.ZERO) {
+                createCashInEvent(sequenceNumber,
+                        messageId,
+                        requestId,
+                        date,
+                        messageType,
+                        clientBalanceUpdates,
+                        cashInOperation,
+                        internalFees)
+            } else {
+                createCashOutEvent(sequenceNumber,
+                        messageId,
+                        requestId,
+                        date,
+                        messageType,
+                        clientBalanceUpdates,
+                        cashInOperation,
+                        internalFees)
+            }
+
+        }
+
+        private fun createCashInEvent(sequenceNumber: Long,
                               messageId: String,
                               requestId: String,
                               date: Date,
@@ -84,7 +116,7 @@ class EventFactory {
             }
         }
 
-        fun createCashOutEvent(sequenceNumber: Long,
+        private fun createCashOutEvent(sequenceNumber: Long,
                                messageId: String,
                                requestId: String,
                                date: Date,
@@ -116,7 +148,7 @@ class EventFactory {
             }
         }
 
-        private fun <T : AbstractEvent<*>> createEvent(createEvent: () -> T): T {
+        private fun <T : Event<*>> createEvent(createEvent: () -> T): T {
             return try {
                 createEvent()
             } catch (e: Exception) {

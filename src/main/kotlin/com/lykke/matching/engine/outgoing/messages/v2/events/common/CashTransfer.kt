@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events.common
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
 
@@ -7,7 +7,7 @@ class CashTransfer(val fromWalletId: String,
                    val volume: String,
                    val overdraftLimit: String?,
                    val assetId: String,
-                   val fees: List<Fee>?) : AbstractEventPart<OutgoingMessages.CashTransferEvent.CashTransfer.Builder> {
+                   val fees: List<Fee>?) : EventPart<OutgoingMessages.CashTransferEvent.CashTransfer.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.CashTransferEvent.CashTransfer.Builder {
         val builder = OutgoingMessages.CashTransferEvent.CashTransfer.newBuilder()

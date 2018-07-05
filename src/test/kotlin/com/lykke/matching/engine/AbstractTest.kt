@@ -28,8 +28,8 @@ import com.lykke.matching.engine.notification.TradeInfoListener
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
-import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
@@ -154,7 +154,7 @@ abstract class AbstractTest {
     protected lateinit var messageSender: MessageSender
 
     @Autowired
-    protected lateinit var clientsEventsQueue: BlockingQueue<AbstractEvent<*>>
+    protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>

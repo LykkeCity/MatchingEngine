@@ -8,7 +8,7 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
@@ -63,7 +63,7 @@ open class DatabaseAccessorConfig {
                                 redisHealthStatusHolder: RedisHealthStatusHolder,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<MessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
                     ordersDatabaseAccessorsHolder.primaryAccessor,
@@ -160,14 +160,11 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun messageSequenceNumberDatabaseAccessor(jedisPool: Optional<JedisPool>): MessageSequenceNumberDatabaseAccessor? {
+    open fun messageSequenceNumberDatabaseAccessor(jedisPool: Optional<JedisPool>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
             Storage.Redis -> {
-                if (!jedisPool.isPresent) {
-                    return null
-                }
-                return RedisMessageSequenceNumberDatabaseAccessor(jedisPool.get(),
+                RedisMessageSequenceNumberDatabaseAccessor(jedisPool.get(),
                         config.me.redis.sequenceNumberDatabase)
             }
         }

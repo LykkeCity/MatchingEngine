@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
-import com.lykke.matching.engine.database.MessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 
 class RedisMessageSequenceNumberDatabaseAccessor(private val jedisPool: JedisPool,
-                                                 private val dbIndex: Int) : MessageSequenceNumberDatabaseAccessor {
+                                                 private val dbIndex: Int) : ReadOnlyMessageSequenceNumberDatabaseAccessor {
     companion object {
         private const val KEY = "MessageSequenceNumber"
     }

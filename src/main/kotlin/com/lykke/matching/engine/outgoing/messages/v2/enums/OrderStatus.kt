@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.enums
 
 enum class OrderStatus(val id: Int) {
     UNKNOWN_STATUS(0),

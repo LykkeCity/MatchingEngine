@@ -1,6 +1,8 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events.common
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
+import com.lykke.matching.engine.outgoing.messages.v2.createProtobufTimestampBuilder
+import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import java.util.Date
 
 class Trade(val tradeId: String,
@@ -17,7 +19,7 @@ class Trade(val tradeId: String,
             val absoluteSpread: String?,
             val relativeSpread: String?,
             val role: TradeRole,
-            val fees: List<FeeTransfer>?) : AbstractEventPart<OutgoingMessages.ExecutionEvent.Order.Trade.Builder> {
+            val fees: List<FeeTransfer>?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Trade.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.ExecutionEvent.Order.Trade.Builder {
         val builder = OutgoingMessages.ExecutionEvent.Order.Trade.newBuilder()

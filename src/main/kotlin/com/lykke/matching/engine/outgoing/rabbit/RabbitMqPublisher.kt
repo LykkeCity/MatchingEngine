@@ -3,7 +3,7 @@ package com.lykke.matching.engine.outgoing.rabbit
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
@@ -79,13 +79,14 @@ class RabbitMqPublisher(
                 val byteArrayValue: ByteArray
                 val routingKey: String
                 val props: AMQP.BasicProperties
-                if (item is JsonSerializable) {
+                if (!item.isNewMessageFormat()) {
+                    item as JsonSerializable
                     stringValue = item.toJson()
                     byteArrayValue = stringValue.toByteArray()
                     routingKey = ""
                     props = MessageProperties.MINIMAL_PERSISTENT_BASIC
                 } else {
-                    item as AbstractEvent<*>
+                    item as Event<*>
                     stringValue = item.toString()
                     byteArrayValue = item.buildGeneratedMessage().toByteArray()
                     routingKey = item.header.messageType.name

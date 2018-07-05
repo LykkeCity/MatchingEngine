@@ -1,6 +1,8 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events.common
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType
+import com.lykke.matching.engine.outgoing.messages.v2.createProtobufTimestampBuilder
 import java.util.Date
 
 class Header(val messageType: MessageType,
@@ -9,7 +11,7 @@ class Header(val messageType: MessageType,
              val requestId: String,
              val version: String,
              val timestamp: Date,
-             val eventType: String) : AbstractEventPart<OutgoingMessages.Header.Builder> {
+             val eventType: String) : EventPart<OutgoingMessages.Header.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.Header.Builder {
         val builder = OutgoingMessages.Header.newBuilder()

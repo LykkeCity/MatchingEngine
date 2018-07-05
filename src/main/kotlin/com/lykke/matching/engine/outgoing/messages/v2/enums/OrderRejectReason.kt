@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.enums
 
 enum class OrderRejectReason {
     NOT_ENOUGH_FUNDS,

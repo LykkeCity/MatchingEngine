@@ -5,8 +5,8 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
-import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.BlockingQueue
@@ -76,7 +76,7 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun clientsEventsQueue(): BlockingQueue<AbstractEvent<*>> {
+    open fun clientsEventsQueue(): BlockingQueue<Event<*>> {
         return LinkedBlockingQueue()
     }
 

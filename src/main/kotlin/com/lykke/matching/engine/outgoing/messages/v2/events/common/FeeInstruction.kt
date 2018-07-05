@@ -1,6 +1,8 @@
-package com.lykke.matching.engine.outgoing.messages.v2
+package com.lykke.matching.engine.outgoing.messages.v2.events.common
 
 import com.lykke.matching.engine.messages.outgoing.OutgoingMessages
+import com.lykke.matching.engine.outgoing.messages.v2.enums.FeeSizeType
+import com.lykke.matching.engine.outgoing.messages.v2.enums.FeeType
 
 class FeeInstruction(val type: FeeType,
                      val size: String?,
@@ -11,7 +13,7 @@ class FeeInstruction(val type: FeeType,
                      val targetWalletId: String?,
                      val assetsIds: List<String>?,
                      val makerFeeModificator: String?,
-                     val index: Int) : AbstractEventPart<OutgoingMessages.FeeInstruction.Builder> {
+                     val index: Int) : EventPart<OutgoingMessages.FeeInstruction.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.FeeInstruction.Builder {
         val builder = OutgoingMessages.FeeInstruction.newBuilder()

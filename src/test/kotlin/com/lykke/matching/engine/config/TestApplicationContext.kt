@@ -24,8 +24,8 @@ import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
-import com.lykke.matching.engine.outgoing.messages.v2.AbstractEvent
-import com.lykke.matching.engine.outgoing.messages.v2.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
@@ -60,12 +60,12 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor: MessageSequenceNumberDatabaseAccessor): MessageSequenceNumberHolder {
+    open fun messageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor: ReadOnlyMessageSequenceNumberDatabaseAccessor): MessageSequenceNumberHolder {
         return MessageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor)
     }
 
     @Bean
-    open fun notificationSender(clientsEventsQueue: BlockingQueue<AbstractEvent<*>>,
+    open fun notificationSender(clientsEventsQueue: BlockingQueue<Event<*>>,
                                 trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>): MessageSender {
         return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
     }
