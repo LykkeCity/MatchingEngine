@@ -211,11 +211,11 @@ private fun convertFeeType(internalFeeType: com.lykke.matching.engine.daos.FeeTy
     }
 }
 
-private fun convertFeeSizeType(internalFeeSizeType: com.lykke.matching.engine.daos.FeeSizeType?): FeeSizeType {
+private fun convertFeeSizeType(internalFeeSizeType: com.lykke.matching.engine.daos.FeeSizeType?): FeeSizeType? {
     return when (internalFeeSizeType) {
         com.lykke.matching.engine.daos.FeeSizeType.ABSOLUTE -> FeeSizeType.ABSOLUTE
         com.lykke.matching.engine.daos.FeeSizeType.PERCENTAGE -> FeeSizeType.PERCENTAGE
-        else -> FeeSizeType.UNKNOWN_FEE_SIZE_TYPE
+        null -> null
     }
 }
 
