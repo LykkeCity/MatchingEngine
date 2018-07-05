@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
@@ -9,9 +10,13 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
@@ -19,8 +24,11 @@ import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
+import java.util.concurrent.BlockingQueue
 
 @Configuration
+@Import(QueueConfig::class)
 open class TestApplicationContext {
 
     @Bean
@@ -38,17 +46,35 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun messageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor: ReadOnlyMessageSequenceNumberDatabaseAccessor): MessageSequenceNumberHolder {
+        return MessageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor)
+    }
+
+    @Bean
+    open fun notificationSender(clientsEventsQueue: BlockingQueue<Event<*>>,
+                                trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>): MessageSender {
+        return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
+    }
+
+    @Bean
     open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor :TestFileOrderDatabaseAccessor,
                                          testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
-                                         applicationEventPublisher: ApplicationEventPublisher): ReservedVolumesRecalculator {
+                                         applicationEventPublisher: ApplicationEventPublisher,
+                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                         messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                "tset", false, applicationEventPublisher)
+                "tset", false, applicationEventPublisher, messageSequenceNumberHolder, messageSender)
+    }
+
+    @Bean
+    open fun testMessageSequenceNumberDatabaseAccessor(): TestMessageSequenceNumberDatabaseAccessor {
+        return TestMessageSequenceNumberDatabaseAccessor()
     }
 
     @Bean

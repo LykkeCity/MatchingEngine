@@ -268,7 +268,7 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(NotEnoughFunds.name, marketOrderReport.order.status)
 
         balancesHolder.updateBalance(
-                ProcessedMessage(MessageType.BALANCE_UPDATE.type, System.currentTimeMillis(),"test"),"Client4", "EUR", BigDecimal.valueOf(1000.0))
+                ProcessedMessage(MessageType.BALANCE_UPDATE.type, System.currentTimeMillis(), "test"), 0, "Client4", "EUR", BigDecimal.valueOf(1000.0))
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "EURUSD", volume = -1000.0)))
 
         assertEquals(1, rabbitSwapQueue.size)

@@ -20,5 +20,7 @@ data class RabbitMqConfigs (
     @SerializedName("LimitOrders")
     val limitOrders: RabbitConfig,
     @SerializedName("TrustedLimitOrders")
-    val trustedLimitOrders: RabbitConfig
+    val trustedLimitOrders: RabbitConfig,
+    val events: RabbitConfig,
+    val trustedClientsEvents: RabbitConfig
 )

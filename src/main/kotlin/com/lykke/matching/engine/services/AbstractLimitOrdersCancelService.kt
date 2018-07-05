@@ -37,8 +37,7 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
         }
 
         val now = Date()
-        val operationType = MessageType.valueOf(messageWrapper.type)?.name
-                ?: "Unknown message type ${messageWrapper.type}"
+        val operationType = MessageType.valueOf(messageWrapper.type) ?: throw Exception("Unknown message type ${messageWrapper.type}")
 
         val canceller = cancellerFactory.create(LOGGER, now)
         val operationId = messageWrapper.id!!

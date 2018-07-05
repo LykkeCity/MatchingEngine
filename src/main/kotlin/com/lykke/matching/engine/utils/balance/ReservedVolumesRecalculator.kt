@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.utils.balance
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -11,11 +12,15 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +43,9 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val applicationSettingsCache: ApplicationSettingsCache,
                                                          @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
-                                                         private val applicationEventPublisher: ApplicationEventPublisher) {
+                                                         private val applicationEventPublisher: ApplicationEventPublisher,
+                                                         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                                         private val messageSender: MessageSender) {
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
@@ -157,12 +164,38 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             val now = Date()
             val operationId = UUID.randomUUID().toString()
             LOGGER.info("Starting balances update, operationId: $operationId")
-            balancesHolder.insertOrUpdateWallets(updatedWallets)
+
+            var sequenceNumber: Long? = null
+            val cashInOutEvents = mutableListOf<Event<*>>()
+            balanceUpdates.forEach { clientBalanceUpdate ->
+                sequenceNumber = messageSequenceNumberHolder.getNewValue()
+                val walletOperation = WalletOperation(UUID.randomUUID().toString(),
+                        null,
+                        clientBalanceUpdate.id,
+                        clientBalanceUpdate.asset,
+                        now,
+                        BigDecimal.ZERO,
+                        clientBalanceUpdate.newReserved - clientBalanceUpdate.oldReserved
+                )
+                cashInOutEvents.add(EventFactory.createCashInOutEvent(clientBalanceUpdate.newReserved - clientBalanceUpdate.oldReserved,
+                        sequenceNumber!!,
+                        operationId,
+                        operationId,
+                        now,
+                        MessageType.LIMIT_ORDER,
+                        listOf(clientBalanceUpdate),
+                        walletOperation,
+                        emptyList()))
+            }
+
+            balancesHolder.insertOrUpdateWallets(updatedWallets, sequenceNumber)
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             updatedWallets.map { it.clientId }.toSet().forEach {
                 applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it)))
             }
+            cashInOutEvents.forEach { messageSender.sendMessage(it) }
+
         }
     }
 

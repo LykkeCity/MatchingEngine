@@ -8,6 +8,8 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import org.junit.Before
@@ -72,12 +74,23 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders.single().status)
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.04997355)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        assertEquals(1, clientsEventsQueue.size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders[0].status)
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.valueOf(1000 - 0.04997355), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(1159.92), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
@@ -93,12 +106,23 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.05002635)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+
+        assertEquals(1, clientsEventsQueue.size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[0].status)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.valueOf(999.95), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(1160.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
@@ -114,12 +138,23 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.04997355)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        assertEquals(1, clientsEventsQueue.size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders[0].status)
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.valueOf(1000 + 0.04997355), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(840.09), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
@@ -135,12 +170,23 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.05002635)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
+
+        assertEquals(1, clientsEventsQueue.size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[0].status)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.valueOf(1000.05), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(840.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
@@ -156,12 +202,23 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.0499727)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        assertEquals(1, clientsEventsQueue.size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders[0].status)
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.valueOf(999.9500273), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(1159.92), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
@@ -177,12 +234,23 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
+        assertEquals(1, clientsEventsQueue.size)
+        var event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
+
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.0499727)))
         assertEquals(1, clientsLimitOrdersQueue.size)
         result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
+
+        assertEquals(1, clientsEventsQueue.size)
+        event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders[0].status)
+        assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[1].status)
 
         assertEquals(BigDecimal.valueOf(1000.0499727), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
         assertEquals(BigDecimal.valueOf(840.09), testWalletDatabaseAccessor.getBalance("Client1", "USD"))

@@ -11,6 +11,9 @@ import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
@@ -80,6 +83,13 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(1, report.orders.size)
         assertEquals("Client1", report.orders.first().order.clientId)
         assertEquals(OrderStatus.NotEnoughFunds.name, report.orders.first().order.status)
+
+        assertEquals(0, trustedClientsEventsQueue.size)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.REJECTED, event.orders.single().status)
+        assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, event.orders.single().rejectReason)
 
         assertEquals(0, orderBookQueue.size)
         assertEquals(0, rabbitOrderBookQueue.size)
