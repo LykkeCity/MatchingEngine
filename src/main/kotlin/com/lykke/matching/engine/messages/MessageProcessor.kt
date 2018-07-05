@@ -65,6 +65,7 @@ import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import com.rabbitmq.client.BuiltinExchangeType
 import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
@@ -234,13 +235,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
@@ -270,8 +273,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                                        messageDatabaseLogger: MessageDatabaseLogger? = null,
                                        rabbitMqService: RabbitMqService,
                                        appName: String,
-                                       appVersion: String) {
-        rabbitMqService.startPublisher(config, queue, appName, appVersion, messageDatabaseLogger)
+                                       appVersion: String,
+                                       exchangeType: BuiltinExchangeType) {
+        rabbitMqService.startPublisher(config, queue, appName, appVersion, exchangeType, messageDatabaseLogger)
     }
 
     override fun run() {

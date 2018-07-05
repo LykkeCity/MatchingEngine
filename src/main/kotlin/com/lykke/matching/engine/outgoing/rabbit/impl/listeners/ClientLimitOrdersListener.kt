@@ -6,6 +6,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppVersion
+import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -34,6 +35,7 @@ class ClientLimitOrdersListener {
         rabbitMqService.startPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, clientLimitOrdersQueue,
                 config.me.name,
                 AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT,
                 MessageDatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
                                 logTable, logBlobName)))
