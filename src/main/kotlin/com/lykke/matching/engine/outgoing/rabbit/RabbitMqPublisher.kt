@@ -10,6 +10,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
+import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
@@ -23,6 +24,7 @@ class RabbitMqPublisher(
         private val queue: BlockingQueue<out OutgoingMessage>,
         private val appName: String,
         private val appVersion: String,
+        private val exchangeType: BuiltinExchangeType,
         /** null if do not need to log */
         private val messageDatabaseLogger: MessageDatabaseLogger? = null) : Thread(RabbitMqPublisher::class.java.name) {
 
@@ -31,7 +33,6 @@ class RabbitMqPublisher(
         private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
         private val STATS_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.stats")
-        private const val EXCHANGE_TYPE = "fanout"
         private const val LOG_COUNT = 1000
         private const val CONNECTION_NAME_FORMAT = "[Pub] %s %s to %s"
     }
@@ -51,7 +52,7 @@ class RabbitMqPublisher(
         try {
             this.connection = factory.newConnection(CONNECTION_NAME_FORMAT.format(appName, appVersion, exchangeName))
             this.channel = connection!!.createChannel()
-            channel!!.exchangeDeclare(exchangeName, EXCHANGE_TYPE, true)
+            channel!!.exchangeDeclare(exchangeName, exchangeType, true)
 
             LOGGER.info("Connected to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
 
@@ -90,7 +91,7 @@ class RabbitMqPublisher(
                     stringValue = item.toString()
                     byteArrayValue = item.buildGeneratedMessage().toByteArray()
                     routingKey = item.header.messageType.name
-                    val headers = mapOf(Pair("MessageType", item.header.messageType.name),
+                    val headers = mapOf(Pair("MessageType", item.header.messageType.id),
                             Pair("SequenceNumber", item.header.sequenceNumber),
                             Pair("MessageId", item.header.messageId),
                             Pair("RequestId", item.header.requestId),

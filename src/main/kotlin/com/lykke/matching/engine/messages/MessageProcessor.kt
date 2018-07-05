@@ -78,6 +78,7 @@ import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import com.rabbitmq.client.BuiltinExchangeType
 import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
@@ -312,7 +313,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         val rabbitMqService = applicationContext.getBean(RabbitMqService::class.java)
 
-        startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService, config.me.name, AppVersion.VERSION)
+        startRabbitMqPublisher (config.me.rabbitMqConfigs.orderBooks, rabbitOrderBooksQueue, null, rabbitMqService, config.me.name, AppVersion.VERSION, BuiltinExchangeType.FANOUT)
 
         val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
@@ -320,30 +321,35 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineMarketOrders", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.limitOrders, rabbitTrustedClientsLimitOrdersQueue, null,
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, rabbitClientLimitOrdersQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineLimitOrders", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         if(!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
@@ -378,8 +384,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                                        messageDatabaseLogger: MessageDatabaseLogger? = null,
                                        rabbitMqService : RabbitMqService,
                                        appName: String,
-                                       appVersion: String) {
-        rabbitMqService.startPublisher (config, queue, appName, appVersion, messageDatabaseLogger)
+                                       appVersion: String,
+                                       exchangeType: BuiltinExchangeType) {
+        rabbitMqService.startPublisher (config, queue, appName, appVersion, exchangeType, messageDatabaseLogger)
     }
 
     override fun run() {

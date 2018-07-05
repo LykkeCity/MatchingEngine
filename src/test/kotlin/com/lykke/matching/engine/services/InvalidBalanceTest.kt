@@ -146,13 +146,6 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals("Client1", report.order.clientId)
         assertEquals(OrderStatus.Matched.name, report.order.status)
 
-        assertEquals(0, trustedClientsEventsQueue.size)
-        assertEquals(2, clientsEventsQueue.size)
-        val event = clientsEventsQueue.poll() as ExecutionEvent
-        assertEquals(1, event.orders.size)
-        assertEquals(OutgoingOrderStatus.REJECTED, event.orders.single().status)
-        assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, event.orders.single().rejectReason)
-
         assertEquals(1, orderBookQueue.size)
         assertEquals(1, rabbitOrderBookQueue.size)
         assertEquals(1, lkkTradesQueue.size)

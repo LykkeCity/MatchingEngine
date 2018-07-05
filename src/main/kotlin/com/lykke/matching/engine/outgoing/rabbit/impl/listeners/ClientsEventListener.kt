@@ -6,6 +6,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppVersion
+import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -35,6 +36,7 @@ class ClientsEventListener {
         rabbitMqService.startPublisher(config.me.rabbitMqConfigs.events, clientsEventsQueue,
                 config.me.name,
                 AppVersion.VERSION,
+                BuiltinExchangeType.DIRECT,
                 MessageDatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
                                 logTable, logBlobName)))
