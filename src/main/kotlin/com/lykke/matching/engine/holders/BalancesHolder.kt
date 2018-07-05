@@ -133,7 +133,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun sendBalanceUpdate(balanceUpdate: BalanceUpdate) {
-        balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance != it.oldBalance || it.newReserved != it.oldReserved }
+        balanceUpdate.balances = balanceUpdate.balances.filter { it.newBalance.compareTo(it.oldBalance) != 0 || it.newReserved.compareTo(it.oldReserved) != 0 }
         if (balanceUpdate.balances.isNotEmpty()) {
             LOGGER.info(balanceUpdate.toString())
             balanceUpdateQueue.put(balanceUpdate)

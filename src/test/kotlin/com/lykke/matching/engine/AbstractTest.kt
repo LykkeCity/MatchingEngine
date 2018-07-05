@@ -30,6 +30,7 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
@@ -290,5 +291,19 @@ abstract class AbstractTest {
         assertEquals(order1.remainingVolume, order2.remainingVolume)
         assertEquals(order1.lastMatchTime, order2.lastMatchTime)
         assertEquals(order1.reservedLimitVolume, order2.reservedLimitVolume)
+    }
+
+    protected fun assertEventBalanceUpdate(clientId: String,
+                                           assetId: String,
+                                           oldBalance: String?,
+                                           newBalance: String?,
+                                           oldReserved: String?,
+                                           newReserved: String?,
+                                           balanceUpdates: Collection<BalanceUpdate>) {
+        val balanceUpdate = balanceUpdates.single { it.walletId == clientId && it.assetId == assetId }
+        assertEquals(oldBalance, balanceUpdate.oldBalance)
+        assertEquals(newBalance, balanceUpdate.newBalance)
+        assertEquals(oldReserved, balanceUpdate.oldReserved)
+        assertEquals(newReserved, balanceUpdate.newReserved)
     }
 }

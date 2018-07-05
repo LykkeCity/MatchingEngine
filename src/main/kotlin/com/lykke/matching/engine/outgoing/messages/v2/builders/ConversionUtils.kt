@@ -32,7 +32,9 @@ fun convertFees(fees: List<com.lykke.matching.engine.daos.fee.v2.Fee>): List<Fee
 }
 
 fun convertBalanceUpdates(clientBalanceUpdates: List<ClientBalanceUpdate>): List<BalanceUpdate> {
-    return clientBalanceUpdates.map { balanceUpdate ->
+    return clientBalanceUpdates.filter{
+        it.newBalance.compareTo(it.oldBalance) != 0 || it.newReserved.compareTo(it.oldReserved) != 0
+    }.map { balanceUpdate ->
         BalanceUpdate(balanceUpdate.id,
                 balanceUpdate.asset,
                 bigDecimalToString(balanceUpdate.oldBalance)!!,
