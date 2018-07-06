@@ -27,7 +27,7 @@ class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, log
 
     override fun log(message: Message) {
         try {
-            var azureMessage = AzureMessage(message.id, message.timestamp, parts(message.message))
+            var azureMessage = AzureMessage(message.sequenceNumber, message.messageId, message.requestId, message.timestamp, parts(message.message))
             var counter = 0
             var blobName: String? = null
             val rowKey = azureMessage.rowKey
@@ -41,7 +41,7 @@ class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, log
                 } catch (e: TableServiceException) {
                     if (blobName == null && (e.httpStatusCode == HttpURLConnection.HTTP_BAD_REQUEST || e.httpStatusCode == HttpURLConnection.HTTP_ENTITY_TOO_LARGE)) {
                         blobName = saveToBlob(message.message)
-                        azureMessage = AzureMessage(message.id, message.timestamp, blobName)
+                        azureMessage = AzureMessage(message.sequenceNumber, message.messageId, message.requestId, message.timestamp, blobName)
                     } else if (e.httpStatusCode == HttpURLConnection.HTTP_CONFLICT && counter < 999) {
                         counter++
                     } else {
@@ -50,7 +50,7 @@ class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, log
                 }
             }
         } catch (e: Exception) {
-            val errorMessage = "Unable to insert message log (id: ${message.id}, type: ${message.type}): ${e.message}"
+            val errorMessage = "Unable to insert message log (sequenceNumber: ${message.sequenceNumber}, messageId: ${message.messageId}, requestId: ${message.requestId}, type: ${message.type}): ${e.message}"
             LOGGER.error(errorMessage, e)
             METRICS_LOGGER.logError(errorMessage, e)
         }
