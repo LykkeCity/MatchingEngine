@@ -33,7 +33,7 @@ class CashInOutPreprocessor(
         parseMessage(messageWrapper)
         if (databaseAccessor.isAlreadyProcessed(messageWrapper.type.toString(), messageWrapper.messageId!!)) {
             writeResponse(messageWrapper, DUPLICATE)
-            LOGGER.error("Message already processed: ${messageWrapper.type}: ${messageWrapper.messageId!!}")
+            LOGGER.info("Message already processed: ${messageWrapper.type}: ${messageWrapper.messageId!!}")
             METRICS_LOGGER.logError("Message already processed: ${messageWrapper.type}: ${messageWrapper.messageId!!}")
         } else {
             outgoingQueue.put(messageWrapper)
