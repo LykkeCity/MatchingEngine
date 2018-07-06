@@ -8,6 +8,8 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import org.junit.Before
@@ -82,6 +84,13 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, tradesInfoQueue.size)
         assertEquals(1, orderBookQueue.size)
         assertEquals(1, rabbitOrderBookQueue.size)
+
+        assertEquals(1, clientsEventsQueue.size)
+        assertEquals(1, (clientsEventsQueue.first() as ExecutionEvent).orders.size)
+        assertEquals(0, (clientsEventsQueue.first() as ExecutionEvent).balanceUpdates!!.size)
+        assertEquals(1, trustedClientsEventsQueue.size)
+        assertEquals(1, (trustedClientsEventsQueue.first() as ExecutionEvent).orders.size)
+        assertEquals(0, (trustedClientsEventsQueue.first() as ExecutionEvent).balanceUpdates!!.size)
     }
 
     @Test
@@ -100,5 +109,14 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, tradesInfoQueue.size)
         assertEquals(1, orderBookQueue.size)
         assertEquals(1, rabbitOrderBookQueue.size)
+
+        assertEquals(0, trustedClientsEventsQueue.size)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.balanceUpdates?.size)
+        event.orders.forEach {
+            assertEquals(OutgoingOrderStatus.CANCELLED, it.status)
+        }
+
     }
 }
