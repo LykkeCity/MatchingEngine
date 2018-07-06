@@ -19,17 +19,17 @@ class MessageDatabaseLogger(dbAccessor: MessageLogDatabaseAccessor<Message>) : D
         val baseMessage = message.message
         val type = baseMessage::class.java.simpleName
         return when (baseMessage) {
-            is BalanceUpdate -> Message(baseMessage.id, type, baseMessage.timestamp, message.stringValue)
-            is CashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
-            is CashSwapOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
-            is CashTransferOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
-            is LimitOrdersReport -> Message(UUID.randomUUID().toString(), type, Date(), message.stringValue)
+            is BalanceUpdate -> Message(null, baseMessage.messageId, baseMessage.id, type, baseMessage.timestamp, message.stringValue)
+            is CashOperation -> Message(null, baseMessage.messageId, baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is CashSwapOperation -> Message(null, baseMessage.messageId, baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is CashTransferOperation -> Message(null, baseMessage.messageId, baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+            is LimitOrdersReport -> Message(null, baseMessage.messageId, UUID.randomUUID().toString(), type, Date(), message.stringValue)
             is MarketOrderWithTrades ->
-                Message(baseMessage.order.id, type, Date(), message.stringValue)
-            is ReservedCashOperation -> Message(baseMessage.id, type, baseMessage.dateTime, message.stringValue)
+                Message(null, baseMessage.messageId, baseMessage.order.id, type, Date(), message.stringValue)
+            is ReservedCashOperation -> Message(null, baseMessage.messageId, baseMessage.id, type, baseMessage.dateTime, message.stringValue)
             is Event<*> -> {
                 val header = baseMessage.header
-                Message(header.messageId, header.eventType, header.timestamp, message.stringValue)
+                Message(header.sequenceNumber, header.messageId, header.requestId, header.eventType, header.timestamp, message.stringValue)
             }
             else -> {
                 throw IllegalArgumentException("Unknown message type: ${message::class.java.name}")

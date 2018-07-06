@@ -11,7 +11,9 @@ public class AzureMessage extends TableServiceEntity {
     private static final SimpleDateFormat DATE_FORMAT_PARTITION_KEY = createDateFormatter("yyyyMMdd");
     private static final SimpleDateFormat DATE_FORMAT_ROW_KEY = createDateFormatter("yyyy-MM-dd HH:mm:ss");
 
+    private Long sequenceNumber;
     private String messageId;
+    private String requestId;
     private Date messageTimestamp;
     private String message;
     private String msgPart2;
@@ -24,14 +26,16 @@ public class AzureMessage extends TableServiceEntity {
     public AzureMessage() {
     }
 
-    private AzureMessage(String id, Date timestamp) {
-        super(generatePartitionKey(), String.format("%s_%s", DATE_FORMAT_ROW_KEY.format(timestamp), id));
-        messageId = id;
+    private AzureMessage(Long sequenceNumber, String messageId, String requestId, Date timestamp) {
+        super(generatePartitionKey(), String.format("%s_%s", DATE_FORMAT_ROW_KEY.format(timestamp), messageId));
+        this.sequenceNumber = sequenceNumber;
+        this.messageId = messageId;
+        this.requestId = requestId;
         messageTimestamp = timestamp;
     }
 
-    public AzureMessage(String id, Date timestamp, String[] parts) {
-        this(id, timestamp);
+    public AzureMessage(Long sequenceNumber, String messageId, String requestId, Date timestamp, String[] parts) {
+        this(sequenceNumber, messageId, requestId, timestamp);
         message = parts.length > 0 ? parts[0] : null;
         msgPart2 = parts.length > 1 ? parts[1] : null;
         msgPart3 = parts.length > 2 ? parts[2] : null;
@@ -40,8 +44,8 @@ public class AzureMessage extends TableServiceEntity {
         msgPart6 = parts.length > 5 ? parts[5] : null;
     }
 
-    public AzureMessage(String id, Date timestamp, String blobName) {
-        this(id, timestamp);
+    public AzureMessage(Long sequenceNumber, String messageId, String requestId, Date timestamp, String blobName) {
+        this(sequenceNumber, messageId, requestId, timestamp);
         messageBlobName = blobName;
     }
 
@@ -111,6 +115,22 @@ public class AzureMessage extends TableServiceEntity {
         this.messageId = messageId;
     }
 
+    public Long getSequenceNumber() {
+        return sequenceNumber;
+    }
+
+    public void setSequenceNumber(Long sequenceNumber) {
+        this.sequenceNumber = sequenceNumber;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
+    }
+
     public Date getMessageTimestamp() {
         return messageTimestamp;
     }
@@ -131,7 +151,9 @@ public class AzureMessage extends TableServiceEntity {
     public String toString() {
         return "AzureMessage(" +
                 "rowKey=" + rowKey +
+                ", sequenceNumber=" + sequenceNumber +
                 ", messageId=" + messageId +
+                ", requestId=" + requestId +
                 ", messageTimestamp=" + messageTimestamp +
                 ", message=" + message +
                 ", msgPart2=" + msgPart2 +
