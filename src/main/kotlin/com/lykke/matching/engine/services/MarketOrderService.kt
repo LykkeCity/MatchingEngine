@@ -260,10 +260,6 @@ class MarketOrderService @Autowired constructor(
 
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
 
-
-
-                    //genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
-
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
                     val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order, matchingResult.marketOrderTrades.toMutableList())

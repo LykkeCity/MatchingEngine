@@ -7,7 +7,6 @@ import com.lykke.matching.engine.utils.migration.OrdersMigrationService
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 
 @Component
@@ -18,12 +17,14 @@ class Application {
     @Autowired
     lateinit var azureStatusProcessor: Runnable
 
-
     @Autowired
-    lateinit var applicationContext: ApplicationContext
+    lateinit var accountsMigrationService: AccountsMigrationService
 
     @Autowired
     lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
+
+    @Autowired
+    lateinit var ordersMigrationService: OrdersMigrationService
 
     fun run () {
         try {
@@ -34,14 +35,14 @@ class Application {
         }
 
         try {
-            applicationContext.getBean(AccountsMigrationService::class.java).migrateAccountsIfConfigured()
+            accountsMigrationService.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
             System.exit(1)
         }
 
         try {
-            applicationContext.getBean(OrdersMigrationService::class.java).migrateOrdersIfConfigured()
+            ordersMigrationService.migrateOrdersIfConfigured()
         } catch (e: Exception) {
             AppInitializer.teeLog("Unable to migrate orders: ${e.message}")
             System.exit(1)

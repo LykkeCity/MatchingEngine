@@ -26,7 +26,6 @@ import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
-
 import java.util.concurrent.BlockingQueue
 
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,

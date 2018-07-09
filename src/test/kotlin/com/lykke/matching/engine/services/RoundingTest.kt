@@ -51,8 +51,6 @@ class RoundingTest: AbstractTest() {
 
     @Before
     fun setUp() {
-        tradesInfoListener.clear()
-
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURJPY", "EUR", "JPY", 3))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 3))

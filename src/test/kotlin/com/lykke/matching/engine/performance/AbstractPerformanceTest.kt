@@ -74,9 +74,8 @@ abstract class AbstractPerformanceTest {
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
     private lateinit var ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder
     private lateinit var stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder
-    protected val testFileOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestFileOrderDatabaseAccessor
+    protected val testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestFileOrderDatabaseAccessor
     protected val stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
-    protected val testOrderDatabaseAccessor = TestOrderBookDatabaseAccessor(testFileOrderDatabaseAccessor)
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache

@@ -42,7 +42,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     private val limitOrdersMap = HashMap<String, LimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
     private val walletOperationsCalculator: WalletOperationsCalculator = WalletOperationsCalculator(assetsPairsHolder, balancesHolder, applicationSettingsCache)
-
     var initialOrdersCount = 0
 
     init {
