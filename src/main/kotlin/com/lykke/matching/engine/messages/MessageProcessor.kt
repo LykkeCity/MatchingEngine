@@ -29,6 +29,8 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
+import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
@@ -246,7 +248,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder,
-                assetsHolder,
                 rabbitTransferQueue,
                 dbTransferOperationQueue,
                 feeProcessor,
@@ -283,9 +284,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         }
 
         val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue,
+                messageRouter.preProcessedMessageQueue,
+                cashOperationsDatabaseAccessor,
+                applicationContext.getBean(CashInOutContextParser::class.java))
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue,
+                messageRouter.preProcessedMessageQueue,
+                cashOperationsDatabaseAccessor,
+                applicationContext.getBean(CashTransferContextParser::class.java))
         cashTransferPreprocessor.start()
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)

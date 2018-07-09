@@ -1,21 +1,16 @@
 package com.lykke.matching.engine.services.validators.impl
 
-import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
-import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
-import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.Date
 
 @Component
 class CashTransferOperationValidatorImpl @Autowired constructor(private val balancesHolder: BalancesHolder,
@@ -27,61 +22,55 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
         private val LOGGER = Logger.getLogger(CashTransferOperationValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(cashTransferOperation: ProtocolMessages.CashTransferOperation,
-                                   operationId: String, feeInstructions: List<NewFeeInstruction>,
-                                   feeInstruction: FeeInstruction?) {
-        val operation = TransferOperation(operationId, cashTransferOperation.id,
-                cashTransferOperation.fromClientId, cashTransferOperation.toClientId,
-                cashTransferOperation.assetId, Date(cashTransferOperation.timestamp),
-                BigDecimal.valueOf(cashTransferOperation.volume), BigDecimal.valueOf(cashTransferOperation.overdraftLimit),
-                listOfFee(feeInstruction, feeInstructions))
-
-        isAssetEnabled(cashTransferOperation)
-        isFeeValid(cashTransferOperation, feeInstruction, feeInstructions)
-        isBalanceValid(cashTransferOperation, operation)
-        isVolumeAccuracyValid(cashTransferOperation)
+    override fun performValidation(cashTransferContext: CashTransferContext) {
+        isAssetEnabled(cashTransferContext)
+        isFeeValid(cashTransferContext)
+        isBalanceValid(cashTransferContext)
+        isVolumeAccuracyValid(cashTransferContext)
     }
 
-    private fun isBalanceValid(cashTransferOperation: ProtocolMessages.CashTransferOperation, operation: TransferOperation) {
-        val balanceOfFromClient = balancesHolder.getBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
-        val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(cashTransferOperation.fromClientId, cashTransferOperation.assetId)
-        val overdraftLimit = if (operation.overdraftLimit != null) - operation.overdraftLimit else BigDecimal.ZERO
-        if (balanceOfFromClient - reservedBalanceOfFromClient - operation.volume < overdraftLimit) {
-            LOGGER.info("Cash transfer operation (${cashTransferOperation.id}) from client ${cashTransferOperation.fromClientId} " +
-                    "to client ${cashTransferOperation.toClientId}, asset ${cashTransferOperation.assetId}, " +
-                    "volume: ${NumberUtils.roundForPrint(cashTransferOperation.volume)}: " +
-                    "low balance for client ${cashTransferOperation.fromClientId}")
+    private fun isBalanceValid(cashTransferContext: CashTransferContext) {
+        val transferOperation = cashTransferContext.transferOperation
+        val balanceOfFromClient = balancesHolder.getBalance(transferOperation.fromClientId, transferOperation.asset)
+        val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(transferOperation.fromClientId, transferOperation.asset)
+        val overdraftLimit = if (transferOperation.overdraftLimit != null) -transferOperation.overdraftLimit else BigDecimal.ZERO
+        if (balanceOfFromClient - reservedBalanceOfFromClient - transferOperation.volume < overdraftLimit) {
+            LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
+                    "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
+                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: " +
+                    "low balance for client ${transferOperation.fromClientId}")
 
-            throw ValidationException(ValidationException.Validation.LOW_BALANCE, "ClientId:${cashTransferOperation.fromClientId}, " +
-                    "asset:${cashTransferOperation.assetId}, volume:${cashTransferOperation.volume}")
+            throw ValidationException(ValidationException.Validation.LOW_BALANCE, "ClientId:${transferOperation.fromClientId}, " +
+                    "asset:${transferOperation.asset}, volume:${transferOperation.volume}")
         }
     }
 
-    private fun isAssetEnabled(cashTransferOperation: ProtocolMessages.CashTransferOperation) {
-        if (applicationSettingsCache.isAssetDisabled(cashTransferOperation.assetId)) {
-            LOGGER.info("Cash transfer operation (${cashTransferOperation.id}) from client ${cashTransferOperation.fromClientId} " +
-                    "to client ${cashTransferOperation.toClientId}, asset ${cashTransferOperation.assetId}, " +
-                    "volume: ${NumberUtils.roundForPrint(cashTransferOperation.volume)}: disabled asset")
+    private fun isAssetEnabled(cashTransferContext: CashTransferContext) {
+        if (applicationSettingsCache.isAssetDisabled(cashTransferContext.asset.assetId)) {
+            val transferOperation = cashTransferContext.transferOperation
+            LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
+                    "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
+                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: disabled asset")
             throw ValidationException(ValidationException.Validation.DISABLED_ASSET)
         }
     }
 
-    private fun isFeeValid(cashTransferOperation: ProtocolMessages.CashTransferOperation, feeInstruction: FeeInstruction?,
-                           feeInstructions: List<NewFeeInstruction>){
-        if (!checkFee(feeInstruction, feeInstructions)) {
-            LOGGER.info("Fee is invalid  from client: ${cashTransferOperation.fromClientId}, to cloent: ${cashTransferOperation.toClientId}")
+    private fun isFeeValid(cashTransferContext: CashTransferContext) {
+        if (!checkFee(cashTransferContext.feeInstruction, cashTransferContext.feeInstructions)) {
+            val transferOperation = cashTransferContext.transferOperation
+            LOGGER.info("Fee is invalid  from client: ${transferOperation.fromClientId}, to client: ${transferOperation.toClientId}")
             throw ValidationException(ValidationException.Validation.INVALID_FEE, "invalid fee for client")
         }
     }
 
-    private fun isVolumeAccuracyValid(cashTransferOperation: ProtocolMessages.CashTransferOperation) {
-
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(cashTransferOperation.volume),
-                assetsHolder.getAsset(cashTransferOperation.assetId).accuracy)
+    private fun isVolumeAccuracyValid(cashTransferContext: CashTransferContext) {
+        val transferOperation = cashTransferContext.transferOperation
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(transferOperation.volume,
+                assetsHolder.getAsset(transferOperation.asset).accuracy)
 
         if (!volumeValid) {
-            LOGGER.info("Volume accuracy invalid fromClient  ${cashTransferOperation.fromClientId}, " +
-                    "to client ${cashTransferOperation.toClientId} assetId: ${cashTransferOperation.assetId}, volume: ${cashTransferOperation.volume}")
+            LOGGER.info("Volume accuracy invalid fromClient  ${transferOperation.fromClientId}, " +
+                    "to client ${transferOperation.toClientId} assetId: ${transferOperation.asset}, volume: ${transferOperation.volume}")
             throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }

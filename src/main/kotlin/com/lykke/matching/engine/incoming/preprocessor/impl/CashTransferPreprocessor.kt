@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
+import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
@@ -14,7 +16,8 @@ import java.util.concurrent.BlockingQueue
 class CashTransferPreprocessor(
         private val incomingQueue: BlockingQueue<MessageWrapper>,
         private val outgoingQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor
+        private val databaseAccessor: CashOperationIdDatabaseAccessor,
+        private val contextParser: CashTransferContextParser
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
     companion object {
@@ -22,22 +25,16 @@ class CashTransferPreprocessor(
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        val message = ProtocolMessages.CashTransferOperation.parseFrom(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
-        messageWrapper.timestamp = message.timestamp
-        messageWrapper.parsedMessage = message
-        messageWrapper.id = message.id
-    }
-
     override fun preProcess(messageWrapper: MessageWrapper) {
-        parseMessage(messageWrapper)
-        if (databaseAccessor.isAlreadyProcessed(messageWrapper.type.toString(), messageWrapper.messageId!!)) {
-            writeResponse(messageWrapper, DUPLICATE)
-            LOGGER.info("Message already processed: ${messageWrapper.type}: ${messageWrapper.messageId!!}")
-            METRICS_LOGGER.logError("Message already processed: ${messageWrapper.type}: ${messageWrapper.messageId!!}")
+        val parsedMessageWrapper = contextParser.parse(messageWrapper)
+        val context = parsedMessageWrapper.context as CashTransferContext
+
+        if (databaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
+            writeResponse(parsedMessageWrapper, DUPLICATE)
+            LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
+            METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
         } else {
-            outgoingQueue.put(messageWrapper)
+            outgoingQueue.put(parsedMessageWrapper)
         }
     }
 
