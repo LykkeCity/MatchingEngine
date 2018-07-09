@@ -107,7 +107,7 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances(processedMessage, null)
+        val updated = walletProcessor.persistBalances(processedMessage, null, null, null)
         if (!updated) {
             throw Exception("Unable to save balance")
         }

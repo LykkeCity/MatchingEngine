@@ -30,7 +30,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
                                applicationSettingsCache: ApplicationSettingsCache): AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
-        val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
+        private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
     }
 
     //asset -> orderBook
@@ -38,9 +38,16 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
     private val limitOrdersMap = HashMap<String, LimitOrder>()
     private val clientLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
     private val walletOperationsCalculator: WalletOperationsCalculator = WalletOperationsCalculator(assetsPairsHolder, balancesHolder, applicationSettingsCache)
-    val initialOrdersCount: Int
+    var initialOrdersCount = 0
 
     init {
+        update()
+    }
+
+    fun update() {
+        limitOrdersQueues.clear()
+        limitOrdersMap.clear()
+        clientLimitOrdersMap.clear()
         val orders = orderBookDatabaseAccessor.loadLimitOrders()
         for (order in orders) {
             addToOrderBook(order)
@@ -71,10 +78,6 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
             limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)
         }
-    }
-
-    override fun updateOrderBook(assetPairId: String, isBuy: Boolean) {
-        orderBookDatabaseAccessor.updateOrderBook(assetPairId, isBuy, getOrderBook(assetPairId).getCopyOfOrderBook(isBuy))
     }
 
     fun getAllOrderBooks() = limitOrdersQueues
@@ -123,7 +126,6 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
 
         getOrderBook(order.assetPairId).removeOrder(order)
         order.updateStatus(Cancelled, date)
-        updateOrderBook(order.assetPairId, order.isBuySide())
         return order
     }
 
@@ -153,7 +155,7 @@ class GenericLimitOrderService(private val orderBookDatabaseAccessor: OrderBookD
             val askPrice = book.getAskPrice()
             val bidPrice = book.getBidPrice()
             if (askPrice > BigDecimal.ZERO || bidPrice > BigDecimal.ZERO) {
-                result.add(BestPrice(book.assetId, askPrice, bidPrice))
+                result.add(BestPrice(book.assetPairId, askPrice, bidPrice))
             }
         }
 

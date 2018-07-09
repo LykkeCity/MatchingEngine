@@ -134,7 +134,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(processedMessage, sequenceNumber)
+        val updated = walletProcessor.persistBalances(processedMessage, null, null, sequenceNumber)
         if (!updated) {
             throw Exception("Unable to save balance")
         }

@@ -77,7 +77,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
     }
 
     override fun processChangedOrderBook(orderBookCopy: AssetOrderBook, isBuy: Boolean) {
-        orderBooks["${orderBookCopy.assetId}|$isBuy"] = OrderBook(orderBookCopy.assetId, isBuy, date, orderBookCopy.getOrderBook(isBuy))
+        orderBooks["${orderBookCopy.assetPairId}|$isBuy"] = OrderBook(orderBookCopy.assetPairId, isBuy, date, orderBookCopy.getOrderBook(isBuy))
     }
 
 }

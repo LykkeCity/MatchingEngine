@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.util.Comparator
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
+class AssetOrderBook(assetId: String): AbstractAssetOrderBook(assetId) {
 
     val SELL_COMPARATOR = Comparator<LimitOrder>({ o1, o2 ->
         var result = o1.price.compareTo(o2.price)
@@ -29,7 +29,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
     private var askOrderBook = PriorityBlockingQueue<LimitOrder>(50, SELL_COMPARATOR)
     private var bidOrderBook = PriorityBlockingQueue<LimitOrder>(50, BUY_COMPARATOR)
 
-    fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
+    override fun getOrderBook(isBuySide: Boolean) = if (isBuySide) bidOrderBook else askOrderBook
 
     fun setOrderBook(isBuySide: Boolean, queue: PriorityBlockingQueue<LimitOrder>) = if (isBuySide) bidOrderBook = queue else askOrderBook = queue
 
@@ -89,7 +89,7 @@ class AssetOrderBook(val assetId: String): AbstractAssetOrderBook {
     }
 
     override fun copy() : AssetOrderBook {
-        val book = AssetOrderBook(assetId)
+        val book = AssetOrderBook(assetPairId)
 
         askOrderBook.forEach {
             book.askOrderBook.put(it)

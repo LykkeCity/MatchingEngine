@@ -10,7 +10,6 @@ import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
@@ -20,13 +19,13 @@ import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.CashInOutPreprocessor
@@ -119,7 +118,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
-    private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
     private val persistenceManager: PersistenceManager
 
@@ -176,7 +174,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.limitOrderDatabaseAccessor = applicationContext.getBean(AzureLimitOrderDatabaseAccessor::class.java)
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor =  applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
-        this.orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
 
         balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
@@ -185,8 +182,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
-        val stopOrderBookDatabaseAccessor = applicationContext.getBean(FileStopOrderBookDatabaseAccessor::class.java)
 
+        val orderBookDatabaseAccessor = applicationContext.getBean(OrdersDatabaseAccessorsHolder::class.java).primaryAccessor
         this.genericLimitOrderService = GenericLimitOrderService(orderBookDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
@@ -194,7 +191,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 tradesInfoQueue,
                 quotesNotificationQueue, applicationSettingsCache)
 
-        val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
+        val stopOrderBookDatabaseAccessor = applicationContext.getBean(StopOrdersDatabaseAccessorsHolder::class.java).primaryAccessor
+        val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService, persistenceManager)
         val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         val limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder,
@@ -270,7 +268,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 messageSequenceNumberHolder,
                 messageSender)
 
-        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
 
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 

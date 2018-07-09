@@ -1,9 +1,9 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
-import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
+import com.lykke.matching.engine.utils.migration.OrdersMigrationService
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,6 +23,9 @@ class Application {
     @Autowired
     lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
+    @Autowired
+    lateinit var ordersMigrationService: OrdersMigrationService
+
     fun run () {
         try {
             azureStatusProcessor.run()
@@ -35,6 +38,13 @@ class Application {
             accountsMigrationService.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
             AppInitializer.teeLog(e.message)
+            System.exit(1)
+        }
+
+        try {
+            ordersMigrationService.migrateOrdersIfConfigured()
+        } catch (e: Exception) {
+            AppInitializer.teeLog("Unable to migrate orders: ${e.message}")
             System.exit(1)
         }
 
