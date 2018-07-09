@@ -29,8 +29,8 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.incoming.preprocessor.CashInOutPreprocessor
-import com.lykke.matching.engine.incoming.preprocessor.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -101,7 +101,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val cashInOutPreprocessor: CashInOutPreprocessor
     private val cashTransferPreprocessor: CashTransferPreprocessor
 
-    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.defaultMessagesQueue
+    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
     private val tradesInfoQueue: BlockingQueue<TradeInfo> = LinkedBlockingQueue<TradeInfo>()
     private val quotesNotificationQueue: BlockingQueue<QuotesUpdate> = LinkedBlockingQueue<QuotesUpdate>()
     private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
@@ -283,9 +283,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         }
 
         val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
         cashTransferPreprocessor.start()
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)
