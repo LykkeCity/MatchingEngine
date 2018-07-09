@@ -184,7 +184,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 messageSender)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder,  rabbitTransferQueue, dbTransferOperationQueue, feeProcessor, cashTransferOperationValidator,
+        this.cashTransferOperationService = CashTransferOperationService(balanceHolder,
+                assetsHolder,
+                rabbitTransferQueue,
+                dbTransferOperationQueue,
+                feeProcessor,
+                cashTransferOperationValidator,
                 messageSequenceNumberHolder,
                 messageSender)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)

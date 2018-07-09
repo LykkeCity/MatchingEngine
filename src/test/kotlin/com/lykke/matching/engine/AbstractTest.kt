@@ -225,6 +225,9 @@ abstract class AbstractTest {
 
         clientsEventsQueue.clear()
         trustedClientsEventsQueue.clear()
+
+        clientsEventsQueue.clear()
+        trustedClientsEventsQueue.clear()
     }
 
     protected fun assertOrderBookSize(assetPairId: String, isBuySide: Boolean, size: Int) {
