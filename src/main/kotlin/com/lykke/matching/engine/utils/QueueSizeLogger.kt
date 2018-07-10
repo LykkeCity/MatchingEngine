@@ -37,7 +37,7 @@ class QueueSizeLogger @Autowired constructor(
     private fun log() {
         val balancesQueueSize = persistenceManager.balancesQueueSize()
         val ordersQueueSize = persistenceManager.ordersQueueSize()
-        val incomingQueueSize = messageRouter.defaultMessagesQueue.size
+        val incomingQueueSize = messageRouter.preProcessedMessageQueue.size
         LOGGER.info("Incoming queue: $incomingQueueSize. " +
                 "Order Book queue: ${connectionHandler.getOrderBookQueueSize()}. " +
                 "Rabbit Order Book queue ${rabbitOrderBookListener.getOrderBookQueueSize()}. " +
