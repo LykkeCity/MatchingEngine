@@ -13,6 +13,9 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
