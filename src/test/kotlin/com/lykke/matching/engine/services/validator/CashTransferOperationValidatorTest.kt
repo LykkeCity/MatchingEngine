@@ -41,7 +41,6 @@ class CashTransferOperationValidatorTest {
     @Autowired
     private lateinit var cashTransferParser: CashTransferContextParser
 
-
     @TestConfiguration
     open class Config {
         @Bean

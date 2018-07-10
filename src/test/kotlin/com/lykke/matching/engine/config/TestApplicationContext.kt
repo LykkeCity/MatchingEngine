@@ -11,7 +11,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
@@ -25,6 +24,7 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.mockito.Mockito
 import org.springframework.context.ApplicationEventPublisher
@@ -225,7 +225,7 @@ open class TestApplicationContext {
 
 
     @Bean
-    open fun cashInOutContextParser(assetsHolder: AssetsHolder): ContextParser {
+    open fun cashInOutContextParser(assetsHolder: AssetsHolder): CashInOutContextParser {
         return CashInOutContextParser(assetsHolder)
     }
 
@@ -245,5 +245,10 @@ open class TestApplicationContext {
     open fun cashTransferPreprocessor(cashTransferContextParser: CashTransferContextParser): CashTransferPreprocessor {
         return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
                 cashTransferContextParser)
+    }
+
+    @Bean
+    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser): MessageBuilder {
+        return MessageBuilder(cashInOutContextParser, cashTransferContextParser)
     }
 }
