@@ -731,7 +731,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1050.0)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 850.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 900.0)
         initServices()
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(

@@ -211,7 +211,6 @@ class InvalidBalanceTest : AbstractTest() {
     @Test
     fun testMultiLimitOrderWithNotEnoughReservedFunds() {
         testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.25)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
@@ -223,6 +222,7 @@ class InvalidBalanceTest : AbstractTest() {
                 IncomingLimitOrder(-0.05, 1010.0, "2"),
                 IncomingLimitOrder(-0.1, 1100.0, "3")
         )))
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
         testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
@@ -255,7 +255,7 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun `Test multi limit order with enough reserved but not enough main balance`() {
-        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.1)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.05)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
@@ -265,6 +265,7 @@ class InvalidBalanceTest : AbstractTest() {
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(IncomingLimitOrder(-0.05, 1010.0, "1"))))
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
         testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
