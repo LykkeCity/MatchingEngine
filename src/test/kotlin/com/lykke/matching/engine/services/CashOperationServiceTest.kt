@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -14,7 +13,7 @@ import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import org.junit.Assert.assertEquals
@@ -43,7 +42,7 @@ class CashOperationServiceTest : AbstractTest() {
     private lateinit var testReservedCashOperationListener: TestReservedCashOperationListener
 
     @Autowired
-    private lateinit var cashInOutPreprocessor: CashInOutPreprocessor
+    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -75,9 +74,7 @@ class CashOperationServiceTest : AbstractTest() {
 
     @Test
     fun testCashIn() {
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset1", 50.0)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", 50.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(BigDecimal.valueOf(150.0), balance)
@@ -114,9 +111,7 @@ class CashOperationServiceTest : AbstractTest() {
 
     @Test
     fun testSmallCashIn() {
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset1", 0.01)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", 0.01))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(BigDecimal.valueOf(100.01), balance)
@@ -141,9 +136,7 @@ class CashOperationServiceTest : AbstractTest() {
 
     @Test
     fun testCashOut() {
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset1", -50.0)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", -50.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(BigDecimal.valueOf(50.0), balance)
@@ -180,9 +173,7 @@ class CashOperationServiceTest : AbstractTest() {
 
     @Test
     fun testCashOutNegative() {
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset1", -50.0)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", -50.0))
         var balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
         assertNotNull(balance)
         assertEquals(BigDecimal.valueOf(50.0), balance)
@@ -193,9 +184,7 @@ class CashOperationServiceTest : AbstractTest() {
         assertEquals("Asset1", cashOutTransaction.asset)
 
         clearMessageQueues()
-        val messageWrapper1 = buildCashInOutWrapper("Client1", "Asset1", -60.0)
-        cashInOutPreprocessor.preProcess(messageWrapper1)
-        cashInOutOperationService.processMessage(messageWrapper1)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", -60.0))
         assertEquals(BigDecimal.valueOf(50.0), balance)
         assertEquals(0, clientsEventsQueue.size)
     }
@@ -225,9 +214,7 @@ class CashOperationServiceTest : AbstractTest() {
 
     @Test
     fun testAddNewAsset() {
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset4", 100.0)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset4", 100.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset4")
 
         assertNotNull(balance)
@@ -236,9 +223,7 @@ class CashOperationServiceTest : AbstractTest() {
 
     @Test
     fun testAddNewWallet() {
-        val messageWrapper = buildCashInOutWrapper("Client3", "Asset2", 100.0)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client3", "Asset2", 100.0))
         val balance = testWalletDatabaseAccessor.getBalance("Client3", "Asset2")
 
         assertNotNull(balance)
@@ -258,9 +243,7 @@ class CashOperationServiceTest : AbstractTest() {
     @Test
     fun testRounding() {
         balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 29.99))
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset1", -0.01)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", -0.01))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
 
         assertNotNull(balance)
@@ -273,10 +256,8 @@ class CashOperationServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "Asset5", 1.00418803)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset5", 0.00418803)
         initServices()
-
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset5", -1.0)
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset5", -1.0))
 
         assertEquals(1, cashInOutQueue.size)
         val cashInTransaction = cashInOutQueue.peek() as CashOperation
@@ -294,10 +275,8 @@ class CashOperationServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "Asset5", 11.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset5", 0.0)
         initServices()
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset5", -1.0,
-                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.05, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4")))
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset5", -1.0,
+                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.05, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("Asset4"))))
 
         assertEquals(BigDecimal.valueOf(0.01), balancesHolder.getBalance("Client1", "Asset4"))
         assertEquals(BigDecimal.valueOf(0.05), balancesHolder.getBalance("Client3", "Asset4"))
@@ -311,26 +290,20 @@ class CashOperationServiceTest : AbstractTest() {
         initServices()
 
         // Negative fee size
-        val messageWrapper = buildCashInOutWrapper("Client1", "Asset5", -1.0,
-                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.1, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3"))
-        cashInOutPreprocessor.preProcess(messageWrapper)
-        cashInOutOperationService.processMessage(messageWrapper)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset5", -1.0,
+                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = -0.1, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")))
 
         assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
         assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client3", "Asset5"))
 
         // Fee amount is more than operation amount
-        val messageWrapper1 = buildCashInOutWrapper("Client1", "Asset5", -0.9,
-                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.91, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3"))
-        cashInOutPreprocessor.preProcess(messageWrapper1)
-        cashInOutOperationService.processMessage(messageWrapper1)
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset5", -0.9,
+                fees = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.91, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")))
 
         // Multiple fee amount is more than operation amount
-        val messageWrapper2 = buildCashInOutWrapper("Client1", "Asset5", -1.0,
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset5", -1.0,
                 fees = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.5, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!,
-                        buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.51, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!))
-        cashInOutPreprocessor.preProcess(messageWrapper2)
-        cashInOutOperationService.processMessage(messageWrapper2)
+                        buildFeeInstruction(type = FeeType.CLIENT_FEE, size = 0.51, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")!!)))
 
         assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
         assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client3", "Asset5"))
