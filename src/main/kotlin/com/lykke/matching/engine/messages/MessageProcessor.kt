@@ -88,7 +88,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val cashInOutPreprocessor: CashInOutPreprocessor
     private val cashTransferPreprocessor: CashTransferPreprocessor
 
-    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.defaultMessagesQueue
+    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
