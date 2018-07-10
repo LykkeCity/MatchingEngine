@@ -4,11 +4,14 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -23,7 +26,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
-import java.util.*
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (CashTransferOperationValidatorTest.Config::class)])
@@ -34,8 +36,10 @@ class CashTransferOperationValidatorTest {
         val CLIENT_NAME1 = "Client1"
         val CLIENT_NAME2 = "Client2"
         val ASSET_ID = "USD"
-        val OPERATION_ID = "test"
     }
+
+    @Autowired
+    private lateinit var cashTransferParser: CashTransferContextParser
 
 
     @TestConfiguration
@@ -77,9 +81,7 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
-                    getFeeInstructions(),
-                    null)
+            cashTransferOperationValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
@@ -98,9 +100,7 @@ class CashTransferOperationValidatorTest {
 
 
             cashTransferOperationBuilder.addFees(invalidFee)
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
-                    NewFeeInstruction.create(Arrays.asList(invalidFee)),
-                    null)
+            cashTransferOperationValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
             throw e
@@ -115,9 +115,7 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
-                    getFeeInstructions(),
-                    null)
+            cashTransferOperationValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -134,9 +132,7 @@ class CashTransferOperationValidatorTest {
 
         //when
         try {
-            cashTransferOperationValidator.performValidation(cashTransferOperationBuilder.build(), OPERATION_ID,
-                    getFeeInstructions(),
-                    null)
+            cashTransferOperationValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
@@ -146,9 +142,7 @@ class CashTransferOperationValidatorTest {
     @Test
     fun testValidData() {
         //when
-        cashTransferOperationValidator.performValidation(getCashTransferOperationBuilder().build(), OPERATION_ID,
-                getFeeInstructions(),
-                null)
+        cashTransferOperationValidator.performValidation(getContext(getCashTransferOperationBuilder().build()))
     }
 
     fun getCashTransferOperationBuilder(): ProtocolMessages.CashTransferOperation.Builder {
@@ -161,9 +155,11 @@ class CashTransferOperationValidatorTest {
                 .setToClientId(CLIENT_NAME2).setVolume(0.0)
     }
 
-    private fun getFeeInstructions():  List<NewFeeInstruction> {
-        return NewFeeInstruction.create(Arrays.asList(ProtocolMessages.Fee.newBuilder()
-                .setType(FeeType.NO_FEE.externalId)
-                .build()))
+    private fun getMessageWrapper(message: ProtocolMessages.CashTransferOperation): MessageWrapper {
+        return MessageWrapper("test", MessageType.CASH_TRANSFER_OPERATION.type, message.toByteArray(), null)
+    }
+
+    private fun getContext(message: ProtocolMessages.CashTransferOperation): CashTransferContext {
+        return cashTransferParser.parse(getMessageWrapper(message)).context as CashTransferContext
     }
 }

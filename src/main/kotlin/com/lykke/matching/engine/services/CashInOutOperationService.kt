@@ -1,9 +1,8 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.Fee
-import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -24,9 +23,6 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
-import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 class CashInOutOperationService(private val assetsHolder: AssetsHolder,
@@ -36,27 +32,27 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                 private val cashInOutOperationValidator: CashInOutOperationValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 private val messageSender: MessageSender) : AbstractService {
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        //do nothing
+    }
 
     companion object {
         private val LOGGER = Logger.getLogger(CashInOutOperationService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = getMessage(messageWrapper)
+        val cashInOutContext: CashInOutContext = messageWrapper.context as CashInOutContext
+        val feeInstructions = cashInOutContext.feeInstructions
 
-        val feeInstructions = NewFeeInstruction.create(message.feesList)
-        LOGGER.debug("Processing cash in/out messageId: ${messageWrapper.messageId} operation (${message.id})" +
-                " for client ${message.clientId}, asset ${message.assetId}," +
-                " amount: ${NumberUtils.roundForPrint(message.volume)}, feeInstructions: $feeInstructions")
+        LOGGER.debug("Processing cash in/out messageId: ${cashInOutContext.messageId} operation (${cashInOutContext.id})" +
+                " for client ${cashInOutContext.clientId}, asset ${cashInOutContext.asset.assetId}," +
+                " amount: ${NumberUtils.roundForPrint(cashInOutContext.volume)}, feeInstructions: $feeInstructions")
 
-        val operationId = UUID.randomUUID().toString()
-        val now = Date()
-
-        val walletOperation = getWalletOperation(operationId, message)
+        val walletOperation = cashInOutContext.walletOperation
         val operations = mutableListOf(walletOperation)
 
         try {
-            cashInOutOperationValidator.performValidation(message, feeInstructions)
+            cashInOutOperationValidator.performValidation(cashInOutContext)
         } catch (e: ValidationException) {
             writeErrorResponse(messageWrapper, walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return
@@ -72,30 +68,30 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
             walletProcessor.preProcess(operations)
-        }  catch (e: BalanceException) {
+        } catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, walletOperation.id, MessageStatus.LOW_BALANCE, e.message)
             return
         }
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null, null, sequenceNumber)
+        val updated = walletProcessor.persistBalances(cashInOutContext.processedMessage, null, null, sequenceNumber)
         messageWrapper.processedMessagePersisted = true
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setMatchingEngineId(walletOperation.id)
                     .setStatus(MessageStatus.RUNTIME.type))
-            LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}: unable to save balance")
+            LOGGER.info("Cash in/out operation (${cashInOutContext.id}) for client ${cashInOutContext.clientId} asset ${cashInOutContext.asset.assetId}, volume: ${NumberUtils.roundForPrint(cashInOutContext.volume)}: unable to save balance")
             return
         }
-        walletProcessor.apply().sendNotification(message.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
+        walletProcessor.apply().sendNotification(cashInOutContext.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
-        publishRabbitMessage(message, walletOperation, fees, messageWrapper.messageId!!)
+        publishRabbitMessage(cashInOutContext, fees)
 
-        val outgoingMessage = EventFactory.createCashInOutEvent(message.volume.toBigDecimal(),
+        val outgoingMessage = EventFactory.createCashInOutEvent(cashInOutContext.volume,
                 sequenceNumber,
-                messageWrapper.messageId!!,
-                messageWrapper.id!!,
-                now,
+                cashInOutContext.messageId,
+                cashInOutContext.id,
+                cashInOutContext.operationStartTime,
                 MessageType.CASH_IN_OUT_OPERATION,
                 walletProcessor.getClientBalanceUpdates(),
                 walletOperation,
@@ -107,47 +103,23 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setMatchingEngineId(walletOperation.id)
                 .setStatus(OK.type))
 
-        LOGGER.info("Cash in/out walletOperation (${message.id}) for client ${message.clientId}, " +
-                "asset ${message.assetId}, " +
-                "amount: ${NumberUtils.roundForPrint(message.volume)} processed")
+        LOGGER.info("Cash in/out walletOperation (${cashInOutContext.id}) for client ${cashInOutContext.clientId}, " +
+                "asset ${cashInOutContext.asset.assetId}, " +
+                "amount: ${NumberUtils.roundForPrint(cashInOutContext.volume)} processed")
     }
 
-    private fun publishRabbitMessage(message: ProtocolMessages.CashInOutOperation,
-                                     walletOperation: WalletOperation,
-                                     fees: List<Fee>,
-                                     messageId: String) {
+    private fun publishRabbitMessage(cashInOutContext: CashInOutContext,
+                                     fees: List<Fee>) {
+        val walletOperation = cashInOutContext.walletOperation
         rabbitCashInOutQueue.put(CashOperation(
-                message.id,
+                cashInOutContext.id,
                 walletOperation.clientId,
                 walletOperation.dateTime,
                 NumberUtils.setScaleRoundHalfUp(walletOperation.amount, assetsHolder.getAsset(walletOperation.assetId).accuracy).toPlainString(),
-                walletOperation.assetId,
-                messageId,
+                cashInOutContext.asset.assetId,
+                cashInOutContext.messageId,
                 fees
         ))
-    }
-
-    private fun getWalletOperation(operationId: String, message: ProtocolMessages.CashInOutOperation): WalletOperation {
-        return WalletOperation(operationId, message.id, message.clientId, message.assetId,
-                Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO)
-    }
-    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashInOutOperation {
-        if (messageWrapper.parsedMessage == null) {
-            parseMessage(messageWrapper)
-        }
-        return messageWrapper.parsedMessage!! as ProtocolMessages.CashInOutOperation
-    }
-
-    private fun parse(array: ByteArray): ProtocolMessages.CashInOutOperation {
-        return ProtocolMessages.CashInOutOperation.parseFrom(array)
-    }
-
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
-        messageWrapper.timestamp = message.timestamp
-        messageWrapper.parsedMessage = message
-        messageWrapper.id = message.id
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
@@ -159,12 +131,12 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                    operationId: String,
                                    status: MessageStatus,
                                    errorMessage: String = StringUtils.EMPTY) {
-        val message = getMessage(messageWrapper)
+        val context = messageWrapper.context as CashInOutContext
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash in/out operation (${message.id}) for client ${message.clientId}, " +
-                "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.volume)}: $errorMessage")
+        LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
+                "asset ${context.asset.assetId}, amount: ${NumberUtils.roundForPrint(context.volume)}: $errorMessage")
     }
 }

@@ -193,7 +193,7 @@ abstract class AbstractTest {
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, rabbitTransferQueue,
                 dbTransferOperationQueue,
                 FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService),
                 cashTransferOperationValidator, messageSequenceNumberHolder, messageSender)

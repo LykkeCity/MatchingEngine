@@ -11,9 +11,8 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
@@ -30,6 +29,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -68,6 +68,12 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
+
+    @Autowired
+    private lateinit var cashTransferPreprocessor: CashTransferPreprocessor
+
+    @Autowired
+    private lateinit var cashInOutPreprocessor: CashInOutPreprocessor
 
     @Before
     fun setUp() {
@@ -120,11 +126,15 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testCashInOutOperation() {
-        cashInOutOperationService.processMessage(buildCashInOutWrapper("Client1", "EUR", 5.0))
+        val messageWrapper = buildCashInOutWrapper("Client1", "EUR", 5.0)
+        cashInOutPreprocessor.preProcess(messageWrapper)
+        cashInOutOperationService.processMessage(messageWrapper)
         assertData()
         assertEquals(0, cashInOutQueue.size)
 
-        cashInOutOperationService.processMessage(buildCashInOutWrapper("Client1", "EUR", -4.0))
+        val messageWrapper1 = buildCashInOutWrapper("Client1", "EUR", -4.0)
+        cashInOutPreprocessor.preProcess(messageWrapper1)
+        cashInOutOperationService.processMessage(messageWrapper1)
         assertData()
         assertEquals(0, cashInOutQueue.size)
     }
@@ -133,6 +143,8 @@ class PersistenceErrorTest : AbstractTest() {
     fun testTransferOperation() {
         val messageWrapper = buildTransferWrapper("Client1", "Client2",
                 "BTC", 0.1, 0.0)
+
+        cashTransferPreprocessor.preProcess(messageWrapper)
         cashTransferOperationsService.parseMessage(messageWrapper)
         cashTransferOperationsService.processMessage(messageWrapper)
         assertData()

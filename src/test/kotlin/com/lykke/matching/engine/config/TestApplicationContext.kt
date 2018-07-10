@@ -8,13 +8,12 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -47,12 +46,15 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import org.mockito.Mockito
+import org.springframework.context.ApplicationEventPublisher
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 @Import(QueueConfig::class)
@@ -193,7 +195,7 @@ open class TestApplicationContext {
     open fun cashInOutOperationValidator(balancesHolder: BalancesHolder,
                                          assetsHolder: AssetsHolder,
                                          applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationValidator {
-        return CashInOutOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+        return CashInOutOperationValidatorImpl(balancesHolder, applicationSettingsCache)
     }
 
     @Bean
@@ -420,5 +422,29 @@ open class TestApplicationContext {
                                 genericStopLimitOrderService: GenericStopLimitOrderService, genericLimitOrdersCancellerFactory:
                                 GenericLimitOrdersCancellerFactory): AllOrdersCanceller {
         return AllOrdersCanceller(assetsPairsHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, false)
+    }
+
+
+    @Bean
+    open fun cashInOutContextParser(assetsHolder: AssetsHolder): ContextParser {
+        return CashInOutContextParser(assetsHolder)
+    }
+
+
+    @Bean
+    open fun cashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser): CashInOutPreprocessor {
+        return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), cashInOutContextParser)
+    }
+
+    @Bean
+    open fun cashTransferInitializer(assetsHolder: AssetsHolder): CashTransferContextParser {
+        return CashTransferContextParser(assetsHolder)
+    }
+
+    @Bean
+    open fun cashTransferPreprocessor(cashTransferContextParser: CashTransferContextParser): CashTransferPreprocessor {
+        return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
+                cashTransferContextParser)
     }
 }
