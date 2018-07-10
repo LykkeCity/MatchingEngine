@@ -4,11 +4,16 @@ import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import java.util.concurrent.BlockingQueue
-import javax.annotation.PostConstruct
+import javax.annotation .PostConstruct
 import kotlin.concurrent.thread
 
 class DefaultPreprocessor(private val incomingQueue: BlockingQueue<MessageWrapper>,
-                          private val outgoingQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor {
+                                                     private val outgoingQueue: BlockingQueue<MessageWrapper>) : MessagePreprocessor {
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        //do nothing
+    }
+
+
     override fun preProcess(messageWrapper: MessageWrapper) {
 
     }
@@ -18,12 +23,17 @@ class DefaultPreprocessor(private val incomingQueue: BlockingQueue<MessageWrappe
 
     }
 
-    @PostConstruct
+        @PostConstruct
+
     fun init() {
         thread(start = true, name = DefaultPreprocessor::class.java.name) {
             while (true) {
                 preProcess(incomingQueue.take())
+
             }
+
         }
+
     }
+
 }
