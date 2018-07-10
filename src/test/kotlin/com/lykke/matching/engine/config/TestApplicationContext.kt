@@ -11,6 +11,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
@@ -20,6 +21,7 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
@@ -57,7 +59,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor :TestFileOrderDatabaseAccessor,
+    open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor: TestFileOrderDatabaseAccessor,
                                          testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
@@ -67,7 +69,7 @@ open class TestApplicationContext {
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
-                testReservedVolumesDatabaseAccessor,  assetHolder,
+                testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
                 "tset", false, applicationEventPublisher, messageSequenceNumberHolder, messageSender)
     }
@@ -214,5 +216,15 @@ open class TestApplicationContext {
     @Bean
     open fun balance(balancesHolder: BalancesHolder, balanceUpdateValidator: BalanceUpdateValidator): BalanceUpdateService {
         return BalanceUpdateService(balancesHolder, balanceUpdateValidator)
+    }
+
+    @Bean
+    open fun singleLimitOrderContextParser(): SingleLimitOrderContextParser {
+        return SingleLimitOrderContextParser()
+    }
+
+    @Bean
+    open fun messageBuilder(singleLimitOrderContextParser: SingleLimitOrderContextParser): MessageBuilder {
+        return MessageBuilder(singleLimitOrderContextParser)
     }
 }

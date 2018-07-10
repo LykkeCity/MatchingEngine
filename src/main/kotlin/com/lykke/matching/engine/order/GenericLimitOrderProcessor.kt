@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -67,11 +68,11 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         checkAndProcessStopOrder(messageId, order.assetPairId, now)
     }
 
-    fun processOrder(messageWrapper: MessageWrapper, order: LimitOrder, isCancelOrders: Boolean, now: Date) {
-        when(order.type) {
-            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper.messageId!!, messageWrapper.processedMessage(),
-                    messageWrapper, order, isCancelOrders, now)
-            LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, order, isCancelOrders, now)
+    fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
+        when(singleLimitContext.limitOrder.type) {
+            LimitOrderType.LIMIT -> processLimitOrder(singleLimitContext.messageId, singleLimitContext.processedMessage,
+                    messageWrapper, singleLimitContext.limitOrder, singleLimitContext.cancelOrders, singleLimitContext.orderProcessingStartTime)
+            LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, singleLimitContext)
         }
     }
 
@@ -80,6 +81,6 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         checkAndProcessStopOrder(messageId, order.assetPairId, now)
     }
 
-    private fun processStopOrder(messageWrapper: MessageWrapper, order: LimitOrder, isCancelOrders: Boolean, now: Date) =
-            stopLimitOrderProcessor.processStopOrder(messageWrapper, order, isCancelOrders, now)
+    private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) =
+            stopLimitOrderProcessor.processStopOrder(messageWrapper, singleLimitContext)
 }

@@ -25,7 +25,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         val context = messageWrapper.context as SingleLimitContext
 
         val startTime = System.nanoTime()
-        genericLimitOrderProcessor.processOrder(messageWrapper, context.limitOrder, context.cancelOrders, context.orderProcessingStartTime)
+        genericLimitOrderProcessor.processOrder(messageWrapper, context)
         val endTime = System.nanoTime()
 
         messagesCount++

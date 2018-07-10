@@ -8,7 +8,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
-class QueueConfig {
+open class QueueConfig {
 
     @Bean
     open fun clientsEventsQueue(): BlockingQueue<Event<*>> {

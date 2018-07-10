@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.messages.MessageType
@@ -18,7 +19,7 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class SingleLimitorderContextParser: ContextParser {
+class SingleLimitOrderContextParser : ContextParser {
     override fun parse(messageWrapper: MessageWrapper): MessageWrapper {
         val orderProcessingStartTime = Date()
         val builder = parseMessage(messageWrapper, orderProcessingStartTime)
@@ -32,41 +33,56 @@ class SingleLimitorderContextParser: ContextParser {
         return messageWrapper
     }
 
-
-    fun parseMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitContext.Builder {
-        val builder = SingleLimitContext.Builder()
-        val order: LimitOrder
-        val cancelOrders: Boolean
-
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            val oldMessage =  parseOldLimitOrder(messageWrapper.byteArray)
-            val uid = UUID.randomUUID().toString()
-            order = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
-                    BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, orderProcessingStartTime, Date(oldMessage.timestamp), orderProcessingStartTime, BigDecimal.valueOf(oldMessage.volume), null,
-                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
-
-            SingleLimitOrderService.LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
-                    "assetPair: ${oldMessage.assetPairId}, " +
-                    "volume: ${NumberUtils.roundForPrint(oldMessage.volume)}, price: ${NumberUtils.roundForPrint(oldMessage.price)}, " +
-                    "cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
-
-            cancelOrders = oldMessage.cancelAllPreviousLimitOrders
-            builder.id = oldMessage.uid.toString()
-            builder.messageId = if (oldMessage.hasMessageId()) oldMessage.messageId else oldMessage.uid.toString()
+    private fun parseMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitContext.Builder {
+        return if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            parseOldMessage(messageWrapper, orderProcessingStartTime)
         } else {
-            val message = parseLimitOrder(messageWrapper.byteArray)
-            builder.id = message.uid
-            builder.messageId = if (message.hasMessageId()) message.messageId else message.uid
-            order = createOrder(message, orderProcessingStartTime)
-            SingleLimitOrderService.LOGGER.info("Got limit order ${incomingMessageInfo(messageWrapper.messageId, message, order)}")
-
-            cancelOrders = message.cancelAllPreviousLimitOrders
+            parseNewMessage(messageWrapper, orderProcessingStartTime)
         }
+    }
+
+    private fun parseOldMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitContext.Builder {
+        val builder = SingleLimitContext.Builder()
+
+        val oldMessage = parseOldLimitOrder(messageWrapper.byteArray)
+        val uid = UUID.randomUUID().toString()
+
+        builder.limitOrder(LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
+                BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, orderProcessingStartTime, Date(oldMessage.timestamp), orderProcessingStartTime, BigDecimal.valueOf(oldMessage.volume), null,
+                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null))
+
+        SingleLimitOrderService.LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
+                "assetPair: ${oldMessage.assetPairId}, " +
+                "volume: ${NumberUtils.roundForPrint(oldMessage.volume)}, price: ${NumberUtils.roundForPrint(oldMessage.price)}, " +
+                "cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+
+        val messageId = if (oldMessage.hasMessageId()) oldMessage.messageId else oldMessage.uid.toString()
 
         return builder
-                .limitOrder(order)
+                .id(oldMessage.uid.toString())
+                .messageId(messageId)
                 .orderProcessingStartTime(orderProcessingStartTime)
-                .cancelOrders(cancelOrders)
+                .cancelOrders(oldMessage.cancelAllPreviousLimitOrders)
+                .processedMessage(ProcessedMessage(messageWrapper.type, oldMessage.timestamp, messageId))
+    }
+
+    private fun parseNewMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitContext.Builder {
+        val builder = SingleLimitContext.Builder()
+
+        val message = parseLimitOrder(messageWrapper.byteArray)
+        val messageId = if (message.hasMessageId()) message.messageId else message.uid
+
+        val limitOrder = createOrder(message, orderProcessingStartTime)
+
+        SingleLimitOrderService.LOGGER.info("Got limit order ${incomingMessageInfo(messageWrapper.messageId, message, limitOrder)}")
+
+        return builder
+                .id(message.uid)
+                .messageId(messageId)
+                .limitOrder(limitOrder)
+                .orderProcessingStartTime(orderProcessingStartTime)
+                .cancelOrders(message.cancelAllPreviousLimitOrders)
+                .processedMessage(ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
     }
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {
@@ -79,7 +95,7 @@ class SingleLimitorderContextParser: ContextParser {
 
     private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): LimitOrder {
         val type = if (message.hasType()) LimitOrderType.getByExternalId(message.type) else LimitOrderType.LIMIT
-        val status = when(type) {
+        val status = when (type) {
             LimitOrderType.LIMIT -> OrderStatus.InOrderBook
             LimitOrderType.STOP_LIMIT -> OrderStatus.Pending
         }
@@ -100,7 +116,7 @@ class SingleLimitorderContextParser: ContextParser {
                 fee = feeInstruction,
                 fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
                 type = type,
-                lowerLimitPrice = if (message.hasLowerLimitPrice()) BigDecimal.valueOf(message.lowerLimitPrice )else null,
+                lowerLimitPrice = if (message.hasLowerLimitPrice()) BigDecimal.valueOf(message.lowerLimitPrice) else null,
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,

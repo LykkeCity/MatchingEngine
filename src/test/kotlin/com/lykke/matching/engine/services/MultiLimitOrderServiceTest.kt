@@ -21,7 +21,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
@@ -74,6 +73,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -260,7 +262,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         trustedClientsLimitOrdersQueue.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -334,7 +336,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
         trustedClientsLimitOrdersQueue.poll()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -423,7 +425,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(2, trustedClientsEventsQueue.size)
         clearMessageQueues()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -481,7 +483,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -612,7 +614,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -670,7 +672,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
         assertEquals(1, clientsLimitOrdersQueue.size)
         var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
@@ -744,7 +746,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = -50.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = -50.0)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
                 pair = "EURUSD",
@@ -758,7 +760,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.5), balancesHolder.getBalance(feeHolder, "EUR")) // 0.01 * 50 (expr1)
         assertEquals(BigDecimal.valueOf(49.5), balancesHolder.getBalance(marketMaker, "EUR")) // 50 - expr1 (expr2)
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.1, volume = -70.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.1, volume = -70.0)))
 
         assertEquals(BigDecimal.valueOf(3.1), balancesHolder.getBalance(feeHolder, "EUR")) // expr1 + 10 * 0.02 + 60 * 0.04 (expr3)
         assertEquals(BigDecimal.valueOf(116.9), balancesHolder.getBalance(marketMaker, "EUR")) // expr2 + 70 - expr3
@@ -787,10 +789,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
                 ),
                 cancel = true, ordersFee = listOf(), ordersFees = listOf()))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
 
         clearMessageQueues()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.13, volume = -100.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.13, volume = -100.0)))
 
         assertEquals(1, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
         assertEquals(BigDecimal.valueOf(1.1), genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())

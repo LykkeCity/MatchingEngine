@@ -2,6 +2,7 @@ package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
@@ -10,6 +11,8 @@ import java.math.BigDecimal
 
 @Ignore
 class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
+
+    private val messageBuilder = MessageBuilder(SingleLimitOrderContextParser())
 
     override fun initServices() {
         super.initServices()
@@ -51,7 +54,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "EUR",  500.0)
 
-        counter.executeAction { singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.2, volume = -501.0))) }
+        counter.executeAction { singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.2, volume = -501.0))) }
         return counter.getAverageTime()
     }
 
@@ -62,7 +65,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         initServices()
 
         val counter = ActionTimeCounter()
-        counter.executeAction {singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.2, volume = -500.0)))}
+        counter.executeAction {singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.2, volume = -500.0)))}
         return counter.getAverageTime()
     }
 
@@ -70,8 +73,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         initServices()
 
         val counter = ActionTimeCounter()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 200.0, volume = 1.0, uid = "2")))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 500.0, volume = 1.5, uid = "3"), true))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 200.0, volume = 1.0, uid = "2")))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 500.0, volume = 1.5, uid = "3"), true))}
         return counter.getAverageTime()
     }
 
@@ -79,10 +82,10 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         initServices()
 
         val counter = ActionTimeCounter()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 100.0, volume = 1.0)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 200.0, volume = 1.0)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 300.0, volume = -1.0)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 150.0, volume = -1.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 100.0, volume = 1.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 200.0, volume = 1.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 300.0, volume = -1.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 150.0, volume = -1.0)))}
         return counter.getAverageTime()
     }
 
@@ -94,9 +97,9 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
                 BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2)))}
         initServices()
 
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(volume = 0.09)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.9, volume = 0.1)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 2.0, volume = -0.1)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(volume = 0.09)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.9, volume = 0.1)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 2.0, volume = -0.1)))}
         return counter.getAverageTime()
     }
 
@@ -107,8 +110,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1000.0)
 
         initServices()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 4199.351, volume = 0.00357198)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", price = 4199.351, volume = -0.00357198)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 4199.351, volume = 0.00357198)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", price = 4199.351, volume = -0.00357198)))}
         return counter.getAverageTime()
     }
 
@@ -119,8 +122,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
 
         initServices()
 
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client1", price = 3200.0, volume = -0.01)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client3", price = 3200.0, volume = 0.009973)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client1", price = 3200.0, volume = -0.01)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client3", price = 3200.0, volume = 0.009973)))}
         return counter.getAverageTime()
     }
 
@@ -132,7 +135,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "EURUSD", price = 122.524, volume = -10.0, clientId = "Client3"))
 
         initServices()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 122.512, volume = 1.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 122.512, volume = 1.0)))}
         return counter.getAverageTime()
     }
 
@@ -147,7 +150,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
 
         initServices()
 
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", price = 3575.782, volume = -0.01)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", price = 3575.782, volume = -0.01)))}
         return counter.getAverageTime()
     }
 
@@ -170,7 +173,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", price = 3863.035, volume = -0.1, clientId = "Client3"))
 
         initServices()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCEUR", price = 3890.0, volume = 0.5)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCEUR", price = 3890.0, volume = 0.5)))}
         return counter.getAverageTime()
     }
 
@@ -185,7 +188,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(assetId = "EURUSD", price = 122.524, volume = -10.0, clientId = "Client3"))
 
         initServices()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 122.52, volume = 11.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 122.52, volume = 11.0)))}
         return counter.getAverageTime()
     }
 
@@ -198,8 +201,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 2000.0)
 
         initServices()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", price = 4421.0, volume = -0.00045239)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 4425.0, volume = 0.032)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", price = 4421.0, volume = -0.00045239)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 4425.0, volume = 0.032)))}
         return counter.getAverageTime()
     }
 
@@ -212,8 +215,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10.00)
 
         initServices()
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.0, volume = 10.0)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.0, volume = 10.0, clientId = "Client2")))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.0, volume = 10.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(price = 1.0, volume = 10.0, clientId = "Client2")))}
         return counter.getAverageTime()
     }
 
@@ -226,7 +229,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 4722.0, volume = 0.14825226))
         initServices()
 
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 4721.403, volume = -0.4435)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 4721.403, volume = -0.4435)))}
         return counter.getAverageTime()
     }
 
@@ -240,8 +243,8 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
 
         initServices()
 
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "PKTETH", price = 0.0001, volume = -2.689999999998)))}
-        counter.executeAction {  singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "PKTETH", price = 0.0001, volume = 100.0)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "PKTETH", price = 0.0001, volume = -2.689999999998)))}
+        counter.executeAction {  singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "PKTETH", price = 0.0001, volume = 100.0)))}
         return counter.getAverageTime()
     }
 }
