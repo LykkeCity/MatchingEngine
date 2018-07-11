@@ -1,17 +1,19 @@
 package com.lykke.matching.engine.services.utils
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 
 class MultiOrderFilter(private val isTrustedClient: Boolean,
                        private val baseAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAvailableBalance: BigDecimal,
+                       private val quotingAssetAccuracy: Int,
                        private val orders: MutableCollection<LimitOrder>,
                        private val LOGGER: Logger) {
 
-    private var needToBidSort = false
-    private var needToAskSort = false
+    private var notSortedBuySide = false
+    private var notSortedSellSide = false
     private var prevBidPrice: BigDecimal? = null
     private var prevAskPrice: BigDecimal? = null
     private var usedBaseAssetVolume = BigDecimal.ZERO
@@ -19,15 +21,14 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
 
     fun checkAndAdd(order: LimitOrder): Boolean {
         if (!isTrustedClient) {
-            orders.add(order)
-            return true
+            return orders.add(order)
         }
         var skip = false
         if (order.isBuySide()) {
-            if (!needToBidSort) {
+            if (!notSortedBuySide) {
                 if (prevBidPrice == null || order.price < prevBidPrice) {
                     prevBidPrice = order.price
-                    val volume = order.volume * order.price
+                    val volume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
                     if (usedQuotingAssetVolume + volume > quotingAssetAvailableBalance) {
                         skip = true
                         LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
@@ -35,12 +36,12 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
                         usedQuotingAssetVolume += volume
                     }
                 } else {
-                    needToBidSort = true
+                    notSortedBuySide = true
                     LOGGER.debug("[${order.assetPairId}] Buy orders are not sorted by price")
                 }
             }
         } else {
-            if (!needToAskSort) {
+            if (!notSortedSellSide) {
                 if (prevAskPrice == null || order.price > prevAskPrice) {
                     prevAskPrice = order.price
                     val volume = order.getAbsVolume()
@@ -51,20 +52,17 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
                         usedBaseAssetVolume += volume
                     }
                 } else {
-                    needToAskSort = true
+                    notSortedSellSide = true
                     LOGGER.debug("[${order.assetPairId}] Sell orders are not sorted by price")
                 }
             }
         }
 
-        return if (!skip) {
-            orders.add(order)
-            true
-        } else false
+        return if (!skip) orders.add(order) else false
     }
 
     fun filterOutIfNotSorted(): List<LimitOrder> {
-        if (!isTrustedClient || !needToAskSort && !needToBidSort) {
+        if (!isTrustedClient || !notSortedSellSide && !notSortedBuySide) {
             return emptyList()
         }
         val buyOrders = ArrayList<LimitOrder>(orders.size)

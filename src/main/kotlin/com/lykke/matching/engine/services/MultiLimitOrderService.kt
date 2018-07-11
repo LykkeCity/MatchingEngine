@@ -54,7 +54,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                              private val orderBookQueue: BlockingQueue<OrderBook>,
                              private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                             assetsHolder: AssetsHolder,
+                             private val assetsHolder: AssetsHolder,
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -110,7 +110,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId)
         val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId)
 
-        val filter = MultiOrderFilter(true, baseAssetAvailableBalance, quotingAssetAvailableBalance, orders, LOGGER)
+        val filter = MultiOrderFilter(true,
+                baseAssetAvailableBalance,
+                quotingAssetAvailableBalance,
+                assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
+                orders,
+                LOGGER)
 
         message.ordersList.forEach { currentOrder ->
             val uid = UUID.randomUUID().toString()
@@ -556,6 +561,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val filter = MultiOrderFilter(isTrustedClient,
                 baseAssetAvailableBalance,
                 quotingAssetAvailableBalance,
+                assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
                 orders,
                 LOGGER)
 
