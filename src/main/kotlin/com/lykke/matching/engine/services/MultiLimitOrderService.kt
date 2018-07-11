@@ -59,7 +59,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
                                                     private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                                     private val orderBookQueue: BlockingQueue<OrderBook>,
                                                     private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                                    assetsHolder: AssetsHolder,
+                                                    private val assetsHolder: AssetsHolder,
                                                     private val assetsPairsHolder: AssetsPairsHolder,
                                                     private val balancesHolder: BalancesHolder,
                                                     genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
@@ -114,7 +114,12 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId)
         val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId)
 
-        val filter = MultiOrderFilter(true, baseAssetAvailableBalance, quotingAssetAvailableBalance, orders, LOGGER)
+        val filter = MultiOrderFilter(true,
+                baseAssetAvailableBalance,
+                quotingAssetAvailableBalance,
+                assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
+                orders,
+                LOGGER)
 
         message.ordersList.forEach { currentOrder ->
             val uid = UUID.randomUUID().toString()
@@ -573,6 +578,7 @@ class MultiLimitOrderService @Autowired constructor(private val limitOrderServic
         val filter = MultiOrderFilter(isTrustedClient,
                 baseAssetAvailableBalance,
                 quotingAssetAvailableBalance,
+                assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
                 orders,
                 LOGGER)
 
