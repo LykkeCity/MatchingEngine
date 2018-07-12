@@ -33,7 +33,7 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
                 NewFeeInstruction.create(message.feesList),
                 WalletOperation(operationId, message.id, message.clientId, message.assetId,
                         Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO),
-                assetsHolder.getAsset(message.assetId), message.assetId, Date())
+                assetsHolder.getAssetAllowNulls(message.assetId), message.assetId, Date())
 
         return messageWrapper
     }

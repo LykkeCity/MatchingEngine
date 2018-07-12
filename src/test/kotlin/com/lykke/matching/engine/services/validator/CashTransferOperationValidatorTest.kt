@@ -71,6 +71,21 @@ class CashTransferOperationValidatorTest {
     }
 
     @Test(expected = ValidationException::class)
+    fun testAssetExists() {
+        //given
+        val cashTransferOperationBuilder = getCashTransferOperationBuilder()
+        cashTransferOperationBuilder.assetId = "UNKNOWN"
+
+        try {
+            //when
+            cashTransferOperationValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+        } catch (e: ValidationException) {
+            assertEquals(ValidationException.Validation.UNKNOWN_ASSET, e.validationType)
+            throw e
+        }
+    }
+
+    @Test(expected = ValidationException::class)
     fun testAssetEnabled() {
         //given
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()

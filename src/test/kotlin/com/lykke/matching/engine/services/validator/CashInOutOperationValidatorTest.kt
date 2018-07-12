@@ -83,7 +83,7 @@ class CashInOutOperationValidatorTest {
                     .performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             //then
-            assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
+            assertEquals(ValidationException.Validation.UNKNOWN_ASSET, e.validationType)
         }
     }
 
