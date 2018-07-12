@@ -80,7 +80,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val startTime = System.nanoTime()
-        val orders: List<LimitOrder>
         val now = Date()
         var cancelBuySide = false
         var cancelSellSide = false
@@ -103,7 +102,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         clientId = message.clientId
         assetPairId = message.assetPairId
         LOGGER.debug("Got old multi limit order  messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
-        orders = ArrayList(message.ordersList.size)
         cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
 
         val assetPair = assetsPairsHolder.getAssetPair(assetPairId)
@@ -114,7 +112,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 baseAssetAvailableBalance,
                 quotingAssetAvailableBalance,
                 assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
-                orders,
+                message.ordersList.size,
                 LOGGER)
 
         message.ordersList.forEach { currentOrder ->
@@ -141,6 +139,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         filter.filterOutIfNotSorted()
 
+        val orders = filter.getResult()
         val ordersToCancel = ArrayList<LimitOrder>()
 
         if (cancelAllPreviousLimitOrders) {
@@ -545,7 +544,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val assetPairId = message.assetPairId
         val cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
         val cancelMode = if (message.hasCancelMode()) OrderCancelMode.getByExternalId(message.cancelMode) else OrderCancelMode.NOT_EMPTY_SIDE
-        val orders = ArrayList<LimitOrder>(message.ordersList.size)
         val now = Date()
         var cancelBuySide = cancelMode == OrderCancelMode.BUY_SIDE || cancelMode == OrderCancelMode.BOTH_SIDES
         var cancelSellSide = cancelMode == OrderCancelMode.SELL_SIDE || cancelMode == OrderCancelMode.BOTH_SIDES
@@ -562,7 +560,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 baseAssetAvailableBalance,
                 quotingAssetAvailableBalance,
                 assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
-                orders,
+                message.ordersList.size,
                 LOGGER)
 
         message.ordersList.forEach { currentOrder ->
@@ -621,7 +619,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         return MultiLimitOrder(messageUid,
                 clientId,
                 assetPairId,
-                orders,
+                filter.getResult(),
                 cancelAllPreviousLimitOrders,
                 cancelBuySide,
                 cancelSellSide,
