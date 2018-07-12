@@ -84,6 +84,7 @@ class CashInOutOperationValidatorTest {
         } catch (e: ValidationException) {
             //then
             assertEquals(ValidationException.Validation.UNKNOWN_ASSET, e.validationType)
+            throw e
         }
     }
 

@@ -287,12 +287,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue,
                 messageRouter.preProcessedMessageQueue,
                 cashOperationsDatabaseAccessor,
-                applicationContext.getBean(CashInOutContextParser::class.java))
+                applicationContext)
         cashInOutPreprocessor.start()
         this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue,
                 messageRouter.preProcessedMessageQueue,
                 cashOperationsDatabaseAccessor,
-                applicationContext.getBean(CashTransferContextParser::class.java))
+                applicationContext)
         cashTransferPreprocessor.start()
 
         this.tradesInfoService = TradesInfoService(tradesInfoQueue, limitOrderDatabaseAccessor)

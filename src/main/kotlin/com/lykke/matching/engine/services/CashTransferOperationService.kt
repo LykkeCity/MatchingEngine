@@ -61,12 +61,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 "asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
                 "feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
 
-        try {
-            cashTransferOperationValidator.performValidation(cashTransferContext)
-        } catch (e: ValidationException) {
-            writeErrorResponse(messageWrapper, cashTransferContext, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
-            return
-        }
+
 
         val result = try {
             messageWrapper.processedMessagePersisted = true
@@ -143,9 +138,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
     }
-
-
-
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    context: CashTransferContext,

@@ -27,6 +27,7 @@ import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.mockito.Mockito
+import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -231,9 +232,9 @@ open class TestApplicationContext {
 
 
     @Bean
-    open fun cashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser): CashInOutPreprocessor {
+    open fun cashInOutPreprocessor(applicationContext: ApplicationContext): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
-                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), cashInOutContextParser)
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), applicationContext)
     }
 
     @Bean
@@ -242,9 +243,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferPreprocessor(cashTransferContextParser: CashTransferContextParser): CashTransferPreprocessor {
+    open fun cashTransferPreprocessor(applicationContext: ApplicationContext): CashTransferPreprocessor {
         return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
-                cashTransferContextParser)
+                applicationContext)
     }
 
     @Bean
