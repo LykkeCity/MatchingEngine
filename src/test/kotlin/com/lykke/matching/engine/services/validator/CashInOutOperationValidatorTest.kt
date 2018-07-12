@@ -72,6 +72,22 @@ class CashInOutOperationValidatorTest {
     }
 
     @Test(expected = ValidationException::class)
+    fun assetDoesNotExist() {
+        //given
+        val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
+        cashInOutOperationBuilder.setAssetId("UNKNOWN")
+
+        try {
+            //when
+            cashInOutOperationValidator
+                    .performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
+        } catch (e: ValidationException) {
+            //then
+            assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
+        }
+    }
+
+    @Test(expected = ValidationException::class)
     fun testInvalidFee() {
         //given
         val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()

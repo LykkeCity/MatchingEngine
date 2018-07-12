@@ -23,6 +23,7 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
     }
 
     override fun performValidation(cashTransferContext: CashTransferContext) {
+        isAssetExist(cashTransferContext)
         isAssetEnabled(cashTransferContext)
         isFeeValid(cashTransferContext)
         isBalanceValid(cashTransferContext)
@@ -33,7 +34,7 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
         val transferOperation = cashTransferContext.transferOperation
         val balanceOfFromClient = balancesHolder.getBalance(transferOperation.fromClientId, transferOperation.asset)
         val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(transferOperation.fromClientId, transferOperation.asset)
-        val overdraftLimit = if (transferOperation.overdraftLimit != null) -transferOperation.overdraftLimit else BigDecimal.ZERO
+        val overdraftLimit = if (transferOperation.overdraftLimit != null) - transferOperation.overdraftLimit else BigDecimal.ZERO
         if (balanceOfFromClient - reservedBalanceOfFromClient - transferOperation.volume < overdraftLimit) {
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
                     "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
@@ -45,8 +46,18 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
         }
     }
 
+    private fun isAssetExist(cashTransferContext: CashTransferContext) {
+        if (cashTransferContext.asset == null) {
+            val transferOperation = cashTransferContext.transferOperation
+            LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
+                    "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
+                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: asset with id: ${cashTransferContext.inputAssetId}")
+            throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
+        }
+    }
+
     private fun isAssetEnabled(cashTransferContext: CashTransferContext) {
-        if (applicationSettingsCache.isAssetDisabled(cashTransferContext.asset.assetId)) {
+        if (applicationSettingsCache.isAssetDisabled(cashTransferContext.asset!!.assetId)) {
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
                     "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
@@ -59,7 +70,7 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
         if (!checkFee(cashTransferContext.feeInstruction, cashTransferContext.feeInstructions)) {
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Fee is invalid  from client: ${transferOperation.fromClientId}, to client: ${transferOperation.toClientId}")
-            throw ValidationException(ValidationException.Validation.INVALID_FEE, "invalid fee for client")
+            throw ValidationException(ValidationException.Validation.INVALID_FEE)
         }
     }
 

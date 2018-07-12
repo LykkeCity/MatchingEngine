@@ -39,6 +39,7 @@ class CashTransferContextParser(private val assetsHolder: AssetsHolder) : Contex
                         feeInstructions,
                         transferOperation,
                         assetsHolder.getAsset(transferOperation.asset),
+                        transferOperation.asset,
                         ProcessedMessage(MessageType.CASH_TRANSFER_OPERATION.type, message.timestamp, message.messageId),
                         Date())
 

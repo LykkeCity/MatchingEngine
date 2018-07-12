@@ -46,7 +46,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val walletOperation = cashInOutContext.walletOperation
 
         LOGGER.debug("Processing cash in/out messageId: ${cashInOutContext.messageId} operation (${cashInOutContext.id})" +
-                " for client ${cashInOutContext.clientId}, asset ${cashInOutContext.asset.assetId}," +
+                " for client ${cashInOutContext.clientId}, asset ${cashInOutContext.asset!!.assetId}," +
                 " amount: ${NumberUtils.roundForPrint(walletOperation.amount)}, feeInstructions: $feeInstructions")
 
         val operations = mutableListOf(walletOperation)
@@ -116,7 +116,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 walletOperation.clientId,
                 walletOperation.dateTime,
                 NumberUtils.setScaleRoundHalfUp(walletOperation.amount, assetsHolder.getAsset(walletOperation.assetId).accuracy).toPlainString(),
-                cashInOutContext.asset.assetId,
+                cashInOutContext.asset!!.assetId,
                 cashInOutContext.messageId,
                 fees
         ))
@@ -137,6 +137,6 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
-                "asset ${context.asset.assetId}, amount: ${NumberUtils.roundForPrint(context.walletOperation.amount)}: $errorMessage")
+                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.walletOperation.amount)}: $errorMessage")
     }
 }

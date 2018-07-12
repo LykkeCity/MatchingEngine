@@ -70,7 +70,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val result = try {
             messageWrapper.processedMessagePersisted = true
-            processTransferOperation(transferOperation, cashTransferContext.messageId!!, cashTransferContext.processedMessage, cashTransferContext.operationStartTime)
+            processTransferOperation(transferOperation, cashTransferContext.messageId, cashTransferContext.processedMessage, cashTransferContext.operationStartTime)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
             return
@@ -86,7 +86,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 transferOperation.fromClientId,
                 transferOperation.toClientId,
                 transferOperation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.asset.accuracy).toPlainString(),
+                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.asset!!.accuracy).toPlainString(),
                 transferOperation.overdraftLimit,
                 transferOperation.asset,
                 feeInstruction,

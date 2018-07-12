@@ -13,5 +13,6 @@ class CashInOutContext(val id: String,
                        val processedMessage: ProcessedMessage?,
                        val feeInstructions: List<NewFeeInstruction>,
                        val walletOperation: WalletOperation,
-                       val asset: Asset,
+                       val asset: Asset?,
+                       val inputAssetId: String,
                        val operationStartTime: Date)

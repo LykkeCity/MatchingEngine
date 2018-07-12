@@ -12,6 +12,7 @@ class CashTransferContext(
         val feeInstruction: FeeInstruction?,
         val feeInstructions: List<NewFeeInstruction>,
         val transferOperation: TransferOperation,
-        val asset: Asset,
+        val asset: Asset?,
+        val inputAssetId: String,
         val processedMessage: ProcessedMessage,
         val operationStartTime: Date)

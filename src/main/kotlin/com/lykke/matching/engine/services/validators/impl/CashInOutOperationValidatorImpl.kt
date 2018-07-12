@@ -20,21 +20,31 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
     }
 
     override fun performValidation(cashInOutContext: CashInOutContext) {
+        isAssetExist(cashInOutContext)
         isFeeValid(cashInOutContext.feeInstructions)
         isAssetEnabled(cashInOutContext)
         isBalanceValid(cashInOutContext)
         isVolumeAccuracyValid(cashInOutContext)
     }
 
+    private fun isAssetExist(cashInOutContext: CashInOutContext) {
+        if (cashInOutContext.asset == null) {
+            LOGGER.info("Asset with id: ${cashInOutContext.inputAssetId} does not exist, cash in/out operation; ${cashInOutContext.id}), " +
+                    "for client ${cashInOutContext.clientId}")
+            throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
+        }
+    }
+
     private fun isBalanceValid(cashInOutContext: CashInOutContext) {
-        if (cashInOutContext.volume < BigDecimal.ZERO) {
+        val amount = cashInOutContext.walletOperation.amount
+        if (amount < BigDecimal.ZERO) {
             val asset = cashInOutContext.asset
-            val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset.assetId)
+            val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset!!.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashInOutContext.clientId, asset.assetId)
-            if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + cashInOutContext.volume, asset.accuracy) < BigDecimal.ZERO) {
+            if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + amount, asset.accuracy) < BigDecimal.ZERO) {
                 LOGGER.info("Cash out operation (${cashInOutContext.id}) " +
                         "for client ${cashInOutContext.clientId} asset ${asset.assetId}, " +
-                        "volume: ${NumberUtils.roundForPrint(cashInOutContext.volume)}: low balance $balance, " +
+                        "volume: ${NumberUtils.roundForPrint(amount)}: low balance $balance, " +
                         "reserved balance $reservedBalance")
                 throw ValidationException(ValidationException.Validation.LOW_BALANCE)
             }
@@ -43,22 +53,24 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
     }
 
     private fun isVolumeAccuracyValid(cashInOutContext: CashInOutContext) {
+        val amount = cashInOutContext.walletOperation.amount
         val asset = cashInOutContext.asset
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(cashInOutContext.volume,
-                asset.accuracy)
+        val volumeValid = NumberUtils.isScaleSmallerOrEqual(amount,
+                asset!!.accuracy)
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy is invalid client: ${cashInOutContext.clientId}, " +
-                    "asset: ${asset.assetId}, volume: ${cashInOutContext.volume}")
+                    "asset: ${asset.assetId}, volume: $amount")
             throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }
 
     private fun isAssetEnabled(cashInOutContext: CashInOutContext) {
-        if (cashInOutContext.volume < BigDecimal.ZERO && applicationSettingsCache.isAssetDisabled(cashInOutContext.asset.assetId)) {
+        val amount = cashInOutContext.walletOperation.amount
+        if (amount < BigDecimal.ZERO && applicationSettingsCache.isAssetDisabled(cashInOutContext.asset!!.assetId)) {
             LOGGER.info("Cash out operation (${cashInOutContext.id}) for client ${cashInOutContext.clientId} " +
                     "asset ${cashInOutContext.asset.assetId}, " +
-                    "volume: ${NumberUtils.roundForPrint(cashInOutContext.volume)}: disabled asset")
+                    "volume: ${NumberUtils.roundForPrint(amount)}: disabled asset")
             throw ValidationException(ValidationException.Validation.DISABLED_ASSET)
         }
     }
