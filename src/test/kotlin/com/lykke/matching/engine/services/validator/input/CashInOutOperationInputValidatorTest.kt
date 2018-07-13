@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.services.validator
+package com.lykke.matching.engine.services.validator.input
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
@@ -10,11 +10,13 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import org.junit.Before
 import org.junit.Test
@@ -30,9 +32,9 @@ import java.util.*
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (CashInOutOperationValidatorTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class), (CashInOutOperationInputValidatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class CashInOutOperationValidatorTest {
+class CashInOutOperationInputValidatorTest {
 
     companion object {
         val CLIENT_ID = "Client1"
@@ -51,7 +53,7 @@ class CashInOutOperationValidatorTest {
     }
 
     @Autowired
-    private lateinit var cashInOutOperationValidator: CashInOutOperationValidator
+    private lateinit var cashInOutOperationInputValidator: CashInOutOperationInputValidator
 
     @Autowired
     private lateinit var cashInOutContextInitializer: CashInOutContextParser
@@ -72,6 +74,23 @@ class CashInOutOperationValidatorTest {
     }
 
     @Test(expected = ValidationException::class)
+    fun assetDoesNotExist() {
+        //given
+        val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
+        cashInOutOperationBuilder.setAssetId("UNKNOWN")
+
+        try {
+            //when
+            cashInOutOperationInputValidator
+                    .performValidation(getParsedData(cashInOutOperationBuilder.build()))
+        } catch (e: ValidationException) {
+            //then
+            assertEquals(ValidationException.Validation.UNKNOWN_ASSET, e.validationType)
+            throw e
+        }
+    }
+
+    @Test(expected = ValidationException::class)
     fun testInvalidFee() {
         //given
         val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
@@ -83,8 +102,8 @@ class CashInOutOperationValidatorTest {
             cashInOutOperationBuilder.addFees(fee)
             val feeInstructions = NewFeeInstruction.create(Arrays.asList(fee))
 
-            val cashInOutContext = getCashInOutContext(cashInOutOperationBuilder.build())
-            cashInOutOperationValidator
+            val cashInOutContext = getParsedData(cashInOutOperationBuilder.build())
+            cashInOutOperationInputValidator
                     .performValidation(cashInOutContext)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
@@ -103,26 +122,9 @@ class CashInOutOperationValidatorTest {
         try {
             val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
             cashInOutOperationBuilder.volume = -1.0
-            cashInOutOperationValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
+            cashInOutOperationInputValidator.performValidation(getParsedData(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
-            throw e
-        }
-    }
-
-    @Test(expected = ValidationException::class)
-    fun testBalanceValid() {
-        //given
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 500.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 250.0)
-        val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
-        cashInOutOperationBuilder.volume = -300.0
-
-        //when
-        try {
-            cashInOutOperationValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
-        } catch (e: ValidationException) {
-            assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
         }
     }
@@ -135,7 +137,7 @@ class CashInOutOperationValidatorTest {
 
         //when
         try {
-            cashInOutOperationValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
+            cashInOutOperationInputValidator.performValidation(getParsedData(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -144,7 +146,7 @@ class CashInOutOperationValidatorTest {
 
     @Test
     fun validData() {
-        cashInOutOperationValidator.performValidation(getCashInOutContext(getDefaultCashInOutOperationBuilder().build()))
+        cashInOutOperationInputValidator.performValidation(getParsedData(getDefaultCashInOutOperationBuilder().build()))
     }
 
     private fun getDefaultCashInOutOperationBuilder(): ProtocolMessages.CashInOutOperation.Builder {
@@ -165,7 +167,7 @@ class CashInOutOperationValidatorTest {
                 clientHandler = null)
     }
 
-    private fun getCashInOutContext(cashInOutOperation: ProtocolMessages.CashInOutOperation): CashInOutContext {
-        return cashInOutContextInitializer.parse(getMessageWrapper(cashInOutOperation)).context as CashInOutContext
+    private fun getParsedData(cashInOutOperation: ProtocolMessages.CashInOutOperation): CashInOutParsedData {
+        return cashInOutContextInitializer.parse(getMessageWrapper(cashInOutOperation))
     }
 }

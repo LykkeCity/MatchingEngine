@@ -59,8 +59,8 @@ import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
@@ -176,7 +176,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
-        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
+        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationBusinessValidator::class.java)
         this.cashInOutOperationService = CashInOutOperationService(assetsHolder,
                 balanceHolder,
                 rabbitCashInOutQueue,
@@ -185,7 +185,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 messageSequenceNumberHolder,
                 messageSender)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
-        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
+        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationBusinessValidatorImpl::class.java)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder,
                 rabbitTransferQueue,
                 dbTransferOperationQueue,
@@ -210,12 +210,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue,
                 messageRouter.preProcessedMessageQueue,
                 cashOperationsDatabaseAccessor,
-                applicationContext.getBean(CashInOutContextParser::class.java))
+                applicationContext)
         cashInOutPreprocessor.start()
         this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue,
                 messageRouter.preProcessedMessageQueue,
                 cashOperationsDatabaseAccessor,
-                applicationContext.getBean(CashTransferContextParser::class.java))
+                applicationContext)
         cashTransferPreprocessor.start()
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)

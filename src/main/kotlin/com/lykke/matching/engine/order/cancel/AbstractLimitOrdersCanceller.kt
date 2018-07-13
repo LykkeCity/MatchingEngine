@@ -106,7 +106,8 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                 if (reservedBalance > BigDecimal.ZERO) {
                     walletOperations.add(
                             WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, BigDecimal.ZERO,
-                                    if (limitVolume > reservedBalance) -reservedBalance else -limitVolume))
+                                    if (limitVolume > reservedBalance) - reservedBalance else -limitVolume)
+                    )
                 }
             }
         }

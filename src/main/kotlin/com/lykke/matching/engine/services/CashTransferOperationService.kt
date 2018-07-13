@@ -23,7 +23,7 @@ import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
@@ -38,7 +38,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
-                                   private val cashTransferOperationValidator: CashTransferOperationValidator,
+                                   private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                    private val messageSender: MessageSender) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -51,18 +51,16 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val cashTransferContext = messageWrapper.context as CashTransferContext
-        val feeInstruction = cashTransferContext.feeInstruction
-        val feeInstructions = cashTransferContext.feeInstructions
 
         val transferOperation = cashTransferContext.transferOperation
 
         LOGGER.debug("Processing cash transfer operation ${transferOperation.externalId}) messageId: ${cashTransferContext.messageId}" +
                 " from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}, " +
                 "asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
-                "feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
+                "feeInstructions: ${transferOperation.fees}")
 
         try {
-            cashTransferOperationValidator.performValidation(cashTransferContext)
+            cashTransferOperationBusinessValidator.performValidation(cashTransferContext)
         } catch (e: ValidationException) {
             writeErrorResponse(messageWrapper, cashTransferContext, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return
@@ -70,7 +68,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val result = try {
             messageWrapper.processedMessagePersisted = true
-            processTransferOperation(transferOperation, cashTransferContext.messageId!!, cashTransferContext.processedMessage, cashTransferContext.operationStartTime)
+            processTransferOperation(transferOperation, cashTransferContext.messageId, cashTransferContext.processedMessage, cashTransferContext.operationStartTime)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
             return
@@ -82,15 +80,17 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
             return
         }
         dbTransferOperationQueue.put(transferOperation)
+        val fee = if(transferOperation.fees == null || transferOperation.fees.isEmpty()) null else transferOperation.fees.first()
+
         notificationQueue.put(CashTransferOperation(transferOperation.externalId,
                 transferOperation.fromClientId,
                 transferOperation.toClientId,
                 transferOperation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.asset.accuracy).toPlainString(),
+                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.asset!!.accuracy).toPlainString(),
                 transferOperation.overdraftLimit,
                 transferOperation.asset,
-                feeInstruction,
-                singleFeeTransfer(feeInstruction, result.fees),
+                fee,
+                singleFeeTransfer(fee, result.fees),
                 result.fees,
                 cashTransferContext.messageId))
 
@@ -143,9 +143,6 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
     }
-
-
-
 
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
                                    context: CashTransferContext,

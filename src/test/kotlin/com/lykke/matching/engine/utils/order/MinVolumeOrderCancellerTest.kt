@@ -7,8 +7,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -21,7 +19,6 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -38,12 +35,9 @@ import kotlin.test.assertNull
 @SpringBootTest(classes = [(TestApplicationContext::class), (MinVolumeOrderCancellerTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
-
-    @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
     @TestConfiguration
     open class Config {
+
         @Bean
         @Primary
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
@@ -55,7 +49,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
             return testBackOfficeDatabaseAccessor
         }
-
         @Bean
         @Primary
         open fun testConfig(): TestConfigDatabaseAccessor {
@@ -63,10 +56,13 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
             testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
             return testSettingsDatabaseAccessor
         }
+
     }
 
+    private lateinit var canceller: MinVolumeOrderCanceller
+
     @Autowired
-    lateinit var applicationContext: ApplicationContext
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     @Autowired
     lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>

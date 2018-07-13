@@ -48,12 +48,19 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.CashInOutOperationBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.mockito.Mockito
-import com.lykke.matching.engine.utils.order.AllOrdersCanceller
-import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -196,17 +203,23 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationValidator(balancesHolder: BalancesHolder,
-                                         assetsHolder: AssetsHolder,
-                                         applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationValidator {
-        return CashInOutOperationValidatorImpl(balancesHolder, applicationSettingsCache)
+    open fun cashInOutOperationBusinessValidator(balancesHolder: BalancesHolder): CashInOutOperationBusinessValidator {
+        return CashInOutOperationBusinessValidatorImpl(balancesHolder)
     }
 
     @Bean
-    open fun cashTransferOperationValidator(balancesHolder: BalancesHolder,
-                                            assetsHolder: AssetsHolder,
-                                            applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationValidator {
-        return CashTransferOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+    open fun cashTransferOperationBusinessValidator(balancesHolder: BalancesHolder): CashTransferOperationBusinessValidator {
+        return CashTransferOperationBusinessValidatorImpl(balancesHolder)
+    }
+
+    @Bean
+    open fun cashInOutOperationInputValidator(balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
+        return CashInOutOperationInputValidatorImpl(balancesHolder, applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashTransferOperationInputValidator(assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
+        return CashTransferOperationInputValidatorImpl(assetsHolder, applicationSettingsCache)
     }
 
     @Bean
@@ -436,9 +449,9 @@ open class TestApplicationContext {
 
 
     @Bean
-    open fun cashInOutPreprocessor(cashInOutContextParser: CashInOutContextParser): CashInOutPreprocessor {
+    open fun cashInOutPreprocessor(applicationContext: ApplicationContext): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
-                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), cashInOutContextParser)
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), applicationContext)
     }
 
     @Bean
@@ -447,9 +460,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferPreprocessor(cashTransferContextParser: CashTransferContextParser): CashTransferPreprocessor {
+    open fun cashTransferPreprocessor(applicationContext: ApplicationContext): CashTransferPreprocessor {
         return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java),
-                cashTransferContextParser)
+                applicationContext)
     }
 
     @Bean

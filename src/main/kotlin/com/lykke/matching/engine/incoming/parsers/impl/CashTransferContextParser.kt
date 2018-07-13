@@ -10,14 +10,15 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.messages.MessageWrapper
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
 
 @Component
-class CashTransferContextParser(private val assetsHolder: AssetsHolder) : ContextParser {
-    override fun parse(messageWrapper: MessageWrapper): MessageWrapper {
+class CashTransferContextParser(private val assetsHolder: AssetsHolder) : ContextParser<CashTransferParsedData> {
+    override fun parse(messageWrapper: MessageWrapper): CashTransferParsedData {
         val message = ProtocolMessages.CashTransferOperation.parseFrom(messageWrapper.byteArray)
 
         val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
@@ -35,13 +36,12 @@ class CashTransferContextParser(private val assetsHolder: AssetsHolder) : Contex
         messageWrapper.context =
                 CashTransferContext(
                         if (message.hasMessageId()) message.messageId else message.id,
-                        feeInstruction,
-                        feeInstructions,
                         transferOperation,
-                        assetsHolder.getAsset(transferOperation.asset),
+                        assetsHolder.getAssetAllowNulls(transferOperation.asset),
+                        transferOperation.asset,
                         ProcessedMessage(MessageType.CASH_TRANSFER_OPERATION.type, message.timestamp, message.messageId),
                         Date())
 
-        return messageWrapper
+        return CashTransferParsedData(messageWrapper, feeInstruction, feeInstructions)
     }
 }
