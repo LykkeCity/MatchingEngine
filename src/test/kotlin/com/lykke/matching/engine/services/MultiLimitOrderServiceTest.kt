@@ -471,7 +471,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(-26.0), bestAskOrder.volume)
         assertEquals(BigDecimal.valueOf(-25.30968057), bestAskOrder.remainingVolume)
 
-        assertEquals(1, orderBook.getOrderBook(true).size)
+        assertEquals(0, orderBook.getOrderBook(true).size)
     }
 
     @Test
@@ -768,7 +768,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testMatchWithNotEnoughFundsTrustedOrders() {
         val marketMaker = "Client1"
         val client = "Client2"
-        testBalanceHolderWrapper.updateBalance(marketMaker, "USD", 6.0)
+        testBalanceHolderWrapper.updateBalance(marketMaker, "USD", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 2.0)
 
         testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "EURUSD", price = 1.19, volume = 1.0))
@@ -786,6 +786,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
                         VolumePrice(BigDecimal.valueOf(2.0), BigDecimal.valueOf(1.1))
                 ),
                 cancel = true, ordersFee = listOf(), ordersFees = listOf()))
+
+        testBalanceHolderWrapper.updateBalance(marketMaker, "USD", 6.0)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
 
@@ -907,7 +909,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     private fun setOrder() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
-        testBalanceHolderWrapper.updateBalance("Client1", "USD", 3000.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 3000.0)
         initServices()
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR", "Client1", listOf(
@@ -984,7 +986,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testReplaceOrders() {
-        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 2.0)
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 3000.0)
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
@@ -1018,7 +1020,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("BTCEUR", true, 3)
         assertOrderBookSize("BTCEUR", false, 4)
 
-        assertBalance("Client1", "BTC", 1.1, 0.0)
+        assertBalance("Client1", "BTC", 2.1, 0.0)
         assertBalance("Client1", "EUR", 2200.0, 0.0)
 
         assertEquals(1, trustedClientsLimitOrdersQueue.size)
@@ -1081,6 +1083,32 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
+    fun testReplaceOrderWithNotEnoughFunds() {
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "Client1", listOf(
+                IncomingLimitOrder(-100.0, 1.2, "0"),
+                IncomingLimitOrder(-400.0, 1.3, "1"),
+                IncomingLimitOrder(-400.0, 1.4, "2")
+        ), cancel = false))
+        clearMessageQueues()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD", "Client1", listOf(
+                IncomingLimitOrder(-700.0, 1.3, "3", oldUid = "1"),
+                IncomingLimitOrder(-400.0, 1.5, "4", oldUid = "2")
+        ), cancel = false))
+
+        assertOrderBookSize("EURUSD", false, 2)
+        val orderBook = genericLimitOrderService.getOrderBook("EURUSD")
+        assertTrue(orderBook.getOrderBook(false).any { it.externalId == "0" })
+        assertTrue(orderBook.getOrderBook(false).any { it.externalId == "3" })
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(3, event.orders.size)
+        assertEquals(OutgoingOrderStatus.REPLACED, event.orders.single { it.externalId == "1" }.status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "2" }.status)
+        assertEquals(OutgoingOrderStatus.PLACED, event.orders.single { it.externalId == "3" }.status)
+    }
+
+    @Test
     fun testCancelPreviousOrderWithSameUidAndMatch() {
         val order = buildLimitOrder(uid = "1",
                 assetId = "EURUSD",
@@ -1127,6 +1155,124 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertTrue { eventPreviousOrder.id != eventNewOrder.id }
         assertEquals(0, eventPreviousOrder.trades!!.size)
         assertEquals(1, eventNewOrder.trades!!.size)
+    }
+
+    @Test
+    fun testRejectOldFormatOrdersWithNotEnoughFunds() {
+        setMultiOrderWithNotEnoughFunds(true, true)
+        assertRejectOrdersWithNotEnoughFunds()
+    }
+
+    @Test
+    fun testRejectOldFormatNotSortedOrdersWithNotEnoughFunds() {
+        setMultiOrderWithNotEnoughFunds(true, false)
+        assertRejectOrdersWithNotEnoughFunds()
+    }
+
+    @Test
+    fun testRejectOrdersWithNotEnoughFunds() {
+        setMultiOrderWithNotEnoughFunds(false, true)
+        assertRejectOrdersWithNotEnoughFunds()
+    }
+
+    @Test
+    fun testRejectNotSortedOrdersWithNotEnoughFunds() {
+        setMultiOrderWithNotEnoughFunds(false, false)
+        assertRejectOrdersWithNotEnoughFunds()
+    }
+
+    private fun setMultiOrderWithNotEnoughFunds(oldFormat: Boolean, sorted: Boolean) {
+        testBalanceHolderWrapper.updateBalance("Client1", "USD", 10.0)
+
+        val order1 = IncomingLimitOrder(-300.0, 1.31)
+        val order2 = IncomingLimitOrder(-300.0, 1.32)
+        val order3 = IncomingLimitOrder(-300.0, 1.33)
+        val order4 = IncomingLimitOrder(-300.0, 1.34)
+        val order5 = IncomingLimitOrder(-300.0, 1.35)
+        val order6 = IncomingLimitOrder(-100.0, 1.36)
+        val order7 = IncomingLimitOrder(3.0, 1.2)
+        val order8 = IncomingLimitOrder(3.0, 1.1)
+        val order9 = IncomingLimitOrder(3.0, 1.0)
+        val order10 = IncomingLimitOrder(3.0, 0.9)
+        val order11 = IncomingLimitOrder(0.1, 0.8)
+
+        val orders = if (sorted)
+            listOf(order1,
+                    order2,
+                    order3,
+                    order4,
+                    order5,
+                    order6,
+                    order7,
+                    order8,
+                    order9,
+                    order10,
+                    order11)
+        else
+            listOf(order1,
+                    order4,
+                    order2,
+                    order6,
+                    order3,
+                    order5,
+                    order8,
+                    order11,
+                    order7,
+                    order10,
+                    order9)
+
+        if (oldFormat) {
+            multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("EURUSD",
+                    "Client1",
+                    orders.map {toVolumePrice(it)}))
+        } else {
+            multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("EURUSD",
+                    "Client1",
+                    orders))
+        }
+    }
+
+    private fun toVolumePrice(order: IncomingLimitOrder): VolumePrice {
+        return VolumePrice(order.volume.toBigDecimal(), order.price.toBigDecimal())
+    }
+
+    private fun assertRejectOrdersWithNotEnoughFunds() {
+        assertOrderBookSize("EURUSD", true, 4)
+        assertOrderBookSize("EURUSD", false, 4)
+        assertEquals(BigDecimal.valueOf(1.31), genericLimitOrderService.getOrderBook("EURUSD").getAskPrice())
+        assertEquals(BigDecimal.valueOf(1.2), genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
+
+        assertEquals(0, clientsEventsQueue.size)
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(8, event.orders.size)
+
+        assertTrue(event.orders.any { it.price == "1.31" })
+        assertTrue(event.orders.any { it.price == "1.32" })
+        assertTrue(event.orders.any { it.price == "1.33" })
+        assertTrue(event.orders.any { it.price == "1.36" })
+        assertTrue(event.orders.any { it.price == "1.2" })
+        assertTrue(event.orders.any { it.price == "1.1" })
+        assertTrue(event.orders.any { it.price == "1" })
+        assertTrue(event.orders.any { it.price == "0.8" })
+    }
+
+    @Test
+    fun testRejectRoundingOrdersWithNotEnoughFunds() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 50.02)
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCEUR",
+                "Client1",
+                listOf(IncomingLimitOrder(0.005, 5003.0, "1"),//25.015
+                        IncomingLimitOrder(0.005, 5001.0, "2")))) //25.005
+
+        assertOrderBookSize("BTCEUR", true, 1)
+        assertEquals(BigDecimal.valueOf(5003), genericLimitOrderService.getOrderBook("BTCEUR").getBidPrice())
+
+        assertEquals(0, clientsEventsQueue.size)
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val event = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals("1", event.orders.single().externalId)
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
