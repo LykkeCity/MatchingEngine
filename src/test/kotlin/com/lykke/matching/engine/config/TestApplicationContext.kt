@@ -2,23 +2,17 @@ package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.QueueConfig
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.*
-import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
-import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
-import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
-import com.lykke.matching.engine.outgoing.messages.*
-import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
+import com.lykke.matching.engine.notification.TestReservedCashOperationListener
+import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.MessageSender
+import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
@@ -53,17 +47,35 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun messageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor: ReadOnlyMessageSequenceNumberDatabaseAccessor): MessageSequenceNumberHolder {
+        return MessageSequenceNumberHolder(messageSequenceNumberDatabaseAccessor)
+    }
+
+    @Bean
+    open fun notificationSender(clientsEventsQueue: BlockingQueue<Event<*>>,
+                                trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>): MessageSender {
+        return MessageSender(clientsEventsQueue, trustedClientsEventsQueue)
+    }
+
+    @Bean
     open fun reservedVolumesRecalculator(testFileOrderDatabaseAccessor :TestFileOrderDatabaseAccessor,
                                          testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
-                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>): ReservedVolumesRecalculator {
+                                         balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
+                                         messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                         messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testFileOrderDatabaseAccessor, testStopOrderBookDatabaseAccessor,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
-                "test", false, balanceUpdateNotificationQueue)
+                "tset", false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
+    }
+
+    @Bean
+    open fun testMessageSequenceNumberDatabaseAccessor(): TestMessageSequenceNumberDatabaseAccessor {
+        return TestMessageSequenceNumberDatabaseAccessor()
     }
 
     @Bean

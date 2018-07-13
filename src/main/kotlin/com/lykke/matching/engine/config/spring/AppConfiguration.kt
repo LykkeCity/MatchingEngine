@@ -62,8 +62,10 @@ open class AppConfiguration: SchedulingConfigurer {
                         config = config.me.aliveStatus)
     }
 
-    @Bean fun messageRouter(): MessageRouter {
+    @Bean
+    open fun messageRouter(): MessageRouter {
         return MessageRouter(LinkedBlockingQueue<MessageWrapper>(),
+                LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>())
     }

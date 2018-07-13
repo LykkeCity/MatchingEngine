@@ -48,8 +48,8 @@ class CashInOutOperationValidatorImpl constructor(private val balancesHolder: Ba
                 assetsHolder.getAsset(cashInOutOperation.assetId).accuracy)
 
         if (!volumeValid) {
-            LOGGER.info("Volume accuracy is invalid  client: ${cashInOutOperation.clientId}, " +
-                    "asset: ${cashInOutOperation.assetId}, volume: $cashInOutOperation.volume")
+            LOGGER.info("Volume accuracy is invalid client: ${cashInOutOperation.clientId}, " +
+                    "asset: ${cashInOutOperation.assetId}, volume: ${cashInOutOperation.volume}")
             throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }

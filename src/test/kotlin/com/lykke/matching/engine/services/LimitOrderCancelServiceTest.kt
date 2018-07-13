@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -10,6 +9,8 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -94,6 +95,13 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         val previousOrders = genericLimitOrderService.searchOrders("Client1", "EURUSD", true)
         assertEquals(4, previousOrders.size)
         assertFalse(previousOrders.any { it.externalId == "3" })
+
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, executionEvent.balanceUpdates?.size)
+        assertEventBalanceUpdate("Client1", "EUR", "1000", "1000", "1", "0", executionEvent.balanceUpdates!!)
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
     }
 
     @Test
@@ -141,5 +149,17 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals("Client2", usd.id)
         assertEquals(BigDecimal.valueOf(800.0), usd.oldReserved)
         assertEquals(BigDecimal.ZERO, usd.newReserved)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, executionEvent.balanceUpdates?.size)
+
+        assertEventBalanceUpdate("Client2", "BTC", "1", "1", "1", "0.2", executionEvent.balanceUpdates!!)
+        assertEventBalanceUpdate("Client2", "USD", "1000", "1000", "800", "0", executionEvent.balanceUpdates!!)
+
+        assertEquals(3, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[0].status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[1].status)
+        assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[2].status)
     }
 }

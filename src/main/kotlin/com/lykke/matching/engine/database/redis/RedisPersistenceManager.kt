@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
@@ -28,6 +29,7 @@ class RedisPersistenceManager(
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val redisHealthStatusHolder: RedisHealthStatusHolder,
+        private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val jedisPool: JedisPool,
         private val config: Config): PersistenceManager {
 
@@ -103,6 +105,8 @@ class RedisPersistenceManager(
                 persistProcessedCashMessage(transaction, data.processedMessage)
             }
 
+            persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
+
             val persistTime = System.nanoTime()
 
             transaction.exec()
@@ -149,6 +153,13 @@ class RedisPersistenceManager(
         LOGGER.trace("Start to persist balances in redis")
         transaction.select(config.me.redis.balanceDatabase)
         primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances!!)
+    }
+
+    private fun persistMessageSequenceNumber(transaction: Transaction, sequenceNumber: Long?) {
+        if (sequenceNumber == null) {
+            return
+        }
+        redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
     }
 
     private fun initPersistingIntoSecondaryDb() {

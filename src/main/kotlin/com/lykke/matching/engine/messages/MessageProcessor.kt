@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
@@ -18,17 +19,20 @@ import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.incoming.preprocessor.CashInOutPreprocessor
-import com.lykke.matching.engine.incoming.preprocessor.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
+import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.http.RequestHandler
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
@@ -47,6 +51,7 @@ import com.lykke.matching.engine.services.LimitOrderMassCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
@@ -59,6 +64,7 @@ import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import com.rabbitmq.client.BuiltinExchangeType
 import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
 import java.net.InetSocketAddress
@@ -82,6 +88,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val cashTransferPreprocessor: CashTransferPreprocessor
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.defaultMessagesQueue
+    private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
+
 
     private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
@@ -130,11 +138,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
     private val healthMonitor: GeneralHealthMonitor
+    private val messageSequenceNumberHolder: MessageSequenceNumberHolder
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
+
+        val messageSender = applicationContext.getBean(MessageSender::class.java)
+        messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
         persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
@@ -166,7 +178,13 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
-        this.cashInOutOperationService = CashInOutOperationService(assetsHolder, balanceHolder, rabbitCashInOutQueue, feeProcessor, cashInOutOperationValidator)
+        this.cashInOutOperationService = CashInOutOperationService(assetsHolder,
+                balanceHolder,
+                rabbitCashInOutQueue,
+                feeProcessor,
+                cashInOutOperationValidator,
+                messageSequenceNumberHolder,
+                messageSender)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, rabbitTransferQueue, dbTransferOperationQueue, feeProcessor, cashTransferOperationValidator)
@@ -186,9 +204,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
 
         val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.defaultMessagesQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
         cashTransferPreprocessor.start()
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
@@ -218,13 +236,15 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
                 rabbitMqService,
                 config.me.name,
-                AppVersion.VERSION)
+                AppVersion.VERSION,
+                BuiltinExchangeType.FANOUT)
 
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
@@ -254,8 +274,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                                        messageDatabaseLogger: MessageDatabaseLogger? = null,
                                        rabbitMqService: RabbitMqService,
                                        appName: String,
-                                       appVersion: String) {
-        rabbitMqService.startPublisher(config, queue, appName, appVersion, messageDatabaseLogger)
+                                       appVersion: String,
+                                       exchangeType: BuiltinExchangeType) {
+        rabbitMqService.startPublisher (config, queue, appName, appVersion, exchangeType, messageDatabaseLogger)
     }
 
     override fun run() {
@@ -318,7 +339,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             message.processedMessage()?.let {
                 processedMessagesCache.addMessage(it)
                 if (!message.processedMessagePersisted) {
-                    persistenceManager.persist(PersistenceData(it))
+                    persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
                 }
             }
 

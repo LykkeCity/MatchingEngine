@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -22,6 +23,7 @@ import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccesso
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
@@ -30,6 +32,7 @@ import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAcce
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
@@ -55,7 +58,8 @@ open class DatabaseAccessorConfig {
                                 jedisPool: Optional<JedisPool>,
                                 redisHealthStatusHolder: RedisHealthStatusHolder,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>): PersistenceManager {
+                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
+                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
@@ -65,6 +69,7 @@ open class DatabaseAccessorConfig {
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         redisHealthStatusHolder,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         jedisPool.get(),
                         config
                 )
@@ -139,6 +144,17 @@ open class DatabaseAccessorConfig {
                 }
                 return RedisCashOperationIdDatabaseAccessor(jedisPool.get(),
                         config.me.redis.processedCashMessageDatabase)
+            }
+        }
+    }
+
+    @Bean
+    open fun messageSequenceNumberDatabaseAccessor(jedisPool: Optional<JedisPool>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
+        return when (config.me.storage) {
+            Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
+            Storage.Redis -> {
+                RedisMessageSequenceNumberDatabaseAccessor(jedisPool.get(),
+                        config.me.redis.sequenceNumberDatabase)
             }
         }
     }

@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.services.validators.impl
 
-import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.fee.listOfFee
@@ -15,7 +15,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
 
 @Component
 class CashTransferOperationValidatorImpl @Autowired constructor(private val balancesHolder: BalancesHolder,
@@ -81,7 +81,7 @@ class CashTransferOperationValidatorImpl @Autowired constructor(private val bala
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy invalid fromClient  ${cashTransferOperation.fromClientId}, " +
-                    "to client ${cashTransferOperation.toClientId} assetId: ${cashTransferOperation.assetId}, volume: $cashTransferOperation.volume")
+                    "to client ${cashTransferOperation.toClientId} assetId: ${cashTransferOperation.assetId}, volume: ${cashTransferOperation.volume}")
             throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }

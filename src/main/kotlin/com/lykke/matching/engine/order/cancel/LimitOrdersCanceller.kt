@@ -51,7 +51,6 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                        result: LimitOrdersCancelResult) {
         super.apply(messageId, processedMessage, result)
         sendNotification()
-        checkAndProcessStopOrders(messageId)
     }
 
     private fun sendNotification() {

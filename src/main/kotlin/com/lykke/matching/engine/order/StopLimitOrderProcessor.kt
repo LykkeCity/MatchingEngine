@@ -7,13 +7,19 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.outgoing.messages.*
+import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
@@ -29,6 +35,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               applicationSettingsCache: ApplicationSettingsCache,
+                              private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                              private val messageSender: MessageSender,
                               private val LOGGER: Logger) {
 
     private val validator = LimitOrderValidator(assetsPairsHolder, assetsHolder, applicationSettingsCache)
@@ -62,13 +70,20 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.updateStatus(e.orderStatus, now)
             val messageStatus = MessageStatusUtils.toMessageStatus(e.orderStatus)
             var updated = true
+            val clientBalanceUpdates = mutableListOf<ClientBalanceUpdate>()
+
+            val sequenceNumber = messageSequenceNumberHolder.getNewValue()
             if (cancelVolume > BigDecimal.ZERO) {
                 val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume, limitAsset.accuracy)
                 updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
-                        order.clientId, limitAsset.assetId, newReservedBalance)
+                        sequenceNumber,
+                        order.clientId,
+                        limitAsset.assetId,
+                        newReservedBalance)
                 if (updated) {
+                    clientBalanceUpdates.add(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))
                     balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
-                            listOf(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance)),
+                            clientBalanceUpdates,
                             messageWrapper.messageId!!))
                 }
             }
@@ -83,6 +98,15 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                 clientLimitOrdersQueue.put(clientLimitOrdersReport)
+
+                val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
+                        messageWrapper.messageId!!,
+                        messageWrapper.id!!,
+                        now,
+                        MessageType.LIMIT_ORDER,
+                        clientBalanceUpdates,
+                        clientLimitOrdersReport.orders)
+                messageSender.sendMessage(outgoingMessage)
             } else {
                 writePersistenceErrorResponse(messageWrapper, order)
             }
@@ -116,8 +140,22 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
 
         val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy)
+
+        val clientBalanceUpdates = listOf(ClientBalanceUpdate(order.clientId,
+                limitAsset.assetId,
+                balance,
+                balance,
+                reservedBalance,
+                newReservedBalance))
+
+        val sequenceNumber = messageSequenceNumberHolder.getNewValue()
+
         val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
-                order.clientId, limitAsset.assetId, newReservedBalance)
+                sequenceNumber,
+                order.clientId,
+                limitAsset.assetId,
+                newReservedBalance)
+
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, order)
             return
@@ -126,12 +164,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId,
                 MessageType.LIMIT_ORDER.name,
                 now,
-                listOf(ClientBalanceUpdate(order.clientId,
-                        limitAsset.assetId,
-                        balance,
-                        balance,
-                        reservedBalance,
-                        newReservedBalance)),
+                clientBalanceUpdates,
                 messageWrapper.messageId!!))
         stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel, now)
 
@@ -143,9 +176,16 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         writeResponse(messageWrapper, order, MessageStatus.OK)
         LOGGER.info("${orderInfo(order)} added to stop order book")
 
-        if (clientLimitOrdersReport.orders.isNotEmpty()) {
-            clientLimitOrdersQueue.put(clientLimitOrdersReport)
-        }
+        clientLimitOrdersQueue.put(clientLimitOrdersReport)
+
+        val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.LIMIT_ORDER,
+                clientBalanceUpdates,
+                clientLimitOrdersReport.orders)
+        messageSender.sendMessage(outgoingMessage)
     }
 
     private fun validateOrder(order: LimitOrder, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {

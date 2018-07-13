@@ -56,7 +56,7 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
         val wallets = azureDatabaseAccessor.loadWallets()
         val loadTime = Date().time
         teeLog("Loaded ${wallets.size} wallets from azure (ms: ${loadTime - startTime})")
-        balancesHolder.insertOrUpdateWallets(wallets.values.toList())
+        balancesHolder.insertOrUpdateWallets(wallets.values.toList(), null)
         val saveTime = Date().time
         teeLog("Saved ${wallets.size} wallets to redis (ms: ${saveTime - loadTime})")
 
@@ -72,7 +72,7 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
             throw AccountsMigrationException("There are no wallets in redis ${config.me.redis.host}.${config.me.redis.port}")
         }
         teeLog("Loaded ${wallets.size} wallets from redis (ms: ${loadTime - startTime})")
-        balancesHolder.insertOrUpdateWallets(wallets.values.toList())
+        balancesHolder.insertOrUpdateWallets(wallets.values.toList(), null)
         val saveTime = Date().time
         teeLog("Saved ${wallets.size} wallets to azure (ms: ${saveTime - loadTime})")
 

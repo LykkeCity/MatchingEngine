@@ -50,7 +50,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage())
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null)
         messageWrapper.processedMessagePersisted = true
         if (updated) {
             walletProcessor.apply().sendNotification(message.uid.toString(), MessageType.CASH_OPERATION.name, messageWrapper.messageId!!)
