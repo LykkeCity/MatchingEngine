@@ -69,7 +69,7 @@ import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
-import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
@@ -244,7 +244,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 messageSequenceNumberHolder,
                 messageSender)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
-        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationBusinessValidatorImpl::class.java)
+        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationBusinessValidator::class.java)
         this.cashTransferOperationService = CashTransferOperationService(balanceHolder,
                 rabbitTransferQueue,
                 dbTransferOperationQueue,
