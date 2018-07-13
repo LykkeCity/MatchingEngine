@@ -9,8 +9,8 @@ import com.lykke.matching.engine.messages.MessageStatus.DUPLICATE
 import com.lykke.matching.engine.messages.MessageStatus.RUNTIME
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.impl.input.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -44,7 +44,7 @@ class CashTransferPreprocessor(
     }
 
     fun isDataValid(parsedMessageWrapper: MessageWrapper, context: CashTransferContext): Boolean {
-        val validator = applicationContext.getBean(CashTransferOperationValidator::class.java)
+        val validator = applicationContext.getBean(CashTransferOperationInputValidatorImpl::class.java)
 
         try {
             validator.performValidation(context)

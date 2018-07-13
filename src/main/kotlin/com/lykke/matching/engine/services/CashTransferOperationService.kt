@@ -38,7 +38,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    private val notificationQueue: BlockingQueue<JsonSerializable>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
-                                   private val cashTransferOperationValidator: CashTransferOperationValidator,
+                                   private val cashTransferOperationBusinessValidator: CashTransferOperationValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                    private val messageSender: MessageSender) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -61,7 +61,12 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 "asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
                 "feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
 
-
+        try {
+            cashTransferOperationBusinessValidator.performValidation(cashTransferContext)
+        } catch (e: ValidationException) {
+            writeErrorResponse(messageWrapper, cashTransferContext, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            return
+        }
 
         val result = try {
             messageWrapper.processedMessagePersisted = true

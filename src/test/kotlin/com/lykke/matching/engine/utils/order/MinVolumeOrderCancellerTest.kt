@@ -38,13 +38,9 @@ import kotlin.test.assertNull
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
-    @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
-    private lateinit var canceller: MinVolumeOrderCanceller
-
     @TestConfiguration
     open class Config {
+
         @Bean
         @Primary
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
@@ -56,7 +52,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
             return testBackOfficeDatabaseAccessor
         }
-
         @Bean
         @Primary
         open fun testConfig(): TestConfigDatabaseAccessor {
@@ -64,10 +59,13 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
             testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
             return testSettingsDatabaseAccessor
         }
+
     }
 
+    private lateinit var canceller: MinVolumeOrderCanceller
+
     @Autowired
-    lateinit var applicationContext: ApplicationContext
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     @Before
     fun setUp() {

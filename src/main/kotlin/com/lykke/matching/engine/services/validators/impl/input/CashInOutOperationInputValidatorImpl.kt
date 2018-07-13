@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.services.validators.impl
+package com.lykke.matching.engine.services.validators.impl.input
 
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
@@ -6,17 +6,18 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class CashInOutOperationValidatorImpl constructor(private val balancesHolder: BalancesHolder,
-                                                  private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationValidator {
+class CashInOutOperationInputValidatorImpl constructor(private val balancesHolder: BalancesHolder,
+                                                       private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationValidator {
 
     companion object {
-        private val LOGGER = Logger.getLogger(CashInOutOperationValidatorImpl::class.java.name)
+        private val LOGGER = Logger.getLogger(CashInOutOperationInputValidatorImpl::class.java.name)
     }
 
     override fun performValidation(cashInOutContext: CashInOutContext) {

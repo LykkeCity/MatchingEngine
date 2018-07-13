@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.services.validator
+package com.lykke.matching.engine.services.validator.input
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
@@ -14,6 +14,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import org.junit.Before
@@ -30,9 +31,9 @@ import java.util.*
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (CashInOutOperationValidatorTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class), (CashInOutOperationInputValidatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class CashInOutOperationValidatorTest {
+class CashInOutOperationInputValidatorTest {
 
     companion object {
         val CLIENT_ID = "Client1"
@@ -51,7 +52,7 @@ class CashInOutOperationValidatorTest {
     }
 
     @Autowired
-    private lateinit var cashInOutOperationValidator: CashInOutOperationValidator
+    private lateinit var cashInOutOperationInputValidator: CashInOutOperationValidator
 
     @Autowired
     private lateinit var cashInOutContextInitializer: CashInOutContextParser
@@ -79,7 +80,7 @@ class CashInOutOperationValidatorTest {
 
         try {
             //when
-            cashInOutOperationValidator
+            cashInOutOperationInputValidator
                     .performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             //then
@@ -101,7 +102,7 @@ class CashInOutOperationValidatorTest {
             val feeInstructions = NewFeeInstruction.create(Arrays.asList(fee))
 
             val cashInOutContext = getCashInOutContext(cashInOutOperationBuilder.build())
-            cashInOutOperationValidator
+            cashInOutOperationInputValidator
                     .performValidation(cashInOutContext)
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
@@ -120,26 +121,9 @@ class CashInOutOperationValidatorTest {
         try {
             val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
             cashInOutOperationBuilder.volume = -1.0
-            cashInOutOperationValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
+            cashInOutOperationInputValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
-            throw e
-        }
-    }
-
-    @Test(expected = ValidationException::class)
-    fun testBalanceValid() {
-        //given
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 500.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 250.0)
-        val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
-        cashInOutOperationBuilder.volume = -300.0
-
-        //when
-        try {
-            cashInOutOperationValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
-        } catch (e: ValidationException) {
-            assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
         }
     }
@@ -152,7 +136,7 @@ class CashInOutOperationValidatorTest {
 
         //when
         try {
-            cashInOutOperationValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
+            cashInOutOperationInputValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -161,7 +145,7 @@ class CashInOutOperationValidatorTest {
 
     @Test
     fun validData() {
-        cashInOutOperationValidator.performValidation(getCashInOutContext(getDefaultCashInOutOperationBuilder().build()))
+        cashInOutOperationInputValidator.performValidation(getCashInOutContext(getDefaultCashInOutOperationBuilder().build()))
     }
 
     private fun getDefaultCashInOutOperationBuilder(): ProtocolMessages.CashInOutOperation.Builder {

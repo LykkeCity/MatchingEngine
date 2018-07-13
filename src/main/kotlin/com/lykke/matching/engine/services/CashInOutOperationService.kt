@@ -29,7 +29,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
                                 private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
                                 private val feeProcessor: FeeProcessor,
-                                private val cashInOutOperationValidator: CashInOutOperationValidator,
+                                private val cashInOutOperationBusinessValidator: CashInOutOperationValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 private val messageSender: MessageSender) : AbstractService {
     override fun parseMessage(messageWrapper: MessageWrapper) {
@@ -50,6 +50,13 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 " amount: ${NumberUtils.roundForPrint(walletOperation.amount)}, feeInstructions: $feeInstructions")
 
         val operations = mutableListOf(walletOperation)
+
+        try {
+            cashInOutOperationBusinessValidator.performValidation(cashInOutContext)
+        } catch (e: ValidationException) {
+            writeErrorResponse(messageWrapper, walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            return
+        }
 
         val fees = try {
             feeProcessor.processFee(feeInstructions, walletOperation, operations)
