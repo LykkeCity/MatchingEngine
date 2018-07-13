@@ -28,8 +28,7 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
                 if (message.hasMessageId()) message.messageId else message.id,
                 operationId,
                 message.clientId,
-                if (ProcessedMessageUtils.isDeduplicationNotNeeded(MessageType.CASH_IN_OUT_OPERATION.type)) null
-                else ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, message.timestamp, message.messageId),
+                ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, message.timestamp, message.messageId),
                 NewFeeInstruction.create(message.feesList),
                 WalletOperation(operationId, message.id, message.clientId, message.assetId,
                         Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO),
