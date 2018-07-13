@@ -58,7 +58,7 @@ class CashTransferOperationBusinessValidatorTest {
     fun testLowBalance() {
         //given
         testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
-        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME2, ASSET_ID, 60.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()
         cashTransferOperationBuilder.overdraftLimit = -70.0
 

@@ -13,7 +13,6 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
 import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import junit.framework.Assert.assertEquals
@@ -68,8 +67,8 @@ class CashTransferOperationInputValidatorTest {
 
     @Before
     fun setUp() {
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 50.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
     }
 
     @Test(expected = ValidationException::class)
@@ -91,7 +90,7 @@ class CashTransferOperationInputValidatorTest {
     fun testAssetEnabled() {
         //given
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()
-        testConfigDatabaseAccessor.addDisabledAsset(CashOperationValidatorTest.ASSET_ID)
+        testConfigDatabaseAccessor.addDisabledAsset(ASSET_ID)
         applicationSettingsCache.update()
         cashTransferOperationBuilder.volume = -1.0
 
