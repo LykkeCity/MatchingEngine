@@ -25,10 +25,10 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
@@ -65,10 +65,10 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationValidator
+    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
 
     @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationValidator
+    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService

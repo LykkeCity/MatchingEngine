@@ -4,19 +4,19 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.messages.MessageWrapper
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
 
 @Component
-class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextParser {
-    override fun parse(messageWrapper: MessageWrapper): MessageWrapper {
+class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextParser<CashInOutParsedData> {
+    override fun parse(messageWrapper: MessageWrapper): CashInOutParsedData {
         val operationId = UUID.randomUUID().toString()
 
         val message = ProtocolMessages.CashInOutOperation.parseFrom(messageWrapper.byteArray)
@@ -32,8 +32,8 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
                 NewFeeInstruction.create(message.feesList),
                 WalletOperation(operationId, message.id, message.clientId, message.assetId,
                         Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO),
-                assetsHolder.getAssetAllowNulls(message.assetId), message.assetId, Date())
+                assetsHolder.getAssetAllowNulls(message.assetId), Date())
 
-        return messageWrapper
+        return CashInOutParsedData(messageWrapper, message.assetId)
     }
 }

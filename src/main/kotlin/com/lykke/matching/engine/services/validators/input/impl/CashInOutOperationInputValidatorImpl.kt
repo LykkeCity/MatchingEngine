@@ -1,11 +1,12 @@
-package com.lykke.matching.engine.services.validators.impl.input
+package com.lykke.matching.engine.services.validators.input.impl
 
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -14,23 +15,24 @@ import java.math.BigDecimal
 
 @Component
 class CashInOutOperationInputValidatorImpl constructor(private val balancesHolder: BalancesHolder,
-                                                       private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationValidator {
+                                                       private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationInputValidator {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashInOutOperationInputValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(cashInOutContext: CashInOutContext) {
-        isAssetExist(cashInOutContext)
+    override fun performValidation(cashInOutParsedData: CashInOutParsedData) {
+        val cashInOutContext = cashInOutParsedData.messageWrapper.context as CashInOutContext
+        isAssetExist(cashInOutContext, cashInOutParsedData.assetId)
         isFeeValid(cashInOutContext.feeInstructions)
         isAssetEnabled(cashInOutContext)
         isBalanceValid(cashInOutContext)
         isVolumeAccuracyValid(cashInOutContext)
     }
 
-    private fun isAssetExist(cashInOutContext: CashInOutContext) {
+    private fun isAssetExist(cashInOutContext: CashInOutContext, inputAssetId: String) {
         if (cashInOutContext.asset == null) {
-            LOGGER.info("Asset with id: ${cashInOutContext.inputAssetId} does not exist, cash in/out operation; ${cashInOutContext.id}), " +
+            LOGGER.info("Asset with id: $inputAssetId does not exist, cash in/out operation; ${cashInOutContext.id}), " +
                     "for client ${cashInOutContext.clientId}")
             throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
         }

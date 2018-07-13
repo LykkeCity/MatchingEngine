@@ -7,13 +7,14 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
 import com.lykke.matching.engine.services.validator.input.CashInOutOperationInputValidatorTest
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -53,7 +54,7 @@ class CashInOutOperationBusinessValidatorTest {
     private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationValidator
+    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
 
     @Autowired
     private lateinit var cashInOutContextInitializer: CashInOutContextParser
@@ -68,7 +69,7 @@ class CashInOutOperationBusinessValidatorTest {
 
         //when
         try {
-            cashInOutOperationBusinessValidator.performValidation(getCashInOutContext(cashInOutOperationBuilder.build()))
+            cashInOutOperationBusinessValidator.performValidation(getContext(cashInOutOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
             throw e
@@ -93,7 +94,7 @@ class CashInOutOperationBusinessValidatorTest {
                 clientHandler = null)
     }
 
-    private fun getCashInOutContext(cashInOutOperation: ProtocolMessages.CashInOutOperation): CashInOutContext {
-        return cashInOutContextInitializer.parse(getMessageWrapper(cashInOutOperation)).context as CashInOutContext
+    private fun getContext(cashInOutOperation: ProtocolMessages.CashInOutOperation): CashInOutContext {
+        return cashInOutContextInitializer.parse(getMessageWrapper(cashInOutOperation)).messageWrapper.context as CashInOutContext
     }
 }

@@ -1,16 +1,16 @@
-package com.lykke.matching.engine.services.validators.impl.business
+package com.lykke.matching.engine.services.validators.business.impl
 
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
-@Component("CashTransferOperationBusinessValidator")
-class CashTransferOperationBusinessValidatorImpl (private val balancesHolder: BalancesHolder): CashTransferOperationValidator {
+@Component
+class CashTransferOperationBusinessValidatorImpl (private val balancesHolder: BalancesHolder): CashTransferOperationBusinessValidator {
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationBusinessValidatorImpl::class.java.name)
 

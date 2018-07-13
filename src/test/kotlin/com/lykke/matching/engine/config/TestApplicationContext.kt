@@ -23,11 +23,15 @@ import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.CashInOutOperationBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
-import com.lykke.matching.engine.services.validators.impl.business.CashInOutOperationBusinessValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.business.CashTransferOperationBusinessValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.input.CashInOutOperationInputValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.input.CashTransferOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import org.mockito.Mockito
@@ -163,22 +167,22 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationBusinessValidator(balancesHolder: BalancesHolder): CashInOutOperationValidator {
+    open fun cashInOutOperationBusinessValidator(balancesHolder: BalancesHolder): CashInOutOperationBusinessValidator {
         return CashInOutOperationBusinessValidatorImpl(balancesHolder)
     }
 
     @Bean
-    open fun cashTransferOperationBusinessValidator(balancesHolder: BalancesHolder): CashTransferOperationValidator {
+    open fun cashTransferOperationBusinessValidator(balancesHolder: BalancesHolder): CashTransferOperationBusinessValidator {
         return CashTransferOperationBusinessValidatorImpl(balancesHolder)
     }
 
     @Bean
-    open fun cashInOutOperationInputValidator(balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationValidator {
+    open fun cashInOutOperationInputValidator(balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
         return CashInOutOperationInputValidatorImpl(balancesHolder, applicationSettingsCache)
     }
 
     @Bean
-    open fun cashTransferOperationInputValidator(assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationValidator {
+    open fun cashTransferOperationInputValidator(assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
         return CashTransferOperationInputValidatorImpl(assetsHolder, applicationSettingsCache)
     }
 

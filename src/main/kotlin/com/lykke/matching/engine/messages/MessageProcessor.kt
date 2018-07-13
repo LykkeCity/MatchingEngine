@@ -29,8 +29,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
@@ -70,8 +68,8 @@ import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
-import com.lykke.matching.engine.services.validators.impl.business.CashInOutOperationBusinessValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.business.CashTransferOperationBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
 import com.lykke.matching.engine.utils.QueueSizeLogger
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
@@ -237,7 +235,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 messageSender)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
-        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationBusinessValidatorImpl::class.java)
+        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationBusinessValidator::class.java)
         this.cashInOutOperationService = CashInOutOperationService(assetsHolder,
                 balanceHolder,
                 rabbitCashInOutQueue,

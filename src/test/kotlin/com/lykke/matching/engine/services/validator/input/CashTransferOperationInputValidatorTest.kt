@@ -4,16 +4,16 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import junit.framework.Assert.assertEquals
 import org.junit.Before
@@ -60,7 +60,7 @@ class CashTransferOperationInputValidatorTest {
     private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Autowired
-    private lateinit var cashTransferOperationInputValidator: CashTransferOperationValidator
+    private lateinit var cashTransferOperationInputValidator: CashTransferOperationInputValidator
 
     @Autowired
     private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
@@ -79,7 +79,7 @@ class CashTransferOperationInputValidatorTest {
 
         try {
             //when
-            cashTransferOperationInputValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+            cashTransferOperationInputValidator.performValidation(getParsedData(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.UNKNOWN_ASSET, e.validationType)
             throw e
@@ -96,7 +96,7 @@ class CashTransferOperationInputValidatorTest {
 
         //when
         try {
-            cashTransferOperationInputValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+            cashTransferOperationInputValidator.performValidation(getParsedData(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
@@ -115,7 +115,7 @@ class CashTransferOperationInputValidatorTest {
 
 
             cashTransferOperationBuilder.addFees(invalidFee)
-            cashTransferOperationInputValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+            cashTransferOperationInputValidator.performValidation(getParsedData(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_FEE, e.validationType)
             throw e
@@ -130,7 +130,7 @@ class CashTransferOperationInputValidatorTest {
 
         //when
         try {
-            cashTransferOperationInputValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+            cashTransferOperationInputValidator.performValidation(getParsedData(cashTransferOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -140,7 +140,7 @@ class CashTransferOperationInputValidatorTest {
     @Test
     fun testValidData() {
         //when
-        cashTransferOperationInputValidator.performValidation(getContext(getCashTransferOperationBuilder().build()))
+        cashTransferOperationInputValidator.performValidation(getParsedData(getCashTransferOperationBuilder().build()))
     }
 
     fun getCashTransferOperationBuilder(): ProtocolMessages.CashTransferOperation.Builder {
@@ -157,7 +157,7 @@ class CashTransferOperationInputValidatorTest {
         return MessageWrapper("test", MessageType.CASH_TRANSFER_OPERATION.type, message.toByteArray(), null)
     }
 
-    private fun getContext(message: ProtocolMessages.CashTransferOperation): CashTransferContext {
-        return cashTransferParser.parse(getMessageWrapper(message)).context as CashTransferContext
+    private fun getParsedData(message: ProtocolMessages.CashTransferOperation): CashTransferParsedData{
+        return cashTransferParser.parse(getMessageWrapper(message))
     }
 }

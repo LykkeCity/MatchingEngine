@@ -340,7 +340,7 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                 .setAssetId(assetId)
                 .setVolume(amount)
                 .setOverdraftLimit(overdraftLimit)
-                .setTimestamp(Date().time).build().toByteArray(), null))
+                .setTimestamp(Date().time).build().toByteArray(), null)).messageWrapper
     }
 
     fun buildCashInOutWrapper(clientId: String, assetId: String, amount: Double, businessId: String = UUID.randomUUID().toString(),
@@ -355,6 +355,6 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
             builder.addFees(MessageBuilder.buildFee(it))
         }
 
-        return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null))
+        return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
     }
 }

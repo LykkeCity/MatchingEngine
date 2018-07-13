@@ -6,11 +6,12 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import junit.framework.Assert
 import org.junit.Test
@@ -38,7 +39,7 @@ class CashTransferOperationBusinessValidatorTest {
     private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationValidator
+    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     private lateinit var cashTransferParser: CashTransferContextParser
@@ -87,6 +88,6 @@ class CashTransferOperationBusinessValidatorTest {
     }
 
     private fun getContext(message: ProtocolMessages.CashTransferOperation): CashTransferContext {
-        return cashTransferParser.parse(getMessageWrapper(message)).context as CashTransferContext
+        return cashTransferParser.parse(getMessageWrapper(message)).messageWrapper.context as CashTransferContext
     }
 }

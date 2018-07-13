@@ -1,10 +1,13 @@
-package com.lykke.matching.engine.services.validators.impl.input
+package com.lykke.matching.engine.services.validators.input.impl
 
 import com.lykke.matching.engine.daos.context.CashTransferContext
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
+import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -14,16 +17,17 @@ import org.springframework.stereotype.Component
 @Component
 class CashTransferOperationInputValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
                                                                      private val applicationSettingsCache: ApplicationSettingsCache)
-    : CashTransferOperationValidator {
+    : CashTransferOperationInputValidator {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationInputValidatorImpl::class.java.name)
     }
 
-    override fun performValidation(cashTransferContext: CashTransferContext) {
+    override fun performValidation(cashTransferParsedData: CashTransferParsedData) {
+        val cashTransferContext = cashTransferParsedData.messageWrapper.context as CashTransferContext
         isAssetExist(cashTransferContext)
         isAssetEnabled(cashTransferContext)
-        isFeeValid(cashTransferContext)
+        isFeeValid(cashTransferContext, cashTransferParsedData.feeInstruction, cashTransferParsedData.feeInstructions)
         isVolumeAccuracyValid(cashTransferContext)
     }
 
@@ -47,8 +51,8 @@ class CashTransferOperationInputValidatorImpl @Autowired constructor(private val
         }
     }
 
-    private fun isFeeValid(cashTransferContext: CashTransferContext) {
-        if (!checkFee(cashTransferContext.feeInstruction, cashTransferContext.feeInstructions)) {
+    private fun isFeeValid(cashTransferContext: CashTransferContext, feeInstruction: FeeInstruction?, feeInstructions: List<NewFeeInstruction>) {
+        if (!checkFee(feeInstruction, feeInstructions)) {
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Fee is invalid  from client: ${transferOperation.fromClientId}, to client: ${transferOperation.toClientId}")
             throw ValidationException(ValidationException.Validation.INVALID_FEE)
