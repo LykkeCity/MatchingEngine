@@ -24,7 +24,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
     override fun performValidation(cashInOutParsedData: CashInOutParsedData) {
         val cashInOutContext = cashInOutParsedData.messageWrapper.context as CashInOutContext
         isAssetExist(cashInOutContext, cashInOutParsedData.assetId)
-        isFeeValid(cashInOutContext.feeInstructions)
+        isFeeValid(cashInOutContext.walletOperation.feeInstructions)
         isAssetEnabled(cashInOutContext)
         isBalanceValid(cashInOutContext)
         isVolumeAccuracyValid(cashInOutContext)
@@ -78,7 +78,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
         }
     }
 
-    private fun isFeeValid(feeInstructions: List<NewFeeInstruction>) {
+    private fun isFeeValid(feeInstructions: List<NewFeeInstruction>?) {
         if (!checkFee(null, feeInstructions)) {
             throw ValidationException(ValidationException.Validation.INVALID_FEE, "invalid fee for client")
         }

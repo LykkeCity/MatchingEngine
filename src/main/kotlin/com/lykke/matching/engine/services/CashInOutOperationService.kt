@@ -42,7 +42,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val cashInOutContext: CashInOutContext = messageWrapper.context as CashInOutContext
-        val feeInstructions = cashInOutContext.feeInstructions
+        val feeInstructions = cashInOutContext.walletOperation.feeInstructions
         val walletOperation = cashInOutContext.walletOperation
 
         LOGGER.debug("Processing cash in/out messageId: ${cashInOutContext.messageId} operation (${cashInOutContext.id})" +
