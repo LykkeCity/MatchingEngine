@@ -59,6 +59,8 @@ import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperati
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.order.AllOrdersCanceller
+import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.mockito.Mockito
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
