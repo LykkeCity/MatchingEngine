@@ -31,7 +31,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
                                   private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                   private val messageSender: MessageSender,
-                                  date: Date,
+                                  private val date: Date,
                                   LOGGER: Logger) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,

@@ -62,7 +62,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
         }
     }
 
-    private fun checkAndProcessStopOrders(messageId: String) {
+    fun checkAndProcessStopOrders(messageId: String) {
         ordersToCancel.stream()
                 .map { it.assetPairId }
                 .filter(Objects::nonNull)

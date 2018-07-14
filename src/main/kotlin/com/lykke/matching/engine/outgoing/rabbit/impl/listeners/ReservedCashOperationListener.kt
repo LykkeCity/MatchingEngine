@@ -11,13 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
 class ReservedCashOperationListener {
     @Autowired
-    private val reservedCashOperationQueue: BlockingQueue<ReservedCashOperation> = LinkedBlockingQueue<ReservedCashOperation>()
+    private lateinit var reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService

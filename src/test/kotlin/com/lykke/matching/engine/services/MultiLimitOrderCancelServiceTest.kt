@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -53,7 +52,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("TrustedClient", "BTC", 1.0)
 
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.4, price = 10000.0, reservedVolume = 0.4))
@@ -108,7 +107,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         assertEquals(1, tradesInfoListener.getCount())
         assertEquals(1, testOrderBookListener.getCount())
-        assertEquals(1, testRabbitOrderBookListener.getCount()
+        assertEquals(1, testRabbitOrderBookListener.getCount())
 
         assertEquals(0, trustedClientsEventsQueue.size)
         assertEquals(1, clientsEventsQueue.size)
@@ -117,6 +116,5 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         event.orders.forEach {
             assertEquals(OutgoingOrderStatus.CANCELLED, it.status)
         }
-
     }
 }

@@ -33,11 +33,13 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
@@ -46,21 +48,21 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
-class MultiLimitOrderService @Autowired constructor(private val limitOrderService: GenericLimitOrderService,
-                                                    private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                                    private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
-                                                    private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                    private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                    private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                                    private val orderBookQueue: BlockingQueue<OrderBook>,
-                                                    private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                                    assetsHolder: AssetsHolder,
-                                                    private val assetsPairsHolder: AssetsPairsHolder,
-                                                    private val balancesHolder: BalancesHolder,
-                                                    genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
-                                                    private val multiLimitOrderValidator: MultiLimitOrderValidator,
-                                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                                    private val messageSender: MessageSender): AbstractService {
+class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderService,
+                             private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                             private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
+                             private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                             private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                             private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+                             private val orderBookQueue: BlockingQueue<OrderBook>,
+                             private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                             private val assetsHolder: AssetsHolder,
+                             private val assetsPairsHolder: AssetsPairsHolder,
+                             private val balancesHolder: BalancesHolder,
+                             genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
+                             private val multiLimitOrderValidator: MultiLimitOrderValidator,
+                             private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                             private val messageSender: MessageSender) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)

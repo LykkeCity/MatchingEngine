@@ -1,8 +1,6 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
-import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
@@ -25,14 +23,12 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocesso
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.http.RequestHandler
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
@@ -57,7 +53,6 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
@@ -87,13 +82,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val cashInOutPreprocessor: CashInOutPreprocessor
     private val cashTransferPreprocessor: CashTransferPreprocessor
 
-    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.defaultMessagesQueue
-    private val orderBooksQueue: BlockingQueue<OrderBook> = LinkedBlockingQueue<OrderBook>()
+    private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
-
-    private val rabbitTransferQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
-    private val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
     private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -117,6 +108,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
     private val historyTicksService: HistoryTicksService
+    private val transferOperationSaveService: TransferOperationSaveService
 
     private val marketStateCache: MarketStateCache
     private val applicationSettingsCache: ApplicationSettingsCache
@@ -186,8 +178,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 messageSequenceNumberHolder,
                 messageSender)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
-        val cashTransferOperationValidator = applicationContext.getBean(CashTransferOperationValidator::class.java)
-        this.cashTransferOperationService = CashTransferOperationService(balanceHolder, assetsHolder, rabbitTransferQueue, dbTransferOperationQueue, feeProcessor, cashTransferOperationValidator)
+        this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
@@ -202,6 +193,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
+
+        this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
         val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
         this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
@@ -234,13 +227,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
                 MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
-                rabbitMqService,
-                config.me.name,
-                AppVersion.VERSION,
-                BuiltinExchangeType.FANOUT)
-
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineTransfers", logContainer)),
                 rabbitMqService,
                 config.me.name,
                 AppVersion.VERSION,
@@ -280,7 +266,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     }
 
     override fun run() {
-        TransferOperationSaveService(cashOperationsDatabaseAccessor, dbTransferOperationQueue).start()
+        transferOperationSaveService.start()
 
         while (true) {
             processMessage(messagesQueue.take())

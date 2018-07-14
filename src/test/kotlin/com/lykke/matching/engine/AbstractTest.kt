@@ -13,7 +13,9 @@ import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
@@ -140,13 +142,14 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var tradesInfoListener: TradeInfoListener
 
+    @Autowired
+    protected lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
+
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
 
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-
-    protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
 
     protected lateinit var feeProcessor: FeeProcessor
     protected lateinit var cashInOutOperationService: CashInOutOperationService

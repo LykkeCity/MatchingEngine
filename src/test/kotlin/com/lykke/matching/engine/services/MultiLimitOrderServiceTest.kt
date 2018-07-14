@@ -1042,7 +1042,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertTrue(listOf("Ask-ToCancel-1", "Ask-ToCancel-2", "Bid-ToCancel-1").containsAll(cancelledOrders.map { it.order.externalId }))
 
         assertEquals(1, testClientLimitOrderListener.getCount())
-        val report = testClientLimitOrderListener.getQueue() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().take()
         assertEquals(2, report.orders.size)
 
         val matchedOrders = report.orders.filter { it.order.status == OrderStatus.Matched.name }

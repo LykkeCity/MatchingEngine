@@ -51,7 +51,7 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
             genericLimitOrdersCancellerFactory.create(LOGGER, Date())
                     .preProcessLimitOrders(operationToOrder[OrderOperation.CANCEL] ?: emptyList(),
                             operationToOrder[OrderOperation.REMOVE] ?: emptyList())
-                    .applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER.name, true)
+                    .applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER, true)
         } catch (e: BalanceException) {
             teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
             return

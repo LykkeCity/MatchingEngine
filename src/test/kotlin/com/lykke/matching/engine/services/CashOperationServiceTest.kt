@@ -11,6 +11,8 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.outgoing.messages.CashOperation
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashInEvent
+import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
@@ -98,7 +100,7 @@ class CashOperationServiceTest: AbstractTest() {
         assertEquals(BigDecimal.valueOf(100.0), balance)
         assertEquals(BigDecimal.valueOf(100.0), reservedBalance)
 
-        val operation = testReservedCashOperationListener.getQueue().take().reservedCashOperation
+        val operation = testReservedCashOperationListener.getQueue().take()
         assertEquals("Client3", operation.clientId)
         assertEquals("50.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
@@ -123,7 +125,7 @@ class CashOperationServiceTest: AbstractTest() {
         val reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
         assertEquals(BigDecimal.valueOf(50.01), reservedBalance)
 
-        val operation = testReservedCashOperationListener.getQueue().take().reservedCashOperation
+        val operation = testReservedCashOperationListener.getQueue().take()
         assertEquals("Client3", operation.clientId)
         assertEquals("0.01", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
@@ -191,7 +193,7 @@ class CashOperationServiceTest: AbstractTest() {
         var reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
         assertEquals(BigDecimal.valueOf(26.0), reservedBalance)
 
-        val operation = testReservedCashOperationListener.getQueue().poll().reservedCashOperation
+        val operation = testReservedCashOperationListener.getQueue().poll()
         assertEquals("Client3", operation.clientId)
         assertEquals("-24.00", operation.reservedVolume)
         assertEquals("Asset1", operation.asset)
