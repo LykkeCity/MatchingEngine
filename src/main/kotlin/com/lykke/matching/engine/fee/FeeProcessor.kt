@@ -16,11 +16,13 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
 
+@Component
 class FeeProcessor(private val balancesHolder: BalancesHolder,
                    private val assetsHolder: AssetsHolder,
                    private val assetsPairsHolder: AssetsPairsHolder,

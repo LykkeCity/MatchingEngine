@@ -30,6 +30,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -61,6 +62,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val balancesHolder: BalancesHolder,
                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
                              private val multiLimitOrderValidator: MultiLimitOrderValidator,
+                             feeProcessor: FeeProcessor,
                              private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                              private val messageSender: MessageSender) : AbstractService {
 
@@ -75,7 +77,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 

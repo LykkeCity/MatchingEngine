@@ -151,7 +151,8 @@ abstract class AbstractTest {
 
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
 
-    protected lateinit var feeProcessor: FeeProcessor
+    @Autowired private
+    lateinit var feeProcessor: FeeProcessor
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
@@ -169,12 +170,9 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
-
         cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
                 dbTransferOperationQueue,
-                FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService),
+                feeProcessor,
                 cashTransferOperationValidator, messageSequenceNumberHolder, messageSender)
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)

@@ -44,16 +44,9 @@ import kotlin.test.assertTrue
 class FeeProcessorTest {
 
     private val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
+
+    @Autowired
     private lateinit var feeProcessor: FeeProcessor
-
-    @Autowired
-    private lateinit var genericLimitOrderService: GenericLimitOrderService
-
-    @Autowired
-    private lateinit var assetsPairsHolder: AssetsPairsHolder
-
-    @Autowired
-    private lateinit var assetsHolder: AssetsHolder
 
     @Autowired
     lateinit var balancesHolder: BalancesHolder
@@ -63,9 +56,6 @@ class FeeProcessorTest {
 
     @Autowired
     lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
-
-    @Autowired
-    lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @TestConfiguration
     open class Config {
@@ -83,11 +73,6 @@ class FeeProcessorTest {
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
-        initServices()
-    }
-
-    private fun initServices() {
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 
     @Test
@@ -96,7 +81,6 @@ class FeeProcessorTest {
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -177,7 +161,6 @@ class FeeProcessorTest {
 
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -205,7 +188,6 @@ class FeeProcessorTest {
     fun testAbsoluteFeeCashout() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -226,7 +208,6 @@ class FeeProcessorTest {
     fun testPercentFeeCashout() {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 2))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -247,7 +228,6 @@ class FeeProcessorTest {
     fun testAnotherAssetFee() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 0.6543)
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -358,7 +338,6 @@ class FeeProcessorTest {
     @Test
     fun testExternalPercentageFee() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -392,7 +371,6 @@ class FeeProcessorTest {
     @Test
     fun testExternalPercentageFeeNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 0.1)
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -476,7 +454,6 @@ class FeeProcessorTest {
     @Test
     fun testMakerMultipleFee() {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1000.0)
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -546,7 +523,6 @@ class FeeProcessorTest {
     @Test
     fun testExternalMultipleFeeNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1.12)
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
@@ -605,7 +581,6 @@ class FeeProcessorTest {
     fun testExternalFeeGreaterThanOperationVolume() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 11.0)
 
-        initServices()
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()

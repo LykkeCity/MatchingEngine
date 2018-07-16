@@ -161,7 +161,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
 
         val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
-        val feeProcessor = FeeProcessor(balanceHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        val feeProcessor =  applicationContext.getBean(FeeProcessor::class.java)
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
 
 

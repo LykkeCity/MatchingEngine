@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -25,6 +26,7 @@ class GenericLimitOrderProcessorFactory @Autowired constructor(private val gener
                                                                private val balancesHolder: BalancesHolder,
                                                                private val applicationSettingsCache: ApplicationSettingsCache,
                                                                private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                                               private val feeProcessor: FeeProcessor,
                                                                private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                                private val messageSender: MessageSender) {
 
@@ -37,7 +39,7 @@ class GenericLimitOrderProcessorFactory @Autowired constructor(private val gener
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsCache,
-                MatchingEngine(logger, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder),
+                MatchingEngine(logger, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor),
                 messageSequenceNumberHolder,
                 messageSender,
                 logger)

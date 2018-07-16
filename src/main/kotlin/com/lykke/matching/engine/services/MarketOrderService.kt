@@ -27,6 +27,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.outgoing.messages.*
@@ -53,6 +54,7 @@ class MarketOrderService @Autowired constructor(
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
         private val marketOrderValidator: MarketOrderValidator,
+        private val feeProcessor: FeeProcessor,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender): AbstractService {
     companion object {
@@ -64,7 +66,7 @@ class MarketOrderService @Autowired constructor(
     private var logCount = 100
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
 

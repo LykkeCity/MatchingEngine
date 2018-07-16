@@ -9,6 +9,7 @@ import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -41,7 +42,6 @@ abstract class MatchingEngineTest {
 
     protected lateinit var matchingEngine: MatchingEngine
 
-    protected val DELTA = 1e-9
     protected val now = Date()
 
     @Autowired
@@ -64,6 +64,9 @@ abstract class MatchingEngineTest {
 
     @Autowired
     protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
+
+    @Autowired
+    private lateinit var feeProcessor: FeeProcessor
 
     @TestConfiguration
     open class Config {
@@ -207,7 +210,7 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
+        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
     }
 
 }
