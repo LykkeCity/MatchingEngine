@@ -9,7 +9,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
                        private val baseAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAccuracy: Int,
-                       private val orders: MutableCollection<LimitOrder>,
+                       initialCapacity: Int,
                        private val LOGGER: Logger) {
 
     private var notSortedBuySide = false
@@ -18,6 +18,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
     private var prevAskPrice: BigDecimal? = null
     private var usedBaseAssetVolume = BigDecimal.ZERO
     private var usedQuotingAssetVolume = BigDecimal.ZERO
+    private val orders = ArrayList<LimitOrder>(initialCapacity)
 
     fun checkAndAdd(order: LimitOrder): Boolean {
         if (!isTrustedClient) {
@@ -79,7 +80,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
         val ordersToReject = ArrayList<LimitOrder>(orders.size)
         usedQuotingAssetVolume = BigDecimal.ZERO
         ordersToReject.addAll(buyOrders.filter { order ->
-            val volume = order.volume * order.price
+            val volume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
             if (usedQuotingAssetVolume + volume > quotingAssetAvailableBalance) {
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
                 true
@@ -100,7 +101,8 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
             }
         })
         orders.removeAll(ordersToReject)
-        usedBaseAssetVolume = BigDecimal.ZERO
         return ordersToReject
     }
+
+    fun getResult() = orders
 }
