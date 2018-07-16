@@ -14,12 +14,12 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildTransferWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,6 +43,9 @@ class InvalidBalanceTest : AbstractTest() {
     private
     lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
     @TestConfiguration
     open class Config {
 
@@ -56,6 +59,7 @@ class InvalidBalanceTest : AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
+
     @Before
     fun setUp() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("ETHUSD", "ETH", "USD", 5))
@@ -185,9 +189,7 @@ class InvalidBalanceTest : AbstractTest() {
 
         assertBalance("Client1", "USD", 3.0, 3.0)
 
-        val message = buildTransferWrapper("Client1", "Client2", "USD", 4.0, 4.0)
-        cashTransferOperationsService.parseMessage(message)
-        cashTransferOperationsService.processMessage(message)
+        cashTransferOperationsService.processMessage(messageBuilder.buildTransferWrapper("Client1", "Client2", "USD", 4.0, 4.0))
 
         assertBalance("Client1", "USD", -1.0, 3.0)
 
@@ -239,10 +241,10 @@ class InvalidBalanceTest : AbstractTest() {
         val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(4, report.orders.size)
 
-        assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1"}.order.status)
-        assertEquals(OrderStatus.Matched.name, report.orders.first { it.order.externalId == "2"}.order.status)
-        assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "3"}.order.status)
-        assertEquals(OrderStatus.Processing.name, report.orders.first { it.order.externalId == "4"}.order.status)
+        assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1" }.order.status)
+        assertEquals(OrderStatus.Matched.name, report.orders.first { it.order.externalId == "2" }.order.status)
+        assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "3" }.order.status)
+        assertEquals(OrderStatus.Processing.name, report.orders.first { it.order.externalId == "4" }.order.status)
 
         assertEquals(1, clientsEventsQueue.size)
         val event = clientsEventsQueue.poll() as ExecutionEvent
@@ -285,8 +287,8 @@ class InvalidBalanceTest : AbstractTest() {
         val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, report.orders.size)
 
-        assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1"}.order.status)
-        assertEquals(OrderStatus.InOrderBook.name, report.orders.first { it.order.externalId == "2"}.order.status)
+        assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1" }.order.status)
+        assertEquals(OrderStatus.InOrderBook.name, report.orders.first { it.order.externalId == "2" }.order.status)
 
         assertEquals(1, clientsEventsQueue.size)
         val event = clientsEventsQueue.poll() as ExecutionEvent

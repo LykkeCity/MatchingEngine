@@ -32,8 +32,10 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
@@ -80,10 +82,10 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var cashInOutOperationValidator: CashInOutOperationValidator
+    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
 
     @Autowired
-    private lateinit var cashTransferOperationValidator: CashTransferOperationValidator
+    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
@@ -193,13 +195,13 @@ abstract class AbstractTest {
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, rabbitTransferQueue,
                 dbTransferOperationQueue,
                 FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService),
-                cashTransferOperationValidator, messageSequenceNumberHolder, messageSender)
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator, messageSequenceNumberHolder, messageSender)
+        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor, cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
