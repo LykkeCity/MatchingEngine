@@ -166,15 +166,15 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
             ordersInfo.allOrders.forEach {
                 assetOrderBook.removeOrder(it)
                 if (it.isBuySide()) {
-                    changedBuyOrderBooks.add(assetOrderBook.copy() as TAssetOrderBook)
+                    changedBuyOrderBooks.add(assetOrderBook)
                 } else {
-                    changedSellOrderBooks.add(assetOrderBook.copy() as TAssetOrderBook)
+                    changedSellOrderBooks.add(assetOrderBook)
                 }
             }
         }
 
-        changedBuyOrderBooks.forEach { processChangedOrderBook(it, true) }
-        changedSellOrderBooks.forEach { processChangedOrderBook(it, false) }
+        changedBuyOrderBooks.forEach { processChangedOrderBook(it.copy() as TAssetOrderBook, true) }
+        changedSellOrderBooks.forEach { processChangedOrderBook(it.copy() as TAssetOrderBook, false) }
     }
 
     protected abstract fun processChangedOrderBook(orderBookCopy: TAssetOrderBook, isBuy: Boolean)
