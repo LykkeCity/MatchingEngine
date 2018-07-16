@@ -11,7 +11,6 @@ import com.google.gson.JsonSyntaxException
 import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import java.lang.reflect.Type
 import java.math.BigDecimal
-import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -43,7 +42,7 @@ open class JsonSerializable: OutgoingMessage {
     class GmtDateTypeAdapter: JsonSerializer<Date>, JsonDeserializer<Date> {
         override fun serialize(date: Date, type: Type,
                                              jsonSerializationContext: JsonSerializationContext): JsonElement {
-            val dateFormat = getDateTimeFormat()
+            val dateFormat = tl.get()
             val dateFormatAsString = dateFormat.format(date)
             return JsonPrimitive(dateFormatAsString)
         }
@@ -51,17 +50,19 @@ open class JsonSerializable: OutgoingMessage {
         override fun deserialize(jsonElement: JsonElement, type: Type,
                                                jsonDeserializationContext: JsonDeserializationContext): Date {
             try {
-                val dateFormat = getDateTimeFormat()
+                val dateFormat = tl.get()
                 return dateFormat.parse(jsonElement.asString)
             } catch (e: ParseException) {
                 throw JsonSyntaxException(jsonElement.asString, e)
             }
         }
 
-        private fun getDateTimeFormat(): DateFormat {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
-            dateFormat.timeZone = TimeZone.getTimeZone("UTC")
-            return dateFormat
+        private val tl = object : ThreadLocal<SimpleDateFormat>() {
+            override fun initialValue(): SimpleDateFormat {
+                val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
+                sdf.timeZone = TimeZone.getTimeZone("UTC")
+                return sdf
+            }
         }
     }
 }
