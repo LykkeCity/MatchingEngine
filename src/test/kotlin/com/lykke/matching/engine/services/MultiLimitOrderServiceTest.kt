@@ -87,6 +87,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         initServices()
     }
@@ -1273,6 +1274,51 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val event = trustedClientsEventsQueue.poll() as ExecutionEvent
         assertEquals(1, event.orders.size)
         assertEquals("1", event.orders.single().externalId)
+    }
+
+    @Test
+    fun testMatchSellMinRemaining() {
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 50.00)
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.02000199)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 49.99)
+
+        initServices()
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client2")))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 4999.0, volume = 0.01, clientId = "Client3")))
+
+        clearMessageQueues()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
+                IncomingLimitOrder(-0.01000199, 4998.0, "order1"),
+                IncomingLimitOrder(-0.01, 4999.0, "order2")
+        )))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(4, event.orders.size)
+
+        val order1 = event.orders.single { it.externalId == "order1" }
+        assertEquals(OutgoingOrderStatus.CANCELLED, order1.status)
+        assertEquals(1, order1.trades?.size)
+        assertEquals("0.01000000", order1.trades!![0].volume)
+        assertEquals("50.00", order1.trades!![0].oppositeVolume)
+        assertEquals("Client2", order1.trades!![0].oppositeWalletId)
+        assertEquals("-0.00000199", order1.remainingVolume)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client2" }.status)
+
+        val order2 = event.orders.single { it.externalId == "order2" }
+        assertEquals(OutgoingOrderStatus.MATCHED, order2.status)
+        assertEquals(1, order2.trades?.size)
+        assertEquals("0.01000000", order2.trades!![0].volume)
+        assertEquals("49.99", order2.trades!![0].oppositeVolume)
+        assertEquals("Client3", order2.trades!![0].oppositeWalletId)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client3" }.status)
+
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 0)
+
+        assertBalance("Client2", "USD", reserved = 0.0)
+        assertBalance("Client3", "USD", reserved = 0.0)
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
