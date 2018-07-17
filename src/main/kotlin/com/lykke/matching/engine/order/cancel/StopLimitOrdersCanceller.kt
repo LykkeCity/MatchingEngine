@@ -5,8 +5,8 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AssetStopOrderBook
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import java.math.BigDecimal
@@ -17,15 +17,15 @@ class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabas
                                assetsPairsHolder: AssetsPairsHolder,
                                balancesHolder: BalancesHolder,
                                genericStopLimitOrderService: GenericStopLimitOrderService,
-                               trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                               clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                               clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                               trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                date: Date) :
         AbstractLimitOrdersCanceller<AssetStopOrderBook, StopLimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
                 balancesHolder,
                 genericStopLimitOrderService,
+                clientLimitOrdersQueue,
                 trustedClientsLimitOrdersQueue,
-                clientsLimitOrdersQueue,
                 date) {
 
     override fun processChangedOrderBook(orderBookCopy: AssetStopOrderBook, isBuy: Boolean) {

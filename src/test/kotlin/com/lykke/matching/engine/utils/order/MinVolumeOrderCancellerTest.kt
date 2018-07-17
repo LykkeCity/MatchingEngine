@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -30,6 +30,7 @@ import java.util.Date
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import java.util.concurrent.BlockingQueue
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
@@ -40,8 +41,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     @Autowired
     private lateinit var recalculator: ReservedVolumesRecalculator
-
-    private lateinit var canceller: MinVolumeOrderCanceller
 
     @TestConfiguration
     open class Config {
@@ -69,6 +68,9 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
     @Autowired
     lateinit var applicationContext: ApplicationContext
 
+    @Autowired
+    lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
+
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
@@ -91,11 +93,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 5))
 
         initServices()
-    }
-
-    override fun initServices() {
-        super.initServices()
-        canceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
     @Test
@@ -130,12 +127,12 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 2,  BigDecimal.valueOf(5.0)))
         initServices()
 
-        trustedClientsLimitOrdersQueue.clear()
-        clientsLimitOrdersQueue.clear()
+        testTrustedClientsLimitOrderListener.clear()
+        testClientLimitOrderListener.clear()
         balanceUpdateHandlerTest.clear()
-        rabbitOrderBookQueue.clear()
-        orderBookQueue.clear()
-        canceller.cancel()
+        testRabbitOrderBookListener.clear()
+        testOrderBookListener.clear()
+        minVolumeOrderCanceller.cancel()
 
         assertEquals(BigDecimal.valueOf (2.001), testWalletDatabaseAccessor.getBalance("TrustedClient", "BTC"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("TrustedClient", "BTC"))
@@ -186,17 +183,17 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order1", false))
         assertNull(genericLimitOrderService.cancelLimitOrder(Date(), "order2", false))
 
-        assertEquals(1, trustedClientsLimitOrdersQueue.size)
-        assertEquals(1, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
-        assertEquals(BigDecimal.valueOf(11000.0), (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.first().order.price)
+        assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
+        assertEquals(1, (testTrustedClientsLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
+        assertEquals(BigDecimal.valueOf(11000.0), (testTrustedClientsLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.first().order.price)
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        assertEquals(5, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(5, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
-        assertEquals(4, rabbitOrderBookQueue.size)
-        assertEquals(4, orderBookQueue.size)
+        assertEquals(4, testRabbitOrderBookListener.getCount())
+        assertEquals(4, testOrderBookListener.getCount())
     }
 
     @Test
@@ -212,7 +209,7 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
         testDictionariesDatabaseAccessor.clear() // remove asset pair BTCEUR
         initServices()
-        canceller.cancel()
+        minVolumeOrderCanceller.cancel()
 
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCEUR", false).size)
         assertEquals(0, genericLimitOrderService.getOrderBook("BTCEUR").getOrderBook(false).size)

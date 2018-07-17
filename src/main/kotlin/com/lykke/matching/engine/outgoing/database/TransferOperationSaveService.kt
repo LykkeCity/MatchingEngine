@@ -3,8 +3,10 @@ package com.lykke.matching.engine.outgoing.database
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 
+@Service
 class TransferOperationSaveService(private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor,
                                    private val transferOperations: BlockingQueue<TransferOperation>) : Thread(TransferOperationSaveService::class.java.name) {
 

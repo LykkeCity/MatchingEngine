@@ -7,8 +7,12 @@ import org.springframework.stereotype.Component
 
 @Component
 class AssetsPairsHolder @Autowired constructor(private val assetPairsCache: AssetPairsCache) {
+    fun getAssetPairAllowNulls(assetPairId: String): AssetPair? {
+        return assetPairsCache.getAssetPair(assetPairId)
+    }
+
     fun getAssetPair(assetPairId: String): AssetPair {
-        return assetPairsCache.getAssetPair(assetPairId) ?: throw Exception("Unable to find asset pair $assetPairId")
+        return getAssetPairAllowNulls(assetPairId) ?: throw Exception("Unable to find asset pair $assetPairId")
     }
 
     fun getAssetPair(assetId1: String, assetId2: String): AssetPair {

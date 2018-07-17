@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.order.cancel
 
-import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -9,8 +8,8 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -23,13 +22,13 @@ import java.util.concurrent.BlockingQueue
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
+                                  orderBookQueue: BlockingQueue<OrderBook>,
+                                  rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                                  clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                  trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                  trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                                  clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                                  orderBookQueue: BlockingQueue<OrderBook>,
-                                  rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
                                   private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                   private val messageSender: MessageSender,
                                   private val date: Date,
@@ -40,10 +39,10 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             balancesHolder,
             genericLimitOrderService,
             genericLimitOrderProcessorFactory,
-            trustedClientsLimitOrdersQueue,
-            clientsLimitOrdersQueue,
             orderBookQueue,
             rabbitOrderBookQueue,
+            clientLimitOrdersQueue,
+            trustedClientsLimitOrdersQueue,
             date,
             LOGGER)
 
@@ -51,8 +50,8 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             assetsPairsHolder,
             balancesHolder,
             genericStopLimitOrderService,
+            clientLimitOrdersQueue,
             trustedClientsLimitOrdersQueue,
-            clientsLimitOrdersQueue,
             date)
 
     fun preProcessLimitOrders(orders: Collection<LimitOrder>): GenericLimitOrdersCanceller {
@@ -65,14 +64,14 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         return this
     }
 
-    fun preProcessLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<LimitOrder>>>,
-                              ordersToRemove: Map<String, Map<Boolean, Collection<LimitOrder>>>): GenericLimitOrdersCanceller {
+    fun preProcessLimitOrders(ordersToCancel: List<LimitOrder>,
+                              ordersToRemove: List<LimitOrder>): GenericLimitOrdersCanceller {
         limitOrdersCanceller.preProcess(ordersToCancel, ordersToRemove)
         return this
     }
 
-    fun preProcessStopLimitOrders(ordersToCancel: Map<AssetPair, Map<Boolean, Collection<LimitOrder>>>,
-                                  ordersToRemove: Map<String, Map<Boolean, Collection<LimitOrder>>>): GenericLimitOrdersCanceller {
+    fun preProcessStopLimitOrders(ordersToCancel: List<LimitOrder>,
+                                  ordersToRemove: List<LimitOrder>): GenericLimitOrdersCanceller {
         stopLimitOrdersCanceller.preProcess(ordersToCancel, ordersToRemove)
         return this
     }
