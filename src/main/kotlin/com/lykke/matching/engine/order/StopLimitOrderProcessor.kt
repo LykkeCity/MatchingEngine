@@ -45,10 +45,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
     fun processStopOrder(messageWrapper: MessageWrapper, order: LimitOrder, isCancelOrders: Boolean, now: Date) {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val limitAsset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
-        val limitVolume = if (order.isBuySide())
-            NumberUtils.setScaleRoundUp(order.volume * (order.upperPrice ?: order.lowerPrice)!!, limitAsset.accuracy)
-        else
-            order.getAbsVolume()
+        val limitVolume = if (order.isBuySide()) {
+            val limitPrice = order.upperPrice ?: order.lowerPrice
+            if (limitPrice != null)
+                NumberUtils.setScaleRoundUp(order.volume * limitPrice, limitAsset.accuracy)
+            else null
+        } else order.getAbsVolume()
 
         val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         var cancelVolume = BigDecimal.ZERO
@@ -147,7 +149,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         walletOperations.add(WalletOperation(UUID.randomUUID().toString(),
                 order.externalId,
                 order.clientId,
-                limitAsset.assetId, now, BigDecimal.ZERO, limitVolume))
+                limitAsset.assetId, now, BigDecimal.ZERO, limitVolume!!))
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         walletOperationsProcessor.preProcess(walletOperations)
 
@@ -187,12 +189,14 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         messageSender.sendMessage(outgoingMessage)
     }
 
-    private fun validateOrder(order: LimitOrder, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
+    private fun validateOrder(order: LimitOrder, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal?) {
         validator.validateFee(order)
         validator.validateAssets(assetPair)
         validator.validateLimitPrices(order)
         validator.validateVolume(order)
-        validator.checkBalance(availableBalance, limitVolume)
+        if (limitVolume != null) {
+            validator.checkBalance(availableBalance, limitVolume)
+        }
         validator.validateVolumeAccuracy(order)
         validator.validatePriceAccuracy(order)
     }
