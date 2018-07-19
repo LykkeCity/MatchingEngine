@@ -1,13 +1,13 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import redis.clients.jedis.JedisPool
 import java.util.*
 
 @Component
@@ -17,7 +17,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
     private lateinit var config: Config
 
     @Autowired
-    private lateinit var jedisPool: Optional<JedisPool>
+    private lateinit var redisHolder: Optional<InitialLoadingRedisHolder>
 
     override fun getObjectType(): Class<*> {
         return BalancesDatabaseAccessorsHolder::class.java
@@ -36,7 +36,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
             }
 
             Storage.Redis -> {
-                primaryAccessor = RedisWalletDatabaseAccessor(jedisPool.get(), config.me.redis.balanceDatabase)
+                primaryAccessor = RedisWalletDatabaseAccessor(redisHolder.get(), config.me.redis.balanceDatabase)
 
                 secondaryAccessor = if (config.me.writeBalancesToSecondaryDb)
                     AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.newAccountsTableName!!)

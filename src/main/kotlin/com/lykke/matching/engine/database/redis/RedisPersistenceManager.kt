@@ -16,7 +16,6 @@ import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookData
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
@@ -25,7 +24,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -39,9 +37,8 @@ class RedisPersistenceManager(
         private val secondaryOrdersAccessor: OrderBookDatabaseAccessor?,
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
         private val secondaryStopOrdersAccessor: StopOrderBookDatabaseAccessor?,
-        private val redisHealthStatusHolder: RedisHealthStatusHolder,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val jedisPool: JedisPool,
+        private val redisHolder: PersistenceRedisHolder,
         private val config: Config): PersistenceManager {
 
     companion object {
@@ -67,7 +64,6 @@ class RedisPersistenceManager(
         }
     }
 
-    private var jedis: Jedis? = null
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
     private val updatedOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     private val updatedStopOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
@@ -87,43 +83,15 @@ class RedisPersistenceManager(
             return true
         }
         return try {
-            persistData(getJedis(), data)
+            persistData(redisHolder.persistenceRedis(), data)
             true
         } catch (e: Exception) {
-            val retryMessage = "Unable to save data (${data.details()}), retrying"
-            LOGGER.error(retryMessage, e)
-            METRICS_LOGGER.logError(retryMessage, e)
-            try {
-                persistData(getJedis(true), data)
-                true
-            } catch (e: Exception) {
-                redisHealthStatusHolder.fail()
-                closeJedis()
-                val message = "Unable to save data (${data.details()})"
-                LOGGER.error(message, e)
-                METRICS_LOGGER.logError(message, e)
-                false
-            }
+            redisHolder.fail()
+            val message = "Unable to save data (${data.details()})"
+            LOGGER.error(message, e)
+            METRICS_LOGGER.logError(message, e)
+            false
         }
-    }
-
-    private fun getJedis(newResource: Boolean = false): Jedis {
-        if (jedis == null) {
-            jedis = jedisPool.resource
-        } else if (newResource) {
-            closeJedis()
-            jedis = jedisPool.resource
-        }
-        return jedis!!
-    }
-
-    private fun closeJedis() {
-        try {
-            jedis?.close()
-        } catch (e: Exception) {
-            // ignored
-        }
-        jedis = null
     }
 
     private fun persistData(jedis: Jedis, data: PersistenceData) {

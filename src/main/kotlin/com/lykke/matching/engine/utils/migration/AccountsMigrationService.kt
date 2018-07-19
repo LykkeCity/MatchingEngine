@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.migration
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.exception.MatchingEngineException
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -10,20 +11,19 @@ import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import redis.clients.jedis.JedisPool
 import java.util.*
 
 @Service
 class AccountsMigrationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                        private val config: Config,
-                                                       jedisPool: Optional<JedisPool>) {
+                                                       redisHolder: Optional<InitialLoadingRedisHolder>) {
 
     companion object {
         private val LOGGER = Logger.getLogger(AccountsMigrationService::class.java.name)
     }
 
-    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor? = if (jedisPool.isPresent)
-        RedisWalletDatabaseAccessor(jedisPool.get(), config.me.redis.balanceDatabase)
+    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor? = if (redisHolder.isPresent)
+        RedisWalletDatabaseAccessor(redisHolder.get(), config.me.redis.balanceDatabase)
     else null
 
 
