@@ -116,7 +116,10 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletProcessor.persistBalances(processedMessage, sequenceNumber)
+        val updated = walletProcessor.persistBalances(processedMessage,
+                limitOrdersCanceller.getPersistenceData(),
+                stopLimitOrdersCanceller.getPersistenceData(),
+                sequenceNumber)
         if (!updated) {
             return false
         }

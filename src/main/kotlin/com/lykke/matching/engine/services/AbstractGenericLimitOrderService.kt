@@ -8,5 +8,4 @@ interface AbstractGenericLimitOrderService<T: AbstractAssetOrderBook> {
     fun getOrderBook(assetPairId: String): T
     fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date)
     fun setOrderBook(assetPairId: String, assetOrderBook: T)
-    fun updateOrderBook(assetPairId: String, isBuy: Boolean)
 }

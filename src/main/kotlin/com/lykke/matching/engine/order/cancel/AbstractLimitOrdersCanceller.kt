@@ -4,6 +4,8 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -45,6 +47,9 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     protected var ordersToCancel: List<OrdersProcessingInfo> = LinkedList()
 
     private val assetOrderBooks = HashMap<String, TAssetOrderBook>()
+
+    private val changeBuyAssetPairsOrderBooks = HashSet<String>()
+    private val changeSellAssetPairsOrderBooks = HashSet<String>()
 
     fun preProcess(orders: Collection<LimitOrder>): AbstractLimitOrdersCanceller<TAssetOrderBook, TCancelResult> {
         val operationToOrders: Map<OrderOperation, List<LimitOrder>> = orders
@@ -109,6 +114,26 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         return walletOperations
     }
 
+    fun getPersistenceData(): OrderBooksPersistenceData {
+        val ordersToRemove = allOrders
+                .stream()
+                .flatMap { it.allOrders.stream() }
+                .collect(Collectors.toList())
+
+        val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
+        assetOrderBooks.forEach { assetPairId, orderBook ->
+            val orderBookCopy = orderBook.copy()
+            if (changeBuyAssetPairsOrderBooks.contains(assetPairId)) {
+                orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, true, orderBookCopy.getOrderBook(true)))
+            }
+            if (changeSellAssetPairsOrderBooks.contains(assetPairId)) {
+                orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, orderBookCopy.getOrderBook(false)))
+            }
+        }
+
+        return OrderBooksPersistenceData(orderBookPersistenceDataList, emptyList(), ordersToRemove)
+    }
+
     protected abstract fun getOrderLimitVolume(order: LimitOrder): BigDecimal
 
     fun process(): TCancelResult {
@@ -132,15 +157,15 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
     open fun apply(messageId: String,
                    processedMessage: ProcessedMessage?,
                    result: TCancelResult) {
-        removeOrdersAndUpdateOrderBooks()
+        removeOrdersFromCache()
         sendReports(messageId, result)
     }
 
-    private fun removeOrdersAndUpdateOrderBooks() {
+    private fun removeOrdersFromCache() {
         allOrders
                 .forEach {
-                    removeOrdersAndUpdateOrderBook(it.buyOrders, it.assetPairId, true)
-                    removeOrdersAndUpdateOrderBook(it.sellOrders, it.assetPairId, false)
+                    removeOrdersFromCache(it.buyOrders, it.assetPairId)
+                    removeOrdersFromCache(it.sellOrders, it.assetPairId)
                 }
     }
 
@@ -173,24 +198,18 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
             }
         }
 
+        changeBuyAssetPairsOrderBooks.addAll(changedBuyOrderBooks.map { it.assetPairId })
+        changeSellAssetPairsOrderBooks.addAll(changedSellOrderBooks.map { it.assetPairId })
+
         changedBuyOrderBooks.forEach { processChangedOrderBook(it.copy() as TAssetOrderBook, true) }
         changedSellOrderBooks.forEach { processChangedOrderBook(it.copy() as TAssetOrderBook, false) }
     }
 
     protected abstract fun processChangedOrderBook(orderBookCopy: TAssetOrderBook, isBuy: Boolean)
 
-    private fun removeOrdersAndUpdateOrderBook(orders: List<LimitOrder>, assetPairId: String, isBuy: Boolean) {
+    private fun removeOrdersFromCache(orders: List<LimitOrder>, assetPairId: String) {
         genericLimitOrderService.cancelLimitOrders(orders, date)
         genericLimitOrderService.setOrderBook(assetPairId, assetOrderBooks[assetPairId]!!)
-        genericLimitOrderService.updateOrderBook(assetPairId, isBuy)
-    }
-
-    private fun removeOrdersAndUpdateOrderBook(order: List<LimitOrder>, buy: Boolean) {
-        val assetPairIdToLimitOrder: Map<String, List<LimitOrder>> = order
-                .stream()
-                .collect(Collectors.groupingBy { it.assetPairId })
-
-        assetPairIdToLimitOrder.forEach { assetPairId, orders -> removeOrdersAndUpdateOrderBook(orders, assetPairId, buy) }
     }
 
     private fun calculateOrdersWithTrades(orders: List<OrdersProcessingInfo>): OrdersWithTrades {
