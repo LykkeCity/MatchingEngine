@@ -5,18 +5,18 @@ import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
-import redis.clients.jedis.JedisPool
 import java.util.Date
 
 @Service
 class OrdersMigrationService(private val config: Config,
-                             jedisPool: JedisPool,
+                             redisHolder: InitialLoadingRedisHolder,
                              private val persistenceManager: PersistenceManager,
                              private val genericLimitOrderService: GenericLimitOrderService) {
     companion object {
@@ -24,7 +24,7 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private val fileDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    private val redisDatabaseAccessor = RedisOrderBookDatabaseAccessor(jedisPool, config.me.redis.ordersDatabase)
+    private val redisDatabaseAccessor = RedisOrderBookDatabaseAccessor(redisHolder, config.me.redis.ordersDatabase)
 
     fun migrateOrdersIfConfigured() {
         if (!config.me.ordersMigration) {

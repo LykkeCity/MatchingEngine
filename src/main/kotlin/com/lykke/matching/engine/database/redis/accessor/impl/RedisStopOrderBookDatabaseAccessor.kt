@@ -2,10 +2,10 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
-import redis.clients.jedis.JedisPool
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 
-class RedisStopOrderBookDatabaseAccessor(jedisPool: JedisPool, db: Int)
-    : AbstractRedisOrderBookDatabaseAccessor(jedisPool, db, KEY_PREFIX_ORDER, "stop"), StopOrderBookDatabaseAccessor {
+class RedisStopOrderBookDatabaseAccessor(redisHolder: InitialLoadingRedisHolder, db: Int)
+    : AbstractRedisOrderBookDatabaseAccessor(redisHolder, db, KEY_PREFIX_ORDER, "stop"), StopOrderBookDatabaseAccessor {
 
     override fun loadStopLimitOrders() = loadOrders()
 
