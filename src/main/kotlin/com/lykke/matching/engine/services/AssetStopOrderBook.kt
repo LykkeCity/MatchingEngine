@@ -71,6 +71,12 @@ class AssetStopOrderBook(assetPairId: String): AbstractAssetOrderBook(assetPairI
 
     override fun getOrderBook(isBuySide: Boolean) = (if (isBuySide) bidOrderBook else askOrderBook).values.toList()
 
+    fun getOrderBook(isBuySide: Boolean, isLower: Boolean) = if (isBuySide) {
+        if (isLower) lowerBidOrderBook else upperBidOrderBook
+    } else {
+        if (isLower) lowerAskOrderBook else upperAskOrderBook
+    }
+
     fun addOrder(order: LimitOrder) {
         if (order.assetPairId != assetPairId) {
             LOGGER.error("Unable to add order ${order.externalId} (order asset pair: ${order.assetPairId}, order book asset pair: $assetPairId)")

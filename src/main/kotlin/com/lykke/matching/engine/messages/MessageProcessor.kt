@@ -31,6 +31,7 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.http.RequestHandler
+import com.lykke.matching.engine.outgoing.http.StopOrderBooksRequestHandler
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
@@ -248,6 +249,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
+        server.createContext("/stopOrderBooks", StopOrderBooksRequestHandler(genericStopLimitOrderService))
         server.executor = null
         server.start()
 
