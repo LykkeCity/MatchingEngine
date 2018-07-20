@@ -46,7 +46,9 @@ class RedisPersistenceManager(
         private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
 
-        fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>): List<OrderBookPersistenceData> {
+        fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>) = mapOrdersToOrderBookPersistenceDataList(orders, emptyList())
+
+        private fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>): List<OrderBookPersistenceData> {
             val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()
             orders.forEach { order ->
                 orderBooks.getOrPut(order.assetPairId) { mutableMapOf() }
@@ -54,11 +56,17 @@ class RedisPersistenceManager(
                         .add(order)
             }
 
+            val mutableOrderBooksSides = orderBooksSides.toMutableList()
             val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
             orderBooks.forEach {assetPairId, sideOrders ->
                 sideOrders.forEach { isBuy, orders ->
+                    mutableOrderBooksSides.remove(OrderBookSide(assetPairId, isBuy))
                     orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, isBuy, orders))
                 }
+            }
+            mutableOrderBooksSides.forEach { orderBooksSide ->
+                LOGGER.info("Orders $orderBooksSide are absent in primary db and will be removed from secondary db")
+                orderBookPersistenceDataList.add(OrderBookPersistenceData(orderBooksSide.assetPairId, orderBooksSide.isBuySide, emptyList()))
             }
             return orderBookPersistenceDataList
         }
@@ -216,7 +224,11 @@ class RedisPersistenceManager(
             return
         }
 
-        updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryOrdersAccessor.loadLimitOrders()))
+
+        val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
+            secondaryOrdersAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
+
+        updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryOrdersAccessor.loadLimitOrders(), currentOrderBookSides))
 
         thread(name = "${RedisPersistenceManager::class.java.name}.ordersAsyncWriter") {
             while (true) {
@@ -237,7 +249,10 @@ class RedisPersistenceManager(
             return
         }
 
-        updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders()))
+        val currentStopOrderBookSides = if (config.me.ordersMigration) emptySet() else
+            secondaryStopOrdersAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
+
+        updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders(), currentStopOrderBookSides))
 
         thread(name = "${RedisPersistenceManager::class.java.name}.stopOrdersAsyncWriter") {
             while (true) {
@@ -254,3 +269,6 @@ class RedisPersistenceManager(
     }
 
 }
+
+private data class OrderBookSide(val assetPairId: String,
+                                 val isBuySide: Boolean)
