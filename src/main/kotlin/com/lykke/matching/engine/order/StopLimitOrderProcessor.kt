@@ -138,6 +138,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                     order,
                     now,
                     BigDecimal.ZERO)
+            writeResponse(messageWrapper, order, MessageStatus.OK)
             return
         }
 
