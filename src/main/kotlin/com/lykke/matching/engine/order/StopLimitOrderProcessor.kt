@@ -75,7 +75,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 walletOperationsProcessor.preProcess(listOf(WalletOperation(UUID.randomUUID().toString(),
                         order.externalId,
                         order.clientId,
-                        limitAsset.assetId, now, BigDecimal.ZERO, -cancelVolume)))
+                        limitAsset.assetId, now, BigDecimal.ZERO, -cancelVolume)), true)
             }
             val orderBooksPersistenceData = if (ordersToCancel.isNotEmpty())
                 OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId, order.isBuySide(), newStopOrderBook)),
@@ -149,7 +149,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 order.clientId,
                 limitAsset.assetId, now, BigDecimal.ZERO, limitVolume))
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
-        walletOperationsProcessor.preProcess(walletOperations)
+        walletOperationsProcessor.preProcess(walletOperations, true)
 
         order.reservedLimitVolume = limitVolume
         newStopOrderBook.add(order)

@@ -6,13 +6,13 @@ import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -34,7 +34,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
-                                                         private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
+                                                         private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                                          private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                                          private val assetsHolder: AssetsHolder,
                                                          private val assetsPairsHolder :AssetsPairsHolder,
@@ -66,7 +66,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
     fun recalculate() {
 
         val orders = orderBookDatabaseAccessorHolder.primaryAccessor.loadLimitOrders()
-        val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
+        val stopOrders = stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders()
 
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
