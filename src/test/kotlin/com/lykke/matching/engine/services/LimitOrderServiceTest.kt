@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
@@ -399,6 +400,12 @@ class LimitOrderServiceTest: AbstractTest() {
 
         assertEquals(BigDecimal.valueOf(877.48), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+
+        assertEquals(2, tradesInfoQueue.size)
+        val buyTradeInfo = tradesInfoQueue.single { it.isBuy }
+        assertEquals(BigDecimal.ZERO, buyTradeInfo.price)
+        val sellTradeInfo = tradesInfoQueue.single { !it.isBuy }
+        assertEquals(BigDecimal.valueOf(122.512), sellTradeInfo.price)
     }
 
     @Test
