@@ -27,7 +27,6 @@ import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.CashOperationIdRedisHolder
 import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
@@ -197,10 +196,5 @@ open class DatabaseAccessorConfig {
 
     private fun getProcessedMessageTTL(): Int {
         return (config.me.processedMessagesInterval / 500).toInt()
-    }
-
-    @Bean
-    open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
-        return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
     }
 }

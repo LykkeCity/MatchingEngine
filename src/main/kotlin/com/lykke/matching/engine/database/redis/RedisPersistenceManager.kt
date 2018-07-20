@@ -237,7 +237,7 @@ class RedisPersistenceManager(
             return
         }
 
-        updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders()))
+        updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders()))
 
         thread(name = "${RedisPersistenceManager::class.java.name}.stopOrdersAsyncWriter") {
             while (true) {

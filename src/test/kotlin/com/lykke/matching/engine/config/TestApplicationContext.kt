@@ -88,7 +88,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun reservedVolumesRecalculator(testOrderDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
-                                         testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor,
+                                         stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                          testReservedVolumesDatabaseAccessor: TestReservedVolumesDatabaseAccessor,
                                          assetHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder,
                                          balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache,
@@ -96,7 +96,7 @@ open class TestApplicationContext {
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
-        return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, testStopOrderBookDatabaseAccessor,
+        return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
                 testReservedVolumesDatabaseAccessor,  assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
                 false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
@@ -171,8 +171,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun stopOrdersDatabaseAccessorsHolder(): StopOrdersDatabaseAccessorsHolder {
-        return StopOrdersDatabaseAccessorsHolder(TestStopOrderBookDatabaseAccessor(), null)
+    open fun stopOrdersDatabaseAccessorsHolder(testStopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor): StopOrdersDatabaseAccessorsHolder {
+        return StopOrdersDatabaseAccessorsHolder(testStopOrderBookDatabaseAccessor, null)
     }
 
     @Bean
