@@ -4,6 +4,7 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
@@ -102,6 +103,11 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEventBalanceUpdate("Client1", "EUR", "1000", "1000", "1", "0", executionEvent.balanceUpdates!!)
         assertEquals(1, executionEvent.orders.size)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
+
+        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
+        assertEquals(BigDecimal.ZERO, tradeInfo.price)
+        assertEquals(false, tradeInfo.isBuy)
     }
 
     @Test
@@ -161,5 +167,11 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[0].status)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[1].status)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[2].status)
+
+        assertEquals(2, tradesInfoListener.getProcessingQueue().size)
+        val buyTradeInfo = tradesInfoListener.getProcessingQueue().single { it.isBuy }
+        assertEquals(BigDecimal.ZERO, buyTradeInfo.price)
+        val sellTradeInfo = tradesInfoListener.getProcessingQueue().single { !it.isBuy }
+        assertEquals(BigDecimal.valueOf(9200.0), sellTradeInfo.price)
     }
 }

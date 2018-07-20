@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.database.*
@@ -154,6 +155,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(2, event.orders.size)
         assertEquals("1.2", event.orders[0].price)
         assertEquals("1.3", event.orders[1].price)
+
+        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
+        assertEquals(BigDecimal.valueOf(1.3), tradeInfo.price)
+        assertEquals(true, tradeInfo.isBuy)
     }
 
     @Test
