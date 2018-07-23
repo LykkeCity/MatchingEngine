@@ -34,6 +34,7 @@ import com.lykke.matching.engine.database.redis.CashOperationIdRedisHolder
 import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -42,9 +43,11 @@ import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.scheduling.TaskScheduler
 import java.util.Optional
 
 @Configuration
@@ -83,6 +86,17 @@ open class DatabaseAccessorConfig {
                     config.me.redis.processedMessageDatabase,
                     getProcessedMessageTTL())
         }
+    }
+
+    @Bean
+    open fun redisHolder(taskScheduler: TaskScheduler,
+                         applicationEventPublisher: ApplicationEventPublisher,
+                         @Value("\${redis.health.check.interval}") updateInterval: Long,
+                         @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisHolder? {
+        if (config.me.storage != Storage.Redis) {
+            return null
+        }
+        return RedisHolder(config.me, taskScheduler, applicationEventPublisher, updateInterval, reconnectInterval)
     }
 
     @Bean

@@ -62,9 +62,7 @@ class RedisPersistenceManager(
 
     private fun persistData(jedis: Jedis, data: PersistenceData) {
         val startTime = System.nanoTime()
-
-        val transaction = jedis.multi()
-        try {
+        jedis.multi().use { transaction ->
             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
 
@@ -87,13 +85,6 @@ class RedisPersistenceManager(
             if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
                 updatedWalletsQueue.put(data.balancesData!!.wallets)
             }
-        } catch (e: Exception) {
-            try {
-                transaction.clear()
-            } catch (clearTxException: Exception) {
-                e.addSuppressed(clearTxException)
-            }
-            throw e
         }
     }
 
