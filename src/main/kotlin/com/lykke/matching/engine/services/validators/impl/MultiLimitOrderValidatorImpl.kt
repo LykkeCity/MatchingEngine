@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.utils.NumberUtils

@@ -21,7 +21,7 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport

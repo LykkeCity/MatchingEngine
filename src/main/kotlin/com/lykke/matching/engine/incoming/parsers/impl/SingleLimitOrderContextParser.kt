@@ -5,9 +5,13 @@ import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -19,10 +23,17 @@ import java.math.BigDecimal
 import java.util.*
 
 @Component
-class SingleLimitOrderContextParser : ContextParser {
-    override fun parse(messageWrapper: MessageWrapper): MessageWrapper {
+class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
+                                    val assetsHolder: AssetsHolder,
+                                    val applicationSettingsCache: ApplicationSettingsCache) : ContextParser<SingleLimitOrderParsedData> {
+    override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
         val orderProcessingStartTime = Date()
-        val builder = parseMessage(messageWrapper, orderProcessingStartTime)
+
+        var builder = parseMessage(messageWrapper, orderProcessingStartTime)
+
+        builder = setAssetPair(builder, builder.limitOrder.assetPairId)
+        builder = setTrustedClient(builder, builder.limitOrder.clientId)
+        builder = setLimitAsset(builder)
 
         val context = builder.build()
 
@@ -30,7 +41,23 @@ class SingleLimitOrderContextParser : ContextParser {
         messageWrapper.id = context.id
         messageWrapper.messageId = context.messageId
 
-        return messageWrapper
+        return SingleLimitOrderParsedData(messageWrapper)
+    }
+
+    fun setLimitAsset(builder: SingleLimitContext.Builder): SingleLimitContext.Builder {
+        builder.limitAsset = assetsHolder.getAsset(if (builder.limitOrder.isBuySide()) builder.assetPair.quotingAssetId else builder.assetPair.baseAssetId)
+        return builder
+    }
+
+    fun setTrustedClient(builder: SingleLimitContext.Builder, clientId: String): SingleLimitContext.Builder {
+        builder.isTrustedClient = applicationSettingsCache.isTrustedClient(clientId)
+
+        return builder
+    }
+
+    fun setAssetPair(builder: SingleLimitContext.Builder, assetPairId: String): SingleLimitContext.Builder {
+        builder.assetPair(assetsPairsHolder.getAssetPair(assetPairId))
+        return builder
     }
 
     private fun parseMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitContext.Builder {

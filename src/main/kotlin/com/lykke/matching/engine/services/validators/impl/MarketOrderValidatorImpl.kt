@@ -9,7 +9,6 @@ import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger

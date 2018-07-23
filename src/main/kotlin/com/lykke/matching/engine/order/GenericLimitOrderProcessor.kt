@@ -1,10 +1,7 @@
 package com.lykke.matching.engine.order
 
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -16,9 +13,9 @@ import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
+import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import org.apache.log4j.Logger
 import java.math.BigDecimal
-import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
@@ -28,7 +25,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
                                  assetsHolder: AssetsHolder,
                                  assetsPairsHolder: AssetsPairsHolder,
                                  balancesHolder: BalancesHolder,
-                                 applicationSettingsCache: ApplicationSettingsCache,
+                                 limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                  matchingEngine: MatchingEngine,
                                  messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                  messageSender: MessageSender,
@@ -36,7 +33,6 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
 
     private val limitOrderProcessor = SingleLimitOrderProcessor(limitOrderService,
             limitOrdersProcessorFactory,
-            assetsPairsHolder,
             matchingEngine,
             LOGGER)
 
@@ -47,38 +43,38 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
             assetsHolder,
             assetsPairsHolder,
             balancesHolder,
-            applicationSettingsCache,
+            limitOrderBusinessValidator,
             messageSequenceNumberHolder,
             messageSender,
             LOGGER)
 
-    fun checkAndProcessStopOrder(messageId: String, assetPairId: String, now: Date) {
+    fun checkAndProcessStopOrder(singleLimitContext: SingleLimitContext) {
+        val assetPairId = singleLimitContext.limitOrder.assetPairId
+        val now = singleLimitContext.orderProcessingStartTime
         val order = stopLimitOrderService.getStopOrderForProcess(assetPairId, now) ?: return
         val orderBook = limitOrderService.getOrderBook(assetPairId)
-        LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()}) due to message $messageId")
+        LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()}) due to message ${singleLimitContext.messageId}")
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
-        processLimitOrder(messageId, null, order, now, payBackReserved)
+        //todo: should be passed acrual stop order
+        processLimitOrder(singleLimitContext, order, payBackReserved)
     }
 
-    private fun processLimitOrder(messageId: String, processedMessage: ProcessedMessage?, messageWrapper: MessageWrapper, order: LimitOrder, isCancelOrders: Boolean, now: Date) {
-        limitOrderProcessor.processLimitOrder(order, isCancelOrders, now, messageId,
-                processedMessage,
-                messageWrapper = messageWrapper)
-        checkAndProcessStopOrder(messageId, order.assetPairId, now)
+    private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
+        limitOrderProcessor.processLimitOrder(singleLimitContext, messageWrapper =  messageWrapper)
+        checkAndProcessStopOrder(singleLimitContext)
     }
 
     fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
         when(singleLimitContext.limitOrder.type) {
-            LimitOrderType.LIMIT -> processLimitOrder(singleLimitContext.messageId, singleLimitContext.processedMessage,
-                    messageWrapper, singleLimitContext.limitOrder, singleLimitContext.cancelOrders, singleLimitContext.orderProcessingStartTime)
+            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper, singleLimitContext)
             LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, singleLimitContext)
         }
     }
 
-    fun processLimitOrder(messageId: String, processedMessage: ProcessedMessage?, order: LimitOrder, now: Date, payBackReserved: BigDecimal) {
-        limitOrderProcessor.processLimitOrder(order, false, now, messageId, processedMessage, payBackReserved)
-        checkAndProcessStopOrder(messageId, order.assetPairId, now)
+    fun processLimitOrder(singleLimitContext: SingleLimitContext, payBackReserved: BigDecimal) {
+        limitOrderProcessor.processLimitOrder(singleLimitContext, payBackReserved)
+        checkAndProcessStopOrder(singleLimitContext)
     }
 
     private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) =
