@@ -3,10 +3,10 @@ package com.lykke.matching.engine.outgoing.rabbit
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.logging.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
-import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
@@ -76,7 +76,7 @@ class RabbitMqPublisher(
         while (true) {
             try {
                 val startTime = System.nanoTime()
-                val stringValue: String
+                var stringValue: String? = null
                 val byteArrayValue: ByteArray
                 val routingKey: String
                 val props: AMQP.BasicProperties
@@ -88,7 +88,9 @@ class RabbitMqPublisher(
                     props = MessageProperties.MINIMAL_PERSISTENT_BASIC
                 } else {
                     item as Event<*>
-                    stringValue = item.toString()
+                    if (messageDatabaseLogger != null) {
+                        stringValue = item.toString()
+                    }
                     byteArrayValue = item.buildGeneratedMessage().toByteArray()
                     routingKey = item.header.messageType.id.toString()
                     val headers = mapOf(Pair("MessageType", item.header.messageType.id),
@@ -106,7 +108,7 @@ class RabbitMqPublisher(
                             .build()
                 }
                 messageDatabaseLogger?.let {
-                    if (!isLogged) {
+                    if (!isLogged && stringValue != null) {
                         MESSAGES_LOGGER.info("$exchangeName : $stringValue")
                         it.log(MessageWrapper(item, stringValue))
                         isLogged = true

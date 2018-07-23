@@ -16,7 +16,7 @@ class BalanceUpdate(val walletId: String,
                 .setOldBalance(oldBalance)
                 .setNewBalance(newBalance)
                 .setOldReserved(oldReserved)
-                .newReserved = newBalance
+                .newReserved = newReserved
         return builder
     }
 }

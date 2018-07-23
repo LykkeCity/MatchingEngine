@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -53,16 +52,16 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC",  1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("TrustedClient", "BTC", 1.0)
 
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.4, price = 10000.0, reservedVolume = 0.4))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.6, price = 11000.0, reservedVolume = 0.6))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.4, price = 10000.0, reservedVolume = 0.4))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.6, price = 11000.0, reservedVolume = 0.6))
 
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.3, price = 10500.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.3, price = 10500.0))
         val partiallyMatchedTrustedClientOrder = buildLimitOrder(clientId = "TrustedClient", assetId = "BTCUSD", volume = -0.7, price = 11500.0)
         partiallyMatchedTrustedClientOrder.remainingVolume = BigDecimal.valueOf(-0.6)
-        testOrderDatabaseAccessor.addLimitOrder(partiallyMatchedTrustedClientOrder)
+        testOrderBookWrapper.addLimitOrder(partiallyMatchedTrustedClientOrder)
 
         initServices()
     }
@@ -75,15 +74,15 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
 
         assertOrderBookSize("BTCUSD", false, 2)
         assertBalance("TrustedClient", "BTC", 1.0, 0.0)
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        assertEquals(1, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
-        assertEquals(1, trustedClientsLimitOrdersQueue.size)
-        assertEquals(1, (trustedClientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(1, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
+        assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
+        assertEquals(1, (testTrustedClientsLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
 
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(1, tradesInfoQueue.size)
-        assertEquals(1, orderBookQueue.size)
-        assertEquals(1, rabbitOrderBookQueue.size)
+        assertEquals(1, tradesInfoListener.getCount())
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
 
         assertEquals(1, clientsEventsQueue.size)
         assertEquals(1, (clientsEventsQueue.first() as ExecutionEvent).orders.size)
@@ -101,14 +100,14 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
 
         assertOrderBookSize("BTCUSD", false, 2)
         assertBalance("Client1", "BTC", 1.0, 0.0)
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        assertEquals(2, (clientsLimitOrdersQueue.first() as LimitOrdersReport).orders.size)
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(2, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(1, tradesInfoQueue.size)
-        assertEquals(1, orderBookQueue.size)
-        assertEquals(1, rabbitOrderBookQueue.size)
+        assertEquals(1, tradesInfoListener.getCount())
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
 
         assertEquals(0, trustedClientsEventsQueue.size)
         assertEquals(1, clientsEventsQueue.size)
@@ -117,6 +116,5 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         event.orders.forEach {
             assertEquals(OutgoingOrderStatus.CANCELLED, it.status)
         }
-
     }
 }

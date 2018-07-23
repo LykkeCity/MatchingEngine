@@ -44,7 +44,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderWithSameOrderBookSide() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -55,7 +55,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchNoLiquidityLimitOrderBuy() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -66,7 +66,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchNoLiquidityLimitOrderSell() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0)
@@ -78,7 +78,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderWithAnotherAssetPair() {
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 1.2, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -90,7 +90,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderWithOwnLimitOrder() {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -103,7 +103,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderSellNotEnoughFundsOpposite() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 119.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -115,7 +115,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderBuyNotEnoughFundsOpposite() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -129,7 +129,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 99.99)
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -142,7 +142,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderSellNotEnoughFundsOpposite2() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 119.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -154,7 +154,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderBuyNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 110.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -166,7 +166,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchLimitOrderSellNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -179,7 +179,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderBuyNotEnoughFunds2() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 10.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -192,7 +192,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderSellNotEnoughFunds2() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR", 1.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -203,7 +203,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyOneToOne1() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.21, volume = 91.1)
@@ -230,7 +230,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellOneToOne1() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.19, volume = -100.0)
@@ -259,7 +259,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderBuyOneToOne2() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",  89.1)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.19, volume = -89.1, reservedVolume = 89.1))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.19, volume = -89.1, reservedVolume = 89.1))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.21, volume = 91.1)
@@ -299,7 +299,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderSellOneToOne2() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  110.24)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.21, volume = 91.1, reservedVolume = 110.24))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.21, volume = 91.1, reservedVolume = 110.24))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.19, volume = -92.2)
@@ -338,7 +338,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyOneToOneFully() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -354,7 +354,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellOneToOneFully() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -370,8 +370,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderBuyWithSeveral1() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -385,8 +385,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchLimitOrderSellWithSeveral1() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 50.0, reservedVolume = 60.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 50.0, reservedVolume = 60.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 50.0, reservedVolume = 60.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 50.0, reservedVolume = 60.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -403,10 +403,10 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderBuyWithSeveral2() {
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 40.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 40.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.1, volume = -40.0, reservedVolume = 40.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.15, volume = -40.0, reservedVolume = 40.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = -40.0, reservedVolume = 40.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.1, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.15, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = -40.0, reservedVolume = 40.0))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.2, volume = 100.0)
@@ -433,10 +433,10 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     fun testMatchLimitOrderSellWithSeveral2() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 60.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 60.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = 40.0, reservedVolume = 52.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 40.0, reservedVolume = 50.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = 40.0, reservedVolume = 48.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = 40.0, reservedVolume = 52.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 40.0, reservedVolume = 50.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = 40.0, reservedVolume = 48.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
@@ -469,9 +469,9 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC",  0.0)
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 6110.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 6110.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6110.0, volume = 30.0)
@@ -510,9 +510,9 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client3", "BTC",  0.0)
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 6110.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCUSD", volume = -29.98, price = 6100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "limit-order-1", assetId = "BTCUSD", volume = -0.01, price = 6105.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", assetId = "BTCUSD", volume = -0.1, price = 6110.0))
         initService()
 
         val limitOrder = buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6110.0, volume = 30.0)
@@ -537,8 +537,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     @Test
     fun testTradesAfterMatching() {
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 52.33)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25677, volume = -51.21, reservedVolume = 51.21))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.30001, volume = -52.33, reservedVolume = 52.33))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25677, volume = -51.21, reservedVolume = 51.21))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.30001, volume = -52.33, reservedVolume = 52.33))
         initService()
 
         val limitOrder = buildLimitOrder(price = 1.31, volume = 100.0)
@@ -568,8 +568,8 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK1Y", 5495.03)
         testBalanceHolderWrapper.updateBalance("Client2", "LKK", 10000.0)
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 4.97, price = 1.0105))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "LKK1YLKK", volume = 5500.0, price = 1.0085))
 
         initService()
 

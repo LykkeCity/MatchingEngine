@@ -1,40 +1,31 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
+import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.MarketOrderValidator
-import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
-import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import java.util.concurrent.BlockingQueue
 
 abstract class AbstractTest {
@@ -74,9 +65,6 @@ abstract class AbstractTest {
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     @Autowired
-    protected lateinit var marketOrderValidator: MarketOrderValidator
-
-    @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @Autowired
@@ -84,9 +72,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
-
-    @Autowired
-    private lateinit var multiLimitOrderValidator: MultiLimitOrderValidator
 
     @Autowired
     protected lateinit var balanceUpdateService: BalanceUpdateService
@@ -106,36 +91,72 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
-    protected val testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
+    @Autowired
+    protected lateinit var testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor
 
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    protected val orderBookQueue = LinkedBlockingQueue<OrderBook>()
-    protected val rabbitOrderBookQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val trustedClientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val clientsLimitOrdersQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
-    protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
-    protected val rabbitSwapQueue = LinkedBlockingQueue<JsonSerializable>()
-    protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
+    @Autowired
+    private lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
 
-    protected val rabbitTransferQueue = LinkedBlockingQueue<JsonSerializable>()
+    @Autowired
+    protected lateinit var genericLimitOrderService: GenericLimitOrderService
 
-    protected lateinit var feeProcessor: FeeProcessor
+    @Autowired
+    protected lateinit var multiLimitOrderService: MultiLimitOrderService
 
-    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
-    protected lateinit var limitOrdersProcessorFactory: LimitOrdersProcessorFactory
+    @Autowired
+    protected lateinit var marketOrderService: MarketOrderService
+
+    @Autowired
     protected lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
 
-    protected lateinit var genericLimitOrderService: GenericLimitOrderService
+    @Autowired
+    protected lateinit var genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory
+
+    @Autowired
+    protected lateinit var testTrustedClientsLimitOrderListener: TestTrustedClientsLimitOrderListener
+
+    @Autowired
+    protected lateinit var testClientLimitOrderListener: TestClientLimitOrderListener
+
+    @Autowired
+    protected lateinit var testLkkTradeListener: TestLkkTradeListener
+
+    @Autowired
+    protected lateinit var testOrderBookListener: TestOrderBookListener
+
+    @Autowired
+    protected lateinit var testRabbitOrderBookListener: TestRabbitOrderBookListener
+
+    @Autowired
     protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
+    @Autowired
+    protected lateinit var testOrderBookWrapper: TestOrderBookWrapper
+
+    @Autowired
+    protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
+
+    @Autowired
+    protected lateinit var rabbitSwapListener: RabbitSwapListener
+
+    @Autowired
+    protected lateinit var tradesInfoListener: TradeInfoListener
+
+    @Autowired
+    protected lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
+
+    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+
+    protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
+
+    protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
+
+    @Autowired private
+    lateinit var feeProcessor: FeeProcessor
     protected lateinit var cashInOutOperationService: CashInOutOperationService
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
+
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
-    protected lateinit var multiLimitOrderService: MultiLimitOrderService
-    protected lateinit var marketOrderService: MarketOrderService
 
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
@@ -149,61 +170,15 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService)
-
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
-        limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                genericLimitOrderService,
-                applicationSettingsCache,
-                trustedClientsLimitOrdersQueue,
-                clientsLimitOrdersQueue,
-                lkkTradesQueue,
-                orderBookQueue,
-                rabbitOrderBookQueue,
-                messageSequenceNumberHolder,
-                messageSender)
-
-        val genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
-                genericStopLimitOrderService,
-                limitOrdersProcessorFactory,
-                clientsLimitOrdersQueue,
-                assetsHolder,
-                assetsPairsHolder,
-                balancesHolder,
-                applicationSettingsCache,
-                messageSequenceNumberHolder,
-                messageSender)
-
-        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor,
-                assetsPairsHolder,
-                balancesHolder,
-                genericLimitOrderService,
-                genericStopLimitOrderService,
-                genericLimitOrderProcessorFactory,
-                trustedClientsLimitOrdersQueue,
-                clientsLimitOrdersQueue,
-                orderBookQueue,
-                rabbitOrderBookQueue,
-                messageSequenceNumberHolder,
-                messageSender)
-
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, rabbitTransferQueue,
+        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
                 dbTransferOperationQueue,
-                FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService),
+                feeProcessor,
                 cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
 
-        minVolumeOrderCanceller = MinVolumeOrderCanceller(testDictionariesDatabaseAccessor, assetsPairsHolder, genericLimitOrderService, genericLimitOrdersCancellerFactory)
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor, cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
-        multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrdersProcessorFactory, trustedClientsLimitOrdersQueue,
-                clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, assetsHolder, assetsPairsHolder, balancesHolder, lkkTradesQueue, genericLimitOrderProcessorFactory, multiLimitOrderValidator, messageSequenceNumberHolder, messageSender)
-        marketOrderService = MarketOrderService(testBackOfficeDatabaseAccessor, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder,
-                trustedClientsLimitOrdersQueue, clientsLimitOrdersQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue,
-                lkkTradesQueue, genericLimitOrderProcessorFactory, marketOrderValidator, messageSequenceNumberHolder, messageSender)
+
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
@@ -211,15 +186,20 @@ abstract class AbstractTest {
     }
 
     protected fun clearMessageQueues() {
-        balanceUpdateHandlerTest.clear()
         quotesNotificationQueue.clear()
-        tradesInfoQueue.clear()
-        orderBookQueue.clear()
-        rabbitOrderBookQueue.clear()
-        trustedClientsLimitOrdersQueue.clear()
-        clientsLimitOrdersQueue.clear()
-        lkkTradesQueue.clear()
-        rabbitSwapQueue.clear()
+
+        balanceUpdateHandlerTest.clear()
+        tradesInfoListener.clear()
+
+        testOrderBookListener.clear()
+        testRabbitOrderBookListener.clear()
+
+        testTrustedClientsLimitOrderListener.clear()
+        testClientLimitOrderListener.clear()
+
+        testLkkTradeListener.clear()
+        rabbitSwapListener.clear()
+
         clientsEventsQueue.clear()
         trustedClientsEventsQueue.clear()
     }

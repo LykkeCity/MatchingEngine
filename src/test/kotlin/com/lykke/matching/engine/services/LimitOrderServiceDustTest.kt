@@ -69,8 +69,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
     @Test
     fun testAddAndMatchLimitOrderWithDust1() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
@@ -80,8 +80,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PLACED, event.orders.single().status)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.04997355)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
@@ -101,8 +101,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
     @Test
     fun testAddAndMatchLimitOrderWithDust2() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
@@ -112,8 +112,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.05002635)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
@@ -133,8 +133,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
     @Test
     fun testAddAndMatchLimitOrderWithDust3() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
@@ -144,8 +144,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.04997355)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
@@ -165,8 +165,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
     @Test
     fun testAddAndMatchLimitOrderWithDust4() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
@@ -176,8 +176,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.05002635)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Processing.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Matched.name, result.orders[1].order.status)
@@ -197,8 +197,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
     @Test
     fun testAddAndMatchLimitOrderWithDust5() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = -0.05)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
@@ -208,8 +208,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = 0.0499727)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)
@@ -229,8 +229,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
     @Test
     fun testAddAndMatchLimitOrderWithDust6() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client1", price = 3200.0, volume = 0.05)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        var result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        var result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders[0].order.status)
 
@@ -240,8 +240,8 @@ class LimitOrderServiceDustTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.PLACED, event.orders[0].status)
 
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 3200.0, volume = -0.0499727)))
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, result.orders.size)
         assertEquals(OrderStatus.Matched.name, result.orders[0].order.status)
         assertEquals(OrderStatus.Processing.name, result.orders[1].order.status)

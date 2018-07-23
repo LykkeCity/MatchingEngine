@@ -70,7 +70,7 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
     private val askOrderBook = ConcurrentHashMap<String, LimitOrder>(50)
     private val bidOrderBook = ConcurrentHashMap<String, LimitOrder>(50)
 
-    fun getOrderBook(isBuySide: Boolean) = (if (isBuySide) bidOrderBook else askOrderBook).values.toList()
+    override fun getOrderBook(buySide: Boolean) = (if (buySide) bidOrderBook else askOrderBook).values.toList()
 
     fun addOrder(order: LimitOrder) {
         if (order.assetPairId != assetPairId) {
