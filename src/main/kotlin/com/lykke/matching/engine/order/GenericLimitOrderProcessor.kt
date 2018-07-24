@@ -6,6 +6,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -20,6 +21,7 @@ import java.util.concurrent.BlockingQueue
 
 class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                  private val stopLimitOrderService: GenericStopLimitOrderService,
+                                 private val singleLimitOrderContextParser: SingleLimitOrderContextParser,
                                  limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                  clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                                  assetsHolder: AssetsHolder,
@@ -56,8 +58,10 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} (bestBidPrice=${orderBook.getBidPrice()}, bestAskPrice=${orderBook.getAskPrice()}) due to message ${singleLimitContext.messageId}")
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
-        //todo: should be passed acrual stop order
-        processLimitOrder(singleLimitContext, order, payBackReserved)
+
+        val stopLimitContext = singleLimitOrderContextParser.getContext(singleLimitContext.messageId, singleLimitContext.id,
+                singleLimitContext.orderProcessingStartTime, order, singleLimitContext.isCancelOrders, singleLimitContext.processedMessage)
+        processLimitOrder(stopLimitContext, payBackReserved)
     }
 
     private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {

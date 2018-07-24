@@ -54,7 +54,7 @@ class SingleLimitContext(val id: String,
         fun assetPair(assetPair: AssetPair) = apply { this.assetPair = assetPair }
         fun baseAsset(asset: Asset) = apply { this.baseAsset = asset }
         fun quotingAsset(asset: Asset) = apply { this.quotingAsset = asset }
-        fun trustedClients(trustedClient: Boolean) = apply { this.isTrustedClient = trustedClient }
+        fun trustedClient(trustedClient: Boolean) = apply { this.isTrustedClient = trustedClient }
         fun limitAsset(limitAsset: Asset) = apply {this.limitAsset = limitAsset}
 
         fun build() = SingleLimitContext(this)
