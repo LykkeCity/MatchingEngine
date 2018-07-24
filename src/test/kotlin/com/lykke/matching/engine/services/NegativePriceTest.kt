@@ -63,8 +63,8 @@ class NegativePriceTest : AbstractTest() {
     fun testLimitOrder() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client", assetId = "EURUSD", price = -1.0, volume = 1.0)))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        val result = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        val result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
 
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InvalidPrice.name, result.orders.first().order.status)
@@ -86,8 +86,8 @@ class NegativePriceTest : AbstractTest() {
                 emptyList(),
                 listOf("order1", "order2")))
 
-        assertEquals(1, trustedClientsLimitOrdersQueue.size)
-        val result = trustedClientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
+        val result = testTrustedClientsLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, result.orders.size)
         assertEquals(OrderStatus.InOrderBook.name, result.orders.first { it.order.externalId == "order1" }.order.status)
 

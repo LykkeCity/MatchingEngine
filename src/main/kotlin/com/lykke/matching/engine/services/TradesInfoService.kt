@@ -7,6 +7,8 @@ import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.utils.logging.PerformanceLogger
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -15,13 +17,18 @@ import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
+import javax.annotation.PostConstruct
+import kotlin.concurrent.thread
 
-class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
-                        private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor): Thread(TradesInfoService::class.java.name) {
+@Component
+class TradesInfoService @Autowired constructor(private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor) {
 
     companion object {
         val LOGGER = Logger.getLogger(TradesInfoService::class.java.name)
     }
+
+    @Autowired
+    private lateinit var tradeInfoQueue: BlockingQueue<TradeInfo>
 
     val formatter = SimpleDateFormat("yyyyMMddHHmm")
 
@@ -37,9 +44,13 @@ class TradesInfoService(private val tradesInfoQueue: BlockingQueue<TradeInfo>,
     private val candlesPerformanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 1, "saveCandles: ")
     private val hourCandlesPerformanceLogger = PerformanceLogger(Logger.getLogger("historyPersistStats"), 1, "saveHourCandles: ")
 
-    override fun run() {
-        while (true) {
-            process(tradesInfoQueue.take())
+
+    @PostConstruct
+    fun initialize() {
+        thread(start = true, name = TradesInfoService::class.java.name) {
+            while (true) {
+                process(tradeInfoQueue.take())
+            }
         }
     }
 

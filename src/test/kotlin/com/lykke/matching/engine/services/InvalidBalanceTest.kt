@@ -72,17 +72,17 @@ class InvalidBalanceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "ETH", balance = 1000.0)
         testBalanceHolderWrapper.updateReservedBalance(clientId = "Client2", assetId = "ETH", reservedBalance = 0.0)
 
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
 
         initServices()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "ETHUSD", price = 1000.0, volume = 0.00002)))
 
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(1, report.orders.size)
         assertEquals("Client1", report.orders.first().order.clientId)
         assertEquals(OrderStatus.NotEnoughFunds.name, report.orders.first().order.status)
@@ -94,10 +94,10 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.REJECTED, event.orders.single().status)
         assertEquals(OrderRejectReason.NOT_ENOUGH_FUNDS, event.orders.single().rejectReason)
 
-        assertEquals(0, orderBookQueue.size)
-        assertEquals(0, rabbitOrderBookQueue.size)
-        assertEquals(0, lkkTradesQueue.size)
-        assertEquals(0, tradesInfoQueue.size)
+        assertEquals(0, testOrderBookListener.getCount())
+        assertEquals(0, testRabbitOrderBookListener.getCount())
+        assertEquals(0, testLkkTradeListener.getCount())
+        assertEquals(0, tradesInfoListener.getCount())
 
         assertEquals(0, genericLimitOrderService.getOrderBook("ETHUSD").getOrderBook(true).size)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
@@ -127,25 +127,25 @@ class InvalidBalanceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance(clientId = "Client2", assetId = "ETH", balance = 1.0)
         testBalanceHolderWrapper.updateReservedBalance(clientId = "Client2", assetId = "ETH", reservedBalance = 1.1)
 
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", volume = -0.000005, price = 1000.0))
 
         initServices()
 
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "ETHUSD", volume = 0.00001)))
 
-        assertEquals(0, trustedClientsLimitOrdersQueue.size)
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        assertEquals(1, rabbitSwapQueue.size)
+        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(1, rabbitSwapListener.getCount())
 
-        val limitReport = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val limitReport = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, limitReport.orders.size)
         limitReport.orders.forEach {
             assertEquals("Client2", it.order.clientId)
             assertEquals(OrderStatus.Matched.name, it.order.status)
         }
 
-        val report = rabbitSwapQueue.poll() as MarketOrderWithTrades
+        val report = rabbitSwapListener.getQueue().poll() as MarketOrderWithTrades
         assertEquals("Client1", report.order.clientId)
         assertEquals(OrderStatus.Matched.name, report.order.status)
 
@@ -156,11 +156,11 @@ class InvalidBalanceTest : AbstractTest() {
             assertEquals(OutgoingOrderStatus.MATCHED, it.status)
         }
 
-        assertEquals(1, orderBookQueue.size)
-        assertEquals(1, rabbitOrderBookQueue.size)
-        assertEquals(1, lkkTradesQueue.size)
-        assertEquals(4, lkkTradesQueue.poll().size)
-        assertEquals(0, tradesInfoQueue.size)
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
+        assertEquals(1, testLkkTradeListener.getCount())
+        assertEquals(4, testLkkTradeListener.getQueue().poll().size)
+        assertEquals(0, tradesInfoListener.getCount())
 
         assertEquals(0, genericLimitOrderService.getOrderBook("ETHUSD").getOrderBook(true).size)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
@@ -202,7 +202,7 @@ class InvalidBalanceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "ETHUSD", price = 1.0, volume = -0.5)))
 
         assertBalance("Client1", "USD", -0.45, 0.0)
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.clientId == "Client1" }.order.status)
 
         val event = clientsEventsQueue.poll() as ExecutionEvent
@@ -213,7 +213,6 @@ class InvalidBalanceTest : AbstractTest() {
     @Test
     fun testMultiLimitOrderWithNotEnoughReservedFunds() {
         testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.25)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
@@ -225,6 +224,7 @@ class InvalidBalanceTest : AbstractTest() {
                 IncomingLimitOrder(-0.05, 1010.0, "2"),
                 IncomingLimitOrder(-0.1, 1100.0, "3")
         )))
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.09)
         testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
@@ -237,8 +237,8 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.05), balancesHolder.getBalance("Client2", "ETH"))
         assertEquals(BigDecimal.valueOf(224.5), balancesHolder.getBalance("Client2", "USD"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(4, report.orders.size)
 
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1"}.order.status)
@@ -257,7 +257,7 @@ class InvalidBalanceTest : AbstractTest() {
 
     @Test
     fun `Test multi limit order with enough reserved but not enough main balance`() {
-        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.1)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "ETH", reservedBalance = 0.05)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
@@ -267,10 +267,11 @@ class InvalidBalanceTest : AbstractTest() {
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",
                 listOf(IncomingLimitOrder(-0.05, 1010.0, "1"))))
+        testBalanceHolderWrapper.updateBalance("Client1", "ETH", 0.04)
         testConfigDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
-        clientsLimitOrdersQueue.clear()
+        testClientLimitOrderListener.clear()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client2", assetId = "ETHUSD", volume = 0.25, price = 1100.0)))
 
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", false).size)
@@ -281,8 +282,8 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client2", "ETH"))
         assertEquals(BigDecimal.valueOf(275.0), balancesHolder.getBalance("Client2", "USD"))
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(2, report.orders.size)
 
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "1"}.order.status)

@@ -10,7 +10,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextPa
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
@@ -22,8 +22,8 @@ import java.util.concurrent.BlockingQueue
 class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                  private val stopLimitOrderService: GenericStopLimitOrderService,
                                  private val singleLimitOrderContextParser: SingleLimitOrderContextParser,
+                                 clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                  limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
-                                 clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
                                  assetsHolder: AssetsHolder,
                                  assetsPairsHolder: AssetsPairsHolder,
                                  balancesHolder: BalancesHolder,
@@ -41,7 +41,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
     private val stopLimitOrderProcessor = StopLimitOrderProcessor(limitOrderService,
             stopLimitOrderService,
             this,
-            clientLimitOrderReportQueue,
+            clientLimitOrdersQueue,
             assetsHolder,
             assetsPairsHolder,
             balancesHolder,

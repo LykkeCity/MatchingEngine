@@ -3,7 +3,6 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -22,7 +21,6 @@ import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
@@ -33,31 +31,35 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
-class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor,
-                         private val genericLimitOrderService: GenericLimitOrderService,
-                         assetsHolder: AssetsHolder,
-                         private val assetsPairsHolder: AssetsPairsHolder,
-                         private val balancesHolder: BalancesHolder,
-                         private val trustedClientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                         private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
-                         private val orderBookQueue: BlockingQueue<OrderBook>,
-                         private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
-                         private val rabbitSwapQueue: BlockingQueue<JsonSerializable>,
-                         private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory ?= null,
-                         private val marketOrderValidator: MarketOrderValidator,
-                         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                         private val messageSender: MessageSender): AbstractService {
-
+@Service
+class MarketOrderService @Autowired constructor(
+        private val genericLimitOrderService: GenericLimitOrderService,
+        assetsHolder: AssetsHolder,
+        private val assetsPairsHolder: AssetsPairsHolder,
+        private val balancesHolder: BalancesHolder,
+        private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+        private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+        private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
+        private val orderBookQueue: BlockingQueue<OrderBook>,
+        private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+        private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
+        genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
+        private val marketOrderValidator: MarketOrderValidator,
+        private val feeProcessor: FeeProcessor,
+        private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
+        private val messageSender: MessageSender): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -67,7 +69,7 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
     private var logCount = 100
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder)
+    private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
 
@@ -254,9 +256,9 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
                         clientLimitOrdersReport.orders.addAll(it.orders)
                     }
 
-                    clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+                    clientLimitOrdersQueue.put(clientLimitOrdersReport)
                     if (trustedClientLimitOrdersReport.orders.isNotEmpty()) {
-                        trustedClientLimitOrderReportQueue.put(trustedClientLimitOrdersReport)
+                        trustedClientsLimitOrdersQueue.put(trustedClientLimitOrdersReport)
                     }
 
                     val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
@@ -348,13 +350,13 @@ class MarketOrderService(private val backOfficeDatabaseAccessor: BackOfficeDatab
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            val message =  parseOld(messageWrapper.byteArray)
+            val message = parseOld(messageWrapper.byteArray)
             messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid.toString()
         } else {
-            val message =  parse(messageWrapper.byteArray)
+            val message = parse(messageWrapper.byteArray)
             messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message

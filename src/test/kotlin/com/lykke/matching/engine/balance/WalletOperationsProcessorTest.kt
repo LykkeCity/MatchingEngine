@@ -78,7 +78,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertBalance("Client3", "BTC", 0.0, 0.0)
 
         assertEquals(2, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertTrue(setOf("Client1", "Client2").containsAll(balanceUpdateHandlerTest.balanceUpdateQueueNotification.map { it.clientId }))
+        assertTrue(setOf("Client1", "Client2").containsAll(balanceUpdateHandlerTest.balanceUpdateNotificationQueue.map { it.clientId }))
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate

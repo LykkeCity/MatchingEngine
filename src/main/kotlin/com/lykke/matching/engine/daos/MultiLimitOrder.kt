@@ -11,4 +11,6 @@ data class MultiLimitOrder(val messageUid: String,
                            val cancelSellSide: Boolean,
                            val cancelMode: OrderCancelMode,
                            val buyReplacements: Map<String, LimitOrder>,
-                           val sellReplacements: Map<String, LimitOrder>)
+                           val rejectedBuyReplacements: Set<String>,
+                           val sellReplacements: Map<String, LimitOrder>,
+                           val rejectedSellReplacements: Set<String>)

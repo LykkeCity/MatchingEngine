@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
@@ -10,6 +11,7 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
+@Component
 class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
                                    private val genericLimitOrderService: GenericLimitOrderService): AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
@@ -27,7 +29,9 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         initialStopOrdersCount = stopOrders.size
     }
 
-    private fun addOrder(order: LimitOrder) {
+    fun getAllOrderBooks() = stopLimitOrdersQueues
+
+    fun addOrder(order: LimitOrder) {
         stopLimitOrdersMap[order.externalId] = order
         clientStopLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
     }
