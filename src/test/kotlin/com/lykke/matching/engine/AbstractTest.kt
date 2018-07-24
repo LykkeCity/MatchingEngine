@@ -33,6 +33,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
@@ -82,16 +83,10 @@ abstract class AbstractTest {
     private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
 
     @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
-
-    @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
-
-    @Autowired
-    protected lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
