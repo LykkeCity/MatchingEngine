@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.services.validators.input.impl
 
 
-import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -13,7 +13,7 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
-class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSettingsCache) : LimitOrderInputValidator {
+class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSettingsCache, val assetsPairHolder: AssetsPairsHolder) : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
@@ -28,7 +28,8 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         validateVolumeAccuracy(singleLimitContext)
     }
 
-    override fun checkVolume(assetPair: AssetPair, order: Order): Boolean {
+    override fun checkVolume(order: Order): Boolean {
+        val assetPair = assetsPairHolder.getAssetPair(order.assetPairId)
         val volume = order.getAbsVolume()
         val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
         return minVolume == null || volume >= minVolume
@@ -81,7 +82,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
     }
 
     fun validateVolume(singleLimitContext: SingleLimitContext) {
-        if (!checkVolume(singleLimitContext.assetPair, singleLimitContext.limitOrder)) {
+        if (!checkVolume(singleLimitContext.limitOrder)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
         }
     }
