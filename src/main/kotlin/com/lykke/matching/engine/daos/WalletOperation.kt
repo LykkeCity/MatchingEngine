@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.daos
 
+import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.Date
@@ -12,7 +13,8 @@ data class WalletOperation(
         val dateTime: Date,
         val amount: BigDecimal,
         val reservedAmount: BigDecimal = BigDecimal.ZERO,
-        val isFee: Boolean = false
+        val isFee: Boolean = false,
+        val feeInstructions: List<NewFeeInstruction>? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

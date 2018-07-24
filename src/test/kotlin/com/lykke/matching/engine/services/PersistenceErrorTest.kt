@@ -15,8 +15,8 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
@@ -25,11 +25,11 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildTransferWrapper
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -66,6 +66,9 @@ class PersistenceErrorTest : AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
 
@@ -120,21 +123,19 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testCashInOutOperation() {
-        cashInOutOperationService.processMessage(buildCashInOutWrapper("Client1", "EUR", 5.0))
+        cashInOutOperationService.processMessage( messageBuilder.buildCashInOutWrapper("Client1", "EUR", 5.0))
         assertData()
         assertEquals(0, cashInOutQueue.size)
 
-        cashInOutOperationService.processMessage(buildCashInOutWrapper("Client1", "EUR", -4.0))
+        cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "EUR", -4.0))
         assertData()
         assertEquals(0, cashInOutQueue.size)
     }
 
     @Test
     fun testTransferOperation() {
-        val messageWrapper = buildTransferWrapper("Client1", "Client2",
-                "BTC", 0.1, 0.0)
-        cashTransferOperationsService.parseMessage(messageWrapper)
-        cashTransferOperationsService.processMessage(messageWrapper)
+        cashTransferOperationsService.processMessage(messageBuilder.buildTransferWrapper("Client1", "Client2",
+                "BTC", 0.1, 0.0))
         assertData()
         assertEquals(0, rabbitTransferQueue.size)
     }

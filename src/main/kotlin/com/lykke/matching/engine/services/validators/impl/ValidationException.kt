@@ -1,19 +1,18 @@
 package com.lykke.matching.engine.services.validators.impl
 
 import com.lykke.matching.engine.exception.MatchingEngineException
-import org.apache.commons.lang3.StringUtils
 
-class ValidationException(val validationType: Validation, message: String = StringUtils.EMPTY): MatchingEngineException(message) {
-    enum class Validation {
-        INVALID_VOLUME_ACCURACY,
-        INVALID_PRICE_ACCURACY,
-        LOW_BALANCE,
-        DISABLED_ASSET,
-        INVALID_FEE,
-        RESERVED_VOLUME_HIGHER_THAN_BALANCE,
-        NO_LIQUIDITY,
-        TOO_SMALL_VOLUME,
-        UNKNOWN_ASSET,
-        BALANCE_LOWER_THAN_RESERVED
+class ValidationException(val validationType: Validation, validationMessage: String? = null) : MatchingEngineException(validationMessage ?: validationType.message) {
+    enum class Validation(val message: String) {
+        INVALID_VOLUME_ACCURACY("Invalid volume accuracy"),
+        INVALID_PRICE_ACCURACY("Invalid price accuracy"),
+        LOW_BALANCE("Low balance"),
+        DISABLED_ASSET("Disabled asset"),
+        INVALID_FEE("Invalid fee"),
+        RESERVED_VOLUME_HIGHER_THAN_BALANCE("Reserved volume higher than balance"),
+        NO_LIQUIDITY("No liquidity"),
+        TOO_SMALL_VOLUME("Too small volume"),
+        UNKNOWN_ASSET("Unknown asset"),
+        BALANCE_LOWER_THAN_RESERVED("Balance lower than reserved")
     }
 }
