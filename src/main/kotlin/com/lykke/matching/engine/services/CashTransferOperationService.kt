@@ -36,7 +36,7 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
-                                   private val notificationQueue: BlockingQueue<JsonSerializable>,
+                                   private val notificationQueue: BlockingQueue<CashTransferOperation>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
                                    private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,

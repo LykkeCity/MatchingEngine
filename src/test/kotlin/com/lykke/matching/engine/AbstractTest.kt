@@ -145,16 +145,15 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
 
+    @Autowired
+    protected lateinit var cashTransferOperationsService: CashTransferOperationService
+
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
-    protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
-
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-
     @Autowired private
     lateinit var feeProcessor: FeeProcessor
     protected lateinit var cashInOutOperationService: CashInOutOperationService
-    protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
@@ -169,11 +168,6 @@ abstract class AbstractTest {
         assetsCache.update()
         assetPairsCache.update()
         applicationSettingsCache.update()
-
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
-                dbTransferOperationQueue,
-                feeProcessor,
-                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor, cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
