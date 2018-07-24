@@ -405,8 +405,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageSender.sendMessage(outgoingMessage)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
@@ -490,6 +489,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 now,
                 multiLimitOrder.clientId,
                 assetPair,
+                assetsHolder.getAsset(assetPair.baseAssetId),
+                assetsHolder.getAsset(assetPair.quotingAssetId),
                 orderBook,
                 cancelBaseVolume,
                 cancelQuotingVolume,
@@ -535,8 +536,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
     private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder,

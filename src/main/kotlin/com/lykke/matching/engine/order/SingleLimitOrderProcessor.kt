@@ -49,6 +49,8 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 singleLimitContext.orderProcessingStartTime,
                 order.clientId,
                 assetPair,
+                singleLimitContext.baseAsset,
+                singleLimitContext.quotingAsset,
                 orderBook,
                 if (limitAsset == assetPair.baseAssetId) totalPayBackReserved else BigDecimal.ZERO,
                 if (limitAsset == assetPair.quotingAssetId) totalPayBackReserved else BigDecimal.ZERO,

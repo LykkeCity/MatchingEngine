@@ -40,8 +40,12 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         return SingleLimitOrderParsedData(messageWrapper)
     }
 
-    fun getContext(messageId: String, id: String, now: Date,
-                   order: LimitOrder, cancelOrders: Boolean, processedMessage: ProcessedMessage): SingleLimitContext {
+    fun getStopOrderContext(messageId: String, now: Date, order: LimitOrder): SingleLimitContext {
+        return getContext(messageId, null, now, order, false, null)
+    }
+
+    private fun getContext(messageId: String, id: String?, now: Date,
+                   order: LimitOrder, cancelOrders: Boolean, processedMessage: ProcessedMessage?): SingleLimitContext {
         val builder = SingleLimitContext.Builder()
         val assetPair = getAssetPair(order.assetPairId)
 

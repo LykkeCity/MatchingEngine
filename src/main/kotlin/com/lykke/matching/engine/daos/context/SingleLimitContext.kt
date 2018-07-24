@@ -7,7 +7,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import java.util.*
 
-class SingleLimitContext(val id: String,
+class SingleLimitContext(val id: String?,
                          val messageId: String,
                          val limitOrder: LimitOrder,
                          val isCancelOrders: Boolean,
@@ -17,7 +17,7 @@ class SingleLimitContext(val id: String,
                          val quotingAsset: Asset,
                          val limitAsset: Asset,
                          val isTrustedClient: Boolean,
-                         val processedMessage: ProcessedMessage,
+                         val processedMessage: ProcessedMessage?,
                          var validationResult: OrderValidationResult? = null) {
 
     private constructor(builder: Builder) : this(builder.id,
@@ -33,11 +33,11 @@ class SingleLimitContext(val id: String,
             builder.processedMessage)
 
     class Builder {
-        lateinit var id: String
+        var id: String? = null
         lateinit var messageId: String
         lateinit var limitOrder: LimitOrder
         lateinit var orderProcessingStartTime: Date
-        lateinit var processedMessage: ProcessedMessage
+        var processedMessage: ProcessedMessage? = null
         lateinit var assetPair: AssetPair
         lateinit var baseAsset: Asset
         lateinit var quotingAsset: Asset
@@ -48,9 +48,9 @@ class SingleLimitContext(val id: String,
         fun limitOrder(limitOrder: LimitOrder) = apply { this.limitOrder = limitOrder }
         fun orderProcessingStartTime(orderProcessingStartTime: Date) = apply { this.orderProcessingStartTime = orderProcessingStartTime }
         fun cancelOrders(cancelOrders: Boolean) = apply { this.isCancelOrders = cancelOrders }
-        fun id(id: String) = apply { this.id = id }
+        fun id(id: String?) = apply { this.id = id }
         fun messageId(messageId: String) = apply { this.messageId = messageId }
-        fun processedMessage(processedMessage: ProcessedMessage) = apply { this.processedMessage = processedMessage }
+        fun processedMessage(processedMessage: ProcessedMessage?) = apply { this.processedMessage = processedMessage }
         fun assetPair(assetPair: AssetPair) = apply { this.assetPair = assetPair }
         fun baseAsset(asset: Asset) = apply { this.baseAsset = asset }
         fun quotingAsset(asset: Asset) = apply { this.quotingAsset = asset }

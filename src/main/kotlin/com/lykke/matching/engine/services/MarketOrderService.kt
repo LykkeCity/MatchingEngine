@@ -291,9 +291,7 @@ class MarketOrderService @Autowired constructor(
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId,
-                now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
 
         val endTime = System.nanoTime()
 

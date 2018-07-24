@@ -6,6 +6,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,7 +14,8 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder): MultiLimitOrderValidator {
+class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
+                                                          private val limitOrderInputValidator: LimitOrderInputValidator): MultiLimitOrderValidator {
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderValidatorImpl::class.java.name)
     }
@@ -57,7 +59,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
     }
 
     private fun isVolumeValid(order: LimitOrder, assetPair: AssetPair) {
-        if (!order.checkVolume(assetPair)) {
+        if (!limitOrderInputValidator.checkVolume(assetPair, order)) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }

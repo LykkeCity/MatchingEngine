@@ -10,6 +10,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,7 +19,8 @@ import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class MarketOrderValidatorImpl
-@Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
+@Autowired constructor(private val limitOrderInputValidator: LimitOrderInputValidator,
+                       private val assetsPairsHolder: AssetsPairsHolder,
                        private val assetsHolder: AssetsHolder,
                        private val assetSettingsCache: ApplicationSettingsCache) : MarketOrderValidator {
 
@@ -54,7 +56,7 @@ class MarketOrderValidatorImpl
 
     private fun isVolumeValid(order: MarketOrder) {
         val assetPair = getAssetPair(order)
-        if (!order.checkVolume(assetPair)) {
+        if (!limitOrderInputValidator.checkVolume(assetPair, order)) {
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
@@ -79,7 +81,7 @@ class MarketOrderValidatorImpl
         }
     }
 
-    private fun isVolumeAccuracyValid(order: MarketOrder){
+    private fun isVolumeAccuracyValid(order: MarketOrder) {
         val baseAssetVolumeAccuracy = assetsHolder.getAsset(getBaseAsset(order)).accuracy
         val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(order.volume, baseAssetVolumeAccuracy)
 
