@@ -17,14 +17,25 @@ class CashTransferOperationBusinessValidatorImpl (private val balancesHolder: Ba
     }
 
     override fun performValidation(cashTransferContext: CashTransferContext) {
-        isBalanceValid(cashTransferContext)
+        validateBalanceValid(cashTransferContext)
+        validateOverdraftLimitPositive(cashTransferContext)
     }
 
-    private fun isBalanceValid(cashTransferContext: CashTransferContext) {
+    private fun validateOverdraftLimitPositive(cashTransferContext: CashTransferContext) {
+        val transferOperation = cashTransferContext.transferOperation
+        val overdraftLimit = cashTransferContext.transferOperation.overdraftLimit
+
+        if (overdraftLimit != null && overdraftLimit.signum() == -1) {
+            throw ValidationException(ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT, "ClientId:${transferOperation.fromClientId}, " +
+                    "asset:${transferOperation.asset}, volume:${transferOperation.volume}")
+        }
+    }
+
+    private fun validateBalanceValid(cashTransferContext: CashTransferContext) {
         val transferOperation = cashTransferContext.transferOperation
         val balanceOfFromClient = balancesHolder.getBalance(transferOperation.fromClientId, transferOperation.asset)
         val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(transferOperation.fromClientId, transferOperation.asset)
-        val overdraftLimit = if (transferOperation.overdraftLimit != null) - transferOperation.overdraftLimit else BigDecimal.ZERO
+        val overdraftLimit = if (transferOperation.overdraftLimit != null) -transferOperation.overdraftLimit else BigDecimal.ZERO
         if (balanceOfFromClient - reservedBalanceOfFromClient - transferOperation.volume < overdraftLimit) {
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
                     "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +

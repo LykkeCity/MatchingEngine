@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.context.CashInOutContext
+import com.lykke.matching.engine.daos.converters.CashInOutOperationConverter
 import com.lykke.matching.engine.daos.fee.v2.Fee
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -42,8 +43,8 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val cashInOutContext: CashInOutContext = messageWrapper.context as CashInOutContext
-        val feeInstructions = cashInOutContext.walletOperation.feeInstructions
-        val walletOperation = cashInOutContext.walletOperation
+        val feeInstructions = cashInOutContext.cashInOutOperation.feeInstructions
+        val walletOperation = CashInOutOperationConverter.fromCashInOutOperationToWalletOperation(cashInOutContext.cashInOutOperation)
 
         LOGGER.debug("Processing cash in/out messageId: ${cashInOutContext.messageId} operation (${cashInOutContext.id})" +
                 " for client ${cashInOutContext.clientId}, asset ${cashInOutContext.asset!!.assetId}," +
@@ -110,12 +111,12 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
 
     private fun publishRabbitMessage(cashInOutContext: CashInOutContext,
                                      fees: List<Fee>) {
-        val walletOperation = cashInOutContext.walletOperation
+        val cashInOutOperation = cashInOutContext.cashInOutOperation
         rabbitCashInOutQueue.put(CashOperation(
                 cashInOutContext.id,
-                walletOperation.clientId,
-                walletOperation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(walletOperation.amount, assetsHolder.getAsset(walletOperation.assetId).accuracy).toPlainString(),
+                cashInOutOperation.clientId,
+                cashInOutOperation.dateTime,
+                NumberUtils.setScaleRoundHalfUp(cashInOutOperation.amount, assetsHolder.getAsset(cashInOutOperation.assetId).accuracy).toPlainString(),
                 cashInOutContext.asset!!.assetId,
                 cashInOutContext.messageId,
                 fees
@@ -137,6 +138,6 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
-                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.walletOperation.amount)}: $errorMessage")
+                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 }

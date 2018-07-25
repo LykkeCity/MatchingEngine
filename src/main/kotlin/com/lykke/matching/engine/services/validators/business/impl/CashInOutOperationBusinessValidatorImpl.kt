@@ -20,7 +20,7 @@ class CashInOutOperationBusinessValidatorImpl(private val balancesHolder: Balanc
     }
 
     private fun isBalanceValid(cashInOutContext: CashInOutContext) {
-        val amount = cashInOutContext.walletOperation.amount
+        val amount = cashInOutContext.cashInOutOperation.amount
         if (amount < BigDecimal.ZERO) {
             val asset = cashInOutContext.asset
             val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset!!.assetId)

@@ -6,11 +6,12 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import junit.framework.Assert
@@ -36,9 +37,6 @@ class CashTransferOperationBusinessValidatorTest {
     }
 
     @Autowired
-    private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
-
-    @Autowired
     private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
@@ -53,15 +51,60 @@ class CashTransferOperationBusinessValidatorTest {
             testBackOfficeDatabaseAccessor.addAsset(Asset(ASSET_ID, 2))
             return testBackOfficeDatabaseAccessor
         }
+
+        @Bean
+        @Primary
+        open fun testBalanceHolderWrapper(balanceUpdateHandlerTest: BalanceUpdateHandlerTest, balancesHolder: BalancesHolder): TestBalanceHolderWrapper {
+            val testBalanceHolderWrapper = TestBalanceHolderWrapper(balanceUpdateHandlerTest, balancesHolder)
+            testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
+            testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
+            return testBalanceHolderWrapper
+        }
+    }
+
+    @Test
+    fun testLowBalanceHighOverdraftLimit() {
+        //given
+        val cashTransferOperationBuilder = getCashTransferOperationBuilder()
+        cashTransferOperationBuilder.overdraftLimit = 40.0
+        cashTransferOperationBuilder.volume = 60.0
+
+        //when
+        cashTransferOperationBusinessValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
     }
 
     @Test(expected = ValidationException::class)
     fun testLowBalance() {
         //given
-        testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 100.0)
-        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()
-        cashTransferOperationBuilder.overdraftLimit = -70.0
+        cashTransferOperationBuilder.volume = 60.0
+        cashTransferOperationBuilder.overdraftLimit = 0.0
+
+        //when
+        try {
+            cashTransferOperationBusinessValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+        } catch (e: ValidationException) {
+            Assert.assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
+            throw e
+        }
+    }
+
+    @Test
+    fun testPositiveOverdraftLimit() {
+        //given
+        val cashTransferOperationBuilder = getCashTransferOperationBuilder()
+        cashTransferOperationBuilder.volume = 30.0
+        cashTransferOperationBuilder.overdraftLimit = 1.0
+
+        //when
+        cashTransferOperationBusinessValidator.performValidation(getContext(cashTransferOperationBuilder.build()))
+    }
+
+    @Test(expected = ValidationException::class)
+    fun testNegativeOverdraftLimit() {
+        val cashTransferOperationBuilder = getCashTransferOperationBuilder()
+        cashTransferOperationBuilder.volume = 60.0
+        cashTransferOperationBuilder.overdraftLimit = -1.0
 
         //when
         try {
@@ -80,7 +123,7 @@ class CashTransferOperationBusinessValidatorTest {
                 .setAssetId(ASSET_ID)
                 .setTimestamp(System.currentTimeMillis())
                 .setFromClientId(CLIENT_NAME1)
-                .setToClientId(CLIENT_NAME2).setVolume(0.0)
+                .setToClientId(CLIENT_NAME2).setVolume(10.0)
     }
 
     private fun getMessageWrapper(message: ProtocolMessages.CashTransferOperation): MessageWrapper {

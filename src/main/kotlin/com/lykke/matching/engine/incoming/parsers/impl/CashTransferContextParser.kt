@@ -31,7 +31,7 @@ class CashTransferContextParser(private val assetsHolder: AssetsHolder) : Contex
                 listOfFee(feeInstruction, feeInstructions))
 
         messageWrapper.id = message.id
-        messageWrapper.messageId = message.messageId
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
 
         messageWrapper.context =
                 CashTransferContext(
@@ -39,7 +39,7 @@ class CashTransferContextParser(private val assetsHolder: AssetsHolder) : Contex
                         transferOperation,
                         assetsHolder.getAssetAllowNulls(transferOperation.asset),
                         transferOperation.asset,
-                        ProcessedMessage(MessageType.CASH_TRANSFER_OPERATION.type, message.timestamp, message.messageId),
+                        ProcessedMessage(MessageType.CASH_TRANSFER_OPERATION.type, message.timestamp, messageWrapper.messageId!!),
                         Date())
 
         return CashTransferParsedData(messageWrapper, feeInstruction, feeInstructions)

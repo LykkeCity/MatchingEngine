@@ -24,8 +24,8 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashInOutPreprocessor(
-        private val incomingQueue: BlockingQueue<MessageWrapper>,
-        private val outgoingQueue: BlockingQueue<MessageWrapper>,
+        private val cashInOutQueue: BlockingQueue<MessageWrapper>,
+        private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
@@ -55,7 +55,7 @@ class CashInOutPreprocessor(
         try {
             cashInOutOperationInputValidator.performValidation(cashTransferParsedData)
         } catch (e: ValidationException) {
-            writeErrorResponse(parsedMessageWrapper, cashInOutContext.walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            writeErrorResponse(parsedMessageWrapper, cashInOutContext.cashInOutOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return false
         }
 
@@ -70,7 +70,7 @@ class CashInOutPreprocessor(
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
         } else {
-            outgoingQueue.put(parsedMessageWrapper)
+            preProcessedMessageQueue.put(parsedMessageWrapper)
         }
     }
 
@@ -88,12 +88,12 @@ class CashInOutPreprocessor(
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
-                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.walletOperation.amount)}: $errorMessage")
+                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 
     override fun run() {
         while (true) {
-            val message = incomingQueue.take()
+            val message = cashInOutQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {
