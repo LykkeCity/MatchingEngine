@@ -24,7 +24,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
     override fun performValidation(cashInOutParsedData: CashInOutParsedData) {
         val cashInOutContext = cashInOutParsedData.messageWrapper.context as CashInOutContext
         isAssetExist(cashInOutContext, cashInOutParsedData.assetId)
-        isFeeValid(cashInOutContext.walletOperation.feeInstructions)
+        isFeeValid(cashInOutContext.cashInOutOperation.feeInstructions)
         isAssetEnabled(cashInOutContext)
         isBalanceValid(cashInOutContext)
         isVolumeAccuracyValid(cashInOutContext)
@@ -39,7 +39,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
     }
 
     private fun isBalanceValid(cashInOutContext: CashInOutContext) {
-        val amount = cashInOutContext.walletOperation.amount
+        val amount = cashInOutContext.cashInOutOperation.amount
         if (amount < BigDecimal.ZERO) {
             val asset = cashInOutContext.asset
             val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset!!.assetId)
@@ -56,7 +56,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
     }
 
     private fun isVolumeAccuracyValid(cashInOutContext: CashInOutContext) {
-        val amount = cashInOutContext.walletOperation.amount
+        val amount = cashInOutContext.cashInOutOperation.amount
         val asset = cashInOutContext.asset
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(amount,
                 asset!!.accuracy)
@@ -69,7 +69,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
     }
 
     private fun isAssetEnabled(cashInOutContext: CashInOutContext) {
-        val amount = cashInOutContext.walletOperation.amount
+        val amount = cashInOutContext.cashInOutOperation.amount
         if (amount < BigDecimal.ZERO && applicationSettingsCache.isAssetDisabled(cashInOutContext.asset!!.assetId)) {
             LOGGER.info("Cash out operation (${cashInOutContext.id}) for client ${cashInOutContext.clientId} " +
                     "asset ${cashInOutContext.asset.assetId}, " +

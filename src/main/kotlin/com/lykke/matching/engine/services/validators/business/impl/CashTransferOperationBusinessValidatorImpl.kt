@@ -26,7 +26,7 @@ class CashTransferOperationBusinessValidatorImpl (private val balancesHolder: Ba
         val overdraftLimit = cashTransferContext.transferOperation.overdraftLimit
 
         if (overdraftLimit != null && overdraftLimit.signum() == -1) {
-            throw ValidationException(ValidationException.Validation.OVERDRAFT_LIMIT_IS_NEGATIVE, "ClientId:${transferOperation.fromClientId}, " +
+            throw ValidationException(ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT, "ClientId:${transferOperation.fromClientId}, " +
                     "asset:${transferOperation.asset}, volume:${transferOperation.volume}")
         }
     }

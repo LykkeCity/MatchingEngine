@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.incoming.parsers.impl
 
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.CashInOutOperation
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -29,7 +29,7 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
                 operationId,
                 message.clientId,
                 ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, message.timestamp, messageWrapper.messageId!!),
-                WalletOperation(operationId, message.id, message.clientId, message.assetId,
+                CashInOutOperation(operationId, message.id, message.clientId, message.assetId,
                         Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO,
                         feeInstructions = NewFeeInstruction.create(message.feesList)),
                 assetsHolder.getAssetAllowNulls(message.assetId), Date())

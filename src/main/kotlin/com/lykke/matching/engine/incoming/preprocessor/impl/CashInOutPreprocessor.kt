@@ -55,7 +55,7 @@ class CashInOutPreprocessor(
         try {
             cashInOutOperationInputValidator.performValidation(cashTransferParsedData)
         } catch (e: ValidationException) {
-            writeErrorResponse(parsedMessageWrapper, cashInOutContext.walletOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            writeErrorResponse(parsedMessageWrapper, cashInOutContext.cashInOutOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return false
         }
 
@@ -88,7 +88,7 @@ class CashInOutPreprocessor(
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
-                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.walletOperation.amount)}: $errorMessage")
+                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 
     override fun run() {
