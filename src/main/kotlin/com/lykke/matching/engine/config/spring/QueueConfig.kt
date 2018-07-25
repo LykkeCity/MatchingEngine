@@ -3,6 +3,8 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
+import com.lykke.matching.engine.messages.MessageType
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
@@ -94,5 +96,20 @@ open class QueueConfig {
     @Bean
     open fun dbTransferOperationQueue(): BlockingQueue<TransferOperation> {
         return LinkedBlockingQueue<TransferOperation>()
+    }
+
+    @Bean
+    open fun cashInOutQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun cashTransferQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
     }
 }

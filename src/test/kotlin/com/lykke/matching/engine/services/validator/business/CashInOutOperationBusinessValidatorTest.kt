@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -26,7 +25,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
-
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (CashInOutOperationBusinessValidatorTest.Config::class)])

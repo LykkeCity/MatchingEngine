@@ -24,8 +24,8 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashInOutPreprocessor(
-        private val incomingQueue: BlockingQueue<MessageWrapper>,
-        private val outgoingQueue: BlockingQueue<MessageWrapper>,
+        private val cashInOutQueue: BlockingQueue<MessageWrapper>,
+        private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
@@ -70,7 +70,7 @@ class CashInOutPreprocessor(
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
         } else {
-            outgoingQueue.put(parsedMessageWrapper)
+            preProcessedMessageQueue.put(parsedMessageWrapper)
         }
     }
 
@@ -93,7 +93,7 @@ class CashInOutPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = incomingQueue.take()
+            val message = cashInOutQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {

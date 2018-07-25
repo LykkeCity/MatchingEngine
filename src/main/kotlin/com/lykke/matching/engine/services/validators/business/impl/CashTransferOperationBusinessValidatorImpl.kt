@@ -17,10 +17,21 @@ class CashTransferOperationBusinessValidatorImpl (private val balancesHolder: Ba
     }
 
     override fun performValidation(cashTransferContext: CashTransferContext) {
-        isBalanceValid(cashTransferContext)
+        validateBalanceValid(cashTransferContext)
+        validateOverdraftLimitPositive(cashTransferContext)
     }
 
-    private fun isBalanceValid(cashTransferContext: CashTransferContext) {
+    private fun validateOverdraftLimitPositive(cashTransferContext: CashTransferContext) {
+        val transferOperation = cashTransferContext.transferOperation
+        val overdraftLimit = cashTransferContext.transferOperation.overdraftLimit
+
+        if (overdraftLimit != null && overdraftLimit.signum() == -1) {
+            throw ValidationException(ValidationException.Validation.OVERDRAFT_LIMIT_IS_NEGATIVE, "ClientId:${transferOperation.fromClientId}, " +
+                    "asset:${transferOperation.asset}, volume:${transferOperation.volume}")
+        }
+    }
+
+    private fun validateBalanceValid(cashTransferContext: CashTransferContext) {
         val transferOperation = cashTransferContext.transferOperation
         val balanceOfFromClient = balancesHolder.getBalance(transferOperation.fromClientId, transferOperation.asset)
         val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(transferOperation.fromClientId, transferOperation.asset)
