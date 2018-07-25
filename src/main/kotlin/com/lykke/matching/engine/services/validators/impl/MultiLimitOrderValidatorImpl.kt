@@ -22,7 +22,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
 
     override fun performValidation(order: LimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook) {
         isPriceValid(order)
-        isVolumeValid(order, assetPair)
+        isVolumeValid(order)
         isSpreadValid(orderBook, order)
         isVolumeAccuracyValid(order, assetPair)
         isPriceAccuracyValid(order, assetPair)
@@ -58,8 +58,8 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
     }
 
-    private fun isVolumeValid(order: LimitOrder, assetPair: AssetPair) {
-        if (!limitOrderInputValidator.checkVolume(assetPair, order)) {
+    private fun isVolumeValid(order: LimitOrder) {
+        if (!limitOrderInputValidator.checkVolume(order)) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }

@@ -55,8 +55,7 @@ class MarketOrderValidatorImpl
     }
 
     private fun isVolumeValid(order: MarketOrder) {
-        val assetPair = getAssetPair(order)
-        if (!limitOrderInputValidator.checkVolume(assetPair, order)) {
+        if (!limitOrderInputValidator.checkVolume(order)) {
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
