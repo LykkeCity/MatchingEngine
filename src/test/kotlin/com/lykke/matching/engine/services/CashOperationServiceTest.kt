@@ -205,8 +205,8 @@ class CashOperationServiceTest : AbstractTest() {
         assertEquals("Asset1", operation.asset)
 
         val messageWrapper1 = buildReservedCashInOutWrapper("Client3", "Asset1", -30.0)
-        reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
         reservedCashInOutOperationService.processMessage(messageWrapper1)
+        reservedBalance = testWalletDatabaseAccessor.getReservedBalance("Client3", "Asset1")
         assertEquals(BigDecimal.valueOf(26.0), reservedBalance)
     }
 
