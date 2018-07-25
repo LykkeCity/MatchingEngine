@@ -22,13 +22,13 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
         val message = ProtocolMessages.CashInOutOperation.parseFrom(messageWrapper.byteArray)
 
         messageWrapper.id = message.id
-        messageWrapper.messageId = message.messageId
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
 
         messageWrapper.context = CashInOutContext(message.id,
                 if (message.hasMessageId()) message.messageId else message.id,
                 operationId,
                 message.clientId,
-                ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, message.timestamp, message.messageId),
+                ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, message.timestamp, messageWrapper.messageId!!),
                 WalletOperation(operationId, message.id, message.clientId, message.assetId,
                         Date(message.timestamp), BigDecimal.valueOf(message.volume), BigDecimal.ZERO,
                         feeInstructions = NewFeeInstruction.create(message.feesList)),
