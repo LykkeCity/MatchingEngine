@@ -23,6 +23,7 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
 
         messageWrapper.id = message.id
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
+        messageWrapper.timestamp = message.timestamp
 
         messageWrapper.context = CashInOutContext(message.id,
                 if (message.hasMessageId()) message.messageId else message.id,
