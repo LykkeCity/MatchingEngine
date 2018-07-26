@@ -148,15 +148,15 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val orderBookCopy = orderBook.copy()
         if (buySideOrderBookChanged) {
             genericLimitOrderService.updateOrderBook(assetPair.assetPairId, true)
+            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBook.getBidPrice(), date))
             val newOrderBook = OrderBook(assetPair.assetPairId, true, date, orderBookCopy.getOrderBook(true))
-            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBookCopy.getBidPrice(), date))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSideOrderBookChanged) {
             genericLimitOrderService.updateOrderBook(assetPair.assetPairId, false)
+            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBook.getAskPrice(), date))
             val newOrderBook = OrderBook(assetPair.assetPairId, false, date, orderBookCopy.getOrderBook(false))
-            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBookCopy.getAskPrice(), date))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
@@ -358,12 +358,20 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             orderBook.addOrder(order)
             ordersToAdd.add(order)
+            if (order.isBuySide()) {
+                buySideOrderBookChanged = true
+            } else {
+                sellSideOrderBookChanged = true
+            }
         }
 
         availableBalances[limitAsset.assetId] = matchingResult.marketBalance!!
 
-        buySideOrderBookChanged = true
-        sellSideOrderBookChanged = true
+        if (order.isBuySide()) {
+            sellSideOrderBookChanged = true
+        } else {
+            buySideOrderBookChanged = true
+        }
         processedOrders.add(ProcessedOrder(order, true))
         return true
     }
