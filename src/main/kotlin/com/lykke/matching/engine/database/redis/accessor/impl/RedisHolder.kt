@@ -1,7 +1,8 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.database.Storage
-import com.lykke.matching.engine.database.redis.CashOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHolder
 import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
 import com.lykke.matching.engine.utils.config.MatchingEngineConfig
@@ -20,7 +21,8 @@ class RedisHolder(private val config: MatchingEngineConfig,
                   private val reconnectInterval: Long) :
         PersistenceRedisHolder,
         InitialLoadingRedisHolder,
-        CashOperationIdRedisHolder {
+        CashInOutOperationIdRedisHolder,
+        CashTransferOperationIdRedisHolder{
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RedisHolder::class.java.name)
@@ -32,13 +34,17 @@ class RedisHolder(private val config: MatchingEngineConfig,
     @Volatile
     private lateinit var persistenceRedis: Jedis
     @Volatile
-    private lateinit var cashOperationIdRedis: Jedis
+    private lateinit var cashInOutOperationIdRedis: Jedis
+    @Volatile
+    private lateinit var cashTransferOperationIdRedis: Jedis
     @Volatile
     private var externalFail = false
 
     override fun persistenceRedis() = persistenceRedis
 
-    override fun cashOperationIdRedis() = cashOperationIdRedis
+    override fun cashInOutOperationIdRedis() = cashInOutOperationIdRedis
+
+    override fun cashTransferOperationIdRedis() = cashTransferOperationIdRedis
 
     override fun initialLoadingRedis() = persistenceRedis
 
@@ -51,7 +57,8 @@ class RedisHolder(private val config: MatchingEngineConfig,
         try {
             pingRedis = openRedisConnection()
             persistenceRedis = openRedisConnection()
-            cashOperationIdRedis = openRedisConnection()
+            cashInOutOperationIdRedis = openRedisConnection()
+            cashTransferOperationIdRedis = openRedisConnection()
         } catch (e: Exception) {
             LOGGER.error("Redis connections initialisation is failed", e)
         }

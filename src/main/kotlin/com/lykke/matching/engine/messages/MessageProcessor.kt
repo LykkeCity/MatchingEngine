@@ -12,6 +12,8 @@ import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashInOutOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashTransferOperationIdDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -196,10 +198,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
-        val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, applicationContext.getBean(RedisCashInOutOperationIdDatabaseAccessor::class.java))
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, applicationContext.getBean(RedisCashTransferOperationIdDatabaseAccessor::class.java))
         cashTransferPreprocessor.start()
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
