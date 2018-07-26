@@ -10,7 +10,7 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashInOutOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -32,7 +32,7 @@ class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
-        private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashInOutOperationIdDatabaseAccessor,
+        private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
         private val secondaryOrdersAccessor: OrderBookDatabaseAccessor?,
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
