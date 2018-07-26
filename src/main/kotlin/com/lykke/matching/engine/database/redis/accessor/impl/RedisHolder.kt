@@ -1,46 +1,50 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.database.Storage
-import com.lykke.matching.engine.database.redis.CashOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHolder
 import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
-import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.logging.ThrottlingLogger
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.TaskScheduler
-import org.springframework.stereotype.Component
 import redis.clients.jedis.Jedis
 import javax.annotation.PostConstruct
 
-@Component
-class DefaultRedisHolder(private val config: Config,
-                         private val taskScheduler: TaskScheduler,
-                         private val applicationEventPublisher: ApplicationEventPublisher,
-                         @Value("\${redis.health.check.interval}")
-                         private val updateInterval: Long,
-                         @Value("\${redis.health.check.reconnect.interval}")
-                         private val reconnectInterval: Long) :
+class RedisHolder(private val config: MatchingEngineConfig,
+                  private val taskScheduler: TaskScheduler,
+                  private val applicationEventPublisher: ApplicationEventPublisher,
+                  private val updateInterval: Long,
+                  private val reconnectInterval: Long) :
         PersistenceRedisHolder,
         InitialLoadingRedisHolder,
-        CashOperationIdRedisHolder {
+        CashInOutOperationIdRedisHolder,
+        CashTransferOperationIdRedisHolder{
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(DefaultRedisHolder::class.java.name)
+        private val LOGGER = ThrottlingLogger.getLogger(RedisHolder::class.java.name)
         private const val PING_KEY = "PING"
         private const val PING_VALUE = "PONG"
     }
 
     private lateinit var pingRedis: Jedis
+    @Volatile
     private lateinit var persistenceRedis: Jedis
-    private lateinit var cashOperationIdRedis: Jedis
+    @Volatile
+    private lateinit var cashInOutOperationIdRedis: Jedis
+    @Volatile
+    private lateinit var cashTransferOperationIdRedis: Jedis
+    @Volatile
     private var externalFail = false
 
     override fun persistenceRedis() = persistenceRedis
 
-    override fun cashOperationIdRedis() = cashOperationIdRedis
+    override fun cashInOutOperationIdRedis() = cashInOutOperationIdRedis
+
+    override fun cashTransferOperationIdRedis() = cashTransferOperationIdRedis
 
     override fun initialLoadingRedis() = persistenceRedis
 
@@ -53,14 +57,15 @@ class DefaultRedisHolder(private val config: Config,
         try {
             pingRedis = openRedisConnection()
             persistenceRedis = openRedisConnection()
-            cashOperationIdRedis = openRedisConnection()
+            cashInOutOperationIdRedis = openRedisConnection()
+            cashTransferOperationIdRedis = openRedisConnection()
         } catch (e: Exception) {
             LOGGER.error("Redis connections initialisation is failed", e)
         }
     }
 
     private fun openRedisConnection(): Jedis {
-        val redisConfig = config.me.redis
+        val redisConfig = config.redis
         val jedis = Jedis(redisConfig.host, redisConfig.port, redisConfig.timeout, redisConfig.useSsl)
         jedis.connect()
         if (redisConfig.password != null) {
@@ -71,20 +76,12 @@ class DefaultRedisHolder(private val config: Config,
 
     private fun isRedisAlive(): Boolean {
         return try {
-            val transaction = pingRedis.multi()
-            try {
-                transaction.select(config.me.redis.pingDatabase)
+            pingRedis.multi().use { transaction ->
+                transaction.select(config.redis.pingDatabase)
                 transaction[PING_KEY] = PING_VALUE
                 transaction.exec()
-                true
-            } catch (e: Exception) {
-                try {
-                    transaction.clear()
-                } catch (clearTxException: Exception) {
-                    e.addSuppressed(clearTxException)
-                }
-                throw e
             }
+            true
         } catch (e: Exception) {
             LOGGER.error("Redis ping operation failed", e)
             false
@@ -93,7 +90,7 @@ class DefaultRedisHolder(private val config: Config,
 
     @PostConstruct
     fun init() {
-        if (config.me.storage != Storage.Redis) {
+        if (config.storage != Storage.Redis) {
             return
         }
         initConnections()

@@ -10,7 +10,7 @@ import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashInOutOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -32,7 +32,7 @@ class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
-        private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
+        private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashInOutOperationIdDatabaseAccessor,
         private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
         private val secondaryOrdersAccessor: OrderBookDatabaseAccessor?,
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
@@ -104,9 +104,7 @@ class RedisPersistenceManager(
 
     private fun persistData(jedis: Jedis, data: PersistenceData) {
         val startTime = System.nanoTime()
-
-        val transaction = jedis.multi()
-        try {
+        jedis.multi().use { transaction ->
             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
 
@@ -140,14 +138,6 @@ class RedisPersistenceManager(
             if (secondaryStopOrdersAccessor != null && !CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
                 updatedStopOrderBooksQueue.put(data.stopOrderBooksData!!.orderBooks)
             }
-
-        } catch (e: Exception) {
-            try {
-                transaction.clear()
-            } catch (clearTxException: Exception) {
-                e.addSuppressed(clearTxException)
-            }
-            throw e
         }
     }
 

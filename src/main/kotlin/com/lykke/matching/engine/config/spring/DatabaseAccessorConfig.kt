@@ -27,11 +27,14 @@ import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.CashOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHolder
 import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashInOutOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashTransferOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -43,9 +46,11 @@ import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.scheduling.TaskScheduler
 import java.util.Optional
 
 @Configuration
@@ -60,7 +65,7 @@ open class DatabaseAccessorConfig {
                                 stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                 redisHolder: Optional<PersistenceRedisHolder>,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
+                                cashInOutOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
@@ -72,7 +77,7 @@ open class DatabaseAccessorConfig {
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        cashInOutOperationIdDatabaseAccessor.get() as RedisCashInOutOperationIdDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.secondaryAccessor,
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
@@ -96,6 +101,17 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
+    open fun redisHolder(taskScheduler: TaskScheduler,
+                         applicationEventPublisher: ApplicationEventPublisher,
+                         @Value("\${redis.health.check.interval}") updateInterval: Long,
+                         @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisHolder? {
+        if (config.me.storage != Storage.Redis) {
+            return null
+        }
+        return RedisHolder(config.me, taskScheduler, applicationEventPublisher, updateInterval, reconnectInterval)
+    }
+
+    @Bean
     open fun redisProcessedMessagesDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): RedisProcessedMessagesDatabaseAccessor? {
         if (!redisHolder.isPresent) {
             return null
@@ -106,14 +122,28 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun cashOperationIdDatabaseAccessor(redisHolder: Optional<CashOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
+    open fun cashInOutOperationIdDatabaseAccessor(redisHolder: Optional<CashInOutOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
             Storage.Redis -> {
                 if (!redisHolder.isPresent) {
                     return null
                 }
-                return RedisCashOperationIdDatabaseAccessor(redisHolder.get(),
+                return RedisCashInOutOperationIdDatabaseAccessor(redisHolder.get(),
+                        config.me.redis.processedCashMessageDatabase)
+            }
+        }
+    }
+
+    @Bean
+    open fun cashTransferOperationIdDatabaseAccessor(redisHolder: Optional<CashTransferOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
+        return when (config.me.storage) {
+            Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
+            Storage.Redis -> {
+                if (!redisHolder.isPresent) {
+                    return null
+                }
+                return RedisCashTransferOperationIdDatabaseAccessor(redisHolder.get(),
                         config.me.redis.processedCashMessageDatabase)
             }
         }

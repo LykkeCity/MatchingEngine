@@ -1,17 +1,16 @@
-/*
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.redis.CashOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Transaction
 
-class RedisCashOperationIdDatabaseAccessor(private val redisHolder: CashOperationIdRedisHolder,
-                                           private val dbIndex: Int): CashOperationIdDatabaseAccessor {
+class RedisCashInOutOperationIdDatabaseAccessor(private val redisHolder: CashInOutOperationIdRedisHolder,
+                                                private val dbIndex: Int) : CashOperationIdDatabaseAccessor {
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(RedisCashOperationIdDatabaseAccessor::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(CashInOutOperationIdRedisHolder::class.java.name)
         private const val SEPARATOR = ":"
     }
 
@@ -19,7 +18,7 @@ class RedisCashOperationIdDatabaseAccessor(private val redisHolder: CashOperatio
 
     override fun isAlreadyProcessed(type: String, id: String): Boolean {
         try {
-            val jedis = redisHolder.cashOperationIdRedis()
+            val jedis = redisHolder.cashInOutOperationIdRedis()
             jedis.select(dbIndex)
             return jedis.exists(getKey(type, id))
         } catch (e: Exception) {
@@ -36,4 +35,4 @@ class RedisCashOperationIdDatabaseAccessor(private val redisHolder: CashOperatio
     private fun getKey(type: String, id: String): String {
         return type + SEPARATOR + id
     }
-}*/
+}

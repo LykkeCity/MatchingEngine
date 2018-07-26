@@ -1,5 +1,5 @@
 package com.lykke.matching.engine.database.redis
 
-interface RedisHolder {
+interface RedisHealthMonitor {
     fun fail()
 }
