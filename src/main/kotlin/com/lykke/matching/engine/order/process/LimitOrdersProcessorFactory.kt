@@ -34,6 +34,7 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
 
     fun create(matchingEngine: MatchingEngine,
                date: Date,
+               isTrustedClient: Boolean,
                clientId: String,
                assetPair: AssetPair,
                baseAsset: Asset,
@@ -47,6 +48,7 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                LOGGER: Logger) =
 
             LimitOrdersProcessor(
+                    isTrustedClient,
                     baseAsset,
                     quotingAsset,
                     balancesHolder,

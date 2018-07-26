@@ -47,6 +47,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
                 singleLimitContext.orderProcessingStartTime,
+                singleLimitContext.isTrustedClient,
                 order.clientId,
                 assetPair,
                 singleLimitContext.baseAsset,

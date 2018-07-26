@@ -5,6 +5,10 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import java.math.BigDecimal
 
 interface LimitOrderBusinessValidator {
-    fun performValidation(availableBalance: BigDecimal, limitVolume: BigDecimal, order: LimitOrder, orderBook: AssetOrderBook)
+    fun performValidation(isTrustedClient: Boolean,
+                          order: LimitOrder,
+                          availableBalance: BigDecimal,
+                          limitVolume: BigDecimal,
+                          orderBook: AssetOrderBook)
     fun validateBalance(availableBalance: BigDecimal, limitVolume: BigDecimal)
 }

@@ -8,8 +8,15 @@ import com.lykke.matching.engine.services.validators.business.LimitOrderBusiness
 import java.math.BigDecimal
 
 class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
-    override fun performValidation(availableBalance: BigDecimal, limitVolume: BigDecimal, order: LimitOrder, orderBook: AssetOrderBook) {
-        validateBalance(availableBalance, limitVolume)
+    override fun performValidation(isTrustedClient: Boolean, order: LimitOrder,
+                                   availableBalance: BigDecimal,
+                                   limitVolume: BigDecimal,
+                                   orderBook: AssetOrderBook) {
+
+        if (!isTrustedClient) {
+            validateBalance(availableBalance, limitVolume)
+        }
+
         leadToNegativeSpread(order, orderBook)
         previousOrderFound(order)
     }

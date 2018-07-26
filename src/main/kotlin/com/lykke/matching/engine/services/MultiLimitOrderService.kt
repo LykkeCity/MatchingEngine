@@ -441,7 +441,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
-
         val notFoundReplacements = mutableMapOf<String, LimitOrder>()
 
         buySideOrderBookChanged = processReplacements(multiLimitOrder,
@@ -487,6 +486,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
                 now,
+                balancesHolder.isTrustedClient(multiLimitOrder.clientId),
                 multiLimitOrder.clientId,
                 assetPair,
                 assetsHolder.getAsset(assetPair.baseAssetId),
