@@ -22,6 +22,7 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.LimitOrderPreprocessor
 import com.lykke.matching.engine.logging.MessageDatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -199,10 +200,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
-        val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = applicationContext.getBean(CashInOutPreprocessor::class.java)
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
         cashTransferPreprocessor.start()
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
