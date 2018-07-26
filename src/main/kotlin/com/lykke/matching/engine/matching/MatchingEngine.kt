@@ -328,6 +328,31 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
+        val executionPrice = NumberUtils.setScale(
+                if (order.isStraight())
+                    NumberUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
+                else
+                    NumberUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
+                assetPair.accuracy,
+                order.isOrigBuySide()
+        )
+
+        if (order.takePrice() == null) {
+            if (order.isStraight()) {
+                if (assetPair.maxValue != null && order.getAbsVolume() * executionPrice > assetPair.maxValue) {
+                    order.updateStatus(OrderStatus.InvalidVolume, now)
+                    LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}")
+                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                }
+            } else {
+                if (assetPair.maxVolume != null && order.getAbsVolume() / executionPrice > assetPair.maxVolume) {
+                    order.updateStatus(OrderStatus.InvalidVolume, now)
+                    LOGGER.info("Too large value of not straight market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxVolume=${assetPair.maxVolume}")
+                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+                }
+            }
+        }
+
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
             val newRemainingVolume = if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume
             if (newRemainingVolume.compareTo(originOrder.volume) != 0) {
@@ -339,10 +364,7 @@ class MatchingEngine(private val LOGGER: Logger,
             order.updateRemainingVolume(BigDecimal.ZERO)
         }
         order.updateMatchTime(now)
-        order.updatePrice(NumberUtils.setScale(
-                if (order.isStraight()) NumberUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
-                else NumberUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
-                assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
+        order.updatePrice(executionPrice)
 
         return MatchingResult(orderWrapper,
                 now,

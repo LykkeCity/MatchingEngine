@@ -411,7 +411,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             validator.checkBalance(availableBalance, limitVolume)
         }
         validator.validatePrice(order)
-        validator.validateVolume(order)
+        validator.validateVolume(order, assetPair)
         validator.validatePriceAccuracy(order)
         validator.validateVolumeAccuracy(order)
 

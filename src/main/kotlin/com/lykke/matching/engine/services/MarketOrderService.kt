@@ -17,6 +17,8 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -31,7 +33,6 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.outgoing.messages.*
 import org.apache.log4j.Logger
@@ -131,7 +132,8 @@ class MarketOrderService @Autowired constructor(
             NoLiquidity,
             NotEnoughFunds,
             InvalidFee,
-            InvalidVolumeAccuracy -> {
+            InvalidVolumeAccuracy,
+            InvalidVolume -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {

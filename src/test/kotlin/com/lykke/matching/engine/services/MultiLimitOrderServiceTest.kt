@@ -1328,6 +1328,54 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertBalance("Client3", "USD", reserved = 0.0)
     }
 
+    @Test
+    fun testMaxOldOrderValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testMaxOldOrderVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testMaxOrderValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testMaxOrderVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
         return MessageWrapper("Test",
                 MessageType.OLD_MULTI_LIMIT_ORDER.type,
