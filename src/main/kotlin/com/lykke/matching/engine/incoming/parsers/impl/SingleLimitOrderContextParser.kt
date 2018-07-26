@@ -54,6 +54,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 .limitOrder(order)
                 .orderProcessingStartTime(now)
                 .assetPair(assetPair)
+                .baseAsset(getBaseAsset(assetPair))
+                .quotingAsset(getQotingAsset(assetPair))
                 .trustedClient(getTrustedClient(builder.limitOrder.clientId))
                 .limitAsset(getLimitAsset(order, assetPair))
                 .cancelOrders(cancelOrders)
@@ -72,6 +74,14 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
     fun getAssetPair(assetPairId: String): AssetPair {
         return assetsPairsHolder.getAssetPair(assetPairId)
+    }
+
+    fun getBaseAsset(assetPair: AssetPair): Asset {
+        return assetsHolder.getAsset(assetPair.baseAssetId)
+    }
+
+    fun getQotingAsset(assetPair: AssetPair): Asset {
+        return assetsHolder.getAsset(assetPair.quotingAssetId)
     }
 
     private fun parseMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitContext {

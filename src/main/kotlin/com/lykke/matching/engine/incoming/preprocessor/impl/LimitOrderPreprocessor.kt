@@ -15,6 +15,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
+import javax.annotation.PostConstruct
 
 @Component
 class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
@@ -78,6 +79,11 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
                 writeResponse(message, MessageStatus.RUNTIME)
             }
         }
+    }
+
+    @PostConstruct
+    fun init() {
+        this.start()
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

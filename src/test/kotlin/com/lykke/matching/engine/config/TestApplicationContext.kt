@@ -22,8 +22,10 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
+import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
@@ -376,10 +378,19 @@ open class TestApplicationContext {
         return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache)
     }
 
-
-
     @Bean
     open fun messageBuilder(singleLimitOrderContextParser: SingleLimitOrderContextParser): MessageBuilder {
         return MessageBuilder(singleLimitOrderContextParser)
+    }
+
+    @Bean
+    open fun limitOrderInputValidator(applicationSettingsCache: ApplicationSettingsCache, assetsPairsHolder: AssetsPairsHolder): LimitOrderInputValidator {
+        return LimitOrderInputValidatorImpl(applicationSettingsCache, assetsPairsHolder)
+    }
+
+
+    @Bean
+    open fun limitOrderBusinessValidator(applicationSettingsCache: ApplicationSettingsCache, assetsPairsHolder: AssetsPairsHolder): LimitOrderBusinessValidator {
+        return LimitOrderBusinessValidatorImpl()
     }
 }
