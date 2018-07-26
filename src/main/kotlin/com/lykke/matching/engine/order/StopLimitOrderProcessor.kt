@@ -193,7 +193,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         validator.validateFee(order)
         validator.validateAssets(assetPair)
         validator.validateLimitPrices(order)
-        validator.validateVolume(order)
+        validator.validateVolume(order, assetPair)
         validator.checkBalance(availableBalance, limitVolume)
         validator.validateVolumeAccuracy(order)
         validator.validatePriceAccuracy(order)

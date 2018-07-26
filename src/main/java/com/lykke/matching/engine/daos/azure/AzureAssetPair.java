@@ -11,17 +11,21 @@ public class AzureAssetPair extends TableServiceEntity {
     private int accuracy;
     private Double minVolume;
     private Double minInvertedVolume;
+    private Double maxVolume;
+    private Double maxValue;
 
     public AzureAssetPair() {
     }
 
-    public AzureAssetPair(String baseAssetId, String quotingAssetId, int accuracy, Double minVolume, Double minInvertedVolume) {
+    public AzureAssetPair(String baseAssetId, String quotingAssetId, int accuracy, Double minVolume, Double minInvertedVolume, Double maxVolume, Double maxValue) {
         super(ASSET_PAIR, baseAssetId + quotingAssetId);
         this.baseAssetId = baseAssetId;
         this.quotingAssetId = quotingAssetId;
         this.accuracy = accuracy;
         this.minVolume = minVolume;
         this.minInvertedVolume = minInvertedVolume;
+        this.maxVolume = maxVolume;
+        this.maxValue = maxValue;
     }
 
     public String getBaseAssetId() {
@@ -68,8 +72,32 @@ public class AzureAssetPair extends TableServiceEntity {
         this.minInvertedVolume = minInvertedVolume;
     }
 
+    public Double getMaxVolume() {
+        return maxVolume;
+    }
+
+    public void setMaxVolume(Double maxVolume) {
+        this.maxVolume = maxVolume;
+    }
+
+    public Double getMaxValue() {
+        return maxValue;
+    }
+
+    public void setMaxValue(Double maxValue) {
+        this.maxValue = maxValue;
+    }
+
     @Override
     public String toString() {
-        return "AssetPair(pairId=" + getAssetPairId() + ",baseAssetId=" + baseAssetId + ", quotingAssetId=" + quotingAssetId + ", accuracy=" + accuracy + ", minVolume=" + minVolume + ", minInvertedVolume=" + minInvertedVolume + ")";
+        return "AssetPair(pairId=" + getAssetPairId() +
+                ", baseAssetId=" + baseAssetId +
+                ", quotingAssetId=" + quotingAssetId +
+                ", accuracy=" + accuracy +
+                ", minVolume=" + minVolume +
+                ", minInvertedVolume=" + minInvertedVolume +
+                ", maxVolume=" + maxVolume +
+                ", maxValue=" + maxValue +
+                ")";
     }
 }

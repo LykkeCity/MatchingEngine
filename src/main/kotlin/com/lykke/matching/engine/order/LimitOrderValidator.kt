@@ -45,9 +45,15 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
         }
     }
 
-    fun validateVolume(order: LimitOrder) {
-        if (!order.checkVolume(assetsPairsHolder)) {
+    fun validateVolume(order: LimitOrder, assetPair: AssetPair) {
+        if (!order.checkMinVolume(assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
+        }
+        if (assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
+        }
+        if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "value is too large")
         }
     }
 

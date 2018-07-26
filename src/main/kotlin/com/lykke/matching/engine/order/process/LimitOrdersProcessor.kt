@@ -196,7 +196,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         try {
             validateLimitOrder(order, orderBook, assetPair, availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
-            LOGGER.info(e.message)
+            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
             order.updateStatus(e.orderStatus, date)
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, e.message))
@@ -385,7 +385,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             validator.checkBalance(availableBalance, limitVolume)
         }
         validator.validatePrice(order)
-        validator.validateVolume(order)
+        validator.validateVolume(order, assetPair)
         validator.validatePriceAccuracy(order)
         validator.validateVolumeAccuracy(order)
 
