@@ -17,7 +17,7 @@ import java.util.*
 @Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
-    private val messageBuilder = MessageBuilder(SingleLimitOrderContextParser())
+    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser)
 
     override fun initServices() {
         super.initServices()

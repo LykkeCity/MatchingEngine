@@ -261,7 +261,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
         listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.3)), VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.2)))))
 
-        assertEquals(1, testTrustedClientsLimitOrderListener.size)
+        assertEquals(1, testTrustedClientsLimitOrderListener.getCount())
         testTrustedClientsLimitOrderListener.clear()
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
 

@@ -17,8 +17,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.SingleLimitOrderProcessor
-import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
@@ -356,6 +354,6 @@ class MessageBuilder (private var singleLimitOrderContextParser: SingleLimitOrde
         order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
-        return singleLimitOrderContextParser.parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
+        return singleLimitOrderContextParser.parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test")).messageWrapper
     }
 }

@@ -22,7 +22,7 @@ class MarketOrderValidatorImpl
 @Autowired constructor(private val limitOrderInputValidator: LimitOrderInputValidator,
                        private val assetsPairsHolder: AssetsPairsHolder,
                        private val assetsHolder: AssetsHolder,
-                       private val assetSettingsCache: ApplicationSettingsCache) : MarketOrderValidator {
+                       private val applicationSettingsCache: ApplicationSettingsCache) : MarketOrderValidator {
 
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderValidatorImpl::class.java.name)
@@ -63,8 +63,8 @@ class MarketOrderValidatorImpl
 
     private fun isAssetEnabled(order: MarketOrder) {
         val assetPair = getAssetPair(order)
-        if (assetSettingsCache.isAssetDisabled(assetPair.baseAssetId)
-                || assetSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId)
+                || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
             LOGGER.info("Disabled asset $order")
             throw OrderValidationException(OrderStatus.DisabledAsset)
         }
