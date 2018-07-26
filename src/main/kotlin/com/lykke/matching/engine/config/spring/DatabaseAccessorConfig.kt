@@ -35,9 +35,8 @@ import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHold
 import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashInOutOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashTransferOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisHolder
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
@@ -62,7 +61,7 @@ open class DatabaseAccessorConfig {
     open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                                 redisHolder: Optional<PersistenceRedisHolder>,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                cashInOutOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
+                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
@@ -71,7 +70,7 @@ open class DatabaseAccessorConfig {
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
-                        cashInOutOperationIdDatabaseAccessor.get() as RedisCashInOutOperationIdDatabaseAccessor,
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         redisHolder.get(),
                         config
@@ -112,28 +111,16 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun cashInOutOperationIdDatabaseAccessor(redisHolder: Optional<CashInOutOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
+    open fun cashOperationIdDatabaseAccessor(cashInOutOperationIdRedisHolder: Optional<CashInOutOperationIdRedisHolder>,
+                                             cashTransferOperationIdRedisHolder: Optional<CashTransferOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
             Storage.Redis -> {
-                if (!redisHolder.isPresent) {
+                if (!cashInOutOperationIdRedisHolder.isPresent || !cashTransferOperationIdRedisHolder.isPresent) {
                     return null
                 }
-                return RedisCashInOutOperationIdDatabaseAccessor(redisHolder.get(),
-                        config.me.redis.processedCashMessageDatabase)
-            }
-        }
-    }
-
-    @Bean
-    open fun cashTransferOperationIdDatabaseAccessor(redisHolder: Optional<CashTransferOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
-        return when (config.me.storage) {
-            Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
-            Storage.Redis -> {
-                if (!redisHolder.isPresent) {
-                    return null
-                }
-                return RedisCashTransferOperationIdDatabaseAccessor(redisHolder.get(),
+                return RedisCashOperationIdDatabaseAccessor(cashInOutOperationIdRedisHolder.get(),
+                        cashTransferOperationIdRedisHolder.get(),
                         config.me.redis.processedCashMessageDatabase)
             }
         }
