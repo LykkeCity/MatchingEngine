@@ -1,17 +1,14 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.daos.fee.v2.Fee
-import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.fee.singleFeeTransfer
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -25,14 +22,13 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.CashTransferEvent
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
-import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
@@ -40,81 +36,72 @@ import java.util.concurrent.BlockingQueue
 
 @Service
 class CashTransferOperationService(private val balancesHolder: BalancesHolder,
-                                   private val assetsHolder: AssetsHolder,
                                    private val notificationQueue: BlockingQueue<CashTransferOperation>,
                                    private val dbTransferOperationQueue: BlockingQueue<TransferOperation>,
                                    private val feeProcessor: FeeProcessor,
-                                   private val cashTransferOperationValidator: CashTransferOperationValidator,
+                                   private val cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator,
                                    private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                   private val messageSender: MessageSender): AbstractService {
+                                   private val messageSender: MessageSender) : AbstractService {
+    override fun parseMessage(messageWrapper: MessageWrapper) {
+        //do nothing
+    }
 
     companion object {
         private val LOGGER = Logger.getLogger(CashTransferOperationService::class.java.name)
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val message = getMessage(messageWrapper)
-        val feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
-        val feeInstructions = NewFeeInstruction.create(message.feesList)
+        val cashTransferContext = messageWrapper.context as CashTransferContext
 
-        LOGGER.debug("Processing cash transfer operation ${message.id}) messageId: ${messageWrapper.messageId}" +
-                " from client ${message.fromClientId} to client ${message.toClientId}, " +
-                "asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)}, " +
-                "feeInstruction: $feeInstruction, feeInstructions: $feeInstructions")
+        val transferOperation = cashTransferContext.transferOperation
 
-        val operationId = UUID.randomUUID().toString()
-        val now = Date()
-
-        val operation = TransferOperation(operationId, message.id, message.fromClientId, message.toClientId,
-                message.assetId, Date(message.timestamp),
-                BigDecimal.valueOf(message.volume),
-                BigDecimal.valueOf(message.overdraftLimit),
-                listOfFee(feeInstruction, feeInstructions))
+        LOGGER.debug("Processing cash transfer operation ${transferOperation.id}) messageId: ${cashTransferContext.messageId}" +
+                " from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}, " +
+                "asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
+                "feeInstructions: ${transferOperation.fees}")
 
         try {
-            cashTransferOperationValidator.performValidation(message, operationId, feeInstructions, feeInstruction)
+            cashTransferOperationBusinessValidator.performValidation(cashTransferContext)
         } catch (e: ValidationException) {
-            writeErrorResponse(messageWrapper, message, operationId, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            writeErrorResponse(messageWrapper, cashTransferContext, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return
         }
 
         val result = try {
             messageWrapper.processedMessagePersisted = true
-            processTransferOperation(operation, messageWrapper.messageId!!, messageWrapper.processedMessage(), now)
+            processTransferOperation(transferOperation, cashTransferContext.messageId, cashTransferContext.processedMessage, cashTransferContext.operationStartTime)
         } catch (e: FeeException) {
-            writeErrorResponse(messageWrapper, message, operationId, INVALID_FEE, e.message)
+            writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
             return
         } catch (e: BalanceException) {
-            writeErrorResponse(messageWrapper, message, operationId, LOW_BALANCE, e.message)
+            writeErrorResponse(messageWrapper, cashTransferContext, LOW_BALANCE, e.message)
             return
         } catch (e: Exception) {
-            writeErrorResponse(messageWrapper, message, operationId, RUNTIME, e.message ?: "Unable to process operation")
+            writeErrorResponse(messageWrapper, cashTransferContext, RUNTIME, e.message ?: "Unable to process operation")
             return
         }
-        dbTransferOperationQueue.put(operation)
-        notificationQueue.put(CashTransferOperation(message.id,
-                operation.fromClientId,
-                operation.toClientId,
-                operation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(operation.volume, assetsHolder.getAsset(operation.asset).accuracy).toPlainString(),
-                operation.overdraftLimit,
-                operation.asset,
-                feeInstruction,
-                singleFeeTransfer(feeInstruction, result.fees),
+        dbTransferOperationQueue.put(transferOperation)
+        val fee = if(transferOperation.fees == null || transferOperation.fees.isEmpty()) null else transferOperation.fees.first()
+
+        notificationQueue.put(CashTransferOperation(transferOperation.externalId,
+                transferOperation.fromClientId,
+                transferOperation.toClientId,
+                transferOperation.dateTime,
+                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.asset!!.accuracy).toPlainString(),
+                transferOperation.overdraftLimit,
+                transferOperation.asset,
+                fee,
+                singleFeeTransfer(fee, result.fees),
                 result.fees,
-                messageWrapper.messageId!!))
+                cashTransferContext.messageId))
 
         messageSender.sendMessage(result.outgoingMessage)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(operation.id)
+                .setMatchingEngineId(transferOperation.id)
                 .setStatus(OK.type))
-        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} to client ${message.toClientId}," +
-                " asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.volume)} processed")
-    }
-
-    private fun parse(array: ByteArray): ProtocolMessages.CashTransferOperation {
-        return ProtocolMessages.CashTransferOperation.parseFrom(array)
+        LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}," +
+                " asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)} processed")
     }
 
     private fun processTransferOperation(operation: TransferOperation,
@@ -153,40 +140,22 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         return OperationResult(outgoingMessage, fees)
     }
 
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        val message = parse(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.id
-        messageWrapper.id = message.id
-        messageWrapper.timestamp = message.timestamp
-        messageWrapper.parsedMessage = message
-    }
-
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type))
     }
 
-    private fun getMessage(messageWrapper: MessageWrapper): ProtocolMessages.CashTransferOperation {
-        if (messageWrapper.parsedMessage == null) {
-            parseMessage(messageWrapper)
-        }
-
-        return messageWrapper.parsedMessage!! as ProtocolMessages.CashTransferOperation
-    }
-
-
     private fun writeErrorResponse(messageWrapper: MessageWrapper,
-                                   message: ProtocolMessages.CashTransferOperation,
-                                   operationId: String,
+                                   context: CashTransferContext,
                                    status: MessageStatus,
-                                   errorMessage: String =  StringUtils.EMPTY) {
+                                   errorMessage: String = StringUtils.EMPTY) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(operationId)
+                .setMatchingEngineId(context.transferOperation.id)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash transfer operation (${message.id}) from client ${message.fromClientId} " +
-                "to client ${message.toClientId}, asset ${message.assetId}," +
-                " volume: ${NumberUtils.roundForPrint(message.volume)}: $errorMessage")
+        LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
+                "to client ${context.transferOperation.toClientId}, asset ${context.asset}," +
+                " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")
     }
 }
 

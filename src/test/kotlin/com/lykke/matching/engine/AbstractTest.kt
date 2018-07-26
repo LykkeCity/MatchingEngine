@@ -33,8 +33,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
-import com.lykke.matching.engine.services.validators.CashTransferOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
@@ -81,19 +80,13 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var cashInOutOperationValidator: CashInOutOperationValidator
-
-    @Autowired
-    private lateinit var cashTransferOperationValidator: CashTransferOperationValidator
+    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
-
-    @Autowired
-    protected lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
@@ -165,16 +158,16 @@ abstract class AbstractTest {
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
     @Autowired
-    protected lateinit var feeProcessor: FeeProcessor
+    private lateinit var feeProcessor: FeeProcessor
 
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+    @Autowired
+    protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
-    protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
+    private val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
 
     protected lateinit var cashInOutOperationService: CashInOutOperationService
-    protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
@@ -194,16 +187,8 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
-
-        cashTransferOperationsService = CashTransferOperationService(balancesHolder, assetsHolder, rabbitTransferQueue,
-                dbTransferOperationQueue,
-                feeProcessor,
-                cashTransferOperationValidator, messageSequenceNumberHolder, messageSender)
-
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator, messageSequenceNumberHolder, messageSender)
+        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor, cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
