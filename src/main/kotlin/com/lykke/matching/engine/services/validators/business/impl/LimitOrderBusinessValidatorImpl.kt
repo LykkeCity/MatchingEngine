@@ -5,8 +5,10 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
+@Component
 class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
     override fun performValidation(isTrustedClient: Boolean, order: LimitOrder,
                                    availableBalance: BigDecimal,

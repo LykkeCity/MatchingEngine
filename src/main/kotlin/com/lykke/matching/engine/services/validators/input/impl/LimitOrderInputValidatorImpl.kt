@@ -13,8 +13,10 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
+@Component
 class LimitOrderInputValidatorImpl(private val applicationSettingsCache: ApplicationSettingsCache,
                                    private val assetsPairHolder: AssetsPairsHolder) : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
