@@ -27,7 +27,7 @@ class TrustedClientsEventsListener {
     @PostConstruct
     fun initRabbitMqPublisher() {
         val rabbitMqQueues = HashSet<BlockingQueue<ExecutionEvent>>()
-        config.me.rabbitMqConfigs.events.forEach { rabbitConfig ->
+        config.me.rabbitMqConfigs.trustedClientsEvents.forEach { rabbitConfig ->
             val queue = LinkedBlockingQueue<ExecutionEvent>()
             rabbitMqQueues.add(queue)
             rabbitMqService.startPublisher(rabbitConfig, queue,
