@@ -154,6 +154,11 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(2, event.orders.size)
         assertEquals("1.2", event.orders[0].price)
         assertEquals("1.3", event.orders[1].price)
+
+        assertEquals(1, tradesInfoListener.getCount())
+        val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
+        assertEquals(BigDecimal.valueOf(1.3), tradeInfo.price)
+        assertEquals(true, tradeInfo.isBuy)
     }
 
     @Test
