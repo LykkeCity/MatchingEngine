@@ -14,6 +14,7 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -23,6 +24,7 @@ import java.util.concurrent.BlockingQueue
 @Component
 class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                                   private val singleLimitOrderBusinessValidator: LimitOrderBusinessValidator,
+                                  private val limitOrderInputValidator: LimitOrderInputValidator,
                                   private val genericLimitOrderService: GenericLimitOrderService,
                                   private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -51,6 +53,7 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                     isTrustedClient,
                     baseAsset,
                     quotingAsset,
+                    limitOrderInputValidator,
                     balancesHolder,
                     genericLimitOrderService,
                     ordersToCancel,

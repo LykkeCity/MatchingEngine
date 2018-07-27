@@ -23,6 +23,7 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.lang.IllegalArgumentException
@@ -35,6 +36,7 @@ import java.util.concurrent.BlockingQueue
 class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val baseAsset: Asset,
                            private val quotingAsset: Asset,
+                           private val limitOrderInputValidator: LimitOrderInputValidator,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            ordersToCancel: Collection<LimitOrder>,
@@ -370,6 +372,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    assetPair: AssetPair,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
+
+        limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset)
 
         if (order.clientId != clientId) {
             return OrderValidationResult(false, "${orderInfo(order)} has invalid clientId: ${order.clientId}", OrderStatus.Cancelled)
