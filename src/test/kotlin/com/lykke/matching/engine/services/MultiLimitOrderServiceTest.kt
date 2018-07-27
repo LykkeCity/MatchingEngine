@@ -789,6 +789,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
                 ),
                 cancel = true, ordersFee = listOf(), ordersFees = listOf()))
 
+        testBalanceHolderWrapper.updateBalance(marketMaker, "USD", 6.0)
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = client, price = 1.15, volume = -5.5)))
 
         clearMessageQueues()
