@@ -26,7 +26,8 @@ import java.util.concurrent.BlockingQueue
 class CashInOutPreprocessor(
         private val cashInOutQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
+        private val databaseAccessor: CashOperationIdDatabaseAccessor
+): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)

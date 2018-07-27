@@ -17,9 +17,9 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.stereotype.Component
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component

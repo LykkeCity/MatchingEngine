@@ -52,6 +52,9 @@ class AllOrdersCancellerTest: AbstractTest() {
     }
 
     @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
     private lateinit var allOrdersCanceller: AllOrdersCanceller
 
     @Before
@@ -69,10 +72,10 @@ class AllOrdersCancellerTest: AbstractTest() {
     @Test
     fun testCancelAllOrders() {
         //given
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -0.25)))
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -0.25)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = 10.0,
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 10.0, lowerPrice = 10.5
         )))
@@ -105,7 +108,7 @@ class AllOrdersCancellerTest: AbstractTest() {
     @Test
     fun testCancelAllOrdersWithRemovedAssetPairs() {
         //given
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(uid = "order1", clientId = "Client1", assetId = "BTCUSD", price = 6000.0, volume = 1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(uid = "order1", clientId = "Client1", assetId = "BTCUSD", price = 6000.0, volume = 1.0)))
 
         testDictionariesDatabaseAccessor.clear()
         initServices()

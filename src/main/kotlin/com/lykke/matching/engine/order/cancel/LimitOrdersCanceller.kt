@@ -18,7 +18,7 @@ import java.util.*
 import java.util.concurrent.BlockingQueue
 
 class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
-                           assetsPairsHolder: AssetsPairsHolder,
+                           private val assetsPairsHolder: AssetsPairsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
@@ -62,7 +62,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                 .map { it.assetPairId }
                 .filter(Objects::nonNull)
                 .forEach {
-                    genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, it, date)
+                    genericLimitOrderProcessor.checkAndProcessStopOrder(messageId, assetsPairsHolder.getAssetPair(it) , date)
                 }
     }
 
