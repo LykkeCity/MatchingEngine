@@ -102,33 +102,6 @@ class StopLimitOrderTest : AbstractTest() {
     }
 
     @Test
-    fun testInvalidPrice() {
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
-                clientId = "Client1", assetId = "BTCUSD", volume = -1.01,
-                type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.0, lowerPrice = 9000.0,
-                upperLimitPrice = 9500.0, upperPrice = 9100.0
-        )))
-
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(1, testClientLimitOrderListener.getCount())
-        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
-        assertEquals(1, report.orders.size)
-        assertEquals(OrderStatus.InvalidPrice.name, report.orders.first().order.status)
-
-        assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
-        assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", false).size)
-
-        assertEquals(1, clientsEventsQueue.size)
-        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
-        assertEquals(executionEvent.header.eventType, MessageType.LIMIT_ORDER.name)
-        assertEquals(executionEvent.header.messageType, OutgoingMessageType.ORDER)
-        assertEquals(1, executionEvent.orders.size)
-        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.first().status)
-        assertEquals(OrderRejectReason.INVALID_PRICE, executionEvent.orders.first().rejectReason)
-        assertEquals(0, executionEvent.balanceUpdates!!.size)
-    }
-
-    @Test
     fun testAddStopLimitOrder() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "BTCUSD", volume = -0.01,

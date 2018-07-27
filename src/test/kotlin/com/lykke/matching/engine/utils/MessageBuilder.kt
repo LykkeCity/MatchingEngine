@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
@@ -17,6 +18,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
@@ -354,6 +356,13 @@ class MessageBuilder (private var singleLimitOrderContextParser: SingleLimitOrde
         order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
-        return singleLimitOrderContextParser.parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test")).messageWrapper
+        val messageWrapper = singleLimitOrderContextParser
+                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
+                .messageWrapper
+
+        val singleLimitContext = messageWrapper.context as SingleLimitContext
+        singleLimitContext.validationResult = OrderValidationResult(true)
+
+        return messageWrapper
     }
 }

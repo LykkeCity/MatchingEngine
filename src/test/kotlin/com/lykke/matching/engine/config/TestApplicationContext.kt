@@ -390,7 +390,7 @@ open class TestApplicationContext {
 
 
     @Bean
-    open fun limitOrderBusinessValidator(applicationSettingsCache: ApplicationSettingsCache, assetsPairsHolder: AssetsPairsHolder): LimitOrderBusinessValidator {
+    open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {
         return LimitOrderBusinessValidatorImpl()
     }
 }

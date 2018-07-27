@@ -13,7 +13,8 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 
-class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSettingsCache, val assetsPairHolder: AssetsPairsHolder) : LimitOrderInputValidator {
+class LimitOrderInputValidatorImpl(private val applicationSettingsCache: ApplicationSettingsCache,
+                                   private val assetsPairHolder: AssetsPairsHolder) : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
@@ -68,16 +69,12 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
 
     fun validateLimitPrices(singleLimitContext: SingleLimitContext) {
         val order = singleLimitContext.limitOrder
-        var checked = false
-        try {
-            if ((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) return
-            if ((order.upperLimitPrice == null).xor(order.upperPrice == null)) return
-            if (order.lowerLimitPrice != null && (order.lowerLimitPrice <= BigDecimal.ZERO || order.lowerPrice!! <= BigDecimal.ZERO)) return
-            if (order.upperLimitPrice != null && (order.upperLimitPrice <= BigDecimal.ZERO || order.upperPrice!! <= BigDecimal.ZERO)) return
-            if (order.lowerLimitPrice != null && order.upperLimitPrice != null && order.lowerLimitPrice >= order.upperLimitPrice) return
-            checked = true
-        } finally {
-            if (!checked) throw OrderValidationException(OrderStatus.InvalidPrice, "limit prices are invalid")
+        if (((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) ||
+                ((order.upperLimitPrice == null).xor(order.upperPrice == null)) ||
+                (order.lowerLimitPrice != null && (order.lowerLimitPrice <= BigDecimal.ZERO || order.lowerPrice!! <= BigDecimal.ZERO)) ||
+                (order.upperLimitPrice != null && (order.upperLimitPrice <= BigDecimal.ZERO || order.upperPrice!! <= BigDecimal.ZERO)) ||
+                (order.lowerLimitPrice != null && order.upperLimitPrice != null && order.lowerLimitPrice >= order.upperLimitPrice)) {
+            throw OrderValidationException(OrderStatus.InvalidPrice, "limit prices are invalid")
         }
     }
 
