@@ -373,8 +373,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
 
-        limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset)
-
         if (order.clientId != clientId) {
             return OrderValidationResult(false, "${orderInfo(order)} has invalid clientId: ${order.clientId}", OrderStatus.Cancelled)
          }
@@ -383,6 +381,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
 
         try {
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset)
             businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)
