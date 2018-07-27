@@ -384,12 +384,20 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             orderBook.addOrder(order)
             ordersToAdd.add(order)
+            if (order.isBuySide()) {
+                buySideOrderBookChanged = true
+            } else {
+                sellSideOrderBookChanged = true
+            }
         }
 
         availableBalances[limitAsset.assetId] = matchingResult.marketBalance!!
 
-        buySideOrderBookChanged = true
-        sellSideOrderBookChanged = true
+        if (order.isBuySide()) {
+            sellSideOrderBookChanged = true
+        } else {
+            buySideOrderBookChanged = true
+        }
         processedOrders.add(ProcessedOrder(order, true))
         return true
     }
