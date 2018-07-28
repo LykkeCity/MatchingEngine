@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
@@ -25,6 +26,7 @@ import java.util.concurrent.BlockingQueue
 class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                                   private val singleLimitOrderBusinessValidator: LimitOrderBusinessValidator,
                                   private val limitOrderInputValidator: LimitOrderInputValidator,
+                                  private val settingsCache: ApplicationSettingsCache,
                                   private val genericLimitOrderService: GenericLimitOrderService,
                                   private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -66,6 +68,8 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                     date,
                     clientId,
                     assetPair,
+                    settingsCache.isAssetDisabled(assetPair.baseAssetId),
+                    settingsCache.isAssetDisabled(assetPair.quotingAssetId),
                     orderBook,
                     payBackBaseReserved,
                     payBackQuotingReserved,

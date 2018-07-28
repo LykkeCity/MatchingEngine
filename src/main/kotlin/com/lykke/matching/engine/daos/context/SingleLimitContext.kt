@@ -15,6 +15,8 @@ class SingleLimitContext(val id: String?,
                          val assetPair: AssetPair,
                          val baseAsset: Asset,
                          val quotingAsset: Asset,
+                         val baseAssetDisabled: Boolean,
+                         val quotingAssetDisabled: Boolean,
                          val limitAsset: Asset,
                          val isTrustedClient: Boolean,
                          val processedMessage: ProcessedMessage?,
@@ -28,6 +30,8 @@ class SingleLimitContext(val id: String?,
             builder.assetPair,
             builder.baseAsset,
             builder.quotingAsset,
+            builder.baseAssetDisabled,
+            builder.quotingAssetDisabled,
             builder.limitAsset,
             builder.isTrustedClient,
             builder.processedMessage)
@@ -42,6 +46,8 @@ class SingleLimitContext(val id: String?,
         lateinit var baseAsset: Asset
         lateinit var quotingAsset: Asset
         lateinit var limitAsset: Asset
+        var baseAssetDisabled: Boolean = false
+        var quotingAssetDisabled: Boolean = false
         var isTrustedClient: Boolean = false
         var isCancelOrders: Boolean = false
 
@@ -56,6 +62,8 @@ class SingleLimitContext(val id: String?,
         fun quotingAsset(asset: Asset) = apply { this.quotingAsset = asset }
         fun trustedClient(trustedClient: Boolean) = apply { this.isTrustedClient = trustedClient }
         fun limitAsset(limitAsset: Asset) = apply {this.limitAsset = limitAsset}
+        fun baseAssetDisabled(baseAssetDisabled: Boolean) = apply {this.baseAssetDisabled = baseAssetDisabled}
+        fun quotingAssetDisabled(quotingAssetDisabled: Boolean) = apply {this.quotingAssetDisabled = quotingAssetDisabled}
 
         fun build() = SingleLimitContext(this)
     }

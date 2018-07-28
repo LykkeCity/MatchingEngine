@@ -5,9 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.context.SingleLimitContext
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -17,8 +15,7 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class LimitOrderInputValidatorImpl(private val applicationSettingsCache: ApplicationSettingsCache,
-                                   private val assetsPairHolder: AssetsPairsHolder) : LimitOrderInputValidator {
+class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
@@ -28,32 +25,33 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
     private fun validateLimitOrder(singleLimitContext: SingleLimitContext) {
         if (!singleLimitContext.isTrustedClient) {
             validateFee(singleLimitContext.limitOrder)
-            validateAssets(singleLimitContext.assetPair)
+            validateAssets(singleLimitContext.baseAssetDisabled, singleLimitContext.quotingAssetDisabled)
         }
 
         validatePrice(singleLimitContext.limitOrder)
-        validateVolume(singleLimitContext.limitOrder)
+        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
     }
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
-                           order: LimitOrder,
-                           assetPair: AssetPair,
-                           baseAsset: Asset) {
+                                    order: LimitOrder,
+                                    assetPair: AssetPair,
+                                    baseAssetDisabled: Boolean,
+                                    quotingAssetDisabled: Boolean,
+                                    baseAsset: Asset) {
         if (!isTrustedClient) {
             validateFee(order)
-            validateAssets(assetPair)
+            validateAssets(baseAssetDisabled, quotingAssetDisabled)
         }
 
         validatePrice(order)
-        validateVolume(order)
+        validateVolume(order, assetPair)
         validatePriceAccuracy(order, assetPair)
         validateVolumeAccuracy(order, baseAsset)
     }
 
-    override fun checkVolume(order: Order): Boolean {
-        val assetPair = assetsPairHolder.getAssetPair(order.assetPairId)
+    override fun checkVolume(order: Order, assetPair: AssetPair): Boolean {
         val volume = order.getAbsVolume()
         val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
         return minVolume == null || volume >= minVolume
@@ -63,9 +61,9 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
         validateFee(singleLimitContext.limitOrder)
-        validateAssets(singleLimitContext.assetPair)
+        validateAssets(singleLimitContext.baseAssetDisabled, singleLimitContext.quotingAssetDisabled)
         validateLimitPrices(singleLimitContext.limitOrder)
-        validateVolume(singleLimitContext.limitOrder)
+        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
     }
@@ -76,8 +74,8 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
         }
     }
 
-    fun validateAssets(assetPair: AssetPair) {
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
+    fun validateAssets(baseAssetDisabled: Boolean, quotingAssetDisabled: Boolean) {
+        if (baseAssetDisabled || quotingAssetDisabled) {
             throw OrderValidationException(OrderStatus.DisabledAsset, "disabled asset")
         }
     }
@@ -98,8 +96,8 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
         }
     }
 
-    fun validateVolume(limitOrder: LimitOrder) {
-        if (!checkVolume(limitOrder)) {
+    fun validateVolume(limitOrder: LimitOrder, assetPair: AssetPair) {
+        if (!checkVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
         }
     }
