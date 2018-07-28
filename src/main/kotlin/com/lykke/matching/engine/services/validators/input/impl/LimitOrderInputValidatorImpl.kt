@@ -104,7 +104,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     }
 
     fun validateVolume(limitOrder: LimitOrder, assetPair: AssetPair) {
-        if (!checkMinVolume(limitOrder)) {
+        if (!checkMinVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
         }
 
