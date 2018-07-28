@@ -2,8 +2,6 @@ package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitContext
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -32,8 +30,6 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val stopLimitOrderService: GenericStopLimitOrderService,
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
                               private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                              private val assetsHolder: AssetsHolder,
-                              private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
                               private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
@@ -43,8 +39,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
     fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
         val limitOrder = singleLimitContext.limitOrder
 
-        val assetPair = assetsPairsHolder.getAssetPair(limitOrder.assetPairId)
-        val limitAsset = assetsHolder.getAsset(if (limitOrder.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+        val limitAsset = singleLimitContext.limitAsset
         val limitVolume = if (limitOrder.isBuySide())
             NumberUtils.setScaleRoundUp(limitOrder.volume * (limitOrder.upperPrice ?: limitOrder.lowerPrice)!!, limitAsset.accuracy)
         else
