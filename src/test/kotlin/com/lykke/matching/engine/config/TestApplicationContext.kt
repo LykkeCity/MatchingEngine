@@ -263,8 +263,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun multiLimitOrderValidator(assetsHolder: AssetsHolder, limitOrderInputValidator: LimitOrderInputValidator): MultiLimitOrderValidator {
-        return MultiLimitOrderValidatorImpl(assetsHolder, limitOrderInputValidator)
+    open fun multiLimitOrderValidator(assetsHolder: AssetsHolder, limitOrderInputValidator: LimitOrderInputValidator,
+                                      assetPairHolder: AssetsPairsHolder): MultiLimitOrderValidator {
+        return MultiLimitOrderValidatorImpl(assetsHolder, assetPairHolder, limitOrderInputValidator)
     }
 
     @Bean
@@ -299,6 +300,7 @@ open class TestApplicationContext {
                                          balancesHolder: BalancesHolder, genericLimitOrderService: GenericLimitOrderService,
                                          applicationSettingsCache: ApplicationSettingsCache,
                                          limitOrderInputValidator: LimitOrderInputValidator,
+                                         settingsCache: ApplicationSettingsCache,
                                          clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                          lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                          orderBookQueue: BlockingQueue<OrderBook>,
@@ -307,7 +309,7 @@ open class TestApplicationContext {
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                          messageSender: MessageSender): LimitOrdersProcessorFactory {
-        return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, genericLimitOrderService, clientLimitOrdersQueue,
+        return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, settingsCache, genericLimitOrderService, clientLimitOrdersQueue,
                 lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender)
     }
 
@@ -487,8 +489,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun limitOrderInputValidator(applicationSettingsCache: ApplicationSettingsCache, assetsPairsHolder: AssetsPairsHolder): LimitOrderInputValidator {
-        return LimitOrderInputValidatorImpl(applicationSettingsCache, assetsPairsHolder)
+    open fun limitOrderInputValidator(): LimitOrderInputValidator {
+        return LimitOrderInputValidatorImpl()
     }
 
     @Bean

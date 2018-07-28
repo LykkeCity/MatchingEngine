@@ -12,6 +12,8 @@ interface LimitOrderInputValidator {
     fun validateLimitOrder(isTrustedClient: Boolean,
                            order: LimitOrder,
                            assetPair: AssetPair,
+                           baseAssetDisabled: Boolean,
+                           quotingAssetDisabled: Boolean,
                            baseAsset: Asset)
-    fun checkMinVolume(order: Order): Boolean
+    fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean
 }

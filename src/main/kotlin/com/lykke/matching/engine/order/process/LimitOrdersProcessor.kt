@@ -55,6 +55,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val date: Date,
                            private val clientId: String,
                            private val assetPair: AssetPair,
+                           private val baseAssetDisabled: Boolean,
+                           private val quotingAssetDisabled: Boolean,
                            private val orderBook: AssetOrderBook,
                            payBackBaseReserved: BigDecimal,
                            payBackQuotingReserved: BigDecimal,
@@ -211,7 +213,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
 
-        val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook, assetPair, availableBalance, limitVolume)
+        val orderValidationResult = validateLimitOrder(isTrustedClient, order,
+                orderBook, assetPair, baseAssetDisabled,
+                quotingAssetDisabled, availableBalance, limitVolume)
 
         if (!orderValidationResult.isValid) {
             LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
@@ -405,6 +409,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    order: LimitOrder,
                                    orderBook: AssetOrderBook,
                                    assetPair: AssetPair,
+                                   baseAssetDisabled: Boolean,
+                                   quotingAssetDisabled: Boolean,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
 
@@ -416,7 +422,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
 
         try {
-            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset)
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair,
+                    baseAssetDisabled, quotingAssetDisabled , baseAsset)
             businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)

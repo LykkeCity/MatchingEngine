@@ -56,7 +56,7 @@ class MarketOrderValidatorImpl
     }
 
     private fun isVolumeValid(order: MarketOrder) {
-        if (!limitOrderInputValidator.checkMinVolume(order)) {
+        if (!limitOrderInputValidator.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }

@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services.validators.impl
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
@@ -15,6 +16,7 @@ import java.math.BigDecimal
 
 @Component
 class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
+                                                          private val assetsPairsHolder: AssetsPairsHolder,
                                                           private val limitOrderInputValidator: LimitOrderInputValidator): MultiLimitOrderValidator {
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderValidatorImpl::class.java.name)
@@ -59,8 +61,9 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
     }
 
-    private fun isVolumeValid(order: LimitOrder, assetPair: AssetPair) {
-        if (!limitOrderInputValidator.checkMinVolume(order)) {
+    private fun isVolumeValid(order: LimitOrder) {
+        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+        if (!limitOrderInputValidator.checkMinVolume(order, assetPair)) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }

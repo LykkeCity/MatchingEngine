@@ -31,15 +31,12 @@ class GenericLimitOrderProcessorFactory @Autowired constructor(private val gener
                                                                private val singleLimitOrderParser: SingleLimitOrderContextParser,
                                                                private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                                private val messageSender: MessageSender) {
-
     fun create(logger: Logger): GenericLimitOrderProcessor {
         return GenericLimitOrderProcessor(genericLimitOrderService,
                 genericStopLimitOrderService,
                 singleLimitOrderParser,
                 clientLimitOrdersQueue,
                 limitOrdersProcessorFactory,
-                assetsHolder,
-                assetsPairsHolder,
                 balancesHolder,
                 limitOrderBusinessValidator,
                 MatchingEngine(logger, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor),

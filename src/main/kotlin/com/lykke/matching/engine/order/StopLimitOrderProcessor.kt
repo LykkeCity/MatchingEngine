@@ -33,8 +33,6 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val stopLimitOrderService: GenericStopLimitOrderService,
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
                               private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                              private val assetsHolder: AssetsHolder,
-                              private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
                               private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
                               private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
@@ -44,8 +42,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
     fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
         val order = singleLimitContext.limitOrder
 
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        val limitAsset = assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+        val limitAsset = singleLimitContext.limitAsset
         val limitVolume = if (order.isBuySide()) {
             val limitPrice = order.upperPrice ?: order.lowerPrice
             if (limitPrice != null)
