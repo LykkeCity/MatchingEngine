@@ -33,6 +33,7 @@ class MarketOrderValidatorImpl
         isAssetKnown(order)
         isAssetEnabled(order)
         isVolumeValid(order)
+        validateValue(order)
         isFeeValid(feeInstruction, feeInstructions, order)
         isOrderBookValid(order, orderBook)
         isVolumeAccuracyValid(order)
@@ -55,9 +56,24 @@ class MarketOrderValidatorImpl
     }
 
     private fun isVolumeValid(order: MarketOrder) {
-        if (!limitOrderInputValidator.checkVolume(order)) {
+        if (!limitOrderInputValidator.checkMinVolume(order)) {
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
+        }
+        val assetPair = getAssetPair(order)
+
+        if (order.isStraight() && assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
+            LOGGER.info("Too large volume for $order")
+            throw OrderValidationException(OrderStatus.InvalidVolume)
+        }
+    }
+
+    private fun validateValue(order: MarketOrder) {
+        val assetPair = getAssetPair(order)
+
+        if (!order.isStraight() && assetPair.maxValue != null && order.getAbsVolume() > assetPair.maxValue) {
+            LOGGER.info("Too large value for $order")
+            throw OrderValidationException(OrderStatus.InvalidVolume)
         }
     }
 

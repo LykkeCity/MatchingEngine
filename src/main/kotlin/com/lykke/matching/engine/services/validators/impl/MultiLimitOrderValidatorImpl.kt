@@ -22,7 +22,8 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
 
     override fun performValidation(order: LimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook) {
         isPriceValid(order)
-        isVolumeValid(order)
+        isVolumeValid(order, assetPair)
+        isValueValid(order, assetPair)
         isSpreadValid(orderBook, order)
         isVolumeAccuracyValid(order, assetPair)
         isPriceAccuracyValid(order, assetPair)
@@ -58,10 +59,21 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
     }
 
-    private fun isVolumeValid(order: LimitOrder) {
-        if (!limitOrderInputValidator.checkVolume(order)) {
+    private fun isVolumeValid(order: LimitOrder, assetPair: AssetPair) {
+        if (!limitOrderInputValidator.checkMinVolume(order)) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
+        }
+        if (assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large volume")
+            throw OrderValidationException(OrderStatus.InvalidVolume)
+        }
+    }
+
+    private fun isValueValid(order: LimitOrder, assetPair: AssetPair) {
+        if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large value")
+            throw OrderValidationException(OrderStatus.InvalidVolume)
         }
     }
 

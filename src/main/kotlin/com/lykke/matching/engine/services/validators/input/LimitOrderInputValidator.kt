@@ -13,5 +13,5 @@ interface LimitOrderInputValidator {
                            order: LimitOrder,
                            assetPair: AssetPair,
                            baseAsset: Asset)
-    fun checkVolume(order: Order): Boolean
+    fun checkMinVolume(order: Order): Boolean
 }

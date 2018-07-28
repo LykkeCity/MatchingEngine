@@ -467,8 +467,9 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser): MessageBuilder {
-        return MessageBuilder(cashInOutContextParser, cashTransferContextParser)
+    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser,
+                            cashInOutContextParser: CashInOutContextParser, singleLimitOrderContextParser: SingleLimitOrderContextParser): MessageBuilder {
+        return MessageBuilder(cashInOutContextParser, cashTransferContextParser, singleLimitOrderContextParser)
     }
 
     @Bean
@@ -489,7 +490,6 @@ open class TestApplicationContext {
     open fun limitOrderInputValidator(applicationSettingsCache: ApplicationSettingsCache, assetsPairsHolder: AssetsPairsHolder): LimitOrderInputValidator {
         return LimitOrderInputValidatorImpl(applicationSettingsCache, assetsPairsHolder)
     }
-
 
     @Bean
     open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {

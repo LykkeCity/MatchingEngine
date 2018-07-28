@@ -77,45 +77,45 @@ class LimitOrderInputValidatorTest {
 
     @Test
     fun testCheckVolume() {
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.1)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.00000001)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.1)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.00000001)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = 1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = 0.1)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = 0.09)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = 1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = 0.1)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = 0.09)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = -1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = -0.1)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = -0.09)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = -1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = -0.1)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = -0.09)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.1)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.09)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.1)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.09)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.1)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.09)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.1)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.09)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.1)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.00000001)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.1)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.00000001)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.1)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.09)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.1)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.09)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -1.0)) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.1)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.09)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -1.0)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.1)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.09)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 1.0, straight = false)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.1, straight = false)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.09, straight = false)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 1.0, straight = false)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.1, straight = false)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.09, straight = false)) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -1.0, straight = false)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.1, straight = false)) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.09, straight = false)) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -1.0, straight = false)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.1, straight = false)) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.09, straight = false)) }
     }
 
     @Test(expected = OrderValidationException::class)
@@ -188,6 +188,23 @@ class LimitOrderInputValidatorTest {
     }
 
     @Test(expected = OrderValidationException::class)
+    fun testEmptyPrice() {
+        //given
+        val singleLimitContextBuilder = getSingleLimitContextBuilder()
+        singleLimitContextBuilder.limitOrder(getValidStopOrder(null, null, null, null))
+        singleLimitContextBuilder.assetPair(MIN_VOLUME_ASSET_PAIR)
+
+        //when
+        try {
+            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
+            throw e
+        }
+    }
+
+    @Test(expected = OrderValidationException::class)
     fun testInvalidPriceAccuracy() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
@@ -244,7 +261,7 @@ class LimitOrderInputValidatorTest {
 
         //when
         try {
-            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+            limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
         } catch (e: OrderValidationException) {
             //then
             assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
@@ -256,7 +273,7 @@ class LimitOrderInputValidatorTest {
     fun testValidStopOrder() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(fee = getFee()))
+        singleLimitContextBuilder.limitOrder(getValidStopOrder(BigDecimal.ONE, BigDecimal.ONE, null, null))
 
         //when
         try {

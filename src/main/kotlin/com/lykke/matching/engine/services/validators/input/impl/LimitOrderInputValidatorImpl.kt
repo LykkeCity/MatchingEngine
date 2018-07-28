@@ -38,9 +38,9 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
     }
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
-                           order: LimitOrder,
-                           assetPair: AssetPair,
-                           baseAsset: Asset) {
+                                    order: LimitOrder,
+                                    assetPair: AssetPair,
+                                    baseAsset: Asset) {
         if (!isTrustedClient) {
             validateFee(order)
             validateAssets(assetPair)
@@ -48,11 +48,12 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
 
         validatePrice(order)
         validateVolume(order)
+        validateValue(order)
         validatePriceAccuracy(order, assetPair)
         validateVolumeAccuracy(order, baseAsset)
     }
 
-    override fun checkVolume(order: Order): Boolean {
+    override fun checkMinVolume(order: Order): Boolean {
         val assetPair = assetsPairHolder.getAssetPair(order.assetPairId)
         val volume = order.getAbsVolume()
         val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
@@ -89,7 +90,8 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
     }
 
     fun validateLimitPrices(order: LimitOrder) {
-        if (((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) ||
+        if ((order.lowerLimitPrice == null && order.lowerPrice == null && order.upperLimitPrice == null && order.upperPrice == null) ||
+                ((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) ||
                 ((order.upperLimitPrice == null).xor(order.upperPrice == null)) ||
                 (order.lowerLimitPrice != null && (order.lowerLimitPrice <= BigDecimal.ZERO || order.lowerPrice!! <= BigDecimal.ZERO)) ||
                 (order.upperLimitPrice != null && (order.upperLimitPrice <= BigDecimal.ZERO || order.upperPrice!! <= BigDecimal.ZERO)) ||
@@ -98,9 +100,22 @@ class LimitOrderInputValidatorImpl(private val applicationSettingsCache: Applica
         }
     }
 
+    fun validateValue(order: LimitOrder) {
+        val assetPair = assetsPairHolder.getAssetPair(order.assetPairId)
+        if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "value is too large")
+        }
+    }
+
     fun validateVolume(limitOrder: LimitOrder) {
-        if (!checkVolume(limitOrder)) {
+        val assetPair = assetsPairHolder.getAssetPair(limitOrder.assetPairId)
+        if (!checkMinVolume(limitOrder)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
+        }
+
+
+        if (assetPair.maxVolume != null && limitOrder.getAbsVolume() > assetPair.maxVolume) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
         }
     }
 

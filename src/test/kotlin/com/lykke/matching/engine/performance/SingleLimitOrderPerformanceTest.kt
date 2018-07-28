@@ -11,8 +11,6 @@ import java.math.BigDecimal
 @Ignore
 class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
 
-    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser)
-
     override fun initServices() {
         super.initServices()
 

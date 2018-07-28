@@ -89,8 +89,4 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
-
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        //do nothing
-    }
 }

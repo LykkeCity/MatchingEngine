@@ -3,7 +3,6 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -16,8 +15,6 @@ import java.util.*
 
 @Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
-
-    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser)
 
     override fun initServices() {
         super.initServices()
