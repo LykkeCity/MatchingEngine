@@ -11,7 +11,7 @@ import org.apache.log4j.Logger
 
 class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
     companion object {
-        val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
+        private val LOGGER = Logger.getLogger(SingleLimitOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${SingleLimitOrderService::class.java.name}.stats")
     }
 

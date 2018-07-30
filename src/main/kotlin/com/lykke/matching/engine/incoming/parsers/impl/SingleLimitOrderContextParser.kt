@@ -19,17 +19,17 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
+import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
-import java.util.logging.Logger
 
 @Component
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
                                     val applicationSettingsCache: ApplicationSettingsCache) : ContextParser<SingleLimitOrderParsedData> {
     companion object {
-        val LOGGER = Logger.getLogger(SingleLimitOrderContextParser::class.java.name)
+        private val LOGGER = Logger.getLogger(SingleLimitOrderContextParser::class.java.name)
     }
 
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {

@@ -6,7 +6,9 @@ import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedDat
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -21,8 +23,8 @@ import javax.annotation.PostConstruct
 class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                              private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>) : MessagePreprocessor, Thread(LimitOrderPreprocessor::class.java.name) {
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
-        val METRICS_LOGGER = MetricsLogger.getLogger()
+        private val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
+        private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @Autowired
@@ -35,12 +37,12 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
-        singleLimitContext.validationResult = getOrderValidationResult(singleLimitOrderParsedData)
+        singleLimitContext.validationResult = getValidationResult(singleLimitOrderParsedData)
 
         preProcessedMessageQueue.put(singleLimitOrderParsedData.messageWrapper)
     }
 
-    private fun getOrderValidationResult(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
+    private fun getValidationResult(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
         try {
@@ -52,6 +54,7 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)
         }
+
         return OrderValidationResult(true)
     }
 
@@ -74,6 +77,13 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
+        } else {
+            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
+                    .setStatus(status.type))
+        }
+    }
 
     }
 }
