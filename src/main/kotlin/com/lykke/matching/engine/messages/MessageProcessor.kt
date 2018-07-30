@@ -323,9 +323,11 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             service.processMessage(message)
 
             message.processedMessage()?.let {
-                processedMessagesCache.addMessage(it)
-                if (!message.processedMessagePersisted) {
-                    persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
+                if (!message.triedToPersist) {
+                    message.persisted = persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
+                }
+                if (message.persisted) {
+                    processedMessagesCache.addMessage(it)
                 }
             }
 

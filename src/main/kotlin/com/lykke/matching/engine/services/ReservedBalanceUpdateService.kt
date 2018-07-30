@@ -43,7 +43,8 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
                 message.assetId,
                 BigDecimal.valueOf(message.reservedAmount),
                 false)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(MessageStatus.RUNTIME.type))
             LOGGER.info("Unable to save balance (client ${message.clientId}, asset ${message.assetId}, reserved ${NumberUtils.roundForPrint(message.reservedAmount)})")
