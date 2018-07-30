@@ -195,6 +195,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 quotingAssetDisabled, availableBalance, limitVolume)
 
         if (!orderValidationResult.isValid) {
+            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
             processInvalidOrder(orderValidationResult, order)
             return
         }

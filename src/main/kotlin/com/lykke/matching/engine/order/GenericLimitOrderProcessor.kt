@@ -3,8 +3,6 @@ package com.lykke.matching.engine.order
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.context.SingleLimitContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
