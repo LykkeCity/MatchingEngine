@@ -80,6 +80,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         order.clientId,
                         limitAsset.assetId,
                         newReservedBalance)
+                messageWrapper.triedToPersist = true
+                messageWrapper.persisted = updated
                 if (updated) {
                     clientBalanceUpdates.add(ClientBalanceUpdate(order.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))
                     balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId, MessageType.LIMIT_ORDER.name, Date(),
@@ -155,6 +157,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 order.clientId,
                 limitAsset.assetId,
                 newReservedBalance)
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
 
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, order)
