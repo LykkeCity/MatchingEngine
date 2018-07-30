@@ -45,7 +45,8 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                     message.clientId,
                     message.assetId,
                     BigDecimal.valueOf(message.amount))
-            messageWrapper.processedMessagePersisted = true
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = updated
             if (updated) {
                 balancesHolder.sendBalanceUpdate(BalanceUpdate(message.uid.toString(),
                         MessageType.BALANCE_UPDATE.name, Date(),
@@ -74,7 +75,8 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                     message.clientId,
                     message.assetId,
                     BigDecimal.valueOf(message.amount))
-            messageWrapper.processedMessagePersisted = true
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = updated
             if (!updated) {
                 messageWrapper.writeNewResponse(
                         ProtocolMessages.NewResponse.newBuilder()
