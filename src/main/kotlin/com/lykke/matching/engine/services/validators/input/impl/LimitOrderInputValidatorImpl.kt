@@ -23,15 +23,12 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     }
 
     private fun validateLimitOrder(singleLimitContext: SingleLimitContext) {
-        if (!singleLimitContext.isTrustedClient) {
-            validateFee(singleLimitContext.limitOrder)
-            validateAssets(singleLimitContext.baseAssetDisabled, singleLimitContext.quotingAssetDisabled)
-        }
-
-        validatePrice(singleLimitContext.limitOrder)
-        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
-        validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
-        validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
+        validateLimitOrder(singleLimitContext.isTrustedClient,
+                singleLimitContext.limitOrder,
+                singleLimitContext.assetPair,
+                singleLimitContext.baseAssetDisabled,
+                singleLimitContext.quotingAssetDisabled,
+                singleLimitContext.baseAsset)
     }
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
@@ -49,12 +46,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         validateVolume(order, assetPair)
         validatePriceAccuracy(order, assetPair)
         validateVolumeAccuracy(order, baseAsset)
-    }
-
-    override fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean {
-        val volume = order.getAbsVolume()
-        val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
+        validateValue(order, assetPair)
     }
 
     override fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
@@ -66,6 +58,12 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
+    }
+
+    override fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean {
+        val volume = order.getAbsVolume()
+        val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
+        return minVolume == null || volume >= minVolume
     }
 
     fun validateFee(order: LimitOrder) {
@@ -107,7 +105,6 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         if (!checkMinVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
         }
-
 
         if (assetPair.maxVolume != null && limitOrder.getAbsVolume() > assetPair.maxVolume) {
             throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")

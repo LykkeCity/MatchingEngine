@@ -43,7 +43,7 @@ class LimitOrderInputValidatorTest {
         val DISABLED_ASSET_PAIR = AssetPair("JPYUSD", "JPY", "USD", 8)
         val MIN_VOLUME_ASSET_PAIR = AssetPair("EURUSD", "EUR", "USD", 5,
                 BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2))
-        val BTC_USD_ASSET_PAIR = AssetPair("BTCUSD", "BTC", "USD", 8)
+        val BTC_USD_ASSET_PAIR = AssetPair("BTCUSD", "BTC", "USD", 8, maxValue = BigDecimal.valueOf(10000.0))
     }
 
     @Autowired
@@ -252,6 +252,22 @@ class LimitOrderInputValidatorTest {
         }
     }
 
+    @Test(expected = OrderValidationException::class)
+    fun testInvalidMaxVolume() {
+        //given
+        val singleLimitContextBuilder = getSingleLimitContextBuilder()
+        singleLimitContextBuilder.limitOrder(getValidLimitOrder(price = BigDecimal.valueOf(10000.0), volume = BigDecimal.valueOf(-1.1), fee = getFee()))
+
+        //when
+        try {
+            limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.InvalidVolume, e.orderStatus)
+            throw e
+        }
+    }
+
     @Test
     fun testValidLimitOrder() {
         //given
@@ -295,7 +311,7 @@ class LimitOrderInputValidatorTest {
                 .messageId("test")
                 .limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee())))
                 .orderProcessingStartTime(Date())
-                .assetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+                .assetPair(BTC_USD_ASSET_PAIR)
                 .baseAsset(Asset("BTC", 5))
                 .quotingAsset(Asset("USD", 2))
                 .trustedClient(false)
