@@ -84,6 +84,4 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
                     .setStatus(status.type))
         }
     }
-
-    }
 }
