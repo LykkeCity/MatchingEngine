@@ -19,7 +19,7 @@ import javax.annotation.PostConstruct
 
 @Component
 class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                             private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor, Thread(LimitOrderPreprocessor::class.java.name) {
+                             private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>) : MessagePreprocessor, Thread(LimitOrderPreprocessor::class.java.name) {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -35,33 +35,20 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
-        singleLimitContext.validationResult = isOrderValid(singleLimitOrderParsedData)
+        singleLimitContext.validationResult = getOrderValidationResult(singleLimitOrderParsedData)
 
         preProcessedMessageQueue.put(singleLimitOrderParsedData.messageWrapper)
     }
 
-    private fun isOrderValid(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
+    private fun getOrderValidationResult(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
 
-        return if (singleLimitContext.limitOrder.type == LimitOrderType.LIMIT) {
-            validateLimitOrder(singleLimitOrderParsedData)
-        } else {
-            validateStopOrder(singleLimitOrderParsedData)
-        }
-    }
-
-    private fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
         try {
-            limitOrderInputValidator.validateLimitOrder(singleLimitOrderParsedData)
-        } catch (e: OrderValidationException) {
-            OrderValidationResult(false, e.message, e.orderStatus)
-        }
-        return OrderValidationResult(true)
-    }
-
-    private fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
-        try {
-            limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
+            if (singleLimitContext.limitOrder.type == LimitOrderType.LIMIT) {
+                limitOrderInputValidator.validateLimitOrder(singleLimitOrderParsedData)
+            } else {
+                limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
+            }
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)
         }
@@ -74,8 +61,8 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
-                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+                LOGGER.error("[${message.sourceIp}]: Got error during limit order message preprocessing: ${exception.message}", exception)
+                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during limit order message preprocessing", exception)
                 writeResponse(message, MessageStatus.RUNTIME)
             }
         }
@@ -87,6 +74,6 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
     }
 }
