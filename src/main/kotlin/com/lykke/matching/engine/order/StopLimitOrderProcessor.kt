@@ -84,11 +84,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         emptyList(),
                         ordersToCancel) else null
             val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-            messageWrapper.processedMessagePersisted = true
             val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
                     null,
                     orderBooksPersistenceData,
                     sequenceNumber)
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = updated
             if (updated) {
                 walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.LIMIT_ORDER.name, messageWrapper.messageId!!)
                 stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, ordersToCancel, now)
@@ -157,13 +158,14 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         order.reservedLimitVolume = limitVolume
         newStopOrderBook.add(order)
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        messageWrapper.processedMessagePersisted = true
         val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
                 null,
                 OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId, order.isBuySide(), newStopOrderBook)),
                         listOf(order),
                         ordersToCancel),
                 sequenceNumber)
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, order)
             return
