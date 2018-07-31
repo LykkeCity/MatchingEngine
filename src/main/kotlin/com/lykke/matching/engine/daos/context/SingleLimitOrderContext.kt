@@ -41,14 +41,14 @@ class SingleLimitOrderContext(val uid: String?,
         val order = this.limitOrder
 
         return "id: $uid" +
-                ", messageId $messageId" +
-                ", order processing start time $orderProcessingStartTime" +
+                ", messageId: $messageId" +
+                ", orderProcessingStartTime: $orderProcessingStartTime" +
                 ", type: ${order.type}" +
                 ", client: ${order.clientId}" +
-                ", trusted client $isTrustedClient" +
+                ", isTrustedClient: $isTrustedClient" +
                 ", assetPair: ${order.assetPairId}" +
-                ", base asset disabled $baseAssetDisabled" +
-                ", quoting asset disabled $quotingAssetDisabled" +
+                ", baseAssetDisabled: $baseAssetDisabled" +
+                ", quotingAssetDisabled: $quotingAssetDisabled" +
                 ", volume: ${NumberUtils.roundForPrint(order.volume)}" +
                 ", price: ${NumberUtils.roundForPrint(order.price)}" +
                 (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
