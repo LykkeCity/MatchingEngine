@@ -15,15 +15,17 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
 class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                                   private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
+                                   private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
+                                   @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                   private val logger: ThrottlingLogger): MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -63,8 +65,14 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                LOGGER.error("[${message.sourceIp}]: Got error during limit order message preprocessing: ${exception.message}", exception)
-                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during limit order message preprocessing", exception)
+                logger.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
+                val singleLimitOrderContext = message.context
+
+                if (singleLimitOrderContext != null) {
+                    logger.error("Context: $singleLimitOrderContext")
+                }
+
+                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
                 writeResponse(message, MessageStatus.RUNTIME)
             }
         }

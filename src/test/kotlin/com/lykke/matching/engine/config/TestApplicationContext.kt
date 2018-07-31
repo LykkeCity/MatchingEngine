@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
+import com.lykke.matching.engine.config.spring.LoggerConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -61,8 +62,8 @@ import com.lykke.matching.engine.services.validators.input.impl.CashTransferOper
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
-import org.mockito.Mockito
-import org.springframework.context.ApplicationContext
+import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -70,7 +71,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
-@Import(QueueConfig::class)
+@Import(QueueConfig::class, LoggerConfig::class)
 open class TestApplicationContext {
 
     @Bean
@@ -484,8 +485,11 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): SingleLimitOrderContextParser {
-        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache)
+    open fun singleLimitOrderContextParser(assetsPairsHolder: AssetsPairsHolder, assetsHolder: AssetsHolder,
+                                           applicationSettingsCache: ApplicationSettingsCache,
+                                           @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                           logger: ThrottlingLogger): SingleLimitOrderContextParser {
+        return SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, logger)
     }
 
     @Bean

@@ -35,6 +35,7 @@ import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBus
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
+import com.lykke.utils.logging.ThrottlingLogger
 import com.lykke.matching.engine.utils.MessageBuilder
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -143,7 +144,8 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
         val limitOrderInputValidator = LimitOrderInputValidatorImpl()
-        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache)
+        val singleLimitOrderPreprocessorLogger = ThrottlingLogger.getLogger(SingleLimitOrderContextParser::class.java.name)
+        singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger)
 
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService,
                 persistenceManager)
@@ -156,7 +158,7 @@ abstract class AbstractPerformanceTest {
                 genericStopLimitOrderService,
                 limitOrdersProcessorFactory,
                 LimitOrderBusinessValidatorImpl(), assetsHolder, assetsPairsHolder,
-                balancesHolder, clientLimitOrdersQueue, feeProcessor, SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache),
+                balancesHolder, clientLimitOrdersQueue, feeProcessor, SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger),
                 messageSequenceNumberHolder, notificationSender)
 
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
