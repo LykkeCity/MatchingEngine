@@ -38,7 +38,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         val context = parseMessage(messageWrapper, orderProcessingStartTime)
 
         messageWrapper.context = context
-        messageWrapper.id = context.id
+        messageWrapper.id = context.uid
         messageWrapper.messageId = context.messageId
         messageWrapper.timestamp = context.processedMessage?.timestamp
 
@@ -49,13 +49,13 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         return getContext(messageId, null, now, order, false,  null)
     }
 
-    private fun getContext(messageId: String, id: String?, now: Date,
+    private fun getContext(messageId: String, uid: String?, now: Date,
                            order: LimitOrder, cancelOrders: Boolean,
                            processedMessage: ProcessedMessage?): SingleLimitOrderContext {
         val builder = SingleLimitOrderContext.Builder()
         val assetPair = getAssetPair(order.assetPairId)
 
-        builder.id(id)
+        builder.uid(uid)
                 .messageId(messageId)
                 .limitOrder(order)
                 .orderProcessingStartTime(now)
@@ -125,11 +125,13 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         val limitOrder = createOrder(message, orderProcessingStartTime)
 
-        LOGGER.info("Got limit order ${incomingMessageInfo(messageId, message, limitOrder)}")
-
-        return getContext(messageId, message.uid, orderProcessingStartTime,
+        val singleLimitOrderContext = getContext(messageId, message.uid, orderProcessingStartTime,
                 limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
+
+        LOGGER.info("Got limit order $singleLimitOrderContext")
+
+        return singleLimitOrderContext
     }
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {
@@ -168,22 +170,5 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
                 previousExternalId = null)
-    }
-
-    private fun incomingMessageInfo(messageId: String?, message: ProtocolMessages.LimitOrder, order: LimitOrder): String {
-        return "id: ${message.uid}" +
-                ", messageId $messageId" +
-                ", type: ${order.type}" +
-                ", client: ${message.clientId}" +
-                ", assetPair: ${message.assetPairId}" +
-                ", volume: ${NumberUtils.roundForPrint(message.volume)}" +
-                ", price: ${NumberUtils.roundForPrint(order.price)}" +
-                (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
-                (if (order.lowerPrice != null) ", lowerPrice: ${NumberUtils.roundForPrint(order.lowerPrice)}" else "") +
-                (if (order.upperLimitPrice != null) ", upperLimitPrice: ${NumberUtils.roundForPrint(order.upperLimitPrice)}" else "") +
-                (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
-                ", cancel: ${message.cancelAllPreviousLimitOrders}" +
-                ", fee: ${order.fee}" +
-                ", fees: ${order.fees}"
     }
 }

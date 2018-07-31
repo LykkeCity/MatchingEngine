@@ -6,6 +6,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
+import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import org.apache.log4j.Logger
 
@@ -23,6 +24,8 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
 
     override fun processMessage(messageWrapper: MessageWrapper) {
         val context = messageWrapper.context as SingleLimitOrderContext
+
+        LOGGER.info("Got limit order messageId: ${context.messageId}, uid: ${context.uid}")
 
         val startTime = System.nanoTime()
         genericLimitOrderProcessor.processOrder(messageWrapper, context)

@@ -38,7 +38,6 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         singleLimitContext.validationResult = getValidationResult(singleLimitOrderParsedData)
-
         preProcessedMessageQueue.put(singleLimitOrderParsedData.messageWrapper)
     }
 
