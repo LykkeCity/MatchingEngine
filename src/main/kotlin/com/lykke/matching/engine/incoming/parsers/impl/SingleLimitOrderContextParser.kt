@@ -18,8 +18,8 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
@@ -27,11 +27,9 @@ import java.util.*
 @Component
 class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
-                                    val applicationSettingsCache: ApplicationSettingsCache) : ContextParser<SingleLimitOrderParsedData> {
-    companion object {
-        private val LOGGER = Logger.getLogger(SingleLimitOrderContextParser::class.java.name)
-    }
-
+                                    val applicationSettingsCache: ApplicationSettingsCache,
+                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
+                                    val logger: Logger) : ContextParser<SingleLimitOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
         val orderProcessingStartTime = Date()
 
@@ -109,10 +107,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, orderProcessingStartTime, Date(oldMessage.timestamp), orderProcessingStartTime, BigDecimal.valueOf(oldMessage.volume), null,
                 type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
-        LOGGER.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
-                "assetPair: ${oldMessage.assetPairId}, " +
-                "volume: ${NumberUtils.roundForPrint(oldMessage.volume)}, price: ${NumberUtils.roundForPrint(oldMessage.price)}, " +
-                "cancel: ${oldMessage.cancelAllPreviousLimitOrders}")
+        logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
 
         return getContext(messageId, oldMessage.uid.toString(), orderProcessingStartTime,
                 limitOrder, oldMessage.cancelAllPreviousLimitOrders,
@@ -129,7 +124,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
 
-        LOGGER.info("Got limit order $singleLimitOrderContext")
+        logger.info("Got limit order  messageId: $messageId id: ${message.uid}, client ${message.clientId}")
 
         return singleLimitOrderContext
     }
