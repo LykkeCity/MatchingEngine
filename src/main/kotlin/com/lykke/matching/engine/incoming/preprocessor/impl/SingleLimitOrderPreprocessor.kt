@@ -20,10 +20,10 @@ import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
-class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
-                             private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor, Thread(LimitOrderPreprocessor::class.java.name) {
+class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                                   private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(LimitOrderPreprocessor::class.java.name)
+        private val LOGGER = ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
