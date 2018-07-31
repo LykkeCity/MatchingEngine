@@ -9,7 +9,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import java.math.BigDecimal
 import java.util.*
 
-class CashOperationParser : ContextParser<CashOperationParsedData> {
+class CashOperationContextParser : ContextParser<CashOperationParsedData> {
     override fun parse(messageWrapper: MessageWrapper): CashOperationParsedData {
         val message = ProtocolMessages.CashOperation.parseFrom(messageWrapper.byteArray)
 
