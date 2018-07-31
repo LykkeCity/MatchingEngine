@@ -30,7 +30,8 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
                             messageWrapper.processedMessage(),
                             MessageType.MULTI_LIMIT_ORDER_CANCEL,
                             false)
-            messageWrapper.processedMessagePersisted = true
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = updated
             if (!updated) {
                 LOGGER.debug("Unable to save result for multi limit order cancel id: ${message.uid}, client ${message.clientId}, assetPair: ${message.assetPairId}, isBuy: ${message.isBuy}")
                 messageWrapper.writeNewResponse(

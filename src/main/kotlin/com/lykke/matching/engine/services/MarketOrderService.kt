@@ -205,11 +205,12 @@ class MarketOrderService @Autowired constructor(
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
 
-                    messageWrapper.processedMessagePersisted = true
                     val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
                             OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                             null,
                             trustedClientsSequenceNumber ?: sequenceNumber)
+                    messageWrapper.triedToPersist = true
+                    messageWrapper.persisted = updated
                     if (!updated) {
                         val message = "Unable to save result data"
                         LOGGER.error("$order: $message")

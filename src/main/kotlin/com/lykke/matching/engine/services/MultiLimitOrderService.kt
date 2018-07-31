@@ -352,7 +352,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
                 sequenceNumber)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -523,7 +524,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         messageWrapper.processedMessage(),
                         multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = result.success
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
 
         if (!result.success) {
