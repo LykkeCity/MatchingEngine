@@ -124,7 +124,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
 
-        logger.info("Got limit order  messageId: $messageId id: ${message.uid}, client ${message.clientId}")
+        logger.info("Got limit order  messageId: $messageId, id: ${message.uid}, client ${message.clientId}")
 
         return singleLimitOrderContext
     }
