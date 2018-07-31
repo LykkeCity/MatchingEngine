@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import java.util.*
 
-class CashTransferContext(
+data class CashTransferContext(
         val messageId: String,
         val transferOperation: TransferOperation,
         val asset: Asset?,

@@ -97,7 +97,13 @@ class CashInOutPreprocessor(
             try {
                 preProcess(message)
             } catch (exception: Exception) {
+                val context = message.context
                 LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
+
+                if (context != null) {
+                    LOGGER.error("Error details: $context")
+                }
+
                 METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
                 writeResponse(message, RUNTIME)
             }
