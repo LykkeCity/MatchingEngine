@@ -307,7 +307,7 @@ class LimitOrderInputValidatorTest {
     fun getSingleLimitContextBuilder(): SingleLimitOrderContext.Builder {
         val builder = SingleLimitOrderContext.Builder()
 
-        builder.id("test")
+        builder.uid("test")
                 .messageId("test")
                 .limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee())))
                 .orderProcessingStartTime(Date())
