@@ -18,7 +18,7 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
-import org.apache.log4j.Logger
+import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -29,7 +29,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     val assetsHolder: AssetsHolder,
                                     val applicationSettingsCache: ApplicationSettingsCache,
                                     @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                    val logger: Logger) : ContextParser<SingleLimitOrderParsedData> {
+                                    val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
         val orderProcessingStartTime = Date()
 
