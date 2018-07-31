@@ -8,7 +8,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
@@ -360,7 +360,7 @@ class MessageBuilder (private var singleLimitOrderContextParser: SingleLimitOrde
                 .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
                 .messageWrapper
 
-        val singleLimitContext = messageWrapper.context as SingleLimitContext
+        val singleLimitContext = messageWrapper.context as SingleLimitOrderContext
         singleLimitContext.validationResult = OrderValidationResult(true)
 
         return messageWrapper

@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
@@ -267,12 +267,12 @@ class LimitOrderInputValidatorTest {
         }
     }
 
-    fun getMessageWrapper(singleLimitContext: SingleLimitContext): MessageWrapper {
+    fun getMessageWrapper(singleLimitContext: SingleLimitOrderContext): MessageWrapper {
         return MessageWrapper("test", MessageType.LIMIT_ORDER.type, ByteArray(1), null, context = singleLimitContext)
     }
 
-    fun getSingleLimitContextBuilder(): SingleLimitContext.Builder {
-        val builder = SingleLimitContext.Builder()
+    fun getSingleLimitContextBuilder(): SingleLimitOrderContext.Builder {
+        val builder = SingleLimitOrderContext.Builder()
 
         builder.id("test")
                 .messageId("test")

@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
@@ -23,7 +23,7 @@ import javax.annotation.PostConstruct
 class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                              private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor, Thread(LimitOrderPreprocessor::class.java.name) {
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
+        private val LOGGER = ThrottlingLogger.getLogger(LimitOrderPreprocessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -35,7 +35,7 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
-        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
+        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         singleLimitContext.validationResult = getValidationResult(singleLimitOrderParsedData)
 
@@ -43,7 +43,7 @@ class LimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<Mes
     }
 
     private fun getValidationResult(singleLimitOrderParsedData: SingleLimitOrderParsedData): OrderValidationResult {
-        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
+        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         try {
             if (singleLimitContext.limitOrder.type == LimitOrderType.LIMIT) {
