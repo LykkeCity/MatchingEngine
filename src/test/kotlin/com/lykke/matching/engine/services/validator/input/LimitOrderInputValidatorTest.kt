@@ -253,7 +253,7 @@ class LimitOrderInputValidatorTest {
     }
 
     @Test(expected = OrderValidationException::class)
-    fun testInvalidMaxVolume() {
+    fun testInvalidMaxValue() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
         singleLimitContextBuilder.limitOrder(getValidLimitOrder(price = BigDecimal.valueOf(10000.0), volume = BigDecimal.valueOf(-1.1), fee = getFee()))
