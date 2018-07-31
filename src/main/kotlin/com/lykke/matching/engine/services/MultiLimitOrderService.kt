@@ -291,7 +291,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                 if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
                                     LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${NumberUtils.roundForPrint(order.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                                     order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                                } else {
+                                } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+                                    LOGGER.info("Order (id: ${order.externalId}) is cancelled due to zero latest trade")
+                                    order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                                }  else {
                                     ordersToAdd.add(order)
                                     orderBook.addOrder(order)
                                 }
