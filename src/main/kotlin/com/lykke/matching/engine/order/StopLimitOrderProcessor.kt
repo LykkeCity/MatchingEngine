@@ -1,12 +1,10 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -39,7 +37,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val messageSender: MessageSender,
                               private val LOGGER: Logger) {
 
-    fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
+    fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) {
         val order = singleLimitContext.limitOrder
 
         val limitAsset = singleLimitContext.limitAsset
@@ -146,7 +144,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         messageSender.sendMessage(outgoingMessage)
     }
 
-    private fun processInvalidOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext,
+    private fun processInvalidOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext,
                                     orderValidationResult: OrderValidationResult,
                                     cancelVolume: BigDecimal, ordersToCancel: List<LimitOrder>,
                                     clientLimitOrdersReport: LimitOrdersReport, newStopOrderBook: Collection<LimitOrder>) {
@@ -197,7 +195,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         return
     }
 
-    private fun validateOrder(availableBalance: BigDecimal, limitVolume: BigDecimal?, singleLimitContext: SingleLimitContext): OrderValidationResult {
+    private fun validateOrder(availableBalance: BigDecimal, limitVolume: BigDecimal?, singleLimitContext: SingleLimitOrderContext): OrderValidationResult {
         if (!singleLimitContext.validationResult!!.isValid) {
             return singleLimitContext.validationResult!!
         }

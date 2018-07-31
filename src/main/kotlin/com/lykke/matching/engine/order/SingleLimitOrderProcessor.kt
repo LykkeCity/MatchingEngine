@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -19,7 +19,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                                 private val matchingEngine: MatchingEngine,
                                 private val LOGGER: Logger) {
 
-    fun processLimitOrder(singleLimitContext: SingleLimitContext,
+    fun processLimitOrder(singleLimitContext: SingleLimitOrderContext,
                           payBackReserved: BigDecimal? = null,
                           messageWrapper: MessageWrapper? = null) {
         val order = singleLimitContext.limitOrder

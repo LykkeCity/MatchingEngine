@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
@@ -17,12 +17,12 @@ import java.math.BigDecimal
 @Component
 class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
-        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
+        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         validateLimitOrder(singleLimitContext)
     }
 
-    private fun validateLimitOrder(singleLimitContext: SingleLimitContext) {
+    private fun validateLimitOrder(singleLimitContext: SingleLimitOrderContext) {
         validateLimitOrder(singleLimitContext.isTrustedClient,
                 singleLimitContext.limitOrder,
                 singleLimitContext.assetPair,
@@ -50,7 +50,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     }
 
     override fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
-        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitContext
+        val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         validateFee(singleLimitContext.limitOrder)
         validateAssets(singleLimitContext.baseAssetDisabled, singleLimitContext.quotingAssetDisabled)

@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -59,23 +59,23 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         processLimitOrder(stopLimitContext, payBackReserved)
     }
 
-    private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
+    private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) {
         limitOrderProcessor.processLimitOrder(singleLimitContext, messageWrapper =  messageWrapper)
         checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, singleLimitContext.orderProcessingStartTime)
     }
 
-    fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) {
+    fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) {
         when(singleLimitContext.limitOrder.type) {
             LimitOrderType.LIMIT -> processLimitOrder(messageWrapper, singleLimitContext)
             LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, singleLimitContext)
         }
     }
 
-    fun processLimitOrder(singleLimitContext: SingleLimitContext, payBackReserved: BigDecimal) {
+    fun processLimitOrder(singleLimitContext: SingleLimitOrderContext, payBackReserved: BigDecimal) {
         limitOrderProcessor.processLimitOrder(singleLimitContext, payBackReserved)
         checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, singleLimitContext.orderProcessingStartTime)
     }
 
-    private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitContext) =
+    private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) =
             stopLimitOrderProcessor.processStopOrder(messageWrapper, singleLimitContext)
 }

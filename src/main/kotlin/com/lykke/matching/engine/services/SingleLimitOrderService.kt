@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.context.SingleLimitContext
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -22,7 +22,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)
 
     override fun processMessage(messageWrapper: MessageWrapper) {
-        val context = messageWrapper.context as SingleLimitContext
+        val context = messageWrapper.context as SingleLimitOrderContext
 
         val startTime = System.nanoTime()
         genericLimitOrderProcessor.processOrder(messageWrapper, context)

@@ -280,7 +280,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
-        LOGGER.info(orderValidationResult.message)
         order.updateStatus(orderValidationResult.status!!, date)
         addToReportIfNotTrusted(order)
         processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
