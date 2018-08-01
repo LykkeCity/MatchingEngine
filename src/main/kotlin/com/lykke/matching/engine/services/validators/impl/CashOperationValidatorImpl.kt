@@ -16,9 +16,7 @@ class CashOperationValidatorImpl @Autowired constructor (private val balancesHol
                                                          private val applicationSettingsCache: ApplicationSettingsCache) : CashOperationValidator {
 
     override fun performValidation(cashOperation: ProtocolMessages.CashOperation){
-        isAssetEnabled(cashOperation)
         isBalanceValid(cashOperation)
-        isAccuracyValid(cashOperation)
     }
 
     private fun isBalanceValid(cashOperation: ProtocolMessages.CashOperation) {
@@ -34,23 +32,6 @@ class CashOperationValidatorImpl @Autowired constructor (private val balancesHol
         }
     }
 
-    private fun isAccuracyValid(cashOperation: ProtocolMessages.CashOperation){
 
-        val volumeValid = NumberUtils.isScaleSmallerOrEqual(BigDecimal.valueOf(cashOperation.amount),
-                assetsHolder.getAsset(cashOperation.assetId).accuracy)
-
-        if (!volumeValid) {
-            throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY,
-                    "Amount accuracy is invalid clientId: ${cashOperation.clientId}, amount  $cashOperation.amount")
-        }
-    }
-
-    private fun isAssetEnabled(cashOperation: ProtocolMessages.CashOperation){
-        if (cashOperation.amount < 0 && applicationSettingsCache.isAssetDisabled(cashOperation.assetId)) {
-            throw ValidationException (ValidationException.Validation.DISABLED_ASSET,
-                    "Cash out operation (${cashOperation.uid}) for client ${cashOperation.clientId} asset ${cashOperation.assetId}, " +
-                    "volume: ${NumberUtils.roundForPrint(cashOperation.amount)}: disabled asset")
-        }
-    }
 }
 

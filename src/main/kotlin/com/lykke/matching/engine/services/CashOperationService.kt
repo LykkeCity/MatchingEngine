@@ -7,7 +7,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.CashOperationValidator
+import com.lykke.matching.engine.services.validators.business.CashOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
-                                                   private val cashOperationValidator: CashOperationValidator): AbstractService {
+                                                   private val cashOperationInputValidator: CashOperationBusinessValidator): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
     }
@@ -31,7 +31,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
                 "asset ${walletOperation.assetId}, amount: ${NumberUtils.roundForPrint(walletOperation.amount)}")
 
         try {
-            cashOperationValidator.performValidation(message)
+            cashOperationInputValidator.performValidation(message)
         } catch (e: ValidationException) {
             writeErrorResponse(messageWrapper)
             return
