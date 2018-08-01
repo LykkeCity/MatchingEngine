@@ -16,7 +16,7 @@ open class LoggerConfig {
     @Autowired
     private lateinit var config: Config
 
-    @Bean
+    @Bean(destroyMethod = "")
     open fun appStarterLogger(): Logger {
         return Logger.getLogger("AppStarter")
     }
