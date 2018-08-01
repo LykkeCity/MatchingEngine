@@ -23,7 +23,6 @@ fun main(args: Array<String>) {
         context.getBean(Application::class.java).run()
     } catch (e: Exception) {
         LOGGER.error(e.message ?: "Unable to start app", e)
-        e.printStackTrace()
         System.exit(1)
     }
 }
