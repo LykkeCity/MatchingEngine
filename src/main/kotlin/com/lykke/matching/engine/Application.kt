@@ -1,7 +1,6 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
@@ -26,9 +25,6 @@ class Application {
     lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
 
     @Autowired
-    lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
-    @Autowired
     @Qualifier("appStarterLogger")
     lateinit var LOGGER: Logger
 
@@ -47,7 +43,6 @@ class Application {
             System.exit(1)
         }
 
-        reservedVolumesRecalculator.correctReservedVolumesIfNeed()
         socketServer.run()
     }
 }
