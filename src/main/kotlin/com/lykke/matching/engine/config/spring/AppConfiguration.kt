@@ -21,7 +21,6 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import java.util.concurrent.LinkedBlockingQueue
-import javax.annotation.PostConstruct
 
 @Configuration
 @EnableScheduling
@@ -73,12 +72,5 @@ open class AppConfiguration: SchedulingConfigurer {
     @Bean
     open fun monitoringStatsCollector(): MonitoringStatsCollector {
         return MonitoringStatsCollector()
-    }
-
-    @PostConstruct
-    open fun init() {
-        AppInitializer.init()
-        MetricsLogger.init("ME", config.slackNotifications)
-        ThrottlingLogger.init(config.throttlingLogger)
     }
 }
