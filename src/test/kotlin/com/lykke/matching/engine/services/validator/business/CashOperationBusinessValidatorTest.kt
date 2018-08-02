@@ -52,8 +52,6 @@ class CashOperationBusinessValidatorTest {
     @Autowired
     private lateinit var cashOperationContextParser: CashOperationContextParser
 
-
-
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance(CLIENT_NAME, ASSET_ID, 1000.0)
