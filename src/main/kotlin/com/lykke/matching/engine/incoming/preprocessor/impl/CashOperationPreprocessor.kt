@@ -44,10 +44,6 @@ class CashOperationPreprocessor(private val cashOperationInputQueue: BlockingQue
         //do nothing
     }
 
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        // nothing to do
-    }
-
     private fun writeErrorResponse(messageWrapper: MessageWrapper, context: CashOperationContext?) {
         val newBuilder = ProtocolMessages.Response.newBuilder()
 
