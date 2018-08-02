@@ -20,7 +20,7 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 
 @Component
-@Order(2)
+@Order(4)
 class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                      private val genericLimitOrderService: GenericLimitOrderService,
                                                      private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,

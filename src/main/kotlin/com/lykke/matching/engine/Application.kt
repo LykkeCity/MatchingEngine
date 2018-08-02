@@ -36,13 +36,6 @@ class Application {
             System.exit(1)
         }
 
-        try {
-            accountsMigrationService.migrateAccountsIfConfigured()
-        } catch (e: AccountsMigrationException) {
-            LOGGER.error("Error occurred while migrating accounts, ${e.message}", e)
-            System.exit(1)
-        }
-
         socketServer.run()
     }
 }
