@@ -65,7 +65,6 @@ class CashOperationPreprocessor(private val cashOperationInputQueue: BlockingQue
             try {
                 preProcess(messageWrapper)
             } catch (e: Exception) {
-                //todo think what we are doing if failed to set uid in message wrapper
                 LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}", e)
                 METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
 
