@@ -26,12 +26,11 @@ class CashOperationContextParser(private val assetsHolder: AssetsHolder,
         val asset = assetsHolder.getAsset(message.assetId)
         messageWrapper.context = CashOperationContext(message.uid.toString(),
                 messageWrapper.messageId!!,
+                message.bussinesId,
+                message.clientId,
                 getWalletOperation(message),
                 asset,
-                applicationSettingsCache.isAssetDisabled(asset.assetId),
-                message.bussinesId,
-                message.clientId
-        )
+                applicationSettingsCache.isAssetDisabled(asset.assetId))
 
         return CashOperationParsedData(messageWrapper)
     }
