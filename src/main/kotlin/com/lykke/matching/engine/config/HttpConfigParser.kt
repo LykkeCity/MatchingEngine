@@ -6,7 +6,6 @@ import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Profile
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
@@ -16,17 +15,16 @@ import java.net.URL
 import javax.annotation.PostConstruct
 import javax.naming.ConfigurationException
 
-
 @Component("Config")
 @Profile("default", "!local_config")
 class HttpConfigParser : FactoryBean<Config> {
 
-    @Autowired
-    private lateinit var enviroment: Environment
+    companion object {
+        private val LOGGER: Logger = Logger.getLogger("AppStarter")
+    }
 
     @Autowired
-    @Qualifier("appStarterLogger")
-    private lateinit var LOGGER: Logger
+    private lateinit var enviroment: Environment
 
     private lateinit var config: Config
 
