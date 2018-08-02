@@ -2,11 +2,11 @@ package com.lykke.matching.engine.config
 
 import com.google.gson.FieldNamingPolicy.UPPER_CAMEL_CASE
 import com.google.gson.GsonBuilder
-import com.lykke.matching.engine.LOGGER
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Profile
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
@@ -17,14 +17,16 @@ import javax.annotation.PostConstruct
 import javax.naming.ConfigurationException
 
 
-val LOGGER = Logger.getLogger("HttpConfigParser")
-
 @Component("Config")
 @Profile("default", "!local_config")
 class HttpConfigParser : FactoryBean<Config> {
 
     @Autowired
     private lateinit var enviroment: Environment
+
+    @Autowired
+    @Qualifier("appStarterLogger")
+    private lateinit var LOGGER: Logger
 
     private lateinit var config: Config
 

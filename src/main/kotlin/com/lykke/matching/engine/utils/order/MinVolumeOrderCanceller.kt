@@ -11,12 +11,14 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
 @Component
+@Order(2)
 class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                      private val genericLimitOrderService: GenericLimitOrderService,
                                                      private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
@@ -25,11 +27,6 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
-
-        private fun teeLog(message: String) {
-            println(message)
-            LOGGER.info(message)
-        }
     }
 
     fun cancel() {
@@ -37,22 +34,22 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
             return
         }
         val operationId = getOperationId()
-        teeLog("Starting order books analyze to cancel min volume orders ($operationId)")
+        LOGGER.info("Starting order books analyze to cancel min volume orders ($operationId)")
 
         val operationToOrder = getOperationToOrder()
 
-        teeLog("Starting orders cancellation (orders count: ${operationToOrder.values.size})")
+        LOGGER.info("Starting orders cancellation (orders count: ${operationToOrder.values.size})")
         try {
             genericLimitOrdersCancellerFactory.create(LOGGER, Date())
                     .preProcessLimitOrders(operationToOrder[OrderOperation.CANCEL] ?: emptyList(),
                             operationToOrder[OrderOperation.REMOVE] ?: emptyList())
                     .applyFull(operationId, operationId, null, MessageType.LIMIT_ORDER, true)
         } catch (e: BalanceException) {
-            teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
+            LOGGER.error("Unable to process wallet operations due to invalid balance: ${e.message}", e)
             return
         }
 
-        teeLog("Min volume orders cancellation is finished")
+        LOGGER.info("Min volume orders cancellation is finished")
     }
 
     private fun getOperationToOrder(): Map<OrderOperation, List<LimitOrder>> {
@@ -71,14 +68,14 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
 
             if (assetPair == null) {
                 // assetPair == null means asset pair is not found in dictionary => remove this order (without reserved funds recalculation)
-                teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")
+                LOGGER.info("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} is not found")
                 return Optional.of(OrderOperation.REMOVE)
             } else if (isOrderVolumeTooSmall(assetPair, order)) {
-                teeLog("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
+                LOGGER.info("Order (id: ${order.externalId}, clientId: ${order.clientId}) is added to cancel: asset pair ${order.assetPairId} min volume is ${assetPair.minVolume}, remaining volume is ${order.getAbsRemainingVolume()}")
                 return Optional.of(OrderOperation.CANCEL)
             }
         } catch (e: Exception) {
-            teeLog("Unable to check order (${order.externalId}): ${e.message}. Skipped.")
+            LOGGER.error("Unable to check order (${order.externalId}): ${e.message}. Skipped.", e)
         }
         return Optional.empty()
     }

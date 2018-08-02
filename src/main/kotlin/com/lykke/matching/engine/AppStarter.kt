@@ -1,7 +1,6 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.utils.config.Config
-import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
@@ -10,10 +9,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.core.env.SimpleCommandLinePropertySource
 
-val LOGGER = Logger.getLogger("AppStarter")
-
 @SpringBootApplication
 open class AppStarter
+
+val LOGGER =  Logger.getLogger("AppStarter")
 
 fun main(args: Array<String>) {
     try {
@@ -23,8 +22,7 @@ fun main(args: Array<String>) {
         addCommandLinePropertySource(args, context)
         context.getBean(Application::class.java).run()
     } catch (e: Exception) {
-        AppInitializer.teeLog(e.message ?: "Unable to start app")
-        e.printStackTrace()
+        LOGGER.error(e.message ?: "Unable to start app", e)
         System.exit(1)
     }
 }

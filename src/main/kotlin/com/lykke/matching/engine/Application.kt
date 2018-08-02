@@ -1,14 +1,11 @@
 package com.lykke.matching.engine
 
-import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.migration.AccountsMigrationService
 import com.lykke.matching.engine.utils.migration.AccountsMigrationException
-import com.lykke.matching.engine.utils.migration.OrdersMigrationService
-import com.lykke.matching.engine.utils.order.AllOrdersCanceller
-import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
-import com.lykke.utils.AppInitializer
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
+import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 @Component
@@ -23,54 +20,24 @@ class Application {
     lateinit var accountsMigrationService: AccountsMigrationService
 
     @Autowired
-    lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
-    @Autowired
-    lateinit var ordersMigrationService: OrdersMigrationService
-
-    @Autowired
-    lateinit var allOrdersCanceller: AllOrdersCanceller
-
-    @Autowired
-    lateinit var minVolumeOrderCanceller: MinVolumeOrderCanceller
+    @Qualifier("appStarterLogger")
+    lateinit var LOGGER: Logger
 
     fun run () {
         try {
             azureStatusProcessor.run()
         } catch (e: CheckAppInstanceRunningException) {
-            AppInitializer.teeLog("Error occurred while starting application ${e.message}")
+            LOGGER.error("Error occurred while starting application, ${e.message}", e)
             System.exit(1)
         }
 
         try {
             accountsMigrationService.migrateAccountsIfConfigured()
         } catch (e: AccountsMigrationException) {
-            AppInitializer.teeLog(e.message)
+            LOGGER.error("Error occurred while migrating accounts, ${e.message}", e)
             System.exit(1)
         }
 
-        try {
-            ordersMigrationService.migrateOrdersIfConfigured()
-        } catch (e: Exception) {
-            AppInitializer.teeLog("Unable to migrate orders: ${e.message}")
-            System.exit(1)
-        }
-
-        try {
-            allOrdersCanceller.cancelAllOrders()
-        } catch (e: Exception) {
-            AppInitializer.teeLog("Unable to cancel all orders: ${e.message}")
-            System.exit(1)
-        }
-
-        try {
-            minVolumeOrderCanceller.cancel()
-        } catch (e: Exception) {
-            AppInitializer.teeLog("Unable to cancel min volume orders: ${e.message}")
-            System.exit(1)
-        }
-
-        reservedVolumesRecalculator.correctReservedVolumesIfNeed()
         socketServer.run()
     }
 }
