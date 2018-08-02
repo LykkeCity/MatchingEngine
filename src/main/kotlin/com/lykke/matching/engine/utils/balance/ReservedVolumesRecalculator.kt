@@ -31,7 +31,7 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Component
-@Order(1)
+@Order(2)
 class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                                          private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                                          private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
