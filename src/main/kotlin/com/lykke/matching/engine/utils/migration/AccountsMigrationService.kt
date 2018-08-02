@@ -26,8 +26,6 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
         RedisWalletDatabaseAccessor(redisHolder.get(), config.me.redis.balanceDatabase)
     else null
 
-
-
     private val azureAccountsTableName = config.me.db.accountsTableName
             ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, azureAccountsTableName)

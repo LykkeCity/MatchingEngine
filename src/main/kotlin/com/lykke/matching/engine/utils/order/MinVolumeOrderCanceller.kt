@@ -11,6 +11,8 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import java.util.*
@@ -23,16 +25,19 @@ class MinVolumeOrderCanceller @Autowired constructor(private val assetsPairsHold
                                                      private val genericLimitOrderService: GenericLimitOrderService,
                                                      private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                                      @Value("#{Config.me.cancelMinVolumeOrders}")
-                                                     private val cancelMinVolumeOrders: Boolean) {
+                                                     private val cancelMinVolumeOrders: Boolean): ApplicationRunner {
 
     companion object {
         private val LOGGER = Logger.getLogger(MinVolumeOrderCanceller::class.java.name)
     }
 
-    fun cancel() {
-        if (!cancelMinVolumeOrders) {
-            return
+    override fun run(args: ApplicationArguments?) {
+        if (cancelMinVolumeOrders) {
+            cancel()
         }
+    }
+
+    fun cancel() {
         val operationId = getOperationId()
         LOGGER.info("Starting order books analyze to cancel min volume orders ($operationId)")
 
