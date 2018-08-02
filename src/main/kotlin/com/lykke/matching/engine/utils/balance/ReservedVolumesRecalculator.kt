@@ -5,13 +5,9 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -36,8 +32,8 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 @Order(1)
-class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
-                                                         private val stopOrderBookDatabaseAccessor: StopOrdersDatabaseAccessorsHolder,
+class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
+                                                         private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                                          private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                                          private val assetsHolder: AssetsHolder,
                                                          private val assetsPairsHolder :AssetsPairsHolder,
