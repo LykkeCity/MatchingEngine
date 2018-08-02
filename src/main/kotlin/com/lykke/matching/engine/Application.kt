@@ -1,8 +1,6 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.utils.migration.AccountsMigrationService
-import com.lykke.matching.engine.utils.migration.AccountsMigrationException
 import com.lykke.utils.alivestatus.exception.CheckAppInstanceRunningException
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,9 +15,6 @@ class Application {
 
     @Autowired
     lateinit var azureStatusProcessor: Runnable
-
-    @Autowired
-    lateinit var accountsMigrationService: AccountsMigrationService
 
     @Autowired
     lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>

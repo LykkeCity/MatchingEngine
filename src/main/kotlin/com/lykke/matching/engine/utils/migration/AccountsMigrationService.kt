@@ -12,11 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import redis.clients.jedis.JedisPool
 import java.util.*
 
-@Service
+@Component
 @Order(1)
 class AccountsMigrationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                        private val config: Config,
