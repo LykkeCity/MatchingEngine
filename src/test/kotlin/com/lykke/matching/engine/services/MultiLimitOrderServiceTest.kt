@@ -24,6 +24,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
@@ -40,6 +41,7 @@ import java.math.BigDecimal
 import java.util.Date
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
@@ -49,6 +51,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @Autowired
+    private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @TestConfiguration
     open class Config {
@@ -62,6 +67,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
             testBackOfficeDatabaseAccessor.addAsset(Asset("CHF", 2))
             testBackOfficeDatabaseAccessor.addAsset(Asset("TIME", 8))
             testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("LKK1Y", 2))
+            testBackOfficeDatabaseAccessor.addAsset(Asset("LKK", 2))
 
             return testBackOfficeDatabaseAccessor
         }
@@ -90,6 +97,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("LKK1YLKK", "LKK1Y", "LKK", 5))
 
         initServices()
     }
@@ -1374,6 +1382,34 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
 
         assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testCancelAllOrdersOfExTrustedClient() {
+        testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
+
+        testConfigDatabaseAccessor.addTrustedClient("Client1")
+        applicationSettingsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("LKK1YLKK", "Client1",
+                listOf(VolumePrice(BigDecimal.valueOf(5.0), BigDecimal.valueOf(0.021)),
+                        VolumePrice(BigDecimal.valueOf(5.0), BigDecimal.valueOf(0.021)))))
+
+        assertBalance("Client1", "LKK", 1.0, 0.0)
+
+        testConfigDatabaseAccessor.clear()
+        applicationSettingsCache.update()
+
+        reservedVolumesRecalculator.recalculate()
+
+        assertBalance("Client1", "LKK", 1.0, 0.2)
+
+        val message = buildMultiLimitOrderCancelWrapper("Client1", "LKK1YLKK", true)
+        multiLimitOrderCancelService.parseMessage(message)
+        multiLimitOrderCancelService.processMessage(message)
+
+        assertOrderBookSize("LKK1YLKK", true, 0)
+        assertBalance("Client1", "LKK", 1.0, 0.0)
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {

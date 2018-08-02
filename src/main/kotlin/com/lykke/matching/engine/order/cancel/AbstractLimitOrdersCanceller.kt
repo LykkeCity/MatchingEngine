@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.order.cancel
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
@@ -7,6 +8,7 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.OrderOperation
@@ -19,6 +21,7 @@ import java.util.stream.Collectors
 
 abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrderBook,
         TCancelResult : AbstractLimitOrdersCancelResult<TAssetOrderBook>>(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                                                                          private val assetsHolder: AssetsHolder,
                                                                           private val assetsPairsHolder: AssetsPairsHolder,
                                                                           private val balancesHolder: BalancesHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
@@ -92,13 +95,14 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
             val isTrustedClientOrder = balancesHolder.isTrustedClient(order.clientId)
 
             if (!isTrustedClientOrder) {
-                val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-                val limitVolume = getOrderLimitVolume(order)
-                val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset)
+                val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+                val limitAsset = assetsHolder.getAsset(limitAssetId)
+                val limitVolume = getOrderLimitVolume(order, limitAsset)
+                val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAssetId)
 
                 if (reservedBalance > BigDecimal.ZERO) {
                     walletOperations.add(
-                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, date, BigDecimal.ZERO,
+                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAssetId, date, BigDecimal.ZERO,
                                     if (limitVolume > reservedBalance) -reservedBalance else -limitVolume))
                 }
             }
@@ -127,7 +131,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         return OrderBooksPersistenceData(orderBookPersistenceDataList, emptyList(), ordersToRemove)
     }
 
-    protected abstract fun getOrderLimitVolume(order: LimitOrder): BigDecimal
+    protected abstract fun getOrderLimitVolume(order: LimitOrder, limitAsset: Asset): BigDecimal
 
     fun process(): TCancelResult {
         val clientsLimitOrders = LinkedList<LimitOrderWithTrades>()
