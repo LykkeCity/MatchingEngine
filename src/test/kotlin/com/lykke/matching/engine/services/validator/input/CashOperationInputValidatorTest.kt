@@ -1,16 +1,17 @@
-package com.lykke.matching.engine.services.validator
+package com.lykke.matching.engine.services.validator.input
 
-import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.incoming.parsers.data.CashOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.impl.CashOperationContextParser
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validators.CashOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
-import org.junit.Before
+import com.lykke.matching.engine.services.validators.input.CashOperationInputValidator
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,12 +24,11 @@ import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertEquals
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (CashOperationValidatorTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class), (CashOperationInputValidatorTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class CashOperationValidatorTest {
-
+class CashOperationInputValidatorTest {
     companion object {
-        val CLIENT_NAME = "Client1"
+        val CLIENT_ID = "Client1"
         val ASSET_ID = "USD"
     }
 
@@ -44,10 +44,7 @@ class CashOperationValidatorTest {
     }
 
     @Autowired
-    private lateinit var cashOperationValidator: CashOperationValidator
-
-    @Autowired
-    private lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
+    private lateinit var cashOperationInputValidator: CashOperationInputValidator
 
     @Autowired
     private lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -58,28 +55,8 @@ class CashOperationValidatorTest {
     @Autowired
     private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
-    @Before
-    fun setUp() {
-        testBalanceHolderWrapper.updateBalance(CLIENT_NAME, ASSET_ID, 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME, ASSET_ID, 50.0)
-    }
-
-    @Test(expected = ValidationException::class)
-    fun testBalanceValidation() {
-        //given
-        val cashOperationBuilder = getDefaultCashOperationBuilder()
-        cashOperationBuilder.amount = -60.0
-        testBalanceHolderWrapper.updateBalance(CLIENT_NAME, ASSET_ID, 100.0)
-        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME, ASSET_ID, 50.0)
-
-        //when
-        try {
-            cashOperationValidator.performValidation(cashOperationBuilder.build())
-        } catch (e: ValidationException) {
-            assertEquals(ValidationException.Validation.LOW_BALANCE, e.validationType)
-            throw e
-        }
-    }
+    @Autowired
+    private lateinit var cashOperationContextParser: CashOperationContextParser
 
     @Test(expected = ValidationException::class)
     fun testAccuracy() {
@@ -91,7 +68,7 @@ class CashOperationValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(cashOperationBuilder.build())
+            cashOperationInputValidator.performValidation(getParsedData(cashOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -109,24 +86,29 @@ class CashOperationValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(cashOperationBuilder.build())
+            cashOperationInputValidator.performValidation(getParsedData(cashOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
         }
     }
 
+    fun getParsedData(cashOperationMessages: ProtocolMessages.CashOperation): CashOperationParsedData {
+        return cashOperationContextParser
+                .parse(MessageWrapper("test", 1, cashOperationMessages.toByteArray(), null))
+
+    }
 
     @Test
     fun testValidData() {
         //when
-        cashOperationValidator.performValidation(getDefaultCashOperationBuilder().build())
+        cashOperationInputValidator.performValidation(getParsedData(getDefaultCashOperationBuilder().build()))
     }
 
     fun getDefaultCashOperationBuilder(): ProtocolMessages.CashOperation.Builder {
         return ProtocolMessages.CashOperation.newBuilder()
                 .setAssetId(ASSET_ID)
-                .setClientId(CLIENT_NAME)
+                .setClientId(CLIENT_ID)
                 .setAmount(0.0)
                 .setTimestamp(System.currentTimeMillis())
                 .setBussinesId("test")

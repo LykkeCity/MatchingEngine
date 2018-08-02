@@ -4,7 +4,6 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -15,7 +14,6 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import org.junit.Before
@@ -69,8 +67,8 @@ class CashInOutOperationInputValidatorTest {
 
     @Before
     fun setUp() {
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 50.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_ID, ASSET_ID, 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_ID, ASSET_ID, 50.0)
     }
 
     @Test(expected = ValidationException::class)
