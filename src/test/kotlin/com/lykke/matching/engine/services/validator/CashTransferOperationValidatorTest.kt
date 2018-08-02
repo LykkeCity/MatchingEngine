@@ -63,15 +63,15 @@ class CashTransferOperationValidatorTest {
 
     @Before
     fun setUp() {
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 50.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_NAME1, ASSET_ID, 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_NAME1, ASSET_ID, 50.0)
     }
 
     @Test(expected = ValidationException::class)
     fun testAssetEnabled() {
         //given
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()
-        testConfigDatabaseAccessor.addDisabledAsset(CashOperationValidatorTest.ASSET_ID)
+        testConfigDatabaseAccessor.addDisabledAsset(ASSET_ID)
         applicationSettingsCache.update()
         cashTransferOperationBuilder.volume = -1.0
 

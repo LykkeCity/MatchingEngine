@@ -10,9 +10,8 @@ import com.lykke.matching.engine.incoming.parsers.data.CashOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashOperationContextParser
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
-import com.lykke.matching.engine.services.validators.CashOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.input.CashOperationInputValidator
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,6 +28,7 @@ import kotlin.test.assertEquals
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class CashOperationInputValidatorTest {
     companion object {
+        val CLIENT_ID = "Client1"
         val ASSET_ID = "USD"
     }
 
@@ -44,7 +44,7 @@ class CashOperationInputValidatorTest {
     }
 
     @Autowired
-    private lateinit var cashOperationValidator: CashOperationValidator
+    private lateinit var cashOperationInputValidator: CashOperationInputValidator
 
     @Autowired
     private lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
@@ -68,7 +68,7 @@ class CashOperationInputValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(getParsedData(cashOperationBuilder.build()))
+            cashOperationInputValidator.performValidation(getParsedData(cashOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.INVALID_VOLUME_ACCURACY, e.validationType)
             throw e
@@ -78,7 +78,7 @@ class CashOperationInputValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetDisabled() {
         //given
-        testConfigDatabaseAccessor.addDisabledAsset(CashOperationValidatorTest.ASSET_ID)
+        testConfigDatabaseAccessor.addDisabledAsset(ASSET_ID)
         applicationSettingsCache.update()
 
         val cashOperationBuilder = getDefaultCashOperationBuilder()
@@ -86,7 +86,7 @@ class CashOperationInputValidatorTest {
 
         //when
         try {
-            cashOperationValidator.performValidation(getParsedData(cashOperationBuilder.build()))
+            cashOperationInputValidator.performValidation(getParsedData(cashOperationBuilder.build()))
         } catch (e: ValidationException) {
             assertEquals(ValidationException.Validation.DISABLED_ASSET, e.validationType)
             throw e
@@ -99,10 +99,16 @@ class CashOperationInputValidatorTest {
 
     }
 
+    @Test
+    fun testValidData() {
+        //when
+        cashOperationInputValidator.performValidation(getParsedData(getDefaultCashOperationBuilder().build()))
+    }
+
     fun getDefaultCashOperationBuilder(): ProtocolMessages.CashOperation.Builder {
         return ProtocolMessages.CashOperation.newBuilder()
-                .setAssetId(CashOperationValidatorTest.ASSET_ID)
-                .setClientId(CashOperationValidatorTest.CLIENT_NAME)
+                .setAssetId(ASSET_ID)
+                .setClientId(CLIENT_ID)
                 .setAmount(0.0)
                 .setTimestamp(System.currentTimeMillis())
                 .setBussinesId("test")

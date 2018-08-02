@@ -61,8 +61,8 @@ class CashInOutOperationValidatorTest {
 
     @Before
     fun setUp() {
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 50.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_ID, ASSET_ID, 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_ID, ASSET_ID, 50.0)
     }
 
     @Test(expected = ValidationException::class)
@@ -88,7 +88,7 @@ class CashInOutOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetEnabled() {
         //given
-        testConfigDatabaseAccessor.addDisabledAsset(CashOperationValidatorTest.ASSET_ID)
+        testConfigDatabaseAccessor.addDisabledAsset(ASSET_ID)
         applicationSettingsCache.update()
 
         //when
@@ -105,8 +105,8 @@ class CashInOutOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testBalanceValid() {
         //given
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 500.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 250.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_ID, ASSET_ID, 500.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_ID, ASSET_ID, 250.0)
         val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
         cashInOutOperationBuilder.volume = -300.0
 
