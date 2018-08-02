@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class CashOperationService @Autowired constructor (private val balancesHolder: BalancesHolder,
-                                                   private val cashOperationInputValidator: CashOperationBusinessValidator): AbstractService {
+                                                   private val cashOperationBusinessValidator: CashOperationBusinessValidator): AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(CashOperationService::class.java.name)
     }
@@ -31,7 +31,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
                 "asset ${walletOperation.assetId}, amount: ${NumberUtils.roundForPrint(walletOperation.amount)}")
 
         try {
-            cashOperationInputValidator.performValidation(message)
+            cashOperationBusinessValidator.performValidation(context)
         } catch (e: ValidationException) {
             writeErrorResponse(messageWrapper)
             return
