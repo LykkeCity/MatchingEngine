@@ -23,6 +23,7 @@ data class MatchingEngineConfig(
         val migrate: Boolean,
         val correctReservedVolumes: Boolean,
         val cancelMinVolumeOrders: Boolean,
+        val cancelAllOrders: Boolean,
         val orderBookPath: String,
         val stopOrderBookPath: String,
         val queueSizeLimit: Int,

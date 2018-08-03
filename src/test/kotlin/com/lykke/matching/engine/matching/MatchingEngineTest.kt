@@ -7,16 +7,14 @@ import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.database.cache.AssetPairsCache
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import org.apache.log4j.Logger
 import org.junit.After
@@ -29,23 +27,31 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 abstract class MatchingEngineTest {
-    protected val testDatabaseAccessor = TestFileOrderDatabaseAccessor()
-    protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected val tradesInfoQueue = LinkedBlockingQueue<TradeInfo>()
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    protected val assetsPairsHolder = AssetsPairsHolder(AssetPairsCache(testDictionariesDatabaseAccessor))
 
-    protected lateinit var genericService: GenericLimitOrderService
+    @Autowired
+    protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
+
+    @Autowired
+    protected lateinit var assetsPairsHolder: AssetsPairsHolder
+
     protected lateinit var matchingEngine: MatchingEngine
-    protected val DELTA = 1e-9
+
     protected val now = Date()
+
+    @Autowired
+    protected lateinit var testDatabaseAccessor: TestFileOrderDatabaseAccessor
+
+    @Autowired
+    protected lateinit var testOrderBookWrapper: TestOrderBookWrapper
+
+    @Autowired
+    protected lateinit var genericService: GenericLimitOrderService
 
     @Autowired
     protected lateinit var balancesHolder: BalancesHolder
@@ -54,13 +60,13 @@ abstract class MatchingEngineTest {
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     @Autowired
-    protected lateinit var assetsHolder: AssetsHolder
+    private lateinit var assetsHolder: AssetsHolder
 
     @Autowired
     protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
     @Autowired
-    protected lateinit var applicationSettingsCache: ApplicationSettingsCache
+    private lateinit var feeProcessor: FeeProcessor
 
     @TestConfiguration
     open class Config {
@@ -204,8 +210,7 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        genericService = GenericLimitOrderService(testDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder, tradesInfoQueue, quotesNotificationQueue, applicationSettingsCache)
-        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder)
+        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
     }
 
 }

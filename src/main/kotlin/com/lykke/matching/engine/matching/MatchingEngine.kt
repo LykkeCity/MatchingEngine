@@ -34,13 +34,13 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val genericLimitOrderService: GenericLimitOrderService,
                      private val assetsHolder: AssetsHolder,
                      private val assetsPairsHolder: AssetsPairsHolder,
-                     private val balancesHolder: BalancesHolder) {
+                     private val balancesHolder: BalancesHolder,
+                     private val feeProcessor: FeeProcessor) {
 
     companion object {
         private const val RELATIVE_SPREAD_ACCURACY = 4
     }
 
-    private val feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     private var tradeIndex: Long = 0
 
     fun initTransaction(): MatchingEngine {

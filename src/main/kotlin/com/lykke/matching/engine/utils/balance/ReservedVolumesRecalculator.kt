@@ -15,7 +15,6 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.BalanceUpdateNotificationEvent
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -25,13 +24,13 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.BlockingQueue
 
 @Component
 class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
@@ -43,7 +42,7 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val applicationSettingsCache: ApplicationSettingsCache,
                                                          @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
-                                                         private val applicationEventPublisher: ApplicationEventPublisher,
+                                                         private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                          private val messageSender: MessageSender) {
 
@@ -192,11 +191,12 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
             updatedWallets.map { it.clientId }.toSet().forEach {
-                applicationEventPublisher.publishEvent(BalanceUpdateNotificationEvent(BalanceUpdateNotification(it)))
+                balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
             }
             cashInOutEvents.forEach { messageSender.sendMessage(it) }
 
         }
+        teeLog("Reserved volume recalculation finished")
     }
 
 }

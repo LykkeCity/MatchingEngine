@@ -12,5 +12,5 @@ interface RabbitMqService {
                        appName: String,
                        appVersion: String,
                        exchangeType: BuiltinExchangeType,
-                       messageDatabaseLogger: MessageDatabaseLogger?)
+                       messageDatabaseLogger: MessageDatabaseLogger? = null)
 }

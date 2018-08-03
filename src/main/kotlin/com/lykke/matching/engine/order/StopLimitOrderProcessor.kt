@@ -14,7 +14,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -31,7 +30,7 @@ import java.util.concurrent.BlockingQueue
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                               private val stopLimitOrderService: GenericStopLimitOrderService,
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
-                              private val clientLimitOrderReportQueue: BlockingQueue<JsonSerializable>,
+                              private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                               private val assetsHolder: AssetsHolder,
                               private val assetsPairsHolder: AssetsPairsHolder,
                               private val balancesHolder: BalancesHolder,
@@ -98,7 +97,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                         .setStatus(messageStatus.type))
 
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
-                clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+                clientLimitOrdersQueue.put(clientLimitOrdersReport)
 
                 val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
                         messageWrapper.messageId!!,
@@ -177,7 +176,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         writeResponse(messageWrapper, order, MessageStatus.OK)
         LOGGER.info("${orderInfo(order)} added to stop order book")
 
-        clientLimitOrderReportQueue.put(clientLimitOrdersReport)
+        clientLimitOrdersQueue.put(clientLimitOrdersReport)
 
         val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
                 messageWrapper.messageId!!,

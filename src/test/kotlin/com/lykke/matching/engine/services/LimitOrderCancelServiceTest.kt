@@ -50,11 +50,11 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
     @Before
     fun setUp() {
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "5", price = 100.0))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0, volume = -1.0))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "6", price = 200.0))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "7", price = 300.0))
-        testOrderDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "8", price = 400.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "5", price = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "3", price = 300.0, volume = -1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "6", price = 200.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "7", price = 300.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "8", price = 400.0))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
@@ -69,13 +69,13 @@ class LimitOrderCancelServiceTest : AbstractTest() {
     fun testCancel() {
         limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
 
-        assertEquals(1, orderBookQueue.size)
-        assertEquals(1, rabbitOrderBookQueue.size)
+        assertEquals(1, testOrderBookListener.getCount())
+        assertEquals(1, testRabbitOrderBookListener.getCount())
 
-        assertEquals(1, clientsLimitOrdersQueue.size)
-        assertEquals(OrderStatus.Cancelled.name, (clientsLimitOrdersQueue.poll() as LimitOrdersReport).orders.first().order.status)
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(OrderStatus.Cancelled.name, (testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport).orders.first().order.status)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateQueueNotification.poll().clientId)
+        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.poll().clientId)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
@@ -104,8 +104,8 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, executionEvent.orders.size)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
 
-        assertEquals(1, tradesInfoQueue.size)
-        val tradeInfo = tradesInfoQueue.poll() as TradeInfo
+        assertEquals(1, tradesInfoListener.getCount())
+        val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
         assertEquals(BigDecimal.ZERO, tradeInfo.price)
         assertEquals(false, tradeInfo.isBuy)
     }
@@ -131,11 +131,11 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertBalance("Client2", "BTC", 1.0, 0.2)
         assertBalance("Client2", "USD", 1000.0, 0.0)
 
-        assertEquals(2, orderBookQueue.size)
-        assertEquals(2, rabbitOrderBookQueue.size)
-        assertEquals(1, clientsLimitOrdersQueue.size)
+        assertEquals(2, testOrderBookListener.getCount())
+        assertEquals(2, testRabbitOrderBookListener.getCount())
+        assertEquals(1, testClientLimitOrderListener.getCount())
 
-        val report = clientsLimitOrdersQueue.poll() as LimitOrdersReport
+        val report = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
         assertEquals(3, report.orders.size)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "10" }.order.status)
         assertEquals(OrderStatus.Cancelled.name, report.orders.first { it.order.externalId == "11" }.order.status)
@@ -168,10 +168,10 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[1].status)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[2].status)
 
-        assertEquals(2, tradesInfoQueue.size)
-        val buyTradeInfo = tradesInfoQueue.single { it.isBuy }
+        assertEquals(2, tradesInfoListener.getCount())
+        val buyTradeInfo = tradesInfoListener.getProcessingQueue().single { it.isBuy }
         assertEquals(BigDecimal.ZERO, buyTradeInfo.price)
-        val sellTradeInfo = tradesInfoQueue.single { !it.isBuy }
+        val sellTradeInfo = tradesInfoListener.getProcessingQueue().single { !it.isBuy }
         assertEquals(BigDecimal.valueOf(9200.0), sellTradeInfo.price)
     }
 }

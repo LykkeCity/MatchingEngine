@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -15,7 +16,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.LimitOrderValidator
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderValidationException
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
@@ -41,11 +41,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            applicationSettingsCache: ApplicationSettingsCache,
                            ordersToCancel: Collection<LimitOrder>,
-                           private val trustedClientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
-                           private val clientsLimitOrdersQueue: BlockingQueue<JsonSerializable>,
+                           private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
-                           private val rabbitOrderBookQueue: BlockingQueue<JsonSerializable>,
+                           private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
+                           private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val matchingEngine: MatchingEngine,
                            private val date: Date,
                            private val clientId: String,
@@ -172,7 +172,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
-            clientsLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
+            clientLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
             messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
                     messageId,
                     operationId,
@@ -358,12 +358,20 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             orderBook.addOrder(order)
             ordersToAdd.add(order)
+            if (order.isBuySide()) {
+                buySideOrderBookChanged = true
+            } else {
+                sellSideOrderBookChanged = true
+            }
         }
 
         availableBalances[limitAsset.assetId] = matchingResult.marketBalance!!
 
-        buySideOrderBookChanged = true
-        sellSideOrderBookChanged = true
+        if (order.isBuySide()) {
+            sellSideOrderBookChanged = true
+        } else {
+            buySideOrderBookChanged = true
+        }
         processedOrders.add(ProcessedOrder(order, true))
         return true
     }

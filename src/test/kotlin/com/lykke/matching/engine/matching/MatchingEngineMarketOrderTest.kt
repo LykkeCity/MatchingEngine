@@ -56,7 +56,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderWithSameOrderBookSide() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -68,7 +68,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderNotStraightWithSameOrderBookSide() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = -120.0, straight = false)
@@ -79,7 +79,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchNoLiquidityMarketOrderBuy() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.01)
@@ -90,7 +90,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchNoLiquidityMarketOrderNotStraightBuy() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = -130.01, straight = false)
@@ -101,7 +101,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchNoLiquidityMarketOrderSell() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.01)
@@ -112,7 +112,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchNoLiquidityMarketOrderNotStraightSell() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 120.01, straight = false)
@@ -125,9 +125,9 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchNoLiquidityMarketOrderNotStraightSell2() {
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.000028)
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.00001))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.000009))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.000009))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.00001))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.000009))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 1000.0, volume = 0.000009))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.02, straight = false)
@@ -139,7 +139,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderWithAnotherAssetPair() {
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -151,7 +151,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderWithOwnLimitOrder() {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -164,7 +164,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderBuyNotEnoughFundsOpposite() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -176,7 +176,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderNotStraightBuyNotEnoughFundsOpposite() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = -120.0, straight = false)
@@ -188,7 +188,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderSellNotEnoughFundsOpposite() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 119.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
@@ -201,7 +201,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderBuyNotEnoughFundsOpposite2() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",  99.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -214,7 +214,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderSellNotEnoughFundsOpposite2() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",   119.99)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
@@ -226,7 +226,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderBuyNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 110.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -238,7 +238,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderSellNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
@@ -250,7 +250,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderNotStraightSellNotEnoughFunds() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 99.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 120.0, straight = false)
@@ -263,7 +263,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderBuyNotEnoughFunds2() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD",  10.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -276,7 +276,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderSellNotEnoughFunds2() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",   1.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
@@ -288,7 +288,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderBuyNotEnoughFunds3() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 120.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0, reservedVolume = 120.01)
@@ -300,7 +300,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     @Test
     fun testMatchMarketOrderSellNotEnoughFunds3() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 100.00)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0, reservedVolume = 100.01)
@@ -313,7 +313,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderBuyOneToOne() {
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "EUR",  100.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 91.1)
@@ -356,7 +356,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderSellOneToOne() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
@@ -383,7 +383,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderNotStraightBuyOneToOne() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = -100.0, straight = false)
@@ -410,7 +410,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderNotStraightSellOneToOne() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", price = 1.21, volume = 108.1, reservedVolume = 130.81))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 100.0, straight = false)
@@ -437,7 +437,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderBuyOneToOneFully() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -454,7 +454,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderNotStraightBuyOneToOneFully() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", clientId = "Client2", price = 1.2, volume = -100.0, reservedVolume = 100.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = -120.0, straight = false)
@@ -470,7 +470,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderSellOneToOneFully() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = -100.0)
@@ -485,7 +485,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderNotStraightSellOneToOneFully() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "completed", price = 1.2, volume = 100.0, reservedVolume = 120.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 120.0, straight = false)
@@ -500,8 +500,8 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testMatchMarketOrderBuyWithSeveral1() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.2, volume = -50.0, reservedVolume = 50.0))
         initService()
 
         val marketOrder = buildMarketOrder(volume = 100.0)
@@ -519,10 +519,11 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderBuyWithSeveral2() {
         testBalanceHolderWrapper.updateBalance("Client3", "EUR", 40.0)
         testBalanceHolderWrapper.updateBalance("Client4", "EUR", 40.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.1, volume = -40.0, reservedVolume = 40.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.15, volume = -40.0, reservedVolume = 40.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = -40.0, reservedVolume = 40.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = -40.0, reservedVolume = 40.0))
+        
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.1, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.15, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.2, volume = -40.0, reservedVolume = 40.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = -40.0, reservedVolume = 40.0))
         initService()
 
         Thread.sleep(100)
@@ -555,10 +556,10 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
     fun testMatchMarketOrderSellWithSeveral() {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 60.0)
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 60.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = 40.0, reservedVolume = 52.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 40.0, reservedVolume = 50.0))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.21234, volume = 40.0, reservedVolume = 48.5))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client4", price = 1.3, volume = 40.0, reservedVolume = 52.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.25, volume = 40.0, reservedVolume = 50.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client3", price = 1.21234, volume = 40.0, reservedVolume = 48.5))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", price = 1.1, volume = 40.0, reservedVolume = 44.0))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client2", volume = 122.0, straight = false)
@@ -588,8 +589,8 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.00952774, price = 10495.66))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.00947867, price = 10550.0, reservedVolume = 0.00947867))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.00952774, price = 10495.66))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.00947867, price = 10550.0, reservedVolume = 0.00947867))
         initService()
 
         val marketOrder = buildMarketOrder(clientId = "Client3", assetId = "BTCUSD", volume = -100.0, straight = false)
@@ -602,7 +603,7 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
 
     @Test
     fun testNotStraightSellRoundingError() {
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 909.727, volume = -1000.0, clientId = "Client3"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 909.727, volume = -1000.0, clientId = "Client3"))
         testBalanceHolderWrapper.updateBalance("Client3", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client4", "CHF", 1.0)
         initService()
@@ -620,8 +621,8 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "CHF", 100.00)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.02)
 
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 5999.0, volume = -0.005, clientId = "Client2"))
-        testDatabaseAccessor.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 6007.991, volume = -0.01165173, clientId = "Client2"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 5999.0, volume = -0.005, clientId = "Client2"))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(assetId = "BTCCHF", price = 6007.991, volume = -0.01165173, clientId = "Client2"))
 
         initService()
 
