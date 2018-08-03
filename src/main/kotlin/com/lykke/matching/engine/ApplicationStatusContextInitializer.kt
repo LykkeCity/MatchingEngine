@@ -9,7 +9,7 @@ import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.support.GenericApplicationContext
 import org.springframework.core.env.Environment
 
-class AppStatusStarter : ApplicationContextInitializer<GenericApplicationContext> {
+class ApplicationStatusContextInitializer : ApplicationContextInitializer<GenericApplicationContext> {
     override fun initialize(applicationContext: GenericApplicationContext) {
 
         val azureStatusProcessor = getAzureStatusProcessor(getConfig(applicationContext.environment))
@@ -17,7 +17,7 @@ class AppStatusStarter : ApplicationContextInitializer<GenericApplicationContext
         try {
             azureStatusProcessor.run()
         } catch (e: CheckAppInstanceRunningException) {
-            LOGGER.error(e.message)
+            LOGGER.error("Error occurred while starting application ${e.message}")
             System.exit(1)
         }
     }
