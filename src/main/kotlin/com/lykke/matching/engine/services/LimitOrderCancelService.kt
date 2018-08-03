@@ -21,11 +21,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
 
     override fun getOrders(messageWrapper: MessageWrapper): Orders {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
-            LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
-
-            genericLimitOrderService.cancelLimitOrder(Date(), message.limitOrderId.toString(), true)
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
+            processOldLimitOrderCancelMessage(messageWrapper)
             return Orders.processed()
         }
 
@@ -68,6 +64,14 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
         }
 
         return Orders.notProcessed(orders, stopOrders)
+    }
+
+    private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper) {
+        val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
+        LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+
+        genericLimitOrderService.cancelLimitOrder(Date(), message.limitOrderId.toString(), true)
+        messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
     }
 
     private fun parseOldLimitOrderCancel(array: ByteArray): ProtocolMessages.OldLimitOrderCancel {
