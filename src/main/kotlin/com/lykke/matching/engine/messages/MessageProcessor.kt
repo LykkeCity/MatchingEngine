@@ -184,9 +184,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
 
-        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.limitOrderCancelService = applicationContext.getBean(LimitOrderCancelService::class.java)
 
-        this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)

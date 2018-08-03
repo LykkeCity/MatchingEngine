@@ -68,9 +68,6 @@ abstract class AbstractTest {
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @Autowired
-    protected lateinit var assetsPairsHolder: AssetsPairsHolder
-
-    @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
 
     @Autowired
@@ -181,7 +178,7 @@ abstract class AbstractTest {
 
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService,  genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
