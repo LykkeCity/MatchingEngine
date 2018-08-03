@@ -4,8 +4,9 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
-import org.springframework.boot.SpringApplication
+import org.apache.log4j.net.SocketServer
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.core.env.SimpleCommandLinePropertySource
 
@@ -16,7 +17,9 @@ val LOGGER =  Logger.getLogger("AppStarter")
 
 fun main(args: Array<String>) {
     try {
-        val context = SpringApplication.run(AppStarter::class.java, *args)
+        val context = SpringApplicationBuilder(AppStarter::class.java)
+                .initializers(AppStatusStarter())
+                .run(*args)
         val spotName = context.getBean(Config::class.java).me.name
         Runtime.getRuntime().addShutdownHook(ShutdownHook(spotName))
         addCommandLinePropertySource(args, context)
