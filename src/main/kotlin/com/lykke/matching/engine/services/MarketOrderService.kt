@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -119,9 +120,8 @@ class MarketOrderService @Autowired constructor(
         }
 
         val assetPair = getAssetPair(order)
-        val orderBook = getOrderBook(order)
 
-        val matchingResult = matchingEngine.initTransaction().match(order, orderBook, messageWrapper.messageId!!)
+        val matchingResult = matchingEngine.initTransaction().match(order, getOrderBook(order), messageWrapper.messageId!!)
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             NoLiquidity -> {
                 val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
@@ -278,7 +278,9 @@ class MarketOrderService @Autowired constructor(
                         messageSender.sendTrustedClientsMessage(trustedClientsOutgoingMessage)
                     }
 
-                    val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide()))
+                    val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
+                    val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, orderBook.getCopyOfOrderBook(!order.isBuySide()))
+                    genericLimitOrderService.putTradeInfo(TradeInfo(order.assetPairId, !order.isBuySide(), if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice(), now))
                     orderBookQueue.put(newOrderBook)
                     rabbitOrderBookQueue.put(newOrderBook)
                     writeResponse(messageWrapper, order, MessageStatus.OK)

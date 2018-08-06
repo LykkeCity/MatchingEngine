@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.utils.order
 
+import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.messages.MessageType
@@ -23,7 +24,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
                                                 genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                                @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean): ApplicationRunner{
+                                                @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean) : ApplicationRunner {
 
     private val genericLimitOrdersCanceller: GenericLimitOrdersCanceller
 
@@ -41,7 +42,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
     }
 
     override fun run(args: ApplicationArguments?) {
-        if(cancelAllOrders) {
+        if (cancelAllOrders) {
             cancelAllOrders()
         }
     }
@@ -50,11 +51,16 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
         val operationId = getOperationId()
         teeLog("Starting cancel all orders in all order books, operation Id: ($operationId)")
 
-        preProcessLimitOrders()
-        preProcessStopOrders()
+        try {
+            preProcessLimitOrders()
+            preProcessStopOrders()
+            genericLimitOrdersCanceller.applyFull(operationId, operationId, null,
+                    MessageType.LIMIT_ORDER, true)
+        } catch (e: BalanceException) {
+            teeLog("Unable to process wallet operations due to invalid balance: ${e.message}")
+            throw e
+        }
 
-        genericLimitOrdersCanceller.applyFull(operationId, operationId, null,
-                MessageType.LIMIT_ORDER, true)
         teeLog("Completed to cancel all orders")
     }
 

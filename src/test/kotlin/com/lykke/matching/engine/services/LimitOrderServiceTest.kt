@@ -399,6 +399,9 @@ class LimitOrderServiceTest: AbstractTest() {
 
         assertEquals(BigDecimal.valueOf(877.48), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
+
+        assertEquals(1, tradesInfoListener.getCount())
+        assertEquals(BigDecimal.valueOf(122.512), tradesInfoListener.getProcessingQueue().poll().price)
     }
 
     @Test

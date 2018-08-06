@@ -161,7 +161,7 @@ class InvalidBalanceTest : AbstractTest() {
         assertEquals(1, testRabbitOrderBookListener.getCount())
         assertEquals(1, testLkkTradeListener.getCount())
         assertEquals(4, testLkkTradeListener.getQueue().poll().size)
-        assertEquals(0, tradesInfoListener.getCount())
+        assertEquals(1, tradesInfoListener.getCount())
 
         assertEquals(0, genericLimitOrderService.getOrderBook("ETHUSD").getOrderBook(true).size)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("ETHUSD", true).size)
