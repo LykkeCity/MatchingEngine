@@ -1,12 +1,20 @@
 package com.lykke.matching.engine.utils.monitoring
 
-import com.lykke.matching.engine.LOGGER
 import com.lykke.matching.engine.daos.monitoring.MonitoringResult
 import com.sun.management.OperatingSystemMXBean
+import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.stereotype.Component
 import java.lang.management.ManagementFactory
 
+@Component
 class MonitoringStatsCollector {
     private val MB = 1024 * 1024
+
+    @Autowired
+    @Qualifier("appStarterLogger")
+    private lateinit var LOGGER: Logger
 
     fun collectMonitoringResult(): MonitoringResult? {
         try {

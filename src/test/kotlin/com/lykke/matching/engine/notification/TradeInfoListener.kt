@@ -9,7 +9,7 @@ class TradeInfoListener: AbstractQueueWrapper<TradeInfo>() {
     @Autowired
     private lateinit var tradeInfoQueue: BlockingQueue<TradeInfo>
 
-    override fun getProcessingQueue(): BlockingQueue<*> {
+    override fun getProcessingQueue(): BlockingQueue<TradeInfo> {
         return tradeInfoQueue
     }
 }

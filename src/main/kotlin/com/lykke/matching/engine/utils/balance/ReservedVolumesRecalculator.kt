@@ -24,6 +24,9 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.Date
@@ -33,6 +36,7 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Component
+@Order(2)
 class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
                                                          private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                                          private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
@@ -43,7 +47,10 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
                                                          private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                                         private val messageSender: MessageSender) {
+                                                         private val messageSender: MessageSender) : ApplicationRunner {
+    override fun run(args: ApplicationArguments?) {
+        correctReservedVolumesIfNeed()
+    }
 
     companion object {
         private val LOGGER = Logger.getLogger(ReservedVolumesRecalculator::class.java.name)
