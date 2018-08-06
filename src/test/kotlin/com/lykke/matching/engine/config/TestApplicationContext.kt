@@ -33,9 +33,8 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
-import com.lykke.matching.engine.notification.*
+import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -63,6 +62,7 @@ import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
+import org.apache.log4j.Logger
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationContext
@@ -73,7 +73,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
-@Import(QueueConfig::class, LoggerConfig::class)
+@Import(QueueConfig::class)
 open class TestApplicationContext {
 
     @Bean
@@ -504,5 +504,15 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {
         return LimitOrderBusinessValidatorImpl()
+    }
+
+    @Bean(destroyMethod = "")
+    open fun appStarterLogger(): Logger {
+        return Logger.getLogger("AppStarter")
+    }
+
+    @Bean
+    open fun singleLimitOrderContextPreprocessorLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
     }
 }
