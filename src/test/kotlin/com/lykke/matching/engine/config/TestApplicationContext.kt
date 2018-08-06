@@ -274,9 +274,11 @@ open class TestApplicationContext {
                                 lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                 genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, marketOrderValidator: MarketOrderValidator,
                                 feeProcessor: FeeProcessor,
-                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): MarketOrderService {
+                                messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                messageSender: MessageSender,
+                                applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
         return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator, feeProcessor, messageSequenceNumberHolder, messageSender)
+                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator, feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean

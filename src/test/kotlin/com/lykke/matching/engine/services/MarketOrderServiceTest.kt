@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
@@ -25,11 +26,11 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.After
-import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -37,6 +38,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -65,6 +67,9 @@ class MarketOrderServiceTest: AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @Before
     fun setUp() {
@@ -723,5 +728,71 @@ class MarketOrderServiceTest: AbstractTest() {
 
         val balanceUpdates = (clientsEventsQueue.poll() as ExecutionEvent).balanceUpdates
         assertEquals(0, balanceUpdates!!.filter { it.walletId == "Client1" }.size)
+    }
+
+    @Test
+    fun testBuyPriceDeviationThreshold() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 2.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 3.0)
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.1, volume = -1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = -1.0))
+
+        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.ZERO)
+        applicationSettingsCache.update()
+
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
+        var eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.04))
+        applicationSettingsCache.update()
+
+        clearMessageQueues()
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
+        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.05))
+        applicationSettingsCache.update()
+
+        clearMessageQueues()
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
+        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single { it.orderType == OrderType.MARKET }
+        assertEquals(OutgoingOrderStatus.MATCHED, eventOrder.status)
+    }
+
+    @Test
+    fun testSellPriceDeviationThreshold() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 2.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 3.0)
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.0, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 0.9, volume = 1.0))
+
+        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.ZERO)
+        applicationSettingsCache.update()
+
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
+        var eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.04))
+        applicationSettingsCache.update()
+
+        clearMessageQueues()
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
+        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.05))
+        applicationSettingsCache.update()
+
+        clearMessageQueues()
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
+        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single { it.orderType == OrderType.MARKET }
+        assertEquals(OutgoingOrderStatus.MATCHED, eventOrder.status)
     }
 }
