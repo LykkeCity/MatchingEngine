@@ -11,31 +11,36 @@ import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
 @Component
+@Order(3)
 class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
                                                 genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
-                                                @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean) {
+                                                @Value("#{Config.me.cancelAllOrders}") private val cancelAllOrders: Boolean) : ApplicationRunner {
 
     private val genericLimitOrdersCanceller: GenericLimitOrdersCanceller
 
     companion object {
         private val LOGGER = Logger.getLogger(AllOrdersCanceller::class.java.name)
-
-        private fun teeLog(message: String) {
-            println(message)
-            LOGGER.info(message)
-        }
     }
 
     init {
         genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, Date())
+    }
+
+    override fun run(args: ApplicationArguments?) {
+        if (cancelAllOrders) {
+            cancelAllOrders()
+        }
     }
 
     fun cancelAllOrders() {
@@ -43,14 +48,13 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
             return
         }
         val operationId = getOperationId()
-        teeLog("Starting cancel all orders in all order books, operation Id: ($operationId)")
+        LOGGER.info("Starting cancel all orders in all order books, operation Id: ($operationId)")
 
         preProcessLimitOrders()
         preProcessStopOrders()
-
         genericLimitOrdersCanceller.applyFull(operationId, operationId, null,
                 MessageType.LIMIT_ORDER, true)
-        teeLog("Completed to cancel all orders")
+        LOGGER.info("Completed to cancel all orders")
     }
 
     private fun preProcessLimitOrders() {
@@ -59,7 +63,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
         val ordersToCancel = operationToOrder[OrderOperation.CANCEL] ?: emptyList()
         val ordersToRemove = operationToOrder[OrderOperation.REMOVE] ?: emptyList()
 
-        teeLog("Start cancel of all limit orders orders to cancel count: ${ordersToCancel.size}, " +
+        LOGGER.info("Start cancel of all limit orders orders to cancel count: ${ordersToCancel.size}, " +
                 "orders to remove count: ${ordersToRemove.size}")
         genericLimitOrdersCanceller.preProcessLimitOrders(ordersToCancel, ordersToRemove)
     }
@@ -78,7 +82,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
         val ordersToCancel = operationToOrder[OrderOperation.CANCEL] ?: emptyList()
         val ordersToRemove = operationToOrder[OrderOperation.REMOVE] ?: emptyList()
 
-        teeLog("Start cancel of all stop orders orders to cancel: ${ordersToCancel.size}, orders to remove count: ${ordersToRemove.size}")
+        LOGGER.info("Start cancel of all stop orders orders to cancel: ${ordersToCancel.size}, orders to remove count: ${ordersToRemove.size}")
         genericLimitOrdersCanceller.preProcessStopLimitOrders(ordersToCancel,
                 ordersToRemove)
     }

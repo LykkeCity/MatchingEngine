@@ -1,10 +1,12 @@
 package com.lykke.matching.engine.order.cancel
 
+import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
@@ -12,12 +14,14 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.BlockingQueue
 
 class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                           assetsHolder: AssetsHolder,
                            private val assetsPairsHolder: AssetsPairsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
@@ -27,6 +31,7 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                            private val date: Date,
                            LOGGER: Logger) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,
+                assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 genericLimitOrderService,
@@ -66,9 +71,11 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                 }
     }
 
-    override fun getOrderLimitVolume(order: LimitOrder): BigDecimal {
-        return order.reservedLimitVolume
-                ?: if (order.isBuySide()) order.getAbsRemainingVolume() * order.price else order.getAbsRemainingVolume()
+    override fun getOrderLimitVolume(order: LimitOrder, limitAsset: Asset): BigDecimal {
+        return order.reservedLimitVolume ?: if (order.isBuySide())
+            NumberUtils.setScale(order.getAbsRemainingVolume() * order.price, limitAsset.accuracy, false)
+        else
+            order.getAbsRemainingVolume()
     }
 
     override fun processChangedOrderBook(orderBookCopy: AssetOrderBook, isBuy: Boolean) {
