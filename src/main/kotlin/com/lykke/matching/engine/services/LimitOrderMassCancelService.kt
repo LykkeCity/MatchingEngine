@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.context.LimitOrderMassCancelOperationContext
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -15,12 +16,9 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
                                   private val cancellerFactory: GenericLimitOrdersCancellerFactory) : AbstractService {
     override fun processMessage(messageWrapper: MessageWrapper) {
         val now = Date()
+        val context = messageWrapper.context as LimitOrderMassCancelOperationContext
 
-        if (messageWrapper.parsedMessage == null) {
-            parseMessage(messageWrapper)
-        }
-
-        val orders = getOrders(messageWrapper)
+        val orders = getOrders(context)
 
         if (orders.isNotEmpty()) {
             cancelOrders(orders, now, messageWrapper)
@@ -33,16 +31,13 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
     }
 
-    private fun getOrders(messageWrapper: MessageWrapper): List<LimitOrder> {
-        val message = getMessage(messageWrapper)
+    private fun getOrders(context: LimitOrderMassCancelOperationContext): List<LimitOrder> {
+        val clientId = context.clientId
+        val assetPairId = context.assetPairId
 
-        val clientId = message.clientId
-        val assetPairId = if (message.hasAssetPairId()) message.assetPairId else null
-        val isBuy = if (message.hasIsBuy()) message.isBuy else null
+        LOGGER.debug("Got mass limit order cancel request id: ${context.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: ${context.isBuy}")
 
-        LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
-
-        return genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy)
+        return genericLimitOrderService.searchOrders(clientId, context.assetPairId, context.isBuy)
     }
 
     private fun cancelOrders(orders: List<LimitOrder>, now: Date,
@@ -57,15 +52,8 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
                         false)
     }
 
-    private fun getMessage(messageWrapper: MessageWrapper) =
-            messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderMassCancel
-
     override fun parseMessage(messageWrapper: MessageWrapper) {
-        val message = ProtocolMessages.LimitOrderMassCancel.parseFrom(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
-        messageWrapper.id = message.uid
-        messageWrapper.timestamp = Date().time
-        messageWrapper.parsedMessage = message
+        // do nothing
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
