@@ -32,6 +32,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.parsers.impl.CashOperationContextParser
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -41,11 +42,15 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.business.CashOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.CashOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.impl.CashInOutOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.input.CashOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.impl.CashOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
@@ -191,10 +196,18 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashOperationValidator(balancesHolder: BalancesHolder,
-                                    assetsHolder: AssetsHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): CashOperationValidator {
-        return CashOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+    open fun cashOperationInputValidator(): CashOperationInputValidator {
+        return CashOperationInputValidatorImpl()
+    }
+
+    @Bean
+    open fun cashOperationBusin(balancesHolder: BalancesHolder): CashOperationBusinessValidator {
+        return CashOperationBusinessValidatorImpl(balancesHolder)
+    }
+
+    @Bean
+    open fun cashOperationContextParser(assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): CashOperationContextParser {
+        return CashOperationContextParser(assetsHolder, applicationSettingsCache)
     }
 
     @Bean

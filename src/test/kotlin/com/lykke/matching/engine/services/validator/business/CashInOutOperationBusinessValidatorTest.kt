@@ -11,7 +11,6 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.services.validator.CashOperationValidatorTest
 import com.lykke.matching.engine.services.validator.input.CashInOutOperationInputValidatorTest
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -60,8 +59,8 @@ class CashInOutOperationBusinessValidatorTest {
     @Test(expected = ValidationException::class)
     fun testBalanceValid() {
         //given
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 500.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 250.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_ID, ASSET_ID, 500.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_ID, ASSET_ID, 250.0)
         val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
         cashInOutOperationBuilder.volume = -300.0
 

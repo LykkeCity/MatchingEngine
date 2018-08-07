@@ -112,4 +112,9 @@ open class QueueConfig {
     open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
+
+    @Bean
+    open fun cashOperationInputQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
 }
