@@ -305,9 +305,9 @@ class MatchingEngine(private val LOGGER: Logger,
                 order.isOrigBuySide()
         )
 
-        if (!checkExecutionPrice(order, executionPrice, bestPrice, priceDeviationThreshold)) {
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            LOGGER.info("Price check is failed (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
@@ -366,20 +366,20 @@ class MatchingEngine(private val LOGGER: Logger,
         availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId] = value
     }
 
-    private fun checkExecutionPrice(order: Order,
-                                    price: BigDecimal,
-                                    expectedPrice: BigDecimal?,
-                                    threshold: BigDecimal?): Boolean {
+    private fun checkExecutionPriceDeviation(isBuySide: Boolean,
+                                             price: BigDecimal,
+                                             expectedPrice: BigDecimal?,
+                                             threshold: BigDecimal?): Boolean {
         if (threshold == null || expectedPrice == null) {
             return true
         }
         if (BigDecimal.ZERO.compareTo(expectedPrice) == 0) {
             return false
         }
-        return if (order.isBuySide()) {
-            (price - expectedPrice) / expectedPrice <= threshold
+        return if (isBuySide) {
+            NumberUtils.divideWithMaxScale(price - expectedPrice, expectedPrice) <= threshold
         } else {
-            (expectedPrice - price) / expectedPrice <= threshold
+            NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
         }
     }
 }
