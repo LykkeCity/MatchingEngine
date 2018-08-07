@@ -20,7 +20,7 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 
 @Component
-@Order(3)
+@Order(4)
 class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: AssetsPairsHolder,
                                                 private val genericLimitOrderService: GenericLimitOrderService,
                                                 private val genericStopLimitOrderService: GenericStopLimitOrderService,
@@ -44,9 +44,6 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
     }
 
     fun cancelAllOrders() {
-        if (!cancelAllOrders) {
-            return
-        }
         val operationId = getOperationId()
         LOGGER.info("Starting cancel all orders in all order books, operation Id: ($operationId)")
 
