@@ -4,7 +4,7 @@ import com.lykke.matching.engine.daos.Settings
 import java.math.BigDecimal
 
 class TestConfigDatabaseAccessor : ConfigDatabaseAccessor {
-    private var settings = Settings(emptySet(), emptySet(), emptyMap())
+    private var settings = Settings(emptySet(), emptySet(), emptyMap(), emptyMap())
 
     override fun loadConfigs(): Settings {
         return settings
@@ -16,7 +16,8 @@ class TestConfigDatabaseAccessor : ConfigDatabaseAccessor {
 
         settings = Settings(trustedClients = trustedClients,
                 disabledAssets = settings.disabledAssets,
-                moPriceDeviationThresholds = settings.moPriceDeviationThresholds)
+                moPriceDeviationThresholds = settings.moPriceDeviationThresholds,
+                loPriceDeviationThresholds = settings.loPriceDeviationThresholds)
     }
 
     fun addDisabledAsset(disabledAsset: String) {
@@ -25,16 +26,23 @@ class TestConfigDatabaseAccessor : ConfigDatabaseAccessor {
 
         settings = Settings(trustedClients = settings.trustedClients,
                 disabledAssets = disabledAssets,
-                moPriceDeviationThresholds = settings.moPriceDeviationThresholds)
+                moPriceDeviationThresholds = settings.moPriceDeviationThresholds,
+                loPriceDeviationThresholds = settings.loPriceDeviationThresholds)
     }
 
     fun addMarketOrderPriceDeviationThreshold(assetPirId: String, threshold: BigDecimal) {
         val thresholds = HashMap(settings.moPriceDeviationThresholds)
         thresholds[assetPirId] = threshold
-        settings = Settings(settings.trustedClients, settings.disabledAssets, thresholds)
+        settings = Settings(settings.trustedClients, settings.disabledAssets, thresholds, settings.loPriceDeviationThresholds)
+    }
+
+    fun addLimitOrderPriceDeviationThreshold(assetPirId: String, threshold: BigDecimal) {
+        val thresholds = HashMap(settings.loPriceDeviationThresholds)
+        thresholds[assetPirId] = threshold
+        settings = Settings(settings.trustedClients, settings.disabledAssets, settings.moPriceDeviationThresholds, thresholds)
     }
 
     fun clear() {
-        settings = Settings(emptySet(), emptySet(), emptyMap())
+        settings = Settings(emptySet(), emptySet(), emptyMap(), emptyMap())
     }
 }
