@@ -16,11 +16,12 @@ import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import redis.clients.jedis.JedisPool
 import java.util.Date
+import java.util.Optional
 
 @Component
 @Order(2)
 class OrdersMigrationService(private val config: Config,
-                             jedisPool: JedisPool,
+                             jedisPool: Optional<JedisPool>,
                              private val persistenceManager: PersistenceManager,
                              private val genericLimitOrderService: GenericLimitOrderService): ApplicationRunner {
     companion object {
@@ -28,7 +29,9 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private val fileDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    private val redisDatabaseAccessor = RedisOrderBookDatabaseAccessor(jedisPool, config.me.redis.ordersDatabase)
+    private val redisDatabaseAccessor = if (jedisPool.isPresent)
+        RedisOrderBookDatabaseAccessor(jedisPool.get(), config.me.redis.ordersDatabase)
+    else null
 
     override fun run(args: ApplicationArguments?) {
         if (!config.me.ordersMigration) {
@@ -42,7 +45,7 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private fun fromFilesToRedis() {
-        if (redisDatabaseAccessor.loadLimitOrders().isNotEmpty()) {
+        if (redisDatabaseAccessor!!.loadLimitOrders().isNotEmpty()) {
             throw Exception("Orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
         }
         val startTime = Date().time
