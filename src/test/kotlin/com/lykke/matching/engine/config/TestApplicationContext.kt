@@ -10,6 +10,7 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -20,7 +21,12 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.LimitOrderCancelOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.input.LimitOrderInputCancelOperationValidatorImpl
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
@@ -366,5 +372,33 @@ open class TestApplicationContext {
     @Bean
     open fun feeProcessor(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
         return FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+    }
+
+    @Bean
+    open fun limitOrderCancelOperationInputValidator(): LimitOrderCancelOperationInputValidator {
+        return LimitOrderInputCancelOperationValidatorImpl()
+    }
+
+    @Bean
+    open fun limitOrderCancelOperationBusinessValidator(): LimitOrderCancelOperationBusinessValidator {
+        return LimitOrderCancelOperationBusinessValidatorImpl()
+    }
+
+    @Bean
+    open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
+                                     genericStopLimitOrderService: GenericStopLimitOrderService,
+                                     cancellerFactory: GenericLimitOrdersCancellerFactory,
+                                     validator: LimitOrderCancelOperationBusinessValidator): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory, validator)
+    }
+
+    @Bean
+    open fun limitOrderCancelOperationContextParser(): LimitOrderCancelOperationContextParser {
+        return LimitOrderCancelOperationContextParser()
+    }
+
+    @Bean
+    open fun messageBuilder(limitOrderCancelOperationContextParser: LimitOrderCancelOperationContextParser): MessageBuilder {
+        return MessageBuilder(limitOrderCancelOperationContextParser)
     }
 }

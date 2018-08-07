@@ -9,12 +9,15 @@ import java.util.concurrent.BlockingQueue
 class MessageRouter(
         val cashInOutQueue: BlockingQueue<MessageWrapper>,
         val cashTransferQueue: BlockingQueue<MessageWrapper>,
+        private val limitOrderCancelQueue: BlockingQueue<MessageWrapper>,
         val preProcessedMessageQueue: BlockingQueue<MessageWrapper>
 ) {
     fun process(wrapper: MessageWrapper) {
-        when(wrapper.type) {
+        when (wrapper.type) {
             MessageType.CASH_IN_OUT_OPERATION.type -> cashInOutQueue.put(wrapper)
             MessageType.CASH_TRANSFER_OPERATION.type -> cashTransferQueue.put(wrapper)
+            MessageType.LIMIT_ORDER_CANCEL.type,
+            MessageType.OLD_LIMIT_ORDER_CANCEL.type -> limitOrderCancelQueue.put(wrapper)
             else -> preProcessedMessageQueue.put(wrapper)
         }
     }

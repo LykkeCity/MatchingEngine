@@ -15,7 +15,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -48,6 +47,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -664,7 +666,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[1].status)
         assertEquals("-0.20343524", event.orders[1].remainingVolume)
 
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("1"))
         assertEquals(BigDecimal.valueOf(0.001), testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
     }
 

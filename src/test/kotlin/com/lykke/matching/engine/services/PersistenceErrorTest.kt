@@ -11,10 +11,10 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
@@ -26,6 +26,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -63,6 +64,9 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -136,13 +140,13 @@ class PersistenceErrorTest : AbstractTest() {
     @Test
     fun testLimitOrderCancel() {
         // Limit Order
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("order1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("order1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
 
         // Stop Limit Order
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("stopOrder1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("stopOrder1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())

@@ -142,6 +142,9 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
 
+    @Autowired
+    protected lateinit var limitOrderCancelService: LimitOrderCancelService
+
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
@@ -156,7 +159,6 @@ abstract class AbstractTest {
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
-    protected lateinit var limitOrderCancelService: LimitOrderCancelService
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
@@ -176,7 +178,6 @@ abstract class AbstractTest {
         cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor,cashInOutOperationValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService,  genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
