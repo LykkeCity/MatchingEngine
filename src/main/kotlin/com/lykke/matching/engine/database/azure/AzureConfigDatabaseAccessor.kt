@@ -17,6 +17,7 @@ class AzureConfigDatabaseAccessor(connectionString: String, configTableName: Str
         private const val DISABLED_ASSETS = "DisabledAssets"
         private const val TRUSTED_CLIENTS = "TrustedClients"
         private const val MO_PRICE_DEVIATION_THRESHOLD = "MarketOrderPriceDeviationThreshold"
+        private const val LO_PRICE_DEVIATION_THRESHOLD = "LimitOrderPriceDeviationThreshold"
 
         private class Value(val rowKey: String,
                             val value: String)
@@ -52,8 +53,14 @@ class AzureConfigDatabaseAccessor(connectionString: String, configTableName: Str
                 ?.mapValues { BigDecimal(it.value.single().value) }
                 ?: emptyMap()
 
+        val loPriceDeviationThresholds = settings[LO_PRICE_DEVIATION_THRESHOLD]
+                ?.groupBy { it.rowKey }
+                ?.mapValues { BigDecimal(it.value.single().value) }
+                ?: emptyMap()
+
         return Settings(trustedClients,
                 disabledAssets,
-                moPriceDeviationThresholds)
+                moPriceDeviationThresholds,
+                loPriceDeviationThresholds)
     }
 }

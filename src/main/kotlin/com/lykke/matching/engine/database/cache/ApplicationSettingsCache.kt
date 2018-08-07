@@ -36,4 +36,8 @@ class ApplicationSettingsCache @Autowired constructor (private val configDatabas
     fun marketOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
         return settings.moPriceDeviationThresholds[assetPairId]
     }
+
+    fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
+        return settings.loPriceDeviationThresholds[assetPairId]
+    }
 }
