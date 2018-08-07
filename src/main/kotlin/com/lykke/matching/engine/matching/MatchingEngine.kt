@@ -71,7 +71,11 @@ class MatchingEngine(private val LOGGER: Logger,
         return UpdatedOrders(updatedOrderBook, updatedOrders)
     }
 
-    fun match(originOrder: Order, orderBook: PriorityBlockingQueue<LimitOrder>, messageId: String, balance: BigDecimal? = null): MatchingResult {
+    fun match(originOrder: Order,
+              orderBook: PriorityBlockingQueue<LimitOrder>,
+              messageId: String,
+              balance: BigDecimal? = null,
+              priceDeviationThreshold: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
@@ -95,6 +99,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val allOppositeCashMovements = LinkedList<WalletOperation>()
         val asset = assetsHolder.getAsset(if (isBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
         val limitAsset = assetsHolder.getAsset(if (isBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
+        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
 
         setMarketBalance(availableBalances, order, asset, availableBalance)
 
@@ -351,6 +356,12 @@ class MatchingEngine(private val LOGGER: Logger,
                     return MatchingResult(orderWrapper, now, cancelledLimitOrders)
                 }
             }
+
+            if (!checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
+                order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+                LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+                return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+            }
         }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
@@ -408,5 +419,22 @@ class MatchingEngine(private val LOGGER: Logger,
 
     private fun setMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset, value: BigDecimal) {
         availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId] = value
+    }
+
+    private fun checkExecutionPriceDeviation(isBuySide: Boolean,
+                                             price: BigDecimal,
+                                             expectedPrice: BigDecimal?,
+                                             threshold: BigDecimal?): Boolean {
+        if (threshold == null || expectedPrice == null) {
+            return true
+        }
+        if (BigDecimal.ZERO.compareTo(expectedPrice) == 0) {
+            return false
+        }
+        return if (isBuySide) {
+            NumberUtils.divideWithMaxScale(price - expectedPrice, expectedPrice) <= threshold
+        } else {
+            NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
+        }
     }
 }
