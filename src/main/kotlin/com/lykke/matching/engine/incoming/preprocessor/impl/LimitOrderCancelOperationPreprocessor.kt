@@ -1,11 +1,15 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
+import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
 import com.lykke.matching.engine.messages.MessageStatus
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationValidator
+import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
+import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.stereotype.Component
@@ -14,8 +18,8 @@ import javax.annotation.PostConstruct
 import javax.xml.bind.ValidationException
 
 @Component
-class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContextParser: LimitOrderCancelOperationContextParser,
-                                            val limitOrderCancelOperationValidator: LimitOrderCancelOperationValidator,
+class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
+                                            val limitOrderCancelOperationValidator: LimitOrderCancelOperationInputValidator,
                                             val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
                                             val preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessagePreprocessor, Thread(LimitOrderCancelOperationPreprocessor::class.java.name) {
 
@@ -31,15 +35,26 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
         try {
             limitOrderCancelOperationValidator.performValidation(parsedData)
         } catch (e: ValidationException) {
-            writeResponse()
+            writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(e.errorCode), e.message)
             return
         }
 
         preProcessedMessageQueue.put(parsedMessageWrapper)
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
+        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
+            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
+            return
+        }
+
+        val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
+
+        message?.let {
+            builder.statusReason = message
+        }
+
+        messageWrapper.writeNewResponse(builder)
     }
 
     override fun run() {
@@ -57,6 +72,8 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
                 if (context != null) {
                     LOGGER.error("Error details: $context")
                 }
+
+                writeResponse(messageWrapper, MessageStatus.RUNTIME)
             }
         }
     }
