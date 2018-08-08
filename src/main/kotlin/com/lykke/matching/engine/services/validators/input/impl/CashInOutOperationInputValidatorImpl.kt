@@ -26,7 +26,6 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
         isAssetExist(cashInOutContext, cashInOutParsedData.assetId)
         isFeeValid(cashInOutContext.cashInOutOperation.feeInstructions)
         isAssetEnabled(cashInOutContext)
-        isBalanceValid(cashInOutContext)
         isVolumeAccuracyValid(cashInOutContext)
     }
 
@@ -36,23 +35,6 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
                     "for client ${cashInOutContext.clientId}")
             throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
         }
-    }
-
-    private fun isBalanceValid(cashInOutContext: CashInOutContext) {
-        val amount = cashInOutContext.cashInOutOperation.amount
-        if (amount < BigDecimal.ZERO) {
-            val asset = cashInOutContext.asset
-            val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset!!.assetId)
-            val reservedBalance = balancesHolder.getReservedBalance(cashInOutContext.clientId, asset.assetId)
-            if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + amount, asset.accuracy) < BigDecimal.ZERO) {
-                LOGGER.info("Cash out operation (${cashInOutContext.cashInOutOperation.id}) " +
-                        "for client ${cashInOutContext.clientId} asset ${asset.assetId}, " +
-                        "volume: ${NumberUtils.roundForPrint(amount)}: low balance $balance, " +
-                        "reserved balance $reservedBalance")
-                throw ValidationException(ValidationException.Validation.LOW_BALANCE)
-            }
-        }
-
     }
 
     private fun isVolumeAccuracyValid(cashInOutContext: CashInOutContext) {
