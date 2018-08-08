@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.incoming.parsers.impl
 
 import com.lykke.matching.engine.daos.context.LimitOrderMassCancelOperationContext
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import org.springframework.stereotype.Component
@@ -18,10 +20,15 @@ class LimitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCa
     private fun parseMessage(messageWrapper: MessageWrapper): LimitOrderMassCancelOperationContext {
         val message = ProtocolMessages.LimitOrderMassCancel.parseFrom(messageWrapper.byteArray)
 
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
+        val messageId = if (message.hasMessageId()) message.messageId else message.uid
+        messageWrapper.messageId = messageId
         messageWrapper.id = message.uid
         messageWrapper.timestamp = Date().time
 
-        return LimitOrderMassCancelOperationContext(message.uid, message.clientId, message.assetPairId, message.isBuy)
+        val messageType =  MessageType.valueOf(messageWrapper.type) ?: throw Exception("Unknown message type ${messageWrapper.type}")
+
+        return LimitOrderMassCancelOperationContext(message.uid, message.messageId, message.clientId,
+                ProcessedMessage(messageWrapper.type, messageWrapper.startTimestamp, messageId), messageType,
+                 message.assetPairId, message.isBuy)
     }
 }

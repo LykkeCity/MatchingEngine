@@ -15,9 +15,9 @@ import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
 
 
 @RunWith(SpringRunner::class)
@@ -61,6 +62,9 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
     
     @Before
     fun setUp() {
@@ -104,7 +108,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelOrdersOneSide() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 1)
@@ -143,7 +147,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun cancelAllClientOrders() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1"))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)
@@ -195,7 +199,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelTrustedClientOrders() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("TrustedClient", "EURUSD"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("TrustedClient", "EURUSD"))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 1)

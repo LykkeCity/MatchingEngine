@@ -3,7 +3,6 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.LimitOrderMassCancelOperationContext
 import com.lykke.matching.engine.messages.MessageStatus
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -14,6 +13,10 @@ import java.util.Date
 @Service
 class LimitOrderMassCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                                   private val cancellerFactory: GenericLimitOrdersCancellerFactory) : AbstractService {
+    companion object {
+        private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
+    }
+
     override fun processMessage(messageWrapper: MessageWrapper) {
         val now = Date()
         val context = messageWrapper.context as LimitOrderMassCancelOperationContext
@@ -21,14 +24,10 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         val orders = getOrders(context)
 
         if (orders.isNotEmpty()) {
-            cancelOrders(orders, now, messageWrapper)
+            cancelOrders(orders, now, context)
         }
 
         writeResponse(messageWrapper, MessageStatus.OK)
-    }
-
-    companion object {
-        private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
     }
 
     private fun getOrders(context: LimitOrderMassCancelOperationContext): List<LimitOrder> {
@@ -41,14 +40,14 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
     }
 
     private fun cancelOrders(orders: List<LimitOrder>, now: Date,
-                             messageWrapper: MessageWrapper) {
+                             context: LimitOrderMassCancelOperationContext) {
         val canceller = cancellerFactory.create(LOGGER, now)
 
         canceller.preProcessLimitOrders(orders)
-                .applyFull(messageWrapper.id!!,
-                        messageWrapper.messageId!!,
-                        messageWrapper.processedMessage(),
-                        MessageType.valueOf(messageWrapper.type) ?: throw Exception("Unknown message type ${messageWrapper.type}"),
+                .applyFull(context.uid,
+                        context.messageId,
+                        context.processedMessage,
+                        context.type,
                         false)
     }
 

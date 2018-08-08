@@ -25,7 +25,7 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
     }
 
     private fun parseMessage(messageWrapper: MessageWrapper): LimitOrderCancelOperationContext {
-        val message =ProtocolMessages.LimitOrderCancel.parseFrom(messageWrapper.byteArray)
+        val message = ProtocolMessages.LimitOrderCancel.parseFrom(messageWrapper.byteArray)
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid

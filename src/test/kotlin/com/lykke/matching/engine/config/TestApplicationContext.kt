@@ -10,7 +10,10 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -398,7 +401,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageBuilder(limitOrderCancelOperationContextParser: LimitOrderCancelOperationContextParser): MessageBuilder {
-        return MessageBuilder(limitOrderCancelOperationContextParser)
+    open fun messageBuilder(limitOrderCancelOperationContextParser: LimitOrderCancelOperationContextParser,
+                            limitOrderMassCancelOperationContextParser:  ContextParser<LimitOrderMassCancelOperationParsedData>): MessageBuilder {
+        return MessageBuilder(limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser)
+    }
+
+    @Bean
+    open fun limitOrderMassCancelOperationContextParser(): ContextParser<LimitOrderMassCancelOperationParsedData> {
+        return LimitOrderMassCancelOperationContextParser()
     }
 }

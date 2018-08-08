@@ -16,7 +16,6 @@ class CashInOutPreprocessor(
         private val outgoingQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor
 ): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
-
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()

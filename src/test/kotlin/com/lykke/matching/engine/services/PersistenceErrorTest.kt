@@ -10,12 +10,13 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildCashInOutWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
@@ -63,10 +64,10 @@ class PersistenceErrorTest : AbstractTest() {
         }
     }
 
-    private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
-
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
+
+    private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
 
     @Before
     fun setUp() {
@@ -154,7 +155,7 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testLimitOrderMassCancel() {
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
