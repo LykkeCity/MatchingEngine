@@ -196,10 +196,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
-        val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = applicationContext.getBean(CashInOutPreprocessor::class.java)
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
         cashTransferPreprocessor.start()
 
         this.historyTicksService = HistoryTicksService(marketStateCache,

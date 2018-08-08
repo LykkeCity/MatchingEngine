@@ -5,7 +5,9 @@ import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import org.springframework.stereotype.Component
 
+@Component
 class LimitOrderCancelOperationBusinessValidatorImpl : LimitOrderCancelOperationBusinessValidator {
     override fun performValidation(typeToOrder: Map<LimitOrderType, List<LimitOrder>>, context: LimitOrderCancelOperationContext) {
         validateOrdersAreFound(typeToOrder, context)

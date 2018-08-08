@@ -113,12 +113,17 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun cashInOutQueue(): BlockingQueue<MessageWrapper> {
+    open fun cashInOutInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
     @Bean
-    open fun cashTransferQueue(): BlockingQueue<MessageWrapper> {
+    open fun cashTransferInputQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun limitOrderCancelQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 }
