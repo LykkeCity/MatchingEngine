@@ -32,7 +32,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
 
     private fun isAssetExist(cashInOutContext: CashInOutContext, inputAssetId: String) {
         if (cashInOutContext.asset == null) {
-            LOGGER.info("Asset with id: $inputAssetId does not exist, cash in/out operation; ${cashInOutContext.id}), " +
+            LOGGER.info("Asset with id: $inputAssetId does not exist, cash in/out operation; ${cashInOutContext.cashInOutOperation.id}), " +
                     "for client ${cashInOutContext.clientId}")
             throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
         }
@@ -45,7 +45,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
             val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset!!.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashInOutContext.clientId, asset.assetId)
             if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + amount, asset.accuracy) < BigDecimal.ZERO) {
-                LOGGER.info("Cash out operation (${cashInOutContext.id}) " +
+                LOGGER.info("Cash out operation (${cashInOutContext.cashInOutOperation.id}) " +
                         "for client ${cashInOutContext.clientId} asset ${asset.assetId}, " +
                         "volume: ${NumberUtils.roundForPrint(amount)}: low balance $balance, " +
                         "reserved balance $reservedBalance")
@@ -71,7 +71,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val balancesHolde
     private fun isAssetEnabled(cashInOutContext: CashInOutContext) {
         val amount = cashInOutContext.cashInOutOperation.amount
         if (amount < BigDecimal.ZERO && applicationSettingsCache.isAssetDisabled(cashInOutContext.asset!!.assetId)) {
-            LOGGER.info("Cash out operation (${cashInOutContext.id}) for client ${cashInOutContext.clientId} " +
+            LOGGER.info("Cash out operation (${cashInOutContext.cashInOutOperation.id}) for client ${cashInOutContext.clientId} " +
                     "asset ${cashInOutContext.asset.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(amount)}: disabled asset")
             throw ValidationException(ValidationException.Validation.DISABLED_ASSET)

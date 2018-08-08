@@ -3,13 +3,9 @@ package com.lykke.matching.engine.daos.context
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.CashInOutOperation
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import java.util.*
 
-data class CashInOutContext(val id: String,
-                       val messageId: String,
-                       val operationId: String,
+data class CashInOutContext(val messageId: String,
                        val clientId: String,
                        val processedMessage: ProcessedMessage?,
                        val cashInOutOperation: CashInOutOperation,
-                       val asset: Asset?,
-                       val operationStartTime: Date)
+                       val asset: Asset?)

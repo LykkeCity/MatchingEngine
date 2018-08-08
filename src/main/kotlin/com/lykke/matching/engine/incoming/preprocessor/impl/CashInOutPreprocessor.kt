@@ -87,7 +87,7 @@ class CashInOutPreprocessor(
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
+        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.id}) for client ${context.clientId}, " +
                 "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 

@@ -51,6 +51,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     }
 
     override fun processMessage(messageWrapper: MessageWrapper) {
+        val now = Date()
         val cashTransferContext = messageWrapper.context as CashTransferContext
 
         val transferOperation = cashTransferContext.transferOperation
@@ -69,7 +70,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val result = try {
             messageWrapper.processedMessagePersisted = true
-            processTransferOperation(transferOperation, cashTransferContext.messageId, cashTransferContext.processedMessage, cashTransferContext.operationStartTime)
+            processTransferOperation(transferOperation, cashTransferContext.messageId, cashTransferContext.processedMessage, now)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
             return

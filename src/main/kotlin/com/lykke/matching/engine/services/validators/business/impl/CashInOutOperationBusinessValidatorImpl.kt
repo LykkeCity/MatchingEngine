@@ -26,7 +26,7 @@ class CashInOutOperationBusinessValidatorImpl(private val balancesHolder: Balanc
             val balance = balancesHolder.getBalance(cashInOutContext.clientId, asset!!.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashInOutContext.clientId, asset.assetId)
             if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + amount, asset.accuracy) < BigDecimal.ZERO) {
-                LOGGER.info("Cash out operation (${cashInOutContext.id}) " +
+                LOGGER.info("Cash out operation (${cashInOutContext.cashInOutOperation.id}) " +
                         "for client ${cashInOutContext.clientId} asset ${asset.assetId}, " +
                         "volume: ${NumberUtils.roundForPrint(amount)}: low balance $balance, " +
                         "reserved balance $reservedBalance")
