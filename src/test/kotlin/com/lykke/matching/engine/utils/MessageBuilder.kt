@@ -11,6 +11,11 @@ import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
@@ -23,7 +28,9 @@ import java.util.Date
 import java.util.UUID
 
 class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
-                     private val cashTransferContextParser: CashTransferContextParser) {
+                     private val cashTransferContextParser: CashTransferContextParser,
+                     private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
+                     private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>) {
     companion object {
         fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                             assetId: String = "EURUSD",
@@ -232,25 +239,8 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
             return multiOrderBuilder.build()
         }
 
-        fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
 
-        fun buildLimitOrderCancelWrapper(uids: List<String>): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
-                .setUid(UUID.randomUUID().toString()).addAllLimitOrderId(uids).build().toByteArray(), null)
 
-        fun buildLimitOrderMassCancelWrapper(clientId: String,
-                                             assetPairId: String? = null,
-                                             isBuy: Boolean? = null): MessageWrapper {
-            val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
-                    .setUid(UUID.randomUUID().toString())
-                    .setClientId(clientId)
-            assetPairId?.let {
-                builder.setAssetPairId(it)
-            }
-            isBuy?.let {
-                builder.setIsBuy(it)
-            }
-            return MessageWrapper("Test", MessageType.LIMIT_ORDER_MASS_CANCEL.type, builder.build().toByteArray(), null)
-        }
 
         fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())
@@ -356,5 +346,31 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
         }
 
         return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
+    }
+
+
+    fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
+
+    fun buildLimitOrderCancelWrapper(uids: List<String>): MessageWrapper {
+        val parsedData = limitOrderCancelOperationContextParser.parse(MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
+                .setUid(UUID.randomUUID().toString()).addAllLimitOrderId(uids).build().toByteArray(), null))
+        return parsedData.messageWrapper
+    }
+
+    fun buildLimitOrderMassCancelWrapper(clientId: String,
+                                         assetPairId: String? = null,
+                                         isBuy: Boolean? = null): MessageWrapper {
+        val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
+                .setUid(UUID.randomUUID().toString())
+                .setClientId(clientId)
+        assetPairId?.let {
+            builder.setAssetPairId(it)
+        }
+        isBuy?.let {
+            builder.setIsBuy(it)
+        }
+
+        val messageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_MASS_CANCEL.type, builder.build().toByteArray(), null)
+        return limitOrderMassCancelOperationContextParser.parse(messageWrapper).messageWrapper
     }
 }

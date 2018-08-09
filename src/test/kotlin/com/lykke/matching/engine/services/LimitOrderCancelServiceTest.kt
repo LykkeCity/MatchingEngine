@@ -27,6 +27,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
@@ -34,6 +35,9 @@ import kotlin.test.assertNull
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderCancelServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderCancelServiceTest : AbstractTest() {
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -67,7 +71,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
     @Test
     fun testCancel() {
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("3"))
 
         assertEquals(1, testOrderBookListener.getCount())
         assertEquals(1, testRabbitOrderBookListener.getCount())
@@ -123,7 +127,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "13", clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.1)))
         clearMessageQueues()
 
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper(listOf("10", "11", "13")))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper(listOf("10", "11", "13")))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)

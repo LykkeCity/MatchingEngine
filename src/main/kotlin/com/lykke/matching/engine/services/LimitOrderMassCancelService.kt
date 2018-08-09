@@ -1,43 +1,77 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.context.LimitOrderMassCancelOperationContext
+import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import org.apache.log4j.Logger
+import org.springframework.stereotype.Service
+import org.springframework.util.CollectionUtils
 import java.util.Date
 
-class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
-                                  genericStopLimitOrderService: GenericStopLimitOrderService,
-                                  cancellerFactory: GenericLimitOrdersCancellerFactory) :
-        AbstractLimitOrdersCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory) {
-
+@Service
+class LimitOrderMassCancelService(private val genericLimitOrderService: GenericLimitOrderService,
+                                  private val genericStopLimitOrderService: GenericStopLimitOrderService,
+                                  private val cancellerFactory: GenericLimitOrdersCancellerFactory) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
     }
 
-    override fun getOrders(messageWrapper: MessageWrapper): Orders {
-        val message = getMessage(messageWrapper)
+    override fun processMessage(messageWrapper: MessageWrapper) {
+        val now = Date()
+        val context = messageWrapper.context as LimitOrderMassCancelOperationContext
 
-        val clientId = message.clientId
-        val assetPairId = if (message.hasAssetPairId()) message.assetPairId else null
-        val isBuy = if (message.hasIsBuy()) message.isBuy else null
+        LOGGER.debug("Got mass limit order cancel request id: ${context.uid}, clientId: ${context.clientId}, assetPairId: ${context.assetPairId}, isBuy: ${context.isBuy}")
+        val orders = getOrders(context)
 
-        LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
+        if (orders.isNotEmpty()) {
+            cancelOrders(orders, now, context)
+        }
 
-        return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy),
-                genericStopLimitOrderService.searchOrders(clientId, assetPairId, isBuy))
+        writeResponse(messageWrapper, MessageStatus.OK)
     }
 
-    private fun getMessage(messageWrapper: MessageWrapper) =
-            messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderMassCancel
+    private fun getOrders(context: LimitOrderMassCancelOperationContext): Map<LimitOrderType, List<LimitOrder>> {
+        val clientId = context.clientId
+        val assetPairId = context.assetPairId
+
+
+        return mapOf(LimitOrderType.LIMIT to genericLimitOrderService.searchOrders(clientId, context.assetPairId, context.isBuy),
+                LimitOrderType.STOP_LIMIT to genericStopLimitOrderService.searchOrders(clientId, assetPairId, context.isBuy))
+    }
+
+    private fun cancelOrders(typeToOrders: Map<LimitOrderType, List<LimitOrder>>,
+                             now: Date,
+                             context: LimitOrderMassCancelOperationContext) {
+        if (typeToOrders.isEmpty()) {
+            return
+        }
+
+        val canceller = cancellerFactory.create(LOGGER, now)
+
+        val limitOrders = typeToOrders[LimitOrderType.LIMIT]
+        val stopOrders = typeToOrders[LimitOrderType.STOP_LIMIT]
+
+        if (!CollectionUtils.isEmpty(limitOrders)) {
+            canceller.preProcessLimitOrders(limitOrders!!)
+        }
+
+        if (!CollectionUtils.isEmpty(stopOrders)) {
+            canceller.preProcessLimitOrders(stopOrders!!)
+        }
+
+        canceller.applyFull(context.uid,
+                        context.messageId,
+                        context.processedMessage,
+                        context.type,
+                        false)
+    }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
-        val message = ProtocolMessages.LimitOrderMassCancel.parseFrom(messageWrapper.byteArray)
-        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
-        messageWrapper.id = message.uid
-        messageWrapper.timestamp = Date().time
-        messageWrapper.parsedMessage = message
+        // do nothing
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

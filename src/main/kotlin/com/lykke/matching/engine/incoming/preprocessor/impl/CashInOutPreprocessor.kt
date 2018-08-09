@@ -24,10 +24,10 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashInOutPreprocessor(
-        private val cashInOutQueue: BlockingQueue<MessageWrapper>,
+        private val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
-
+        private val databaseAccessor: CashOperationIdDatabaseAccessor
+): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -74,7 +74,7 @@ class CashInOutPreprocessor(
         }
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
@@ -93,7 +93,7 @@ class CashInOutPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashInOutQueue.take()
+            val message = cashInOutInputQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {

@@ -17,14 +17,14 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.stereotype.Component
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
 @Component
 class CashTransferPreprocessor(
-        private val cashTransferQueue: BlockingQueue<MessageWrapper>,
+        private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
@@ -76,7 +76,7 @@ class CashTransferPreprocessor(
         }
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
@@ -95,7 +95,7 @@ class CashTransferPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashTransferQueue.take()
+            val message = cashTransferInputQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {
