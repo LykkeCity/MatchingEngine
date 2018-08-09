@@ -23,6 +23,7 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
     override fun processMessage(messageWrapper: MessageWrapper) {
         val now = Date()
         val context = messageWrapper.context as LimitOrderMassCancelOperationContext
+        LOGGER.debug("Got mass limit order cancel request id: ${context.uid}, clientId: ${context.clientId}, assetPairId: ${context.assetPairId}, isBuy: ${context.isBuy}")
 
         LOGGER.debug("Got mass limit order cancel request id: ${context.uid}, clientId: ${context.clientId}, assetPairId: ${context.assetPairId}, isBuy: ${context.isBuy}")
         val orders = getOrders(context)
