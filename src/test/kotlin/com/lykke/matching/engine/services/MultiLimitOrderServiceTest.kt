@@ -50,9 +50,6 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
-    @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @TestConfiguration

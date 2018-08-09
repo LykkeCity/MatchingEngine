@@ -15,9 +15,9 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -32,7 +32,7 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                      private val cashTransferContextParser: CashTransferContextParser,
                      private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
                      private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
-                     private var singleLimitOrderContextParser: SingleLimitOrderContextParser) {
+                     private var singleLimitOrderContextParser: ContextParser<SingleLimitOrderParsedData>) {
     companion object {
         fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                             assetId: String = "EURUSD",

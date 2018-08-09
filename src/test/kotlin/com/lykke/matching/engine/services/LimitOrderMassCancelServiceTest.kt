@@ -18,7 +18,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
@@ -61,10 +60,6 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder

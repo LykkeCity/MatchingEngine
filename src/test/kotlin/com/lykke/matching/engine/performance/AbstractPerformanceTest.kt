@@ -15,9 +15,11 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
+import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
+import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -78,10 +80,13 @@ abstract class AbstractPerformanceTest {
     protected lateinit var rabbitEventsQueue: LinkedBlockingQueue<Event<*>>
     protected lateinit var rabbitTrustedClientsEventsQueue: LinkedBlockingQueue<ExecutionEvent>
     protected val messageBuilder = MessageBuilder(CashInOutContextParser(assetsHolder),
-            CashTransferContextParser(assetsHolder), singleLimitOrderContextParser)
+            CashTransferContextParser(assetsHolder), limitOrderCancelOperationContextParser,
+            limitOrderCancelMassOperationContextParser, singleLimitOrderContextParser)
 
 
-    protected lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
+    protected lateinit var singleLimitOrderContextParser: ContextParser<SingleLimitOrderParsedData>
+    protected lateinit var limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>
+    protected lateinit var limitOrderCancelMassOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>
 
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
@@ -146,7 +151,8 @@ abstract class AbstractPerformanceTest {
         val limitOrderInputValidator = LimitOrderInputValidatorImpl()
         val singleLimitOrderPreprocessorLogger = ThrottlingLogger.getLogger(SingleLimitOrderContextParser::class.java.name)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger)
-
+        limitOrderCancelOperationContextParser = LimitOrderCancelOperationContextParser()
+        limitOrderCancelMassOperationContextParser = LimitOrderMassCancelOperationContextParser()
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService,
                 persistenceManager)
 

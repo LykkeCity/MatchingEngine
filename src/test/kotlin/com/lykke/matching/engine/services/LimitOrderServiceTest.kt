@@ -48,10 +48,6 @@ import kotlin.test.assertTrue
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderServiceTest: AbstractTest() {
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @TestConfiguration
     open class Config {
         @Bean

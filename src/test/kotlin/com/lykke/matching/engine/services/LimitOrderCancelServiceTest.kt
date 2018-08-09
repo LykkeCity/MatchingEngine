@@ -34,10 +34,6 @@ import kotlin.test.assertNull
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderCancelServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderCancelServiceTest : AbstractTest() {
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @TestConfiguration
     open class Config {
         @Bean
