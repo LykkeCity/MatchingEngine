@@ -42,8 +42,6 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid.toString()
-        return LimitOrderCancelOperationContext(message.uid.toString(), setOf(message.limitOrderId.toString()), getMessageType(messageWrapper.type))
-    }
 
         return LimitOrderCancelOperationContext(message.uid.toString(),
                 messageWrapper.messageId!!,
