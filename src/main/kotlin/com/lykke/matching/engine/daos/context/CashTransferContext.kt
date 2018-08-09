@@ -8,5 +8,4 @@ data class CashTransferContext(
         val messageId: String,
         val transferOperation: TransferOperation,
         val asset: Asset?,
-        val inputAssetId: String,
         val processedMessage: ProcessedMessage)

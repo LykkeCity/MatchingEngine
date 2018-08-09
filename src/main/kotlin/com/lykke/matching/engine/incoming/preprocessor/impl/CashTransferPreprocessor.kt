@@ -48,21 +48,27 @@ class CashTransferPreprocessor(
     override fun preProcess(messageWrapper: MessageWrapper) {
         val cashTransferParsedData = contextParser.parse(messageWrapper)
 
-        if (!isDataValid(cashTransferParsedData)) {
+        if (!validateData(cashTransferParsedData)) {
             return
         }
 
         performDeduplicationCheck(cashTransferParsedData)
     }
 
-    fun isDataValid(cashTransferParsedData: CashTransferParsedData): Boolean {
+    fun validateData(cashTransferParsedData: CashTransferParsedData): Boolean {
         val context = cashTransferParsedData.messageWrapper.context as CashTransferContext
 
         try {
             cashTransferOperationInputValidator.performValidation(cashTransferParsedData)
         } catch (e: ValidationException) {
-            processedMessagesCache.addMessage(context.processedMessage)
-            persistenceManager.persist(PersistenceData(context.processedMessage))
+            val persistSuccess = persistenceManager.persist(PersistenceData(context.processedMessage))
+
+            if(persistSuccess) {
+                processedMessagesCache.addMessage(context.processedMessage)
+            } else {
+                throw Exception("Persistence error")
+            }
+
             writeErrorResponse(cashTransferParsedData.messageWrapper, context, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return false
         }

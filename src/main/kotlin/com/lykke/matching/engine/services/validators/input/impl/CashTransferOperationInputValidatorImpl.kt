@@ -36,7 +36,7 @@ class CashTransferOperationInputValidatorImpl @Autowired constructor(private val
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
                     "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
-                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: asset with id: ${cashTransferContext.inputAssetId}")
+                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: asset with id: ${transferOperation.asset}")
             throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
         }
     }

@@ -47,21 +47,26 @@ class CashInOutPreprocessor(
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
 
-        if (!isDataValid(parsedData)) {
+        if (!validateData(parsedData)) {
             return
         }
 
         performDeduplicationCheck(parsedData)
     }
 
-    private fun isDataValid(cashInOutParsedData: CashInOutParsedData): Boolean {
+    private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val cashInOutContext = cashInOutParsedData.messageWrapper.context as CashInOutContext
         try {
             cashInOutOperationInputValidator.performValidation(cashInOutParsedData)
         } catch (e: ValidationException) {
-            processedMessagesCache.addMessage(cashInOutContext.processedMessage)
-            persistenceManager.persist(PersistenceData(cashInOutContext.processedMessage))
+            val persistSuccess = persistenceManager.persist(PersistenceData(cashInOutContext.processedMessage))
+            if (persistSuccess) {
+                processedMessagesCache.addMessage(cashInOutContext.processedMessage)
+            } else {
+                throw Exception("Persistence error")
+            }
+
             writeErrorResponse(parsedMessageWrapper, cashInOutContext.cashInOutOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return false
         }
@@ -94,7 +99,7 @@ class CashInOutPreprocessor(
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.id}) for client ${context.clientId}, " +
+        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 

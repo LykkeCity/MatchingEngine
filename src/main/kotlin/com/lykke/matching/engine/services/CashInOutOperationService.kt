@@ -49,8 +49,8 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
         val feeInstructions = cashInOutOperation.feeInstructions
         val walletOperation = CashInOutOperationConverter.fromCashInOutOperationToWalletOperation(cashInOutOperation)
 
-        LOGGER.debug("Processing cash in/out messageId: ${cashInOutContext.messageId} operation (${cashInOutOperation.id})" +
-                " for client ${cashInOutContext.clientId}, asset ${cashInOutContext.asset!!.assetId}," +
+        LOGGER.debug("Processing cash in/out messageId: ${cashInOutContext.messageId} operation (${cashInOutOperation.externalId})" +
+                " for client ${cashInOutContext.cashInOutOperation.clientId}, asset ${cashInOutContext.asset!!.assetId}," +
                 " amount: ${NumberUtils.roundForPrint(walletOperation.amount)}, feeInstructions: $feeInstructions")
 
 
@@ -85,7 +85,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setMatchingEngineId(walletOperation.id)
                     .setStatus(MessageStatus.RUNTIME.type))
-            LOGGER.info("Cash in/out operation (${cashInOutOperation.id}) for client ${cashInOutContext.clientId} asset ${cashInOutContext.asset.assetId}, volume: ${NumberUtils.roundForPrint(walletOperation.amount)}: unable to save balance")
+            LOGGER.info("Cash in/out operation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId} asset ${cashInOutContext.asset.assetId}, volume: ${NumberUtils.roundForPrint(walletOperation.amount)}: unable to save balance")
             return
         }
         walletProcessor.apply().sendNotification(cashInOutOperation.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
@@ -108,7 +108,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setMatchingEngineId(walletOperation.id)
                 .setStatus(OK.type))
 
-        LOGGER.info("Cash in/out walletOperation (${cashInOutOperation.id}) for client ${cashInOutContext.clientId}, " +
+        LOGGER.info("Cash in/out walletOperation (${cashInOutOperation.id}) for client ${cashInOutContext.cashInOutOperation.clientId}, " +
                 "asset ${cashInOutContext.asset.assetId}, " +
                 "amount: ${NumberUtils.roundForPrint(walletOperation.amount)} processed")
     }
@@ -141,7 +141,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.id}) for client ${context.clientId}, " +
+        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
                 "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 }
