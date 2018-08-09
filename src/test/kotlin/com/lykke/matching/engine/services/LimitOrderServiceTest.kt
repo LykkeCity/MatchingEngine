@@ -1650,7 +1650,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         testConfigDatabaseAccessor.addLimitOrderPriceDeviationThreshold("BTCUSD", BigDecimal.valueOf(0.09))
         applicationSettingsCache.update()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 11000.0, volume = 1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 11000.0, volume = 1.0)))
 
         assertEquals(1, clientsEventsQueue.size)
         var executionEvent = clientsEventsQueue.poll() as ExecutionEvent
@@ -1664,7 +1664,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testConfigDatabaseAccessor.addLimitOrderPriceDeviationThreshold("BTCUSD", BigDecimal.valueOf(0.1))
         applicationSettingsCache.update()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 11000.0, volume = 1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 11000.0, volume = 1.0)))
 
         assertEquals(1, clientsEventsQueue.size)
         executionEvent = clientsEventsQueue.poll() as ExecutionEvent
@@ -1683,7 +1683,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         testConfigDatabaseAccessor.addLimitOrderPriceDeviationThreshold("BTCUSD", BigDecimal.valueOf(0.07))
         applicationSettingsCache.update()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
 
         assertEquals(1, clientsEventsQueue.size)
         var executionEvent = clientsEventsQueue.poll() as ExecutionEvent
@@ -1696,7 +1696,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         testConfigDatabaseAccessor.addLimitOrderPriceDeviationThreshold("BTCUSD", BigDecimal.valueOf(0.08))
         applicationSettingsCache.update()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
 
         assertEquals(1, clientsEventsQueue.size)
         executionEvent = clientsEventsQueue.poll() as ExecutionEvent

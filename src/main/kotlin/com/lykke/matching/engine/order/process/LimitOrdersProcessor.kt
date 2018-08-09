@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -57,6 +58,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val assetPair: AssetPair,
                            private val baseAssetDisabled: Boolean,
                            private val quotingAssetDisabled: Boolean,
+                           private val applicationSettingsCache: ApplicationSettingsCache,
                            private val orderBook: AssetOrderBook,
                            payBackBaseReserved: BigDecimal,
                            payBackQuotingReserved: BigDecimal,
