@@ -26,8 +26,12 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
-import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
@@ -37,7 +41,6 @@ import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.outgoing.messages.*
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -280,9 +283,7 @@ class MarketOrderService @Autowired constructor(
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId,
-                now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
 
         val endTime = System.nanoTime()
 

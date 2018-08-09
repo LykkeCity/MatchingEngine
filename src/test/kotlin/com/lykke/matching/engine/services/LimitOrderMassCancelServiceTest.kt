@@ -39,8 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderMassCancelServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderMassCancelServiceTest : AbstractTest() {
-
-    
     @TestConfiguration
     open class Config {
         @Bean
@@ -66,7 +64,11 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
-    
+
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
     @Before
     fun setUp() {
 
@@ -83,12 +85,12 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     }
 
     private fun setOrders() {
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "BTCUSD", volume = -0.5, price = 9000.0)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "3", clientId = "Client1", assetId = "BTCUSD", volume = 0.01, price = 7000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "BTCUSD", volume = -0.5, price = 9000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "3", clientId = "Client1", assetId = "BTCUSD", volume = 0.01, price = 7000.0)))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client1", assetId = "EURUSD", volume = 10.0, price = 1.1)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "5",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client1", assetId = "EURUSD", volume = 10.0, price = 1.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "5",
                 clientId = "Client1",
                 assetId = "BTCUSD",
                 type = LimitOrderType.STOP_LIMIT,

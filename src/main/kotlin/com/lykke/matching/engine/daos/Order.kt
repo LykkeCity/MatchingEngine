@@ -46,15 +46,6 @@ abstract class Order(
     abstract fun updatePrice(price: BigDecimal)
     abstract fun updateRemainingVolume(volume: BigDecimal)
 
-    fun checkMinVolume(assetPair: AssetPair): Boolean {
-        val volume = getAbsVolume()
-        val minVolume = if (isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
-    }
-
-    fun checkMinVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
-        return checkMinVolume(assetsPairsHolder.getAssetPair(assetPairId))
-    }
 
     fun updateStatus(status: OrderStatus, date: Date) {
         if (status.name != this.status) {

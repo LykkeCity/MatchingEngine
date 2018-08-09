@@ -14,7 +14,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,6 +50,9 @@ class LimitOrderCancelServiceTest : AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -121,10 +123,10 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 1.0)
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "10", clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = -0.5)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "11", clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = -0.3)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "12", clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = -0.2)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "13", clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "10", clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = -0.5)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "11", clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "12", clientId = "Client2", assetId = "BTCUSD", price = 9200.0, volume = -0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "13", clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.1)))
         clearMessageQueues()
 
         limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper(listOf("10", "11", "13")))

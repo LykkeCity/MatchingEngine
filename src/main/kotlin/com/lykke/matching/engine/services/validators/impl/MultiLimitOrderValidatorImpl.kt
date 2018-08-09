@@ -3,10 +3,11 @@ package com.lykke.matching.engine.services.validators.impl
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -14,14 +15,17 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder): MultiLimitOrderValidator {
+class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
+                                                          private val assetsPairsHolder: AssetsPairsHolder,
+                                                          private val limitOrderInputValidator: LimitOrderInputValidator): MultiLimitOrderValidator {
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderValidatorImpl::class.java.name)
     }
 
     override fun performValidation(order: LimitOrder, assetPair: AssetPair, orderBook: AssetOrderBook) {
         isPriceValid(order)
-        isVolumeValid(order, assetPair)
+        isVolumeValid(order)
+        isValueValid(order, assetPair)
         isSpreadValid(orderBook, order)
         isVolumeAccuracyValid(order, assetPair)
         isPriceAccuracyValid(order, assetPair)
@@ -57,15 +61,19 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
     }
 
-    private fun isVolumeValid(order: LimitOrder, assetPair: AssetPair) {
-        if (!order.checkMinVolume(assetPair)) {
-            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too small volume")
+    private fun isVolumeValid(order: LimitOrder) {
+        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+        if (!limitOrderInputValidator.checkMinVolume(order, assetPair)) {
+            LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
         if (assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large volume")
             throw OrderValidationException(OrderStatus.InvalidVolume)
         }
+    }
+
+    private fun isValueValid(order: LimitOrder, assetPair: AssetPair) {
         if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large value")
             throw OrderValidationException(OrderStatus.InvalidVolume)

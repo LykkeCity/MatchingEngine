@@ -7,6 +7,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class MessageRouter(
+        private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
         val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
         val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
@@ -18,6 +19,8 @@ class MessageRouter(
             MessageType.CASH_TRANSFER_OPERATION.type -> cashTransferInputQueue.put(wrapper)
             MessageType.LIMIT_ORDER_CANCEL.type,
             MessageType.OLD_LIMIT_ORDER_CANCEL.type -> limitOrderCancelInputQueue.put(wrapper)
+            MessageType.OLD_LIMIT_ORDER.type,
+            MessageType.LIMIT_ORDER.type -> limitOrderInputQueue.put(wrapper)
             else -> preProcessedMessageQueue.put(wrapper)
         }
     }
