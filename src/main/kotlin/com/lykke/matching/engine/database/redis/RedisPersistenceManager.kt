@@ -195,7 +195,9 @@ class RedisPersistenceManager(
             return
         }
 
-        updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
+        if (!config.me.walletsMigration) {
+            updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
+        }
 
         thread(name = "${RedisPersistenceManager::class.java.name}.balancesAsyncWriter") {
             while (true) {

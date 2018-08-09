@@ -175,7 +175,12 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                genericLimitOrderProcessorFactory, multiLimitOrderValidatorImpl, feeProcessor, messageSequenceNumberHolder, notificationSender)
+                genericLimitOrderProcessorFactory,
+                multiLimitOrderValidatorImpl,
+                feeProcessor,
+                applicationSettingsCache,
+                messageSequenceNumberHolder,
+                notificationSender)
 
         val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(
@@ -184,7 +189,7 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue,
-                genericLimitOrderProcessorFactory, marketOrderValidator,  feeProcessor, messageSequenceNumberHolder, notificationSender)
+                genericLimitOrderProcessorFactory, marketOrderValidator,  feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, notificationSender)
 
     }
 }

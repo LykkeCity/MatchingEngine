@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
@@ -30,6 +31,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
@@ -63,6 +65,7 @@ class MarketOrderService @Autowired constructor(
         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
         private val marketOrderValidator: MarketOrderValidator,
         feeProcessor: FeeProcessor,
+        private val settings: ApplicationSettingsCache,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender): AbstractService {
     companion object {
@@ -128,7 +131,11 @@ class MarketOrderService @Autowired constructor(
 
         val assetPair = getAssetPair(order)
 
-        val matchingResult = matchingEngine.initTransaction().match(order, getOrderBook(order), messageWrapper.messageId!!)
+        val matchingResult = matchingEngine.initTransaction().match(order,
+                getOrderBook(order),
+                messageWrapper.messageId!!,
+                priceDeviationThreshold = settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
+
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             ReservedVolumeGreaterThanBalance -> {
                 writeErrorNotification(messageWrapper, order, now, "Reserved volume is higher than available balance")
@@ -138,6 +145,9 @@ class MarketOrderService @Autowired constructor(
             InvalidFee,
             InvalidVolumeAccuracy,
             InvalidVolume -> {
+                writeErrorNotification(messageWrapper, order, now)
+            }
+            TooHighPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {

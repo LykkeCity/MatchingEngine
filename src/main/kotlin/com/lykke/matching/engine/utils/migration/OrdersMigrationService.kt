@@ -11,22 +11,29 @@ import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookData
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
-import org.springframework.stereotype.Service
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
+import org.springframework.core.annotation.Order
+import org.springframework.stereotype.Component
 import java.util.Date
+import java.util.Optional
 
-@Service
+@Component
+@Order(2)
 class OrdersMigrationService(private val config: Config,
-                             redisHolder: InitialLoadingRedisHolder,
+                             redisHolder: Optional<InitialLoadingRedisHolder>,
                              private val persistenceManager: PersistenceManager,
-                             private val genericLimitOrderService: GenericLimitOrderService) {
+                             private val genericLimitOrderService: GenericLimitOrderService): ApplicationRunner {
     companion object {
         private val LOGGER = Logger.getLogger(OrdersMigrationService::class.java.name)
     }
 
     private val fileDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    private val redisDatabaseAccessor = RedisOrderBookDatabaseAccessor(redisHolder, config.me.redis.ordersDatabase)
+    private val redisDatabaseAccessor = if (redisHolder.isPresent)
+        RedisOrderBookDatabaseAccessor(redisHolder.get(), config.me.redis.ordersDatabase)
+    else null
 
-    fun migrateOrdersIfConfigured() {
+    override fun run(args: ApplicationArguments?) {
         if (!config.me.ordersMigration) {
             return
         }
@@ -38,7 +45,7 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private fun fromFilesToRedis() {
-        if (redisDatabaseAccessor.loadLimitOrders().isNotEmpty()) {
+        if (redisDatabaseAccessor!!.loadLimitOrders().isNotEmpty()) {
             throw Exception("Orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
         }
         val startTime = Date().time
