@@ -30,7 +30,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         val context = messageWrapper.context as LimitOrderCancelOperationContext
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            processOldLimitOrderCancelMessage(messageWrapper, now)
+            processOldLimitOrderCancelMessage(messageWrapper, context, now)
         }
 
         val orderIds = context.limitOrderIds
@@ -46,7 +46,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             return
         }
 
-        val updateSuccessful = cancelOrders(typeToOrder[LimitOrderType.LIMIT], typeToOrder[LimitOrderType.STOP_LIMIT], now, messageWrapper)
+        val updateSuccessful = cancelOrders(typeToOrder[LimitOrderType.LIMIT], typeToOrder[LimitOrderType.STOP_LIMIT], now, context)
 
         if (!updateSuccessful) {
             writeResponse(messageWrapper, MessageStatus.RUNTIME, "Unable to save result")
@@ -64,16 +64,16 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         //nothing to do
     }
 
-    private fun cancelOrders(limitOrders: List<LimitOrder>?, stopOrders: List<LimitOrder>?, now: Date, messageWrapper: MessageWrapper): Boolean {
+    private fun cancelOrders(limitOrders: List<LimitOrder>?, stopOrders: List<LimitOrder>?, now: Date, context: LimitOrderCancelOperationContext): Boolean {
         val canceller = cancellerFactory.create(LOGGER, now)
 
         canceller.preProcessLimitOrders(limitOrders ?: emptyList())
         canceller.preProcessStopLimitOrders(stopOrders ?: emptyList())
 
-        return canceller.applyFull(messageWrapper.id!!,
-                messageWrapper.messageId!!,
-                messageWrapper.processedMessage(),
-                MessageType.valueOf(messageWrapper.type) ?: throw Exception("Unknown message type ${messageWrapper.type}"),
+        return canceller.applyFull(context.uid,
+                context.messageId,
+                context.processedMessage,
+                context.messageType,
                 false)
     }
 
@@ -89,11 +89,10 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         return genericLimitOrderService.getOrder(orderId) ?: genericStopLimitOrderService.getOrder(orderId)
     }
 
-    private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper, now: Date) {
-        val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldLimitOrderCancel
-        LOGGER.debug("Got old limit  order messageId: ${messageWrapper.messageId}  (id: ${message.limitOrderId}) cancel request id: ${message.uid}")
+    private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper, context: LimitOrderCancelOperationContext,  now: Date) {
+        LOGGER.debug("Got old limit  order messageId: ${context.messageId}  (id: ${context.limitOrderIds}) cancel request id: ${context.uid}")
 
-        genericLimitOrderService.cancelLimitOrder(now, message.limitOrderId.toString(), true)
+        genericLimitOrderService.cancelLimitOrder(now, context.limitOrderIds.first().toString(), true)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
     }
 

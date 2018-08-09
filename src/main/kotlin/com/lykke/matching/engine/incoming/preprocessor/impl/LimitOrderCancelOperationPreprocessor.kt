@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
-import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -64,15 +63,10 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
             try {
                 preProcess(messageWrapper)
             } catch (e: Exception) {
-                LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}", e)
+                val context = messageWrapper.context
+                LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}" +
+                        if(context != null) " context: $context" else "", e)
                 METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
-
-                val context = messageWrapper.context as LimitOrderCancelOperationContext?
-
-                if (context != null) {
-                    LOGGER.error("Error details: $context")
-                }
-
                 writeResponse(messageWrapper, MessageStatus.RUNTIME)
             }
         }

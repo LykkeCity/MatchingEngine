@@ -1,4 +1,11 @@
 package com.lykke.matching.engine.daos.context
 
-data class LimitOrderCancelOperationContext(val limitOrderIds: Set<String>,
-                                            val uid: String)
+import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.messages.MessageType
+
+data class LimitOrderCancelOperationContext(
+        val uid: String,
+        val messageId: String,
+        val processedMessage: ProcessedMessage,
+        val limitOrderIds: Set<String>,
+        val messageType: MessageType)
