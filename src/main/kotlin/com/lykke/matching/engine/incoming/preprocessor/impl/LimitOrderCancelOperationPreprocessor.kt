@@ -78,10 +78,6 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
         }
     }
 
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        //nothing to do
-    }
-
     @PostConstruct
     private fun init() {
         this.start()
