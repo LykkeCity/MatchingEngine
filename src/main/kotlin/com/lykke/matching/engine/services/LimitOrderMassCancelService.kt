@@ -28,7 +28,9 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         val orders = getOrders(context)
 
         if (orders.isNotEmpty()) {
-            cancelOrders(orders, now, context)
+            val result = cancelOrders(orders, now, context)
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = result
         }
 
         writeResponse(messageWrapper, MessageStatus.OK)
@@ -38,16 +40,15 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         val clientId = context.clientId
         val assetPairId = context.assetPairId
 
-
         return mapOf(LimitOrderType.LIMIT to genericLimitOrderService.searchOrders(clientId, context.assetPairId, context.isBuy),
                 LimitOrderType.STOP_LIMIT to genericStopLimitOrderService.searchOrders(clientId, assetPairId, context.isBuy))
     }
 
     private fun cancelOrders(typeToOrders: Map<LimitOrderType, List<LimitOrder>>,
                              now: Date,
-                             context: LimitOrderMassCancelOperationContext) {
+                             context: LimitOrderMassCancelOperationContext): Boolean {
         if (typeToOrders.isEmpty()) {
-            return
+            return true
         }
 
         val canceller = cancellerFactory.create(LOGGER, now)
@@ -55,15 +56,10 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         val limitOrders = typeToOrders[LimitOrderType.LIMIT]
         val stopOrders = typeToOrders[LimitOrderType.STOP_LIMIT]
 
-        if (!CollectionUtils.isEmpty(limitOrders)) {
-            canceller.preProcessLimitOrders(limitOrders!!)
-        }
+        canceller.preProcessLimitOrders(limitOrders ?: emptyList())
+        canceller.preProcessStopLimitOrders(stopOrders ?: emptyList())
 
-        if (!CollectionUtils.isEmpty(stopOrders)) {
-            canceller.preProcessLimitOrders(stopOrders!!)
-        }
-
-        canceller.applyFull(context.uid,
+        return canceller.applyFull(context.uid,
                         context.messageId,
                         context.processedMessage,
                         context.type,

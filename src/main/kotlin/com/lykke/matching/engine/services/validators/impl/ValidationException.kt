@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services.validators.impl
 
 import com.lykke.matching.engine.exception.MatchingEngineException
 
-class ValidationException(val validationType: Validation, message: String? = null) : MatchingEngineException(message ?: validationType.message) {
+class ValidationException(val validationType: Validation = Validation.GENERIC_VALIDATION_FAILURE, message: String? = null) : MatchingEngineException(message ?: validationType.message) {
     enum class Validation(val message: String) {
         GENERIC_VALIDATION_FAILURE("Bad request"),
         NEGATIVE_OVERDRAFT_LIMIT("Overdraft limit can not be negative"),

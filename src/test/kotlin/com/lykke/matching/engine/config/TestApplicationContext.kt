@@ -10,12 +10,10 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
-import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -446,7 +444,7 @@ open class TestApplicationContext {
     open fun allOrdersCanceller(assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService,
                                 genericStopLimitOrderService: GenericStopLimitOrderService, genericLimitOrdersCancellerFactory:
                                 GenericLimitOrdersCancellerFactory): AllOrdersCanceller {
-        return AllOrdersCanceller(assetsPairsHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, true)
+        return AllOrdersCanceller(assetsPairsHolder, genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, false)
     }
 
     @Bean
@@ -468,8 +466,9 @@ open class TestApplicationContext {
     open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
-                                     validator: LimitOrderCancelOperationBusinessValidator): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory, validator)
+                                     validator: LimitOrderCancelOperationBusinessValidator,
+                                     persistenceManager: PersistenceManager): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory, validator, persistenceManager)
     }
 
     @Bean
@@ -504,7 +503,6 @@ open class TestApplicationContext {
         return CashInOutContextParser(assetsHolder)
     }
 
-
     @Bean
     open fun cashInOutPreprocessor(applicationContext: ApplicationContext): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
@@ -519,5 +517,12 @@ open class TestApplicationContext {
     @Bean
     open fun cashTransferPreprocessor(applicationContext: ApplicationContext): CashTransferPreprocessor {
         return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java))
+    }
+
+    @Bean
+    open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
+                                         genericStopLimitOrderService: GenericStopLimitOrderService,
+                                         cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrderMassCancelService {
+        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory)
     }
 }

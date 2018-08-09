@@ -52,6 +52,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         }
 
         val updateSuccessful = cancelOrders(typeToOrder[LimitOrderType.LIMIT], typeToOrder[LimitOrderType.STOP_LIMIT], now, messageWrapper)
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updateSuccessful
 
         if (!updateSuccessful) {
             writeResponse(messageWrapper, MessageStatus.RUNTIME, "Unable to save result")
