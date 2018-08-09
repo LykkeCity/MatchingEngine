@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.incoming.parsers.impl
 
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.messages.MessageType
@@ -30,7 +31,10 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid
 
-        return LimitOrderCancelOperationContext(message.limitOrderIdList.toSet(), message.uid)
+        return LimitOrderCancelOperationContext(message.uid,
+                messageWrapper.messageId!!,
+                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                message.limitOrderIdList.toSet(), getMessageType(messageWrapper.type))
     }
 
     private fun parserOldMessage(messageWrapper: MessageWrapper): LimitOrderCancelOperationContext {
@@ -39,6 +43,14 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid.toString()
 
-        return LimitOrderCancelOperationContext(setOf(message.limitOrderId.toString()), message.uid.toString())
+        return LimitOrderCancelOperationContext(message.uid.toString(),
+                messageWrapper.messageId!!,
+                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                setOf(message.limitOrderId.toString()),
+                getMessageType(messageWrapper.type))
+    }
+
+    private fun getMessageType(type: Byte): MessageType {
+        return MessageType.valueOf(type) ?: throw Exception("Unknown message type $type")
     }
 }
