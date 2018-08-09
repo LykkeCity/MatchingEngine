@@ -2,14 +2,12 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -166,6 +164,9 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
+    @Autowired
+    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
+
     private val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
@@ -175,7 +176,6 @@ abstract class AbstractTest {
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
-    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     private var initialized = false
@@ -194,7 +194,6 @@ abstract class AbstractTest {
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService,  genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 

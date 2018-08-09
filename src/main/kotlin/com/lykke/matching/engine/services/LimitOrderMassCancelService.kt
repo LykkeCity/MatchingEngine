@@ -38,7 +38,6 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         val clientId = context.clientId
         val assetPairId = context.assetPairId
 
-
         return mapOf(LimitOrderType.LIMIT to genericLimitOrderService.searchOrders(clientId, context.assetPairId, context.isBuy),
                 LimitOrderType.STOP_LIMIT to genericStopLimitOrderService.searchOrders(clientId, assetPairId, context.isBuy))
     }
@@ -55,13 +54,8 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         val limitOrders = typeToOrders[LimitOrderType.LIMIT]
         val stopOrders = typeToOrders[LimitOrderType.STOP_LIMIT]
 
-        if (!CollectionUtils.isEmpty(limitOrders)) {
-            canceller.preProcessLimitOrders(limitOrders!!)
-        }
-
-        if (!CollectionUtils.isEmpty(stopOrders)) {
-            canceller.preProcessLimitOrders(stopOrders!!)
-        }
+        canceller.preProcessLimitOrders(limitOrders ?: emptyList())
+        canceller.preProcessStopLimitOrders(stopOrders ?: emptyList())
 
         canceller.applyFull(context.uid,
                         context.messageId,
