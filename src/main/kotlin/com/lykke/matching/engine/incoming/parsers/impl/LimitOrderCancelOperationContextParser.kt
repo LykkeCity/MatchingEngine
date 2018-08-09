@@ -30,7 +30,7 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid
 
-        return LimitOrderCancelOperationContext(message.limitOrderIdList.toSet(), message.uid)
+        return LimitOrderCancelOperationContext(message.uid, message.limitOrderIdList.toSet(), getMessageType(messageWrapper.type))
     }
 
     private fun parserOldMessage(messageWrapper: MessageWrapper): LimitOrderCancelOperationContext {
@@ -38,7 +38,10 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
         messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid.toString()
+        return LimitOrderCancelOperationContext(message.uid.toString(), setOf(message.limitOrderId.toString()), getMessageType(messageWrapper.type))
+    }
 
-        return LimitOrderCancelOperationContext(setOf(message.limitOrderId.toString()), message.uid.toString())
+    private fun getMessageType(type: Byte): MessageType {
+        return MessageType.valueOf(type) ?: throw Exception("Unknown message type $type")
     }
 }

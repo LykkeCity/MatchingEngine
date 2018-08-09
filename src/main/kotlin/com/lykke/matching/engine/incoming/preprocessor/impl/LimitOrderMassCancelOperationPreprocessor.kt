@@ -42,14 +42,10 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
             try {
                 preProcess(messageWrapper)
             } catch (e: Exception) {
-                LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}", e)
-                METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
-
                 val context = messageWrapper.context
-                if (context != null) {
-                    LOGGER.error("Error details: $context")
-                }
-
+                LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}" +
+                        if(context != null) " context: $context" else "", e)
+                METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
                 writeResponse(messageWrapper, MessageStatus.RUNTIME)
             }
         }
