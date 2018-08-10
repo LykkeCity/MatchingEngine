@@ -28,10 +28,9 @@ class CashInOutContextParser(private val assetsHolder: AssetsHolder) : ContextPa
         messageWrapper.context = CashInOutContext(
                 if (message.hasMessageId()) message.messageId else message.id,
                 ProcessedMessage(MessageType.CASH_IN_OUT_OPERATION.type, message.timestamp, messageWrapper.messageId!!),
-                CashInOutOperation(operationId, message.id, message.clientId, message.assetId,
+                CashInOutOperation(operationId, message.id, message.clientId, assetsHolder.getAssetAllowNulls(message.assetId),
                         Date(message.timestamp), BigDecimal.valueOf(message.volume),
-                        feeInstructions = NewFeeInstruction.create(message.feesList)),
-                assetsHolder.getAssetAllowNulls(message.assetId))
+                        feeInstructions = NewFeeInstruction.create(message.feesList)))
 
         return CashInOutParsedData(messageWrapper, message.assetId)
     }

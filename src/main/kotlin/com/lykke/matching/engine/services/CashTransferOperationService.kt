@@ -56,9 +56,10 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val transferOperation = cashTransferContext.transferOperation
 
+        val asset = transferOperation.asset
         LOGGER.debug("Processing cash transfer operation ${transferOperation.externalId}) messageId: ${cashTransferContext.messageId}" +
                 " from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}, " +
-                "asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
+                "asset $asset, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
                 "feeInstructions: ${transferOperation.fees}")
 
         try {
@@ -88,9 +89,9 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 transferOperation.fromClientId,
                 transferOperation.toClientId,
                 transferOperation.dateTime,
-                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.asset!!.accuracy).toPlainString(),
+                NumberUtils.setScaleRoundHalfUp(transferOperation.volume, cashTransferContext.transferOperation.asset!!.accuracy).toPlainString(),
                 transferOperation.overdraftLimit,
-                transferOperation.asset,
+                asset!!.assetId,
                 fee,
                 singleFeeTransfer(fee, result.fees),
                 result.fees,
@@ -102,7 +103,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 .setMatchingEngineId(transferOperation.id)
                 .setStatus(OK.type))
         LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}," +
-                " asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)} processed")
+                " asset $asset, volume: ${NumberUtils.roundForPrint(transferOperation.volume)} processed")
     }
 
     private fun processTransferOperation(operation: TransferOperation,
@@ -111,9 +112,10 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                          date: Date): OperationResult {
         val operations = LinkedList<WalletOperation>()
 
-        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, operation.asset,
+        val assetId = operation.asset!!.assetId
+        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, assetId,
                 operation.dateTime, -operation.volume))
-        val receiptOperation = WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.toClientId, operation.asset,
+        val receiptOperation = WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.toClientId, assetId,
                 operation.dateTime, operation.volume)
         operations.add(receiptOperation)
 
@@ -155,7 +157,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
-                "to client ${context.transferOperation.toClientId}, asset ${context.asset}," +
+                "to client ${context.transferOperation.toClientId}, asset ${context.transferOperation.asset}," +
                 " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")
     }
 }

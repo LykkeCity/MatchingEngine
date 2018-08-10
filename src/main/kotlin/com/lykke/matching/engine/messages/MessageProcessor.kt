@@ -47,12 +47,10 @@ import com.lykke.matching.engine.services.LimitOrderMassCancelService
 import com.lykke.matching.engine.services.MarketOrderService
 import com.lykke.matching.engine.services.MultiLimitOrderCancelService
 import com.lykke.matching.engine.services.MultiLimitOrderService
-import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.ReservedBalanceUpdateService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
@@ -84,7 +82,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
-    private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
     private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -137,7 +134,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
-        val messageSender = applicationContext.getBean(MessageSender::class.java)
         messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
@@ -161,7 +157,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
 
         val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
-        val feeProcessor =  applicationContext.getBean(FeeProcessor::class.java)
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
 
 
@@ -169,14 +164,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
-        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationBusinessValidator::class.java)
-        this.cashInOutOperationService = CashInOutOperationService(assetsHolder,
-                balanceHolder,
-                rabbitCashInOutQueue,
-                feeProcessor,
-                cashInOutOperationValidator,
-                messageSequenceNumberHolder,
-                messageSender)
+        this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
@@ -220,17 +208,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         }
 
-        val rabbitMqService = applicationContext.getBean(RabbitMqService::class.java)
-
-        val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
-        val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
-                rabbitMqService,
-                config.me.name,
-                AppVersion.VERSION,
-                BuiltinExchangeType.FANOUT)
-
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
                 limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -252,16 +229,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         server.start()
 
         appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
-    }
-
-    private fun startRabbitMqPublisher(config: RabbitConfig,
-                                       queue: BlockingQueue<JsonSerializable>,
-                                       messageDatabaseLogger: MessageDatabaseLogger? = null,
-                                       rabbitMqService: RabbitMqService,
-                                       appName: String,
-                                       appVersion: String,
-                                       exchangeType: BuiltinExchangeType) {
-        rabbitMqService.startPublisher (config, queue, appName, appVersion, exchangeType, messageDatabaseLogger)
     }
 
     override fun run() {

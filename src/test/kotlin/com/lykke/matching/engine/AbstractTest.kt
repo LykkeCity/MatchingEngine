@@ -153,6 +153,8 @@ abstract class AbstractTest {
     protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
     @Autowired private
     lateinit var feeProcessor: FeeProcessor
+
+    @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
@@ -170,7 +172,6 @@ abstract class AbstractTest {
         applicationSettingsCache.update()
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor, cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)

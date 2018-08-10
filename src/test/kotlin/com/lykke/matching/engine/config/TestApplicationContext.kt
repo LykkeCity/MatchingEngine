@@ -178,13 +178,24 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationInputValidator(balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
-        return CashInOutOperationInputValidatorImpl(balancesHolder, applicationSettingsCache)
+    open fun cashInOutOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
+        return CashInOutOperationInputValidatorImpl(applicationSettingsCache)
     }
 
     @Bean
-    open fun cashTransferOperationInputValidator(assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
-        return CashTransferOperationInputValidatorImpl(assetsHolder, applicationSettingsCache)
+    open fun cashTransferOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
+        return CashTransferOperationInputValidatorImpl(applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashInOutOperationService(balancesHolder: BalancesHolder,
+                                       rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+                                       feeProcessor: FeeProcessor,
+                                       cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
+                                       messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                       messageSender: MessageSender): CashInOutOperationService {
+        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean

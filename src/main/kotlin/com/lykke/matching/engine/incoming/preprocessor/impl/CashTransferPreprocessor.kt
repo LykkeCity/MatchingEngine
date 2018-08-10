@@ -102,7 +102,7 @@ class CashTransferPreprocessor(
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
-                "to client ${context.transferOperation.toClientId}, asset ${context.asset}," +
+                "to client ${context.transferOperation.toClientId}, asset ${context.transferOperation.asset}," +
                 " volume: ${NumberUtils.roundForPrint(context.transferOperation.volume)}: $errorMessage")
     }
 

@@ -22,7 +22,7 @@ class CashInOutOperationBusinessValidatorImpl(private val balancesHolder: Balanc
     private fun isBalanceValid(cashInOutContext: CashInOutContext) {
         val amount = cashInOutContext.cashInOutOperation.amount
         if (amount < BigDecimal.ZERO) {
-            val asset = cashInOutContext.asset
+            val asset = cashInOutContext.cashInOutOperation.asset
             val balance = balancesHolder.getBalance(cashInOutContext.cashInOutOperation.clientId, asset!!.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(cashInOutContext.cashInOutOperation.clientId, asset.assetId)
             if (NumberUtils.setScaleRoundHalfUp(balance - reservedBalance + amount, asset.accuracy) < BigDecimal.ZERO) {

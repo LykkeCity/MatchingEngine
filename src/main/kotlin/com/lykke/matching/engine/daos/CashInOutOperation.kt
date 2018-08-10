@@ -9,7 +9,7 @@ data class CashInOutOperation(
         val id: String,
         val externalId: String?,
         val clientId: String,
-        val assetId: String,
+        val asset: Asset?,
         val dateTime: Date,
         val amount: BigDecimal,
         val feeInstructions: List<NewFeeInstruction>) {
@@ -22,7 +22,7 @@ data class CashInOutOperation(
         if (id != other.id) return false
         if (externalId != other.externalId) return false
         if (clientId != other.clientId) return false
-        if (assetId != other.assetId) return false
+        if (asset != other.asset) return false
         if (dateTime != other.dateTime) return false
         if (!NumberUtils.equalsIgnoreScale(amount, other.amount)) return false
         if (feeInstructions != other.feeInstructions) return false
@@ -33,7 +33,7 @@ data class CashInOutOperation(
         var result = id.hashCode()
         result = 31 * result + (externalId?.hashCode() ?: 0)
         result = 31 * result + clientId.hashCode()
-        result = 31 * result + assetId.hashCode()
+        result = 31 * result + (asset?.hashCode() ?: 0)
         result = 31 * result + dateTime.hashCode()
         result = 31 * result + amount.stripTrailingZeros().hashCode()
         result = 31 * result + feeInstructions.hashCode()

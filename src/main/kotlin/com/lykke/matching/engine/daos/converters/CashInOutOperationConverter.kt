@@ -8,7 +8,7 @@ class CashInOutOperationConverter {
     companion object {
         fun fromCashInOutOperationToWalletOperation(cashInOutOperation: CashInOutOperation): WalletOperation {
             return WalletOperation(cashInOutOperation.id, cashInOutOperation.externalId,
-                    cashInOutOperation.clientId, cashInOutOperation.assetId,
+                    cashInOutOperation.clientId, cashInOutOperation.asset!!.assetId,
                     cashInOutOperation.dateTime, cashInOutOperation.amount, BigDecimal.ZERO)
         }
     }

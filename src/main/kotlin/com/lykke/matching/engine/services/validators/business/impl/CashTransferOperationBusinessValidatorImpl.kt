@@ -33,8 +33,9 @@ class CashTransferOperationBusinessValidatorImpl (private val balancesHolder: Ba
 
     private fun validateBalanceValid(cashTransferContext: CashTransferContext) {
         val transferOperation = cashTransferContext.transferOperation
-        val balanceOfFromClient = balancesHolder.getBalance(transferOperation.fromClientId, transferOperation.asset)
-        val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(transferOperation.fromClientId, transferOperation.asset)
+        val asset = transferOperation.asset!!
+        val balanceOfFromClient = balancesHolder.getBalance(transferOperation.fromClientId, asset.assetId)
+        val reservedBalanceOfFromClient = balancesHolder.getReservedBalance(transferOperation.fromClientId, asset.assetId)
         val overdraftLimit = if (transferOperation.overdraftLimit != null) -transferOperation.overdraftLimit else BigDecimal.ZERO
         if (balanceOfFromClient - reservedBalanceOfFromClient - transferOperation.volume < overdraftLimit) {
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +

@@ -4,7 +4,6 @@ import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -29,7 +28,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val applicationSe
     }
 
     private fun isAssetExist(cashInOutContext: CashInOutContext, inputAssetId: String) {
-        if (cashInOutContext.asset == null) {
+        if (cashInOutContext.cashInOutOperation.asset == null) {
             LOGGER.info("Asset with id: $inputAssetId does not exist, cash in/out operation; ${cashInOutContext.cashInOutOperation.externalId}), " +
                     "for client ${cashInOutContext.cashInOutOperation.clientId}")
             throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
@@ -38,7 +37,7 @@ class CashInOutOperationInputValidatorImpl constructor(private val applicationSe
 
     private fun isVolumeAccuracyValid(cashInOutContext: CashInOutContext) {
         val amount = cashInOutContext.cashInOutOperation.amount
-        val asset = cashInOutContext.asset
+        val asset = cashInOutContext.cashInOutOperation.asset
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(amount,
                 asset!!.accuracy)
 
@@ -51,9 +50,10 @@ class CashInOutOperationInputValidatorImpl constructor(private val applicationSe
 
     private fun isAssetEnabled(cashInOutContext: CashInOutContext) {
         val amount = cashInOutContext.cashInOutOperation.amount
-        if (amount < BigDecimal.ZERO && applicationSettingsCache.isAssetDisabled(cashInOutContext.asset!!.assetId)) {
+        val asset = cashInOutContext.cashInOutOperation.asset
+        if (amount < BigDecimal.ZERO && applicationSettingsCache.isAssetDisabled(asset!!.assetId)) {
             LOGGER.info("Cash out operation (${cashInOutContext.cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId} " +
-                    "asset ${cashInOutContext.asset.assetId}, " +
+                    "asset ${asset.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(amount)}: disabled asset")
             throw ValidationException(ValidationException.Validation.DISABLED_ASSET)
         }
