@@ -13,6 +13,7 @@ import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
@@ -26,6 +27,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.springframework.beans.factory.annotation.Qualifier
 import java.util.concurrent.BlockingQueue
 
 abstract class AbstractTest {
@@ -150,9 +152,9 @@ abstract class AbstractTest {
 
     protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
-    protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-    @Autowired private
-    lateinit var feeProcessor: FeeProcessor
+    @Autowired
+    @Qualifier("rabbitCashInOutQueue")
+    protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
 
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
