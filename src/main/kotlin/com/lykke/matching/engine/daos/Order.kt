@@ -17,7 +17,7 @@ abstract class Order(
         val volume: BigDecimal,
         status: String,
         val createdAt: Date,
-        val registered: Date,
+        val registered: Date?,
         var reservedLimitVolume: BigDecimal?,
         val fee: FeeInstruction?,
         val fees: List<NewFeeInstruction>?,

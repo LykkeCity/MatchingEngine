@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -8,6 +9,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.utils.PrintUtils
 import org.apache.log4j.Logger
+import java.util.*
 
 class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory): AbstractService {
     companion object {
@@ -24,10 +26,13 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
     override fun processMessage(messageWrapper: MessageWrapper) {
         val context = messageWrapper.context as SingleLimitOrderContext
 
+        val now = Date()
         LOGGER.info("Got limit order: $context")
 
+        context.limitOrder = LimitOrder(context.limitOrder, now, now)
+
         val startTime = System.nanoTime()
-        genericLimitOrderProcessor.processOrder(messageWrapper, context)
+        genericLimitOrderProcessor.processOrder(messageWrapper, context, now)
         val endTime = System.nanoTime()
 
         messagesCount++
