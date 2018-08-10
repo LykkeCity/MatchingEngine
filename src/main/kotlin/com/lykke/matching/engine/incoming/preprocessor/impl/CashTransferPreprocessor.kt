@@ -56,24 +56,34 @@ class CashTransferPreprocessor(
     }
 
     fun validateData(cashTransferParsedData: CashTransferParsedData): Boolean {
-        val context = cashTransferParsedData.messageWrapper.context as CashTransferContext
-
         try {
             cashTransferOperationInputValidator.performValidation(cashTransferParsedData)
         } catch (e: ValidationException) {
-            val persistSuccess = persistenceManager.persist(PersistenceData(context.processedMessage))
-
-            if(persistSuccess) {
-                processedMessagesCache.addMessage(context.processedMessage)
-            } else {
-                throw Exception("Persistence error")
-            }
-
-            writeErrorResponse(cashTransferParsedData.messageWrapper, context, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            processInvalidData(cashTransferParsedData, e.validationType, e.message)
             return false
         }
 
         return true
+    }
+
+    private fun processInvalidData(cashTransferParsedData: CashTransferParsedData,
+                                   validationType: ValidationException.Validation,
+                                   message: String) {
+        val messageWrapper = cashTransferParsedData.messageWrapper
+        val context = messageWrapper.context as CashTransferContext
+
+        val persistSuccess = persistenceManager.persist(PersistenceData(context.processedMessage))
+        if (!persistSuccess) {
+            throw Exception("Persistence error")
+        }
+
+        try {
+            processedMessagesCache.addMessage(context.processedMessage)
+            writeErrorResponse(messageWrapper, context, MessageStatusUtils.toMessageStatus(validationType), message)
+        } catch (e: Exception) {
+            LOGGER.error("Error occurred during processing of invalid cash transfer data, context $context", e)
+            METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
+        }
     }
 
     private fun performDeduplicationCheck(cashTransferParsedData: CashTransferParsedData) {

@@ -55,23 +55,34 @@ class CashInOutPreprocessor(
     }
 
     private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
-        val parsedMessageWrapper = cashInOutParsedData.messageWrapper
-        val cashInOutContext = cashInOutParsedData.messageWrapper.context as CashInOutContext
         try {
             cashInOutOperationInputValidator.performValidation(cashInOutParsedData)
         } catch (e: ValidationException) {
-            val persistSuccess = persistenceManager.persist(PersistenceData(cashInOutContext.processedMessage))
-            if (persistSuccess) {
-                processedMessagesCache.addMessage(cashInOutContext.processedMessage)
-            } else {
-                throw Exception("Persistence error")
-            }
-
-            writeErrorResponse(parsedMessageWrapper, cashInOutContext.cashInOutOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            processInvalidData(cashInOutParsedData, e.validationType, e.message)
             return false
         }
 
         return true
+    }
+
+    private fun processInvalidData(cashInOutParsedData: CashInOutParsedData,
+                                   validationType: ValidationException.Validation,
+                                   message: String) {
+        val messageWrapper = cashInOutParsedData.messageWrapper
+        val context = messageWrapper.context as CashInOutContext
+
+        val persistSuccess = persistenceManager.persist(PersistenceData(context.processedMessage))
+        if (!persistSuccess) {
+            throw Exception("Persistence error")
+        }
+
+        try {
+            processedMessagesCache.addMessage(context.processedMessage)
+            writeErrorResponse(messageWrapper, context.cashInOutOperation.id, MessageStatusUtils.toMessageStatus(validationType), message)
+        } catch (e: Exception) {
+            LOGGER.error("Error occurred during processing of invalid cash in/out data, context $context", e)
+            METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
+        }
     }
 
     private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
