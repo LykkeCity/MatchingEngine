@@ -13,6 +13,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
+import java.util.*
 
 class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
                                 private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
@@ -20,6 +21,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                                 private val LOGGER: Logger) {
 
     fun processLimitOrder(singleLimitContext: SingleLimitOrderContext,
+                          now: Date,
                           payBackReserved: BigDecimal? = null,
                           messageWrapper: MessageWrapper? = null) {
         val order = singleLimitContext.limitOrder
@@ -46,7 +48,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         val totalPayBackReserved = cancelVolume + (payBackReserved ?: BigDecimal.ZERO)
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
-                singleLimitContext.orderProcessingStartTime,
+                now,
                 singleLimitContext.isTrustedClient,
                 order.clientId,
                 assetPair,

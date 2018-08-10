@@ -54,28 +54,28 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
         val payBackReserved = order.reservedLimitVolume!!
         order.reservedLimitVolume = null
 
-        val stopLimitContext = singleLimitOrderContextParser.getStopOrderContext(messageId, now, order)
+        val stopLimitContext = singleLimitOrderContextParser.getStopOrderContext(messageId, order)
 
-        processLimitOrder(stopLimitContext, payBackReserved)
+        processLimitOrder(stopLimitContext, now, payBackReserved)
     }
 
-    private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) {
-        limitOrderProcessor.processLimitOrder(singleLimitContext, messageWrapper =  messageWrapper)
-        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, singleLimitContext.orderProcessingStartTime)
+    private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) {
+        limitOrderProcessor.processLimitOrder(singleLimitContext, messageWrapper =  messageWrapper, now = now)
+        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, now)
     }
 
-    fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) {
+    fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) {
         when(singleLimitContext.limitOrder.type) {
-            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper, singleLimitContext)
-            LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, singleLimitContext)
+            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper, singleLimitContext, now)
+            LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, singleLimitContext, now)
         }
     }
 
-    fun processLimitOrder(singleLimitContext: SingleLimitOrderContext, payBackReserved: BigDecimal) {
-        limitOrderProcessor.processLimitOrder(singleLimitContext, payBackReserved)
-        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, singleLimitContext.orderProcessingStartTime)
+    fun processLimitOrder(singleLimitContext: SingleLimitOrderContext, now: Date,  payBackReserved: BigDecimal) {
+        limitOrderProcessor.processLimitOrder(singleLimitContext, now, payBackReserved)
+        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, now)
     }
 
-    private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) =
-            stopLimitOrderProcessor.processStopOrder(messageWrapper, singleLimitContext)
+    private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) =
+            stopLimitOrderProcessor.processStopOrder(messageWrapper, singleLimitContext, now)
 }

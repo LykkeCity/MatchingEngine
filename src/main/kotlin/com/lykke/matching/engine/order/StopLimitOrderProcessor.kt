@@ -36,7 +36,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val messageSender: MessageSender,
                               private val LOGGER: Logger) {
 
-    fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext) {
+    fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) {
         val limitOrder = singleLimitContext.limitOrder
 
         val limitAsset = singleLimitContext.limitAsset
@@ -65,7 +65,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         if (!orderValidationResult.isValid) {
             processInvalidOrder(messageWrapper, singleLimitContext,
                     orderValidationResult, balance, reservedBalance,
-                    cancelVolume, ordersToCancel, clientLimitOrdersReport)
+                    cancelVolume, ordersToCancel, clientLimitOrdersReport, now)
             return
         }
 
@@ -84,10 +84,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         if (price != null) {
             LOGGER.info("Process stop order ${limitOrder.externalId}, client ${limitOrder.clientId} immediately (bestBidPrice=$bestBidPrice, bestAskPrice=$bestAskPrice)")
-            limitOrder.updateStatus(OrderStatus.InOrderBook, singleLimitContext.orderProcessingStartTime)
+            limitOrder.updateStatus(OrderStatus.InOrderBook, now)
             limitOrder.price = price
 
-            genericLimitOrderProcessor.processLimitOrder(singleLimitContext, BigDecimal.ZERO)
+            genericLimitOrderProcessor.processLimitOrder(singleLimitContext, now, BigDecimal.ZERO)
             return
         }
 
@@ -115,10 +115,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         balancesHolder.sendBalanceUpdate(BalanceUpdate(limitOrder.externalId,
                 MessageType.LIMIT_ORDER.name,
-                singleLimitContext.orderProcessingStartTime,
+                now,
                 clientBalanceUpdates,
                 messageWrapper.messageId!!))
-        stopLimitOrderService.cancelStopLimitOrders(limitOrder.assetPairId, limitOrder.isBuySide(), ordersToCancel, singleLimitContext.orderProcessingStartTime)
+        stopLimitOrderService.cancelStopLimitOrders(limitOrder.assetPairId, limitOrder.isBuySide(), ordersToCancel, now)
 
         limitOrder.reservedLimitVolume = limitVolume
         stopLimitOrderService.addStopOrder(limitOrder)
@@ -133,7 +133,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
                 messageWrapper.messageId!!,
                 messageWrapper.id!!,
-                singleLimitContext.orderProcessingStartTime,
+                now,
                 MessageType.LIMIT_ORDER,
                 clientBalanceUpdates,
                 clientLimitOrdersReport.orders)
@@ -144,12 +144,14 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                                     orderValidationResult: OrderValidationResult,
                                     balance: BigDecimal, reservedBalance: BigDecimal,
                                     cancelVolume: BigDecimal,
-                                    ordersToCancel: List<LimitOrder>, clientLimitOrdersReport: LimitOrdersReport) {
+                                    ordersToCancel: List<LimitOrder>,
+                                    clientLimitOrdersReport: LimitOrdersReport,
+                                    now: Date) {
         val limitOrder = singleLimitContext.limitOrder
         val limitAsset = singleLimitContext.limitAsset
 
         LOGGER.info("${orderInfo(limitOrder)} $orderValidationResult.message")
-        limitOrder.updateStatus(orderValidationResult.status!!, singleLimitContext.orderProcessingStartTime)
+        limitOrder.updateStatus(orderValidationResult.status!!, now)
         val messageStatus = MessageStatusUtils.toMessageStatus(orderValidationResult.status)
         var updated = true
         val clientBalanceUpdates = mutableListOf<ClientBalanceUpdate>()
@@ -171,7 +173,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
 
         if (updated) {
-            stopLimitOrderService.cancelStopLimitOrders(limitOrder.assetPairId, limitOrder.isBuySide(), ordersToCancel, singleLimitContext.orderProcessingStartTime)
+            stopLimitOrderService.cancelStopLimitOrders(limitOrder.assetPairId, limitOrder.isBuySide(), ordersToCancel, now)
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setId(limitOrder.externalId)
                     .setMatchingEngineId(limitOrder.id)
@@ -184,7 +186,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             val outgoingMessage = EventFactory.createExecutionEvent(sequenceNumber,
                     messageWrapper.messageId!!,
                     messageWrapper.id!!,
-                    singleLimitContext.orderProcessingStartTime,
+                    now,
                     MessageType.LIMIT_ORDER,
                     clientBalanceUpdates,
                     clientLimitOrdersReport.orders)
