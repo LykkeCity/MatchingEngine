@@ -282,7 +282,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             sellSideOrderBookChanged = true
         }
 
-        LOGGER.info("$orderInfo added to order book")
+        if (!isTrustedClient) {
+            LOGGER.info("$orderInfo added to order book")
+        }
     }
 
     private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
