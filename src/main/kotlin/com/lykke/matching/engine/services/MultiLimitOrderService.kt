@@ -413,12 +413,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
         val assetPair = assetsPairsHolder.getAssetPair(message.assetPairId)
         val isTrustedClient = balancesHolder.isTrustedClient(message.clientId)
+
+        LOGGER.debug("Got ${if (!isTrustedClient) "client " else ""}multi limit order id: ${message.uid}, " +
+                (if (messageWrapper.messageId != message.uid) "messageId: ${messageWrapper.messageId}, " else "") +
+                "client ${message.clientId}, " +
+                "assetPair: ${message.assetPairId}, " +
+                (if (message.hasCancelAllPreviousLimitOrders()) "cancelPrevious: ${message.cancelAllPreviousLimitOrders}, " else "") +
+                (if (message.hasCancelMode()) "cancelMode: ${message.cancelMode}" else ""))
+
         val multiLimitOrder = readMultiLimitOrder(message, isTrustedClient, assetPair)
-        if (isTrustedClient) {
-            LOGGER.debug("Got multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}")
-        } else {
-            LOGGER.debug("Got client multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}, cancelPrevious: ${multiLimitOrder.cancelAllPreviousLimitOrders}, cancelMode: ${multiLimitOrder.cancelMode}")
-        }
         val now = Date()
 
         var buySideOrderBookChanged = false
