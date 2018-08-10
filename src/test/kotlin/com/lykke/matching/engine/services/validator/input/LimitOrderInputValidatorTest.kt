@@ -310,7 +310,6 @@ class LimitOrderInputValidatorTest {
         builder.uid("test")
                 .messageId("test")
                 .limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee())))
-                .orderProcessingStartTime(Date())
                 .assetPair(BTC_USD_ASSET_PAIR)
                 .baseAsset(Asset("BTC", 5))
                 .quotingAsset(Asset("USD", 2))

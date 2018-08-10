@@ -31,9 +31,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                                     @Qualifier("singleLimitOrderContextPreprocessorLogger")
                                     val logger: ThrottlingLogger) : ContextParser<SingleLimitOrderParsedData> {
     override fun parse(messageWrapper: MessageWrapper): SingleLimitOrderParsedData {
-        val orderProcessingStartTime = Date()
 
-        val context = parseMessage(messageWrapper, orderProcessingStartTime)
+        val context = parseMessage(messageWrapper)
 
         messageWrapper.context = context
         messageWrapper.id = context.uid
@@ -43,11 +42,11 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         return SingleLimitOrderParsedData(messageWrapper)
     }
 
-    fun getStopOrderContext(messageId: String, now: Date, order: LimitOrder): SingleLimitOrderContext {
-        return getContext(messageId, null, now, order, false,  null)
+    fun getStopOrderContext(messageId: String, order: LimitOrder): SingleLimitOrderContext {
+        return getContext(messageId, null, order, false,  null)
     }
 
-    private fun getContext(messageId: String, uid: String?, now: Date,
+    private fun getContext(messageId: String, uid: String?,
                            order: LimitOrder, cancelOrders: Boolean,
                            processedMessage: ProcessedMessage?): SingleLimitOrderContext {
         val builder = SingleLimitOrderContext.Builder()
@@ -56,7 +55,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         builder.uid(uid)
                 .messageId(messageId)
                 .limitOrder(order)
-                .orderProcessingStartTime(now)
                 .assetPair(assetPair)
                 .baseAsset(getBaseAsset(assetPair))
                 .baseAssetDisabled(applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId))
@@ -90,37 +88,37 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         return assetsHolder.getAsset(assetPair.quotingAssetId)
     }
 
-    private fun parseMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitOrderContext {
+    private fun parseMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
         return if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            parseOldMessage(messageWrapper, orderProcessingStartTime)
+            parseOldMessage(messageWrapper)
         } else {
-            parseNewMessage(messageWrapper, orderProcessingStartTime)
+            parseNewMessage(messageWrapper)
         }
     }
 
-    private fun parseOldMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitOrderContext {
+    private fun parseOldMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
         val oldMessage = parseOldLimitOrder(messageWrapper.byteArray)
         val uid = UUID.randomUUID().toString()
         val messageId = if (oldMessage.hasMessageId()) oldMessage.messageId else oldMessage.uid.toString()
 
         val limitOrder = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
-                BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, orderProcessingStartTime, Date(oldMessage.timestamp), orderProcessingStartTime, BigDecimal.valueOf(oldMessage.volume), null,
+                BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, null, Date(oldMessage.timestamp), null, BigDecimal.valueOf(oldMessage.volume), null,
                 type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
 
         logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
 
-        return getContext(messageId, oldMessage.uid.toString(), orderProcessingStartTime,
+        return getContext(messageId, oldMessage.uid.toString(),
                 limitOrder, oldMessage.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, oldMessage.timestamp, messageId))
     }
 
-    private fun parseNewMessage(messageWrapper: MessageWrapper, orderProcessingStartTime: Date): SingleLimitOrderContext {
+    private fun parseNewMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
         val message = parseLimitOrder(messageWrapper.byteArray)
         val messageId = if (message.hasMessageId()) message.messageId else message.uid
 
-        val limitOrder = createOrder(message, orderProcessingStartTime)
+        val limitOrder = createOrder(message)
 
-        val singleLimitOrderContext = getContext(messageId, message.uid, orderProcessingStartTime,
+        val singleLimitOrderContext = getContext(messageId, message.uid,
                 limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
 
@@ -137,7 +135,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         return ProtocolMessages.OldLimitOrder.parseFrom(array)
     }
 
-    private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): LimitOrder {
+    private fun createOrder(message: ProtocolMessages.LimitOrder): LimitOrder {
         val type = if (message.hasType()) LimitOrderType.getByExternalId(message.type) else LimitOrderType.LIMIT
         val status = when (type) {
             LimitOrderType.LIMIT -> OrderStatus.InOrderBook
@@ -152,9 +150,9 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 BigDecimal.valueOf(message.volume),
                 if (message.hasPrice()) BigDecimal.valueOf(message.price) else BigDecimal.ZERO,
                 status.name,
-                now,
+                null,
                 Date(message.timestamp),
-                now,
+                null,
                 BigDecimal.valueOf(message.volume),
                 null,
                 fee = feeInstruction,
