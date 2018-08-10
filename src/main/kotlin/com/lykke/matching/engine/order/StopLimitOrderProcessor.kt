@@ -67,8 +67,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         if (!orderValidationResult.isValid) {
             processInvalidOrder(messageWrapper, singleLimitContext,
-                    orderValidationResult,
-                    cancelVolume, ordersToCancel, clientLimitOrdersReport, now)
+                    orderValidationResult, cancelVolume,
+                    ordersToCancel, clientLimitOrdersReport, newStopOrderBook, now)
             return
         }
 
