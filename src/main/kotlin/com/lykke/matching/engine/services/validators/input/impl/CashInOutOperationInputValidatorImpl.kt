@@ -14,8 +14,7 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class CashInOutOperationInputValidatorImpl constructor(private val balancesHolder: BalancesHolder,
-                                                       private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationInputValidator {
+class CashInOutOperationInputValidatorImpl constructor(private val applicationSettingsCache: ApplicationSettingsCache) : CashInOutOperationInputValidator {
 
     companion object {
         private val LOGGER = Logger.getLogger(CashInOutOperationInputValidatorImpl::class.java.name)

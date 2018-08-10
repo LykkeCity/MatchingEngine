@@ -56,7 +56,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
         val transferOperation = cashTransferContext.transferOperation
 
-        LOGGER.debug("Processing cash transfer operation ${transferOperation.id}) messageId: ${cashTransferContext.messageId}" +
+        LOGGER.debug("Processing cash transfer operation ${transferOperation.externalId}) messageId: ${cashTransferContext.messageId}" +
                 " from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}, " +
                 "asset ${transferOperation.asset}, volume: ${NumberUtils.roundForPrint(transferOperation.volume)}, " +
                 "feeInstructions: ${transferOperation.fees}")

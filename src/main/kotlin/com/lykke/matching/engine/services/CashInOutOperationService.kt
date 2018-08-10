@@ -108,7 +108,7 @@ class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                 .setMatchingEngineId(walletOperation.id)
                 .setStatus(OK.type))
 
-        LOGGER.info("Cash in/out walletOperation (${cashInOutOperation.id}) for client ${cashInOutContext.cashInOutOperation.clientId}, " +
+        LOGGER.info("Cash in/out walletOperation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId}, " +
                 "asset ${cashInOutContext.asset.assetId}, " +
                 "amount: ${NumberUtils.roundForPrint(walletOperation.amount)} processed")
     }
