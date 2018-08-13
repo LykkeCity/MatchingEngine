@@ -20,7 +20,7 @@ class QueueSizeLogger @Autowired constructor(val queues: Map<String, BlockingQue
         val METRICS_LOGGER = MetricsLogger.getLogger()
         val ENTRY_SIZE_FORMAT = "%s: %d;"
         val ENTRY_SIZE_LIMIT_FORMAT = "%s queue is higher than limit"
-        val ENTRY_DELIMITER = "\n"
+        val ENTRY_DELIMITER = ". "
     }
 
     @PostConstruct
@@ -41,7 +41,7 @@ class QueueSizeLogger @Autowired constructor(val queues: Map<String, BlockingQue
         val logString = nameToQueueSize
                 .entries
                 .stream()
-                .map({ entry -> ENTRY_SIZE_FORMAT.format(entry.key, entry) })
+                .map({ entry -> ENTRY_SIZE_FORMAT.format(entry.key, entry.value) })
                 .collect(Collectors.joining(ENTRY_DELIMITER))
 
         LOGGER.info(logString)
