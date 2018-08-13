@@ -18,8 +18,6 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    override fun balancesQueueSize() = 0
-
     override fun persist(data: PersistenceData): Boolean {
         return try {
             persistData(data)

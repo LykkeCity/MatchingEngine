@@ -20,7 +20,7 @@ import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.BlockingQueue
 import kotlin.concurrent.thread
 
 class RedisPersistenceManager(
@@ -31,6 +31,7 @@ class RedisPersistenceManager(
         private val redisHealthStatusHolder: RedisHealthStatusHolder,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val jedisPool: JedisPool,
+        private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
         private val config: Config): PersistenceManager {
 
     companion object {
@@ -40,13 +41,10 @@ class RedisPersistenceManager(
     }
 
     private var jedis: Jedis? = null
-    private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
 
     init {
         initPersistingIntoSecondaryDb()
     }
-
-    override fun balancesQueueSize() = updatedWalletsQueue.size
 
     override fun persist(data: PersistenceData): Boolean {
         if (isDataEmpty(data)) {

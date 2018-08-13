@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Profile
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 import java.util.Optional
+import java.util.concurrent.BlockingQueue
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -59,7 +61,8 @@ open class DatabaseAccessorConfig {
                                 redisHealthStatusHolder: RedisHealthStatusHolder,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
+                                updatedWalletsQueue: BlockingQueue<Collection<Wallet>>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
@@ -71,6 +74,7 @@ open class DatabaseAccessorConfig {
                         redisHealthStatusHolder,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         jedisPool.get(),
+                        updatedWalletsQueue,
                         config
                 )
             }
