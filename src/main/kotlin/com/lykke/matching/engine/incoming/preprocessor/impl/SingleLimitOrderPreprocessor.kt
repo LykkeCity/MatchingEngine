@@ -65,12 +65,9 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                logger.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
-                val singleLimitOrderContext = message.context
-
-                if (singleLimitOrderContext != null) {
-                    logger.error("Context: $singleLimitOrderContext")
-                }
+                val context = message.context
+                logger.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                        if (context != null) "Error details: $context" else "", exception)
 
                 METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
                 writeResponse(message, MessageStatus.RUNTIME)
