@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.util.Date
 
 data class TransferOperation(
-        val id: String,
+        val matchingEngineOperationId: String,
         val externalId: String,
         val fromClientId: String,
         val toClientId: String,
@@ -22,7 +22,7 @@ data class TransferOperation(
 
         other as TransferOperation
 
-        if (id != other.id) return false
+        if (matchingEngineOperationId != other.matchingEngineOperationId) return false
         if (externalId != other.externalId) return false
         if (fromClientId != other.fromClientId) return false
         if (toClientId != other.toClientId) return false
@@ -36,7 +36,7 @@ data class TransferOperation(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
+        var result = matchingEngineOperationId.hashCode()
         result = 31 * result + externalId.hashCode()
         result = 31 * result + fromClientId.hashCode()
         result = 31 * result + toClientId.hashCode()

@@ -100,7 +100,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         messageSender.sendMessage(result.outgoingMessage)
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(transferOperation.id)
+                .setMatchingEngineId(transferOperation.matchingEngineOperationId)
                 .setStatus(OK.type))
         LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} to client ${transferOperation.toClientId}," +
                 " asset $asset, volume: ${NumberUtils.roundForPrint(transferOperation.volume)} processed")
@@ -153,7 +153,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
                                    status: MessageStatus,
                                    errorMessage: String = StringUtils.EMPTY) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(context.transferOperation.id)
+                .setMatchingEngineId(context.transferOperation.matchingEngineOperationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +

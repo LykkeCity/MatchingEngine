@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.util.*
 
 data class CashInOutOperation(
-        val id: String,
+        val matchingEngineOperationId: String,
         val externalId: String?,
         val clientId: String,
         val asset: Asset?,
@@ -19,7 +19,7 @@ data class CashInOutOperation(
 
         other as CashInOutOperation
 
-        if (id != other.id) return false
+        if (matchingEngineOperationId != other.matchingEngineOperationId) return false
         if (externalId != other.externalId) return false
         if (clientId != other.clientId) return false
         if (asset != other.asset) return false
@@ -30,7 +30,7 @@ data class CashInOutOperation(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
+        var result = matchingEngineOperationId.hashCode()
         result = 31 * result + (externalId?.hashCode() ?: 0)
         result = 31 * result + clientId.hashCode()
         result = 31 * result + (asset?.hashCode() ?: 0)

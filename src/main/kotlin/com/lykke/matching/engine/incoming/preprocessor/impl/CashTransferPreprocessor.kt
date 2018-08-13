@@ -108,7 +108,7 @@ class CashTransferPreprocessor(
                                    status: MessageStatus,
                                    errorMessage: String = StringUtils.EMPTY) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(context.transferOperation.id)
+                .setMatchingEngineId(context.transferOperation.matchingEngineOperationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
         LOGGER.info("Cash transfer operation (${context.transferOperation.externalId}) from client ${context.transferOperation.fromClientId} " +
