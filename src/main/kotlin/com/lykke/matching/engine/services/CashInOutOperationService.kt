@@ -89,14 +89,14 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
             LOGGER.info("Cash in/out operation (${cashInOutOperation.externalId}) for client ${cashInOutContext.cashInOutOperation.clientId} asset ${cashInOutOperation.asset.assetId}, volume: ${NumberUtils.roundForPrint(walletOperation.amount)}: unable to save balance")
             return
         }
-        walletProcessor.apply().sendNotification(cashInOutOperation.id, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
+        walletProcessor.apply().sendNotification(cashInOutOperation.externalId!!, MessageType.CASH_IN_OUT_OPERATION.name, messageWrapper.messageId!!)
 
         publishRabbitMessage(cashInOutContext, fees)
 
         val outgoingMessage = EventFactory.createCashInOutEvent(walletOperation.amount,
                 sequenceNumber,
                 cashInOutContext.messageId,
-                cashInOutOperation.id,
+                cashInOutOperation.externalId!!,
                 now,
                 MessageType.CASH_IN_OUT_OPERATION,
                 walletProcessor.getClientBalanceUpdates(),
@@ -119,11 +119,11 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         val cashInOutOperation = cashInOutContext.cashInOutOperation
         val asset = cashInOutOperation.asset
         rabbitCashInOutQueue.put(CashOperation(
-                cashInOutOperation.id,
+                cashInOutOperation.externalId!!,
                 cashInOutOperation.clientId,
                 cashInOutOperation.dateTime,
                 NumberUtils.setScaleRoundHalfUp(cashInOutOperation.amount, asset!!.accuracy).toPlainString(),
-                asset!!.assetId,
+                asset.assetId,
                 cashInOutContext.messageId,
                 fees
         ))
