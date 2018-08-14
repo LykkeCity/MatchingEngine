@@ -10,13 +10,22 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
+import org.springframework.core.annotation.Order
+import org.springframework.stereotype.Component
 import java.util.*
 
-@Service
+@Component
+@Order(1)
 class AccountsMigrationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                        private val config: Config,
-                                                       redisHolder: Optional<InitialLoadingRedisHolder>) {
+                                                       redisHolder: Optional<InitialLoadingRedisHolder>): ApplicationRunner {
+    override fun run(args: ApplicationArguments?) {
+        if (config.me.walletsMigration) {
+            migrateAccounts()
+        }
+    }
 
     companion object {
         private val LOGGER = Logger.getLogger(AccountsMigrationService::class.java.name)
@@ -26,13 +35,11 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
         RedisWalletDatabaseAccessor(redisHolder.get(), config.me.redis.balanceDatabase)
     else null
 
-
-
     private val azureAccountsTableName = config.me.db.accountsTableName
             ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME
     private val azureDatabaseAccessor = AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, azureAccountsTableName)
 
-    fun migrateAccountsIfConfigured() {
+    fun migrateAccounts() {
         if (!config.me.walletsMigration) {
             return
         }
