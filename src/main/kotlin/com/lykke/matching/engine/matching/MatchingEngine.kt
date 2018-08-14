@@ -140,7 +140,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     continue
                 }
 
-                if (BigDecimal.ZERO.compareTo(if (isBuy) marketRoundedVolume else oppositeRoundedVolume) == 0) {
+                if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, if (isBuy) marketRoundedVolume else oppositeRoundedVolume)) {
                     if (isFullyMatched) {
                         LOGGER.info("Skipped order ($limitOrderInfo) due to zero latest trade")
                         matchedWithZeroLatestTrade = true
