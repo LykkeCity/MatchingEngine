@@ -30,7 +30,7 @@ class CashInOutPreprocessor(
         private val cashInOutQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor,
-        private val persistenceManager: PersistenceManager,
+        private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
@@ -71,7 +71,7 @@ class CashInOutPreprocessor(
         val messageWrapper = cashInOutParsedData.messageWrapper
         val context = messageWrapper.context as CashInOutContext
 
-        val persistSuccess = persistenceManager.persist(PersistenceData(context.processedMessage))
+        val persistSuccess = cashInOutOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
             throw Exception("Persistence error")
         }

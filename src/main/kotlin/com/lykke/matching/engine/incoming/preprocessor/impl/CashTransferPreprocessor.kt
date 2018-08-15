@@ -30,7 +30,7 @@ class CashTransferPreprocessor(
         private val cashTransferQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor,
-        private val persistenceManager: PersistenceManager,
+        private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
@@ -72,7 +72,7 @@ class CashTransferPreprocessor(
         val messageWrapper = cashTransferParsedData.messageWrapper
         val context = messageWrapper.context as CashTransferContext
 
-        val persistSuccess = persistenceManager.persist(PersistenceData(context.processedMessage))
+        val persistSuccess = cashTransferPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
             throw Exception("Persistence error")
         }
