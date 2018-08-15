@@ -3,7 +3,6 @@ package com.lykke.matching.engine.database.redis
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
@@ -21,11 +20,9 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.concurrent.BlockingQueue
-import kotlin.concurrent.thread
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
-        private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val redisHealthStatusHolder: RedisHealthStatusHolder,
@@ -114,7 +111,7 @@ class RedisPersistenceManager(
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
 
-            if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+            if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
                 updatedWalletsQueue.put(data.balancesData!!.wallets)
             }
         } catch (e: Exception) {
@@ -161,22 +158,7 @@ class RedisPersistenceManager(
     }
 
     private fun initPersistingIntoSecondaryDb() {
-        if (secondaryBalancesAccessor == null) {
-            return
-        }
-
         updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.asyncBalancesWriter") {
-            while (true) {
-                try {
-                    val wallets = updatedWalletsQueue.take()
-                    secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save wallets", e)
-                }
-            }
-        }
     }
 
     private fun isDataEmpty(data: PersistenceData): Boolean {
@@ -184,5 +166,4 @@ class RedisPersistenceManager(
                 CollectionUtils.isEmpty(data.balancesData?.wallets) &&
                 data.processedMessage == null
     }
-
 }

@@ -31,6 +31,7 @@ import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
@@ -68,7 +69,6 @@ open class DatabaseAccessorConfig {
             Storage.Redis -> {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         redisHealthStatusHolder,
@@ -79,6 +79,12 @@ open class DatabaseAccessorConfig {
                 )
             }
         }
+    }
+
+    @Bean
+    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): WalletOperationsPersistListener {
+        return WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
     }
 
     @Bean
