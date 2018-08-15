@@ -42,14 +42,14 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         }
     }
 
-    fun searchOrders(clientId: String, assetPair: String, isBuy: Boolean): List<LimitOrder> {
-        val ordersToRemove = LinkedList<LimitOrder>()
+    fun searchOrders(clientId: String, assetPair: String?, isBuy: Boolean?): List<LimitOrder> {
+        val result = LinkedList<LimitOrder>()
         clientStopLimitOrdersMap[clientId]?.forEach { limitOrder ->
-            if (limitOrder.assetPairId == assetPair && limitOrder.isBuySide() == isBuy) {
-                ordersToRemove.add(limitOrder)
+            if (limitOrder.assetPairId == (assetPair ?: limitOrder.assetPairId) && limitOrder.isBuySide() == (isBuy ?: limitOrder.isBuySide())) {
+                result.add(limitOrder)
             }
         }
-        return ordersToRemove
+        return result
     }
 
     fun cancelStopLimitOrders(assetPairId: String, isBuy: Boolean, orders: Collection<LimitOrder>, date: Date) {

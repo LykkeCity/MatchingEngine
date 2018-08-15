@@ -115,7 +115,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 fee = feeInstruction,
                 fees = listOfLimitOrderFee(feeInstruction, feeInstructions),
                 type = type,
-                lowerLimitPrice = if (message.hasLowerLimitPrice()) BigDecimal.valueOf(message.lowerLimitPrice )else null,
+                lowerLimitPrice = if (message.hasLowerLimitPrice()) BigDecimal.valueOf(message.lowerLimitPrice) else null,
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
