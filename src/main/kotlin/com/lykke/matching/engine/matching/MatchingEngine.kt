@@ -88,9 +88,13 @@ class MatchingEngine(private val LOGGER: Logger,
 
         val limitOrdersReport = LimitOrdersReport(messageId)
         var totalLimitVolume = BigDecimal.ZERO
+        var matchedWithZeroLatestTrade = false
 
         if (checkOrderBook(order, workingOrderBook)) {
-            while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO && workingOrderBook.size > 0 && !NumberUtils.equalsWithDefaultDelta(remainingVolume, BigDecimal.ZERO)
+            while (getMarketBalance(availableBalances, order, asset) >= BigDecimal.ZERO
+                    && workingOrderBook.size > 0
+                    && !NumberUtils.equalsWithDefaultDelta(remainingVolume, BigDecimal.ZERO)
+                    && !matchedWithZeroLatestTrade
                     && (order.takePrice() == null || (if (isBuy) order.takePrice()!! >= workingOrderBook.peek().price else order.takePrice()!! <= workingOrderBook.peek().price))) {
                 val limitOrderOrigin = workingOrderBook.poll()
                 if (order.clientId == limitOrderOrigin.clientId) {
@@ -125,12 +129,26 @@ class MatchingEngine(private val LOGGER: Logger,
                         "marketVolume ${NumberUtils.roundForPrint(if (isBuy) oppositeRoundedVolume else marketRoundedVolume)}, " +
                         "limitVolume ${NumberUtils.roundForPrint(if (isBuy) marketRoundedVolume else oppositeRoundedVolume)}")
 
+                val limitOrderInfo = "id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}"
+
                 if (!genericLimitOrderService.checkAndReduceBalance(
                         limitOrder,
                         if (isBuy) marketRoundedVolume else oppositeRoundedVolume,
                         limitReservedBalances)) {
-                    LOGGER.info("Added order (id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}) to cancelled limit orders")
+                    LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
+                    continue
+                }
+
+                if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, if (isBuy) marketRoundedVolume else oppositeRoundedVolume)) {
+                    if (isFullyMatched) {
+                        LOGGER.info("Skipped order ($limitOrderInfo) due to zero latest trade")
+                        matchedWithZeroLatestTrade = true
+                        skipLimitOrders.add(limitOrderOrigin)
+                    } else {
+                        LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders due to zero trade")
+                        cancelledLimitOrders.add(limitOrderCopyWrapper)
+                    }
                     continue
                 }
 
@@ -156,7 +174,7 @@ class MatchingEngine(private val LOGGER: Logger,
                             mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
                             availableBalances)
                 } catch (e: FeeException) {
-                    LOGGER.info("Added order (id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}) to cancelled limit orders: ${e.message}")
+                    LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
                     continue
                 }
@@ -269,8 +287,13 @@ class MatchingEngine(private val LOGGER: Logger,
         }
 
         if (order.takePrice() == null && remainingVolume > BigDecimal.ZERO) {
-            order.updateStatus(OrderStatus.NoLiquidity, now)
-            LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)} | Unfilled: ${NumberUtils.roundForPrint(remainingVolume)}, price: ${order.takePrice()}")
+            if (matchedWithZeroLatestTrade) {
+                order.updateStatus(OrderStatus.InvalidVolumeAccuracy, now)
+                LOGGER.info("Invalid volume accuracy, latest trade has volume=0 for market order id: ${order.externalId}")
+            } else {
+                order.updateStatus(OrderStatus.NoLiquidity, now)
+                LOGGER.info("No liquidity, not enough funds on limit orders, for market order id: ${order.externalId}}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)} | Unfilled: ${NumberUtils.roundForPrint(remainingVolume)}, price: ${order.takePrice()}")
+            }
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
@@ -292,9 +315,10 @@ class MatchingEngine(private val LOGGER: Logger,
         }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
-            if (originOrder.volume != remainingVolume) {
+            val newRemainingVolume = if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume
+            if (newRemainingVolume.compareTo(originOrder.volume) != 0) {
                 order.updateStatus(OrderStatus.Processing, now)
-                order.updateRemainingVolume(if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume)
+                order.updateRemainingVolume(newRemainingVolume)
             }
         } else {
             order.updateStatus(OrderStatus.Matched, now)
@@ -321,6 +345,7 @@ class MatchingEngine(private val LOGGER: Logger,
                 limitOrdersReport,
                 workingOrderBook,
                 marketBalance,
+                matchedWithZeroLatestTrade,
                 false)
     }
 
