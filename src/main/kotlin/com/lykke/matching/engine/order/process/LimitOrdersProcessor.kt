@@ -257,7 +257,9 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             sellSideOrderBookChanged = true
         }
 
-        LOGGER.info("$orderInfo added to order book")
+        if (!isTrustedClient) {
+            LOGGER.info("$orderInfo added to order book")
+        }
     }
 
     private fun processMatchingResult(matchingResult: MatchingResult, orderCopy: LimitOrder, orderInfo: String, order: LimitOrder, limitAsset: Asset): Boolean {
