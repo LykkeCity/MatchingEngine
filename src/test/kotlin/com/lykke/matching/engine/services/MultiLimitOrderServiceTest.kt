@@ -1307,7 +1307,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderValue() {
+    fun testOrderMAxValue() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxValue = BigDecimal.valueOf(10000.0)))
@@ -1319,7 +1319,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderVolume() {
+    fun testOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxVolume = BigDecimal.valueOf(1.0)))

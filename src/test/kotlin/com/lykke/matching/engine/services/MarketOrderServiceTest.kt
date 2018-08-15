@@ -726,7 +726,7 @@ class MarketOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxStraightOrderValue() {
+    fun testStraightOrderMaxValue() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10001.0)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
@@ -748,7 +748,7 @@ class MarketOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxNotStraightOrderValue() {
+    fun testNotStraightOrderMaxValue() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxValue = BigDecimal.valueOf(10000)))
         assetPairsCache.update()
@@ -764,7 +764,7 @@ class MarketOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxStraightOrderVolume() {
+    fun testStraightOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxVolume = BigDecimal.valueOf(1.0)))
@@ -781,7 +781,7 @@ class MarketOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxNotStraightOrderVolume() {
+    fun testNotStraightOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 11000.0)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
