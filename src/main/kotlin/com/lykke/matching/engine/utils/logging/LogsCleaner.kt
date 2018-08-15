@@ -1,11 +1,11 @@
 package com.lykke.matching.engine.utils.logging
 
-import com.lykke.matching.engine.LOGGER
 import com.lykke.matching.engine.utils.config.Config
-import com.lykke.utils.AppInitializer
 import com.lykke.utils.files.clean.LogFilesCleaner
 import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
+import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 
@@ -14,6 +14,10 @@ open class LogsCleaner {
 
     @Autowired
     private lateinit var config: Config
+
+    @Autowired
+    @Qualifier("appStarterLogger")
+    private lateinit var LOGGER: Logger
 
     @PostConstruct
     fun startLogsCleaner() {
@@ -29,8 +33,7 @@ open class LogsCleaner {
 
             LogFilesCleaner.start(logFilesCleanerConfigWithDefaults)
         } catch (e: Exception) {
-            AppInitializer.teeLog("Unable to start log files cleaner: ${e.message}")
-            LOGGER.error(null, e)
+            LOGGER.error("Unable to start log files cleaner: ${e.message}", e)
         }
     }
 }
