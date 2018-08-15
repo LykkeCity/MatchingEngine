@@ -93,7 +93,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, (trustedClientsEventsQueue.first() as ExecutionEvent).orders.size)
         assertEquals(0, (trustedClientsEventsQueue.first() as ExecutionEvent).balanceUpdates!!.size)
 
-        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        assertEquals(1, tradesInfoListener.getCount())
         val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
         assertEquals(BigDecimal.valueOf(10000.0), tradeInfo.price)
         assertEquals(false, tradeInfo.isBuy)

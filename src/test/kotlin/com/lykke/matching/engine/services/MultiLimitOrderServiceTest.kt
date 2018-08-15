@@ -164,7 +164,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals("1.2", event.orders[0].price)
         assertEquals("1.3", event.orders[1].price)
 
-        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        assertEquals(1, tradesInfoListener.getCount())
         val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
         assertEquals(BigDecimal.valueOf(1.3), tradeInfo.price)
         assertEquals(true, tradeInfo.isBuy)
@@ -1336,7 +1336,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOldOrderValue() {
+    fun testOldOrderMaxValue() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxValue = BigDecimal.valueOf(10000.0)))
@@ -1348,7 +1348,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOldOrderVolume() {
+    fun testOldOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxVolume = BigDecimal.valueOf(1.0)))
@@ -1360,7 +1360,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderValue() {
+    fun testOrderMaxValue() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxValue = BigDecimal.valueOf(10000.0)))
@@ -1372,7 +1372,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderVolume() {
+    fun testOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxVolume = BigDecimal.valueOf(1.0)))

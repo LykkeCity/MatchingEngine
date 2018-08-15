@@ -1622,7 +1622,7 @@ class LimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderVolume() {
+    fun testOrderMaxValue() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxVolume = BigDecimal.valueOf(1.0)))
