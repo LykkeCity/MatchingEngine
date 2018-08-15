@@ -148,15 +148,15 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val orderBookCopy = orderBook.copy()
         if (buySideOrderBookChanged) {
             genericLimitOrderService.updateOrderBook(assetPair.assetPairId, true)
+            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBook.getBidPrice(), date))
             val newOrderBook = OrderBook(assetPair.assetPairId, true, date, orderBookCopy.getOrderBook(true))
-            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBookCopy.getBidPrice(), date))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSideOrderBookChanged) {
             genericLimitOrderService.updateOrderBook(assetPair.assetPairId, false)
+            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBook.getAskPrice(), date))
             val newOrderBook = OrderBook(assetPair.assetPairId, false, date, orderBookCopy.getOrderBook(false))
-            genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBookCopy.getAskPrice(), date))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
@@ -196,7 +196,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         try {
             validateLimitOrder(order, orderBook, assetPair, availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
-            LOGGER.info(e.message)
+            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
             order.updateStatus(e.orderStatus, date)
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, e.message))
@@ -279,7 +279,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
-                LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                LOGGER.info("$orderInfo: Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+                LOGGER.info("$orderInfo: Cancelled due to zero latest trade")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             } else {
                 orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
@@ -358,12 +361,20 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             orderBook.addOrder(order)
             ordersToAdd.add(order)
+            if (order.isBuySide()) {
+                buySideOrderBookChanged = true
+            } else {
+                sellSideOrderBookChanged = true
+            }
         }
 
         availableBalances[limitAsset.assetId] = matchingResult.marketBalance!!
 
-        buySideOrderBookChanged = true
-        sellSideOrderBookChanged = true
+        if (order.isBuySide()) {
+            sellSideOrderBookChanged = true
+        } else {
+            buySideOrderBookChanged = true
+        }
         processedOrders.add(ProcessedOrder(order, true))
         return true
     }

@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -29,6 +30,7 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.outgoing.messages.*
 import org.apache.log4j.Logger
@@ -119,57 +121,17 @@ class MarketOrderService @Autowired constructor(
         }
 
         val assetPair = getAssetPair(order)
-        val orderBook = getOrderBook(order)
 
-        val matchingResult = matchingEngine.initTransaction().match(order, orderBook, messageWrapper.messageId!!)
+        val matchingResult = matchingEngine.initTransaction().match(order, getOrderBook(order), messageWrapper.messageId!!)
         when (OrderStatus.valueOf(matchingResult.order.status)) {
-            NoLiquidity -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
-            }
             ReservedVolumeGreaterThanBalance -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
+                writeErrorNotification(messageWrapper, order, now, "Reserved volume is higher than available balance")
             }
-            NotEnoughFunds -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
-            }
-            InvalidFee -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
+            NoLiquidity,
+            NotEnoughFunds,
+            InvalidFee,
+            InvalidVolumeAccuracy -> {
+                writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {
                 val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
@@ -278,7 +240,9 @@ class MarketOrderService @Autowired constructor(
                         messageSender.sendTrustedClientsMessage(trustedClientsOutgoingMessage)
                     }
 
-                    val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, genericLimitOrderService.getOrderBook(order.assetPairId).getCopyOfOrderBook(!order.isBuySide()))
+                    val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
+                    val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, orderBook.getCopyOfOrderBook(!order.isBuySide()))
+                    genericLimitOrderService.putTradeInfo(TradeInfo(order.assetPairId, !order.isBuySide(), if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice(), now))
                     orderBookQueue.put(newOrderBook)
                     rabbitOrderBookQueue.put(newOrderBook)
                     writeResponse(messageWrapper, order, MessageStatus.OK)
@@ -314,6 +278,22 @@ class MarketOrderService @Autowired constructor(
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)
+    }
+
+    private fun writeErrorNotification(messageWrapper: MessageWrapper,
+                                       order: MarketOrder,
+                                       now: Date,
+                                       statusReason: String? = null) {
+        val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
+        rabbitSwapQueue.put(marketOrderWithTrades)
+        val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
+                messageWrapper.messageId!!,
+                messageWrapper.id!!,
+                now,
+                MessageType.MARKET_ORDER,
+                marketOrderWithTrades)
+        messageSender.sendMessage(outgoingMessage)
+        writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), statusReason)
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {
