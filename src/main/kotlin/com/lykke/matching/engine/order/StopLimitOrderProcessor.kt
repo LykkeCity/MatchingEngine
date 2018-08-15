@@ -91,6 +91,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.price = price
 
             genericLimitOrderProcessor.processLimitOrder(singleLimitContext, now, BigDecimal.ZERO)
+            writeResponse(messageWrapper, order, MessageStatus.OK)
             return
         }
 
