@@ -71,7 +71,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val result = try {
-            processTransferOperation(transferOperation,  cashTransferContext.messageId, cashTransferContext.processedMessage, now)
+            processTransferOperation(transferOperation, messageWrapper, cashTransferContext, now)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
             return
@@ -108,6 +108,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
 
     private fun processTransferOperation(operation: TransferOperation,
                                          messageWrapper: MessageWrapper,
+                                         cashTransferContext: CashTransferContext,
                                          date: Date): OperationResult {
         val operations = LinkedList<WalletOperation>()
 
@@ -124,13 +125,13 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), sequenceNumber)
+        val updated = walletProcessor.persistBalances(cashTransferContext.processedMessage, sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
             throw PersistenceException("Unable to save balance")
         }
-        val messageId = messageWrapper.messageId!!
+        val messageId = cashTransferContext.messageId
         walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
 
         val outgoingMessage = EventFactory.createCashTransferEvent(sequenceNumber,
