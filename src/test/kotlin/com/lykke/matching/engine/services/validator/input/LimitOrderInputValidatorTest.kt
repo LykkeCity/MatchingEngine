@@ -263,7 +263,7 @@ class LimitOrderInputValidatorTest {
             limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
         } catch (e: OrderValidationException) {
             //then
-            assertEquals(OrderStatus.InvalidVolume, e.orderStatus)
+            assertEquals(OrderStatus.InvalidValue, e.orderStatus)
             throw e
         }
     }
