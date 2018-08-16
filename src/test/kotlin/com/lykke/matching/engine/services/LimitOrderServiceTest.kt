@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
@@ -1632,7 +1631,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(1, event.orders.size)
         val eventOrder = event.orders.single()
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.INVALID_VOLUME, eventOrder.rejectReason)
+        assertEquals(OrderRejectReason.INVALID_VALUE, eventOrder.rejectReason)
 
         assertOrderBookSize("BTCUSD", false, 0)
     }

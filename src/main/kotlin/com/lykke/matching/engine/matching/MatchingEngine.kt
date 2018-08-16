@@ -322,7 +322,7 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
         if (!checkMaxValue(order, assetPair, executionPrice)) {
-            order.updateStatus(OrderStatus.InvalidVolume, now)
+            order.updateStatus(OrderStatus.InvalidValue, now)
             LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }

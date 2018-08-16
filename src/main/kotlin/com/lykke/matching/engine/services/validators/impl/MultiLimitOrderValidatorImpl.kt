@@ -68,7 +68,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         }
         if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large value")
-            throw OrderValidationException(OrderStatus.InvalidVolume)
+            throw OrderValidationException(OrderStatus.InvalidValue)
         }
     }
 
