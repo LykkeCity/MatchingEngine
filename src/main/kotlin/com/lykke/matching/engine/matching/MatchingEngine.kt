@@ -179,6 +179,18 @@ class MatchingEngine(private val LOGGER: Logger,
                     continue
                 }
 
+                if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, if (isBuy) marketRoundedVolume else oppositeRoundedVolume)) {
+                    if (isFullyMatched) {
+                        LOGGER.info("Skipped order ($limitOrderInfo) due to zero latest trade")
+                        matchedWithZeroLatestTrade = true
+                        skipLimitOrders.add(limitOrderOrigin)
+                    } else {
+                        LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders due to zero trade")
+                        cancelledLimitOrders.add(limitOrderCopyWrapper)
+                    }
+                    continue
+                }
+
                 val baseAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.baseAssetId, now, marketRoundedVolume, BigDecimal.ZERO)
                 val quotingAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, order.clientId, assetPair.quotingAssetId, now, oppositeRoundedVolume, BigDecimal.ZERO)
                 val limitBaseAssetOperation = WalletOperation(UUID.randomUUID().toString(), null, limitOrder.clientId, assetPair.baseAssetId, now, -marketRoundedVolume, if (-marketRoundedVolume < BigDecimal.ZERO) -marketRoundedVolume else BigDecimal.ZERO)
