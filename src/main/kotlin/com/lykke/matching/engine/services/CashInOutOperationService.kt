@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.converters.CashInOutOperationConverter
 import com.lykke.matching.engine.daos.fee.v2.Fee
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -80,7 +79,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(cashInOutContext.processedMessage, sequenceNumber)
+        val updated = walletProcessor.persistBalances(cashInOutContext.processedMessage, null,null, sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
