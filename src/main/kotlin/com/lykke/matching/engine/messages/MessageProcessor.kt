@@ -11,7 +11,6 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -28,6 +27,7 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.http.RequestHandler
+import com.lykke.matching.engine.outgoing.http.StopOrderBooksRequestHandler
 import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
@@ -156,11 +156,10 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
-        val stopOrderBookDatabaseAccessor = applicationContext.getBean(FileStopOrderBookDatabaseAccessor::class.java)
 
         this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
+        val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
-        val genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderBookDatabaseAccessor, genericLimitOrderService)
         val feeProcessor =  applicationContext.getBean(FeeProcessor::class.java)
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
 
@@ -249,6 +248,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
         server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
+        server.createContext("/stopOrderBooks", StopOrderBooksRequestHandler(genericStopLimitOrderService))
         server.executor = null
         server.start()
 
@@ -323,9 +323,11 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             service.processMessage(message)
 
             message.processedMessage()?.let {
-                processedMessagesCache.addMessage(it)
-                if (!message.processedMessagePersisted) {
-                    persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
+                if (!message.triedToPersist) {
+                    message.persisted = persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
+                }
+                if (message.persisted) {
+                    processedMessagesCache.addMessage(it)
                 }
             }
 
