@@ -3,6 +3,9 @@ package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashInOutContext
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.incoming.parsers.data.CashInOutParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -26,8 +29,9 @@ import java.util.concurrent.BlockingQueue
 class CashInOutPreprocessor(
         private val cashInOutQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor
-): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
+        private val databaseAccessor: CashOperationIdDatabaseAccessor,
+        private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
+        private val processedMessagesCache: ProcessedMessagesCache): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashInOutPreprocessor::class.java.name)
@@ -43,24 +47,42 @@ class CashInOutPreprocessor(
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = cashInOutContextParser.parse(messageWrapper)
 
-        if (!isDataValid(parsedData)) {
+        if (!validateData(parsedData)) {
             return
         }
 
         performDeduplicationCheck(parsedData)
     }
 
-    private fun isDataValid(cashTransferParsedData: CashInOutParsedData): Boolean {
-        val parsedMessageWrapper = cashTransferParsedData.messageWrapper
-        val cashInOutContext = cashTransferParsedData.messageWrapper.context as CashInOutContext
+    private fun validateData(cashInOutParsedData: CashInOutParsedData): Boolean {
         try {
-            cashInOutOperationInputValidator.performValidation(cashTransferParsedData)
+            cashInOutOperationInputValidator.performValidation(cashInOutParsedData)
         } catch (e: ValidationException) {
-            writeErrorResponse(parsedMessageWrapper, cashInOutContext.cashInOutOperation.id, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            processInvalidData(cashInOutParsedData, e.validationType, e.message)
             return false
         }
 
         return true
+    }
+
+    private fun processInvalidData(cashInOutParsedData: CashInOutParsedData,
+                                   validationType: ValidationException.Validation,
+                                   message: String) {
+        val messageWrapper = cashInOutParsedData.messageWrapper
+        val context = messageWrapper.context as CashInOutContext
+
+        val persistSuccess = cashInOutOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
+        if (!persistSuccess) {
+            throw Exception("Persistence error")
+        }
+
+        try {
+            processedMessagesCache.addMessage(context.processedMessage)
+            writeErrorResponse(messageWrapper, context.cashInOutOperation.matchingEngineOperationId, MessageStatusUtils.toMessageStatus(validationType), message)
+        } catch (e: Exception) {
+            LOGGER.error("Error occurred during processing of invalid cash in/out data, context $context", e)
+            METRICS_LOGGER.logError("Error occurred during invalid data processing, ${messageWrapper.type} ${context.messageId}")
+        }
     }
 
     private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
@@ -88,8 +110,8 @@ class CashInOutPreprocessor(
                 .setMatchingEngineId(operationId)
                 .setStatus(status.type)
                 .setStatusReason(errorMessage))
-        LOGGER.info("Cash in/out operation (${context.id}) for client ${context.clientId}, " +
-                "asset ${context.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
+        LOGGER.info("Cash in/out operation (${context.cashInOutOperation.externalId}), messageId: ${messageWrapper.messageId} for client ${context.cashInOutOperation.clientId}, " +
+                "asset ${context.cashInOutOperation.asset!!.assetId}, amount: ${NumberUtils.roundForPrint(context.cashInOutOperation.amount)}: $errorMessage")
     }
 
     override fun run() {
@@ -98,7 +120,10 @@ class CashInOutPreprocessor(
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
+                val context = message.context
+                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                        if (context != null) "Error details: $context" else "", exception)
+
                 METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
                 writeResponse(message, RUNTIME)
             }

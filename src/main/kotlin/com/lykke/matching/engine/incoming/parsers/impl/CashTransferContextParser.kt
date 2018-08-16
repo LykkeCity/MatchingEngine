@@ -26,7 +26,7 @@ class CashTransferContextParser(private val assetsHolder: AssetsHolder) : Contex
 
         val transferOperation = TransferOperation(UUID.randomUUID().toString(), message.id,
                 message.fromClientId, message.toClientId,
-                message.assetId, Date(message.timestamp),
+                assetsHolder.getAssetAllowNulls(message.assetId), Date(message.timestamp),
                 BigDecimal.valueOf(message.volume), BigDecimal.valueOf(message.overdraftLimit),
                 listOfFee(feeInstruction, feeInstructions))
 
@@ -38,11 +38,8 @@ class CashTransferContextParser(private val assetsHolder: AssetsHolder) : Contex
                 CashTransferContext(
                         if (message.hasMessageId()) message.messageId else message.id,
                         transferOperation,
-                        assetsHolder.getAssetAllowNulls(transferOperation.asset),
-                        transferOperation.asset,
-                        ProcessedMessage(MessageType.CASH_TRANSFER_OPERATION.type, message.timestamp, messageWrapper.messageId!!),
-                        Date())
+                        ProcessedMessage(MessageType.CASH_TRANSFER_OPERATION.type, message.timestamp, messageWrapper.messageId!!))
 
-        return CashTransferParsedData(messageWrapper, feeInstruction, feeInstructions)
+        return CashTransferParsedData(messageWrapper, message.assetId, feeInstruction, feeInstructions)
     }
 }

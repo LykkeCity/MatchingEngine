@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -15,8 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class CashTransferOperationInputValidatorImpl @Autowired constructor(private val assetsHolder: AssetsHolder,
-                                                                     private val applicationSettingsCache: ApplicationSettingsCache)
+class CashTransferOperationInputValidatorImpl @Autowired constructor(private val applicationSettingsCache: ApplicationSettingsCache)
     : CashTransferOperationInputValidator {
 
     companion object {
@@ -24,28 +22,32 @@ class CashTransferOperationInputValidatorImpl @Autowired constructor(private val
     }
 
     override fun performValidation(cashTransferParsedData: CashTransferParsedData) {
-        val cashTransferContext = cashTransferParsedData.messageWrapper.context as CashTransferContext
-        isAssetExist(cashTransferContext)
-        isAssetEnabled(cashTransferContext)
+        val cashTransferContext = getCashTransferContext(cashTransferParsedData)
+        isAssetExist(cashTransferParsedData)
+        isAssetEnabled(cashTransferParsedData)
         isFeeValid(cashTransferContext, cashTransferParsedData.feeInstruction, cashTransferParsedData.feeInstructions)
-        isVolumeAccuracyValid(cashTransferContext)
+        isVolumeAccuracyValid(cashTransferParsedData)
     }
 
-    private fun isAssetExist(cashTransferContext: CashTransferContext) {
-        if (cashTransferContext.asset == null) {
+    private fun isAssetExist(cashTransferParsedData: CashTransferParsedData) {
+        val cashTransferContext = getCashTransferContext(cashTransferParsedData)
+
+        if (cashTransferContext.transferOperation.asset == null) {
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
-                    "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
-                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: asset with id: ${cashTransferContext.inputAssetId}")
+                    "to client ${transferOperation.toClientId}, asset ${cashTransferParsedData.assetId}, " +
+                    "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: asset with id: ${cashTransferParsedData.assetId}")
             throw ValidationException(ValidationException.Validation.UNKNOWN_ASSET)
         }
     }
 
-    private fun isAssetEnabled(cashTransferContext: CashTransferContext) {
-        if (applicationSettingsCache.isAssetDisabled(cashTransferContext.asset!!.assetId)) {
+    private fun isAssetEnabled(cashTransferParsedData: CashTransferParsedData) {
+        val cashTransferContext = getCashTransferContext(cashTransferParsedData)
+
+        if (applicationSettingsCache.isAssetDisabled(cashTransferContext.transferOperation.asset!!.assetId)) {
             val transferOperation = cashTransferContext.transferOperation
             LOGGER.info("Cash transfer operation (${transferOperation.externalId}) from client ${transferOperation.fromClientId} " +
-                    "to client ${transferOperation.toClientId}, asset ${transferOperation.asset}, " +
+                    "to client ${transferOperation.toClientId}, asset ${cashTransferParsedData.assetId}, " +
                     "volume: ${NumberUtils.roundForPrint(transferOperation.volume)}: disabled asset")
             throw ValidationException(ValidationException.Validation.DISABLED_ASSET)
         }
@@ -59,15 +61,20 @@ class CashTransferOperationInputValidatorImpl @Autowired constructor(private val
         }
     }
 
-    private fun isVolumeAccuracyValid(cashTransferContext: CashTransferContext) {
+    private fun isVolumeAccuracyValid(cashTransferParsedData: CashTransferParsedData) {
+        val cashTransferContext = getCashTransferContext(cashTransferParsedData)
+
         val transferOperation = cashTransferContext.transferOperation
         val volumeValid = NumberUtils.isScaleSmallerOrEqual(transferOperation.volume,
-                assetsHolder.getAsset(transferOperation.asset).accuracy)
+                transferOperation.asset!!.accuracy)
 
         if (!volumeValid) {
             LOGGER.info("Volume accuracy invalid fromClient  ${transferOperation.fromClientId}, " +
-                    "to client ${transferOperation.toClientId} assetId: ${transferOperation.asset}, volume: ${transferOperation.volume}")
+                    "to client ${transferOperation.toClientId} assetId: ${cashTransferParsedData.assetId}, volume: ${transferOperation.volume}")
             throw ValidationException(ValidationException.Validation.INVALID_VOLUME_ACCURACY)
         }
     }
+
+    private fun getCashTransferContext(cashTransferParsedData: CashTransferParsedData) =
+            cashTransferParsedData.messageWrapper.context as CashTransferContext
 }

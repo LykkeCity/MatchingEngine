@@ -338,6 +338,7 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
         return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
     }
 
+
     fun buildLimitOrderWrapper(order: LimitOrder,
                                cancel: Boolean = false): MessageWrapper {
         val builder = ProtocolMessages.LimitOrder.newBuilder()
