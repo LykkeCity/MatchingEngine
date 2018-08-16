@@ -16,6 +16,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
+import com.lykke.matching.engine.order.OrderStatus.InvalidValue
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.order.OrderStatus.Matched
@@ -132,7 +133,8 @@ class MarketOrderService @Autowired constructor(
             NotEnoughFunds,
             InvalidFee,
             InvalidVolumeAccuracy,
-            InvalidVolume -> {
+            InvalidVolume,
+            InvalidValue -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {

@@ -1632,7 +1632,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(1, event.orders.size)
         val eventOrder = event.orders.single()
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.INVALID_VOLUME, eventOrder.rejectReason)
+        assertEquals(OrderRejectReason.INVALID_VALUE, eventOrder.rejectReason)
 
         assertOrderBookSize("BTCUSD", false, 0)
     }

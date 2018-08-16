@@ -54,7 +54,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
             throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
         }
         if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
-            throw OrderValidationException(OrderStatus.InvalidVolume, "value is too large")
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
         }
     }
 
