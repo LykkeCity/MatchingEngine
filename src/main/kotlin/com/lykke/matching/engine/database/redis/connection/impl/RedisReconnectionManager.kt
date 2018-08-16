@@ -75,7 +75,9 @@ class RedisReconnectionManager(private val config: MatchingEngineConfig,
         while (isReconnectionNeeded) {
             reconnectAll()
             isReconnectionNeeded = !isRedisAlive()
-            Thread.sleep(reconnectInterval)
+            if (isReconnectionNeeded) {
+                Thread.sleep(reconnectInterval)
+            }
         }
 
         applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.REDIS))

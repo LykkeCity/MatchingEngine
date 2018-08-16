@@ -110,7 +110,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
+        persistenceManager = applicationContext.getBean("persistenceManager") as PersistenceManager
 
         cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
