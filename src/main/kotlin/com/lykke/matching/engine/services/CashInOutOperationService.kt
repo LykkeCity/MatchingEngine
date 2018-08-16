@@ -81,7 +81,8 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
         val updated = walletProcessor.persistBalances(cashInOutContext.processedMessage, sequenceNumber)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setMatchingEngineId(walletOperation.id)

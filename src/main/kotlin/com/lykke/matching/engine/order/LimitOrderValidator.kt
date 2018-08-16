@@ -34,6 +34,7 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
     fun validateLimitPrices(order: LimitOrder) {
         var checked = false
         try {
+            if (order.lowerLimitPrice == null && order.lowerPrice == null && order.upperLimitPrice == null && order.upperPrice == null) return
             if ((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) return
             if ((order.upperLimitPrice == null).xor(order.upperPrice == null)) return
             if (order.lowerLimitPrice != null && (order.lowerLimitPrice <= BigDecimal.ZERO || order.lowerPrice!! <= BigDecimal.ZERO)) return

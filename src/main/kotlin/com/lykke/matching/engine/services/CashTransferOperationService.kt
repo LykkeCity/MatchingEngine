@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.daos.fee.v2.Fee
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.singleFeeTransfer
@@ -70,16 +71,15 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         }
 
         val result = try {
-            messageWrapper.processedMessagePersisted = true
-            processTransferOperation(transferOperation, cashTransferContext.messageId, cashTransferContext.processedMessage, now)
+            processTransferOperation(transferOperation,  cashTransferContext.messageId, cashTransferContext.processedMessage, now)
         } catch (e: FeeException) {
             writeErrorResponse(messageWrapper, cashTransferContext, INVALID_FEE, e.message)
             return
         } catch (e: BalanceException) {
             writeErrorResponse(messageWrapper, cashTransferContext, LOW_BALANCE, e.message)
             return
-        } catch (e: Exception) {
-            writeErrorResponse(messageWrapper, cashTransferContext, RUNTIME, e.message ?: "Unable to process operation")
+        } catch (e: PersistenceException) {
+            writeErrorResponse(messageWrapper, cashTransferContext, RUNTIME, e.message)
             return
         }
         dbTransferOperationQueue.put(transferOperation)
@@ -107,8 +107,7 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
     }
 
     private fun processTransferOperation(operation: TransferOperation,
-                                         messageId: String,
-                                         processedMessage: ProcessedMessage?,
+                                         messageWrapper: MessageWrapper,
                                          date: Date): OperationResult {
         val operations = LinkedList<WalletOperation>()
 
@@ -125,10 +124,13 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         walletProcessor.preProcess(operations)
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletProcessor.persistBalances(processedMessage, sequenceNumber)
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), sequenceNumber)
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
-            throw Exception("Unable to save balance")
+            throw PersistenceException("Unable to save balance")
         }
+        val messageId = messageWrapper.messageId!!
         walletProcessor.apply().sendNotification(operation.externalId, MessageType.CASH_TRANSFER_OPERATION.name, messageId)
 
         val outgoingMessage = EventFactory.createCashTransferEvent(sequenceNumber,
