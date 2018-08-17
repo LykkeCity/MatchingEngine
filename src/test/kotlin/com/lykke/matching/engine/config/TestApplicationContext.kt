@@ -43,9 +43,13 @@ import com.lykke.matching.engine.services.validators.input.impl.CashTransferOper
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.config.MatchingEngineConfig
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import com.lykke.utils.logging.ThrottlingLogger
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.mock
 import org.apache.log4j.Logger
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Qualifier
@@ -59,6 +63,17 @@ import java.util.concurrent.LinkedBlockingQueue
 @Configuration
 @Import(QueueConfig::class)
 open class TestApplicationContext {
+
+    @Bean
+    open fun config(): Config {
+        val meConfigMock = Mockito.mock(MatchingEngineConfig::class.java)
+        Mockito.`when`(meConfigMock.writeBalancesToSecondaryDb).thenReturn(false)
+        Mockito.`when`(meConfigMock.writeOrdersToSecondaryDb).thenReturn(false)
+
+        val configMock = Mockito.mock(Config::class.java)
+        Mockito.`when`(configMock.me).thenReturn(meConfigMock)
+        return configMock
+    }
 
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,

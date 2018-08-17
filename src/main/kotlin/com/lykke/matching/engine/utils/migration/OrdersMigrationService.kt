@@ -5,9 +5,9 @@ import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
+import com.lykke.matching.engine.database.utils.mapOrdersToOrderBookPersistenceDataList
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
@@ -55,7 +55,7 @@ class OrdersMigrationService(private val config: Config,
         teeLog("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
         persistenceManager.persist(PersistenceData(null,
                 null,
-                OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(orders),
+                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(orders, LOGGER),
                         orders,
                         emptyList()),
                 null,
