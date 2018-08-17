@@ -22,10 +22,6 @@ class ConnectionsHolder {
     @Autowired
     private lateinit var  orderBookQueue: BlockingQueue<OrderBook>
 
-    fun getOrderBookQueueSize(): Int {
-        return orderBookQueue.size
-    }
-
     @PostConstruct
     fun initialize() {
         fixedRateTimer(name = "OrderBookActiveConnectionsCheck", initialDelay = 300000, period = 300000) {

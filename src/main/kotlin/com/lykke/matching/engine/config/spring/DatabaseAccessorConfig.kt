@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
@@ -27,6 +28,7 @@ import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.impl.RedisReconnectionManager
@@ -44,6 +46,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.TaskScheduler
 import java.util.Optional
+import java.util.concurrent.BlockingQueue
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -60,7 +63,8 @@ open class DatabaseAccessorConfig {
                                 ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
                                 stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
+                                updatedWalletsQueue: BlockingQueue<Collection<Wallet>>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
                     ordersDatabaseAccessorsHolder.primaryAccessor,
@@ -78,6 +82,7 @@ open class DatabaseAccessorConfig {
                         stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         persistenceRedisConnection()!!,
+                        updatedWalletsQueue,
                         config
                 )
             }
@@ -108,6 +113,7 @@ open class DatabaseAccessorConfig {
                         stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         cashInOutOperationsPreprocessorRedisConnection()!!,
+                        null,
                         config
                 )
             }
@@ -129,7 +135,6 @@ open class DatabaseAccessorConfig {
             Storage.Redis -> {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
@@ -138,10 +143,17 @@ open class DatabaseAccessorConfig {
                         stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         cashTransferOperationsPreprocessorRedisConnection()!!,
+                        null,
                         config
                 )
             }
         }
+    }
+
+    @Bean
+    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): WalletOperationsPersistListener {
+        return WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
     }
 
     @Bean
