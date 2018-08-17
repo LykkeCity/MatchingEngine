@@ -13,11 +13,12 @@ import kotlin.concurrent.fixedRateTimer
 
 @Component
 @Profile("default", "!local_config")
-class QueueSizeLogger @Autowired constructor(val queues: Map<String, BlockingQueue<*>>,
-                                             val config: Config) {
+class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>>,
+                                             private val config: Config) {
     companion object {
         val LOGGER = Logger.getLogger(QueueSizeLogger::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
+
         val ENTRY_SIZE_FORMAT = "%s: %d;"
         val ENTRY_SIZE_LIMIT_FORMAT = "%s queue is higher than limit"
         val ENTRY_DELIMITER = ". "
