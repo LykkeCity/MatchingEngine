@@ -16,7 +16,6 @@ open class SwaggerConfig {
     @Bean
     open fun apiDocket(): Docket {
         return Docket(DocumentationType.SWAGGER_2)
-                .host("localhost:8080")
                 .apiInfo(ApiInfo(
                         "Matching Engine",
                         "Lykke Matching engine",
