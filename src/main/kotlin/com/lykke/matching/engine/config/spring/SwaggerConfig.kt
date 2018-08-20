@@ -27,7 +27,7 @@ open class SwaggerConfig {
                         emptyList()
                 ))
                 .select()
-                .apis(RequestHandlerSelectors.any())
+                .apis(RequestHandlerSelectors.basePackage("com.lykke.matching.engine.web.controllers"))
                 .paths(PathSelectors.any())
                 .build()
 
