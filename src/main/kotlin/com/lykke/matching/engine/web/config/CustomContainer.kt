@@ -12,6 +12,6 @@ class CustomContainer : WebServerFactoryCustomizer<ConfigurableServletWebServerF
     private lateinit var config: Config
 
     override fun customize(factory: ConfigurableServletWebServerFactory) {
-        factory.setPort(config.me.httpBalancesPort)
+        factory.setPort(config.me.httpApiPort)
     }
 }
