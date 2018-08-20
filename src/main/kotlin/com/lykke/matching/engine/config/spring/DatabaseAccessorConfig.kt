@@ -27,25 +27,29 @@ import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
+import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.JedisPoolConfig
+import org.springframework.scheduling.TaskScheduler
 import java.util.Optional
 
 @Configuration
@@ -58,8 +62,7 @@ open class DatabaseAccessorConfig {
     open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                                 ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
                                 stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                jedisPool: Optional<JedisPool>,
-                                redisHealthStatusHolder: RedisHealthStatusHolder,
+                                redisHolder: Optional<PersistenceRedisHolder>,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
@@ -78,9 +81,8 @@ open class DatabaseAccessorConfig {
                         ordersDatabaseAccessorsHolder.secondaryAccessor,
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
                         stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                        redisHealthStatusHolder,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        jedisPool.get(),
+                        redisHolder.get(),
                         config
                 )
             }
@@ -88,82 +90,58 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun readOnlyProcessedMessagesDatabaseAccessor(jedisPool: Optional<JedisPool>): ReadOnlyProcessedMessagesDatabaseAccessor {
+    open fun readOnlyProcessedMessagesDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
-            Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(jedisPool.get(),
+            Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(redisHolder.get(),
                     config.me.redis.processedMessageDatabase,
                     getProcessedMessageTTL())
         }
     }
 
     @Bean
-    open fun jedisPool(@Value("\${redis.max.total}") maxTotal: Int,
-                       @Value("\${redis.max.idle}") maxIdle: Int,
-                       @Value("\${redis.min.idle}") minIdle: Int,
-                       @Value("\${redis.test_on_borrow}") testOnBorrow: Boolean,
-                       @Value("\${redis.test_on_return}") testOnReturn: Boolean,
-                       @Value("\${redis.test_while_idle}") testWhileIdle: Boolean,
-                       @Value("\${redis.min_evictable_idle_time_millis}") minEvictableIdleTimeMillis: Long,
-                       @Value("\${redis.time_between_eviction_runs_millis}") timeBetweenEvictionRunsMillis: Long,
-                       @Value("\${redis.num_tests_per_eviction_run}") numTestsPerEvictionRun: Int,
-                       @Value("\${redis.block_when_exhausted}") blockWhenExhausted: Boolean): JedisPool? {
-        val redisConfig = config.me.redis
-
-        if (redisConfig == null) {
+    open fun redisHolder(taskScheduler: TaskScheduler,
+                         applicationEventPublisher: ApplicationEventPublisher,
+                         @Value("\${redis.health.check.interval}") updateInterval: Long,
+                         @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisHolder? {
+        if (config.me.storage != Storage.Redis) {
             return null
         }
-
-        val poolConfig = JedisPoolConfig()
-        poolConfig.maxTotal = maxTotal
-        poolConfig.maxIdle = maxIdle
-        poolConfig.minIdle = minIdle
-        poolConfig.testOnBorrow = testOnBorrow
-        poolConfig.testOnReturn = testOnReturn
-        poolConfig.testWhileIdle = testWhileIdle
-        poolConfig.minEvictableIdleTimeMillis = minEvictableIdleTimeMillis
-        poolConfig.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis
-        poolConfig.numTestsPerEvictionRun = numTestsPerEvictionRun
-        poolConfig.blockWhenExhausted = blockWhenExhausted
-
-        return JedisPool(poolConfig,
-                redisConfig.host,
-                redisConfig.port,
-                redisConfig.timeout,
-                redisConfig.password,
-                redisConfig.useSsl)
+        return RedisHolder(config.me, taskScheduler, applicationEventPublisher, updateInterval, reconnectInterval)
     }
 
     @Bean
-    open fun redisProcessedMessagesDatabaseAccessor(jedisPool: Optional<JedisPool>): RedisProcessedMessagesDatabaseAccessor? {
-        if (!jedisPool.isPresent) {
+    open fun redisProcessedMessagesDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): RedisProcessedMessagesDatabaseAccessor? {
+        if (!redisHolder.isPresent) {
             return null
         }
-        return RedisProcessedMessagesDatabaseAccessor(jedisPool.get(),
+        return RedisProcessedMessagesDatabaseAccessor(redisHolder.get(),
                 config.me.redis.processedMessageDatabase,
                 getProcessedMessageTTL())
     }
 
     @Bean
-    open fun cashOperationIdDatabaseAccessor(jedisPool: Optional<JedisPool>): CashOperationIdDatabaseAccessor? {
+    open fun cashOperationIdDatabaseAccessor(cashInOutOperationIdRedisHolder: Optional<CashInOutOperationIdRedisHolder>,
+                                             cashTransferOperationIdRedisHolder: Optional<CashTransferOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
             Storage.Redis -> {
-                if (!jedisPool.isPresent) {
+                if (!cashInOutOperationIdRedisHolder.isPresent || !cashTransferOperationIdRedisHolder.isPresent) {
                     return null
                 }
-                return RedisCashOperationIdDatabaseAccessor(jedisPool.get(),
+                return RedisCashOperationIdDatabaseAccessor(cashInOutOperationIdRedisHolder.get(),
+                        cashTransferOperationIdRedisHolder.get(),
                         config.me.redis.processedCashMessageDatabase)
             }
         }
     }
 
     @Bean
-    open fun messageSequenceNumberDatabaseAccessor(jedisPool: Optional<JedisPool>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
+    open fun messageSequenceNumberDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
             Storage.Redis -> {
-                RedisMessageSequenceNumberDatabaseAccessor(jedisPool.get(),
+                RedisMessageSequenceNumberDatabaseAccessor(redisHolder.get(),
                         config.me.redis.sequenceNumberDatabase)
             }
         }

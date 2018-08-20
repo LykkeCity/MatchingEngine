@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.migration
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.azure.AzureWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.exception.MatchingEngineException
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -13,14 +14,13 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import redis.clients.jedis.JedisPool
 import java.util.*
 
 @Component
 @Order(1)
 class AccountsMigrationService @Autowired constructor (private val balancesHolder: BalancesHolder,
                                                        private val config: Config,
-                                                       jedisPool: Optional<JedisPool>): ApplicationRunner {
+                                                       redisHolder: Optional<InitialLoadingRedisHolder>): ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
         if (config.me.walletsMigration) {
             migrateAccounts()
@@ -31,11 +31,9 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
         private val LOGGER = Logger.getLogger(AccountsMigrationService::class.java.name)
     }
 
-    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor? = if (jedisPool.isPresent)
-        RedisWalletDatabaseAccessor(jedisPool.get(), config.me.redis.balanceDatabase)
+    private val redisDatabaseAccessor: RedisWalletDatabaseAccessor? = if (redisHolder.isPresent)
+        RedisWalletDatabaseAccessor(redisHolder.get(), config.me.redis.balanceDatabase)
     else null
-
-
 
     private val azureAccountsTableName = config.me.db.accountsTableName
             ?: AzureWalletDatabaseAccessor.DEFAULT_BALANCES_TABLE_NAME

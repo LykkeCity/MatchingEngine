@@ -218,7 +218,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         try {
             validateLimitOrder(order, orderBook, assetPair, availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
-            LOGGER.info(e.message)
+            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
             order.updateStatus(e.orderStatus, date)
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, e.message))
@@ -279,7 +279,9 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             sellSideOrderBookChanged = true
         }
 
-        LOGGER.info("$orderInfo added to order book")
+        if (!isTrustedClient) {
+            LOGGER.info("$orderInfo added to order book")
+        }
     }
 
     private fun processMatchingResult(matchingResult: MatchingResult, orderCopy: LimitOrder, orderInfo: String, order: LimitOrder, limitAsset: Asset): Boolean {
@@ -301,7 +303,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
-                LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                LOGGER.info("$orderInfo: Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+                LOGGER.info("$orderInfo: Cancelled due to zero latest trade")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             } else {
                 orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()

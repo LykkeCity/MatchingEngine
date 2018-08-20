@@ -63,7 +63,8 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         }
 
         val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null, null, null)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setMatchingEngineId(operation.id)

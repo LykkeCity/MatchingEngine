@@ -11,12 +11,10 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.OrderOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AbstractGenericLimitOrderService
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
 import java.math.BigDecimal
 import java.util.*
-import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 
 abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrderBook,
@@ -24,23 +22,18 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                                                                           private val assetsPairsHolder: AssetsPairsHolder,
                                                                           private val balancesHolder: BalancesHolder,
                                                                           private val genericLimitOrderService: AbstractGenericLimitOrderService<TAssetOrderBook>,
-                                                                          private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                                                          private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                                                           private val date: Date) {
 
-    protected class OrdersProcessingInfo {
-        val assetPairId: String
+    protected class OrdersProcessingInfo(val buyOrders: List<LimitOrder>,
+                                         val sellOrders: List<LimitOrder>,
+                                         val assetPairId: String) {
         val allOrders = LinkedList<LimitOrder>()
-        val buyOrders: List<LimitOrder>
-        val sellOrders: List<LimitOrder>
 
-        constructor(buyOrders: List<LimitOrder>, sellOrders: List<LimitOrder>, assetPairId: String) {
-            this.assetPairId = assetPairId
+        init {
             allOrders.addAll(sellOrders)
             allOrders.addAll(buyOrders)
-            this.buyOrders = buyOrders
-            this.sellOrders = sellOrders
         }
+
     }
 
     private var allOrders: List<OrdersProcessingInfo> = LinkedList()
@@ -158,7 +151,6 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                    processedMessage: ProcessedMessage?,
                    result: TCancelResult) {
         removeOrdersFromCache()
-        sendReports(messageId, result)
     }
 
     private fun removeOrdersFromCache() {
@@ -167,15 +159,6 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
                     removeOrdersFromCache(it.buyOrders, it.assetPairId)
                     removeOrdersFromCache(it.sellOrders, it.assetPairId)
                 }
-    }
-
-    private fun sendReports(messageId: String, result: TCancelResult) {
-        if (result.clientsOrdersWithTrades.isNotEmpty()) {
-            clientLimitOrdersQueue.put(LimitOrdersReport(messageId, result.clientsOrdersWithTrades.toMutableList()))
-        }
-        if (result.trustedClientsOrdersWithTrades.isNotEmpty()) {
-            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, result.trustedClientsOrdersWithTrades.toMutableList()))
-        }
     }
 
     @Suppress("unchecked_cast")
