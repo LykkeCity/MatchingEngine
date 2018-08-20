@@ -216,11 +216,10 @@ class RedisPersistenceManager(
             return
         }
 
-
-        val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
-            secondaryOrdersAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
-        updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryOrdersAccessor.loadLimitOrders(), currentOrderBookSides))
+        if (!config.me.ordersMigration) {
+            val currentOrderBookSides = secondaryOrdersAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
+            updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryOrdersAccessor.loadLimitOrders(), currentOrderBookSides))
+        }
 
         thread(name = "${RedisPersistenceManager::class.java.name}.ordersAsyncWriter") {
             while (true) {
@@ -241,10 +240,10 @@ class RedisPersistenceManager(
             return
         }
 
-        val currentStopOrderBookSides = if (config.me.ordersMigration) emptySet() else
-            secondaryStopOrdersAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
-        updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders(), currentStopOrderBookSides))
+        if (!config.me.ordersMigration) {
+            val currentStopOrderBookSides = secondaryStopOrdersAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
+            updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders(), currentStopOrderBookSides))
+        }
 
         thread(name = "${RedisPersistenceManager::class.java.name}.stopOrdersAsyncWriter") {
             while (true) {
