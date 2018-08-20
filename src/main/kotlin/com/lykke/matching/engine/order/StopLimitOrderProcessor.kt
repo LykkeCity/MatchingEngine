@@ -151,14 +151,13 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         walletOperations.add(WalletOperation(UUID.randomUUID().toString(),
                 order.externalId,
                 order.clientId,
-                limitAsset.assetId, now, BigDecimal.ZERO, limitVolume))
+                limitAsset.assetId, now, BigDecimal.ZERO, limitVolume!!))
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         walletOperationsProcessor.preProcess(walletOperations, true)
 
         order.reservedLimitVolume = limitVolume
         newStopOrderBook.add(order)
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        messageWrapper.processedMessagePersisted = true
         val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
                 null,
                 OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId, order.isBuySide(), newStopOrderBook)),

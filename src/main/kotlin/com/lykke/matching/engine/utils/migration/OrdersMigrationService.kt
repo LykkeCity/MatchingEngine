@@ -5,6 +5,7 @@ import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -14,14 +15,12 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import redis.clients.jedis.JedisPool
 import java.util.Date
-import java.util.Optional
 
 @Component
 @Order(2)
 class OrdersMigrationService(private val config: Config,
-                             jedisPool: Optional<JedisPool>,
+                             redisHolder: InitialLoadingRedisHolder,
                              private val persistenceManager: PersistenceManager,
                              private val genericLimitOrderService: GenericLimitOrderService): ApplicationRunner {
     companion object {
@@ -29,9 +28,7 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private val fileDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    private val redisDatabaseAccessor = if (jedisPool.isPresent)
-        RedisOrderBookDatabaseAccessor(jedisPool.get(), config.me.redis.ordersDatabase)
-    else null
+    private val redisDatabaseAccessor = RedisOrderBookDatabaseAccessor(redisHolder, config.me.redis.ordersDatabase)
 
     override fun run(args: ApplicationArguments?) {
         if (!config.me.ordersMigration) {
