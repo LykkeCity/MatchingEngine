@@ -44,6 +44,8 @@ ext {
     mockito_kotlin_version = '1.5.0'
     jedis_version = '2.9.0'
     big_math_version = '2.0.0'
+    springfox_swagger2 = "2.7.0"
+    springfox_swagger_ui = "2.7.0"
 }
 
 dependencies {
@@ -65,6 +67,10 @@ dependencies {
     compile "ch.obermuhlner:big-math:$big_math_version"
 
     compile('org.springframework.boot:spring-boot-starter')
+    compile("org.springframework.boot:spring-boot-starter-web")
+
+    compile "io.springfox:springfox-swagger2:$springfox_swagger2"
+    compile "io.springfox:springfox-swagger-ui:$springfox_swagger_ui"
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile  "junit:junit:$junit_version"
