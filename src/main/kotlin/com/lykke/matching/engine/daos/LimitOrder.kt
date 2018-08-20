@@ -16,7 +16,7 @@ class LimitOrder(id: String,
                  status: String,
                  statusDate: Date?,
                  createdAt: Date,
-                 registered: Date,
+                 registered: Date?,
                  var remainingVolume: BigDecimal,
                  var lastMatchTime: Date?,
                  reservedLimitVolume: BigDecimal? = null,
@@ -30,6 +30,29 @@ class LimitOrder(id: String,
                  @Transient
                  val previousExternalId: String?)
     : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable {
+
+    constructor(limitOrder: LimitOrder, statusDate: Date, registered: Date): this(
+            limitOrder.id,
+            limitOrder.externalId,
+            limitOrder.assetPairId,
+            limitOrder.clientId,
+            limitOrder.volume,
+            limitOrder.price,
+            limitOrder.status,
+            statusDate,
+            limitOrder.createdAt,
+            registered,
+            limitOrder.remainingVolume,
+            limitOrder.lastMatchTime,
+            limitOrder.reservedLimitVolume,
+            limitOrder.fee as? LimitOrderFeeInstruction,
+            limitOrder.fees?.map { it as NewLimitOrderFeeInstruction },
+            limitOrder.type,
+            limitOrder.lowerLimitPrice,
+            limitOrder.lowerPrice,
+            limitOrder.upperLimitPrice,
+            limitOrder.upperPrice,
+            limitOrder.previousExternalId)
 
     fun getAbsRemainingVolume(): BigDecimal {
         return remainingVolume.abs()

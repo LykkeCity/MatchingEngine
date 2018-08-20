@@ -72,7 +72,7 @@ private fun convertLimitOrder(limitOrderWithTrades: LimitOrderWithTrades): Order
             statusInfo.rejectReason,
             limitOrder.statusDate ?: Date(),
             limitOrder.createdAt,
-            limitOrder.registered,
+            limitOrder.registered!!,
             limitOrder.lastMatchTime,
             bigDecimalToString(limitOrder.lowerLimitPrice),
             bigDecimalToString(limitOrder.lowerPrice),
@@ -100,7 +100,7 @@ private fun convertMarketOrder(marketOrderWithTrades: MarketOrderWithTrades): Or
             statusInfo.rejectReason,
             marketOrder.statusDate!!,
             marketOrder.createdAt,
-            marketOrder.registered,
+            marketOrder.registered!!,
             marketOrder.matchedAt,
             null,
             null,
@@ -146,6 +146,9 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
         com.lykke.matching.engine.order.OrderStatus.NotFoundPrevious.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.NOT_FOUND_PREVIOUS)
         com.lykke.matching.engine.order.OrderStatus.InvalidPriceAccuracy.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_PRICE_ACCURACY)
         com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME_ACCURACY)
+        com.lykke.matching.engine.order.OrderStatus.InvalidVolume.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME)
+        com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.TOO_HIGH_PRICE_DEVIATION)
+        com.lykke.matching.engine.order.OrderStatus.InvalidValue.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VALUE)
         else -> OrderStatusInfo(OrderStatus.UNKNOWN_STATUS)
     }
 }

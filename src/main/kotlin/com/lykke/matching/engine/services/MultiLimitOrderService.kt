@@ -9,6 +9,8 @@ import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -21,7 +23,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
@@ -30,6 +32,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -63,6 +66,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
                              private val multiLimitOrderValidator: MultiLimitOrderValidator,
                              feeProcessor: FeeProcessor,
+                             private val settings: ApplicationSettingsCache,
                              private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                              private val messageSender: MessageSender) : AbstractService {
 
@@ -104,7 +108,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         messageUid = message.uid.toString()
         clientId = message.clientId
         assetPairId = message.assetPairId
-        LOGGER.debug("Got old multi limit order  messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
+        LOGGER.debug("Got old multi limit order messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
         cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
 
         val assetPair = assetsPairsHolder.getAssetPair(assetPairId)
@@ -188,8 +192,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
 
             if (orderValid && orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageWrapper.messageId!!,
-                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.match(order,
+                        orderBook.getOrderBook(!order.isBuySide()),
+                        messageWrapper.messageId!!,
+                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId],
+                        settings.limitOrderPriceDeviationThreshold(assetPairId))
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.updateStatus(OrderStatus.NoLiquidity, matchingResult.timestamp)
@@ -199,7 +206,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
-                    OrderStatus.InvalidFee -> {
+                    OrderStatus.InvalidFee,
+                    OrderStatus.TooHighPriceDeviation -> {
                         order.updateStatus(OrderStatus.InvalidFee, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
@@ -318,6 +326,22 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val startPersistTime = System.nanoTime()
 
+        val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
+        val ordersToSave = mutableListOf<LimitOrder>()
+        val ordersToRemove = mutableListOf<LimitOrder>()
+        ordersToRemove.addAll(completedOrders)
+        ordersToRemove.addAll(ordersToCancel)
+        if (buySide || cancelBuySide) {
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getCopyOfOrderBook(true), ordersToAdd)
+            orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, true, updatedOrders.fullOrderBook))
+            ordersToSave.addAll(updatedOrders.updatedOrders)
+        }
+        if (sellSide || cancelSellSide) {
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getCopyOfOrderBook(false), ordersToAdd)
+            orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, updatedOrders.fullOrderBook))
+            ordersToSave.addAll(updatedOrders.updatedOrders)
+        }
+
         var sequenceNumber: Long? = null
         var clientsSequenceNumber: Long? = null
         var trustedClientsSequenceNumber: Long? = null
@@ -330,7 +354,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(), sequenceNumber)
+        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+                OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
+                null,
+                sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -347,12 +374,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         limitOrderService.cancelLimitOrders(ordersToCancel, now)
         limitOrderService.addOrders(ordersToAdd)
         limitOrderService.setOrderBook(assetPairId, orderBook)
-        if (buySide || cancelBuySide) {
-            limitOrderService.updateOrderBook(assetPairId, true)
-        }
-        if (sellSide || cancelSellSide) {
-            limitOrderService.updateOrderBook(assetPairId, false)
-        }
         val endPersistTime = System.nanoTime()
 
         val orderBookCopy = orderBook.copy()
@@ -409,8 +430,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageSender.sendMessage(outgoingMessage)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
@@ -448,7 +468,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 sellSideOrderBookChanged = true
             }
         }
-
 
         val notFoundReplacements = mutableMapOf<String, LimitOrder>()
 
@@ -495,8 +514,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
                 now,
+                balancesHolder.isTrustedClient(multiLimitOrder.clientId),
                 multiLimitOrder.clientId,
                 assetPair,
+                assetsHolder.getAsset(assetPair.baseAssetId),
+                assetsHolder.getAsset(assetPair.quotingAssetId),
                 orderBook,
                 cancelBaseVolume,
                 cancelQuotingVolume,
@@ -543,8 +565,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
     private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder,

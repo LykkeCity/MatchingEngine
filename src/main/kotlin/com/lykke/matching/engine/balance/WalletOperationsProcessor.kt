@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -44,19 +45,20 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             return this
         }
         val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
-        operations.forEach { operation ->
-            val key = key(operation)
-            val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
-                TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
-            }
+        operations.filter { !(it.amount.compareTo(BigDecimal.ZERO) == 0 && applicationSettings.isTrustedClient(it.clientId)) }
+                .forEach { operation ->
+                    val key = key(operation)
+                    val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
+                        TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
+                    }
 
-            val asset = assetsHolder.getAsset(operation.assetId)
-            changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
-            changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
-                NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
-            else
-                changedAssetBalance.reserved
-        }
+                    val asset = assetsHolder.getAsset(operation.assetId)
+                    changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
+                    changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
+                        NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
+                    else
+                        changedAssetBalance.reserved
+                }
 
         if (validate) {
             try {
@@ -98,10 +100,15 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return balancesUpdater.persistenceData()
     }
 
-    fun persistBalances(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?): Boolean {
+    fun persistBalances(processedMessage: ProcessedMessage?,
+                        orderBooksData: OrderBooksPersistenceData?,
+                        stopOrderBooksData: OrderBooksPersistenceData?,
+                        messageSequenceNumber: Long?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
         return persistenceManager.persist(PersistenceData(persistenceData(),
                 processedMessage,
+                orderBooksData,
+                stopOrderBooksData,
                 messageSequenceNumber))
     }
 

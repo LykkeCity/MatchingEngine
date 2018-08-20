@@ -1,9 +1,12 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -16,12 +19,20 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
+import com.lykke.matching.engine.order.OrderStatus.InvalidValue
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
@@ -30,9 +41,7 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.outgoing.messages.*
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -56,7 +65,8 @@ class MarketOrderService @Autowired constructor(
         private val rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>,
         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
         private val marketOrderValidator: MarketOrderValidator,
-        private val feeProcessor: FeeProcessor,
+        feeProcessor: FeeProcessor,
+        private val settings: ApplicationSettingsCache,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
         private val messageSender: MessageSender): AbstractService {
     companion object {
@@ -122,7 +132,11 @@ class MarketOrderService @Autowired constructor(
 
         val assetPair = getAssetPair(order)
 
-        val matchingResult = matchingEngine.initTransaction().match(order, getOrderBook(order), messageWrapper.messageId!!)
+        val matchingResult = matchingEngine.initTransaction().match(order,
+                getOrderBook(order),
+                messageWrapper.messageId!!,
+                priceDeviationThreshold = settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
+
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             ReservedVolumeGreaterThanBalance -> {
                 writeErrorNotification(messageWrapper, order, now, "Reserved volume is higher than available balance")
@@ -130,7 +144,10 @@ class MarketOrderService @Autowired constructor(
             NoLiquidity,
             NotEnoughFunds,
             InvalidFee,
-            InvalidVolumeAccuracy -> {
+            InvalidVolumeAccuracy,
+            InvalidVolume,
+            InvalidValue,
+            TooHighPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {
@@ -177,12 +194,31 @@ class MarketOrderService @Autowired constructor(
                 val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
+                    matchingResult.apply()
+                    val completedOrders = matchingResult.completedLimitOrders.map { it.origin!! }
+                    val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
+                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
+                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+
+                    val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
+                    val ordersToSave = mutableListOf<LimitOrder>()
+                    val ordersToRemove = mutableListOf<LimitOrder>()
+                    ordersToRemove.addAll(completedOrders)
+                    ordersToRemove.addAll(ordersToCancel)
+                    val updatedOrders = matchingEngine.updatedOrders(matchingResult.orderBook, emptyList())
+                    orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, !order.isBuySide(), updatedOrders.fullOrderBook))
+                    ordersToSave.addAll(updatedOrders.updatedOrders)
+
                     trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
 
                     val sequenceNumber = messageSequenceNumberHolder.getNewValue()
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
-                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(), trustedClientsSequenceNumber ?: sequenceNumber)
+
+                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+                            OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
+                            null,
+                            trustedClientsSequenceNumber ?: sequenceNumber)
                     messageWrapper.triedToPersist = true
                     messageWrapper.persisted = updated
                     if (!updated) {
@@ -193,19 +229,13 @@ class MarketOrderService @Autowired constructor(
                     }
                     walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
 
-                    matchingResult.apply()
+
                     matchingEngine.apply()
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders.map { it.origin!! })
-                    val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
-                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
                     genericLimitOrderService.cancelLimitOrders(ordersToCancel, matchingResult.timestamp)
+                    genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
 
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
-
-                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-                    genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
-                    genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
@@ -253,9 +283,7 @@ class MarketOrderService @Autowired constructor(
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId,
-                now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
 
         val endTime = System.nanoTime()
 

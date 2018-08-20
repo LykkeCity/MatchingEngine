@@ -26,6 +26,7 @@ data class MatchingEngineConfig(
         val cancelMinVolumeOrders: Boolean,
         val cancelAllOrders: Boolean,
         val orderBookPath: String,
+        val secondaryOrderBookPath: String,
         val stopOrderBookPath: String,
         val queueSizeLimit: Int,
         val name: String,
@@ -38,5 +39,7 @@ data class MatchingEngineConfig(
         val logFilesCleaner: LogFilesCleanerConfig,
         val storage: Storage,
         val walletsMigration: Boolean,
-        val writeBalancesToSecondaryDb: Boolean
+        val writeBalancesToSecondaryDb: Boolean,
+        val ordersMigration: Boolean,
+        val writeOrdersToSecondaryDb: Boolean
 )
