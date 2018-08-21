@@ -23,10 +23,10 @@ class GeneralHealthMonitor: HealthMonitor {
 
     @EventListener
     fun processHealthMonitorEvent(event: HealthMonitorEvent) {
-        if (!event.ok) {
-            brokenComponents.add(event.componentName)
+        if (event.ok) {
+            brokenComponents.remove(event.component)
         } else {
-            brokenComponents.remove(event.componentName)
+            brokenComponents.add(event.component)
         }
     }
 

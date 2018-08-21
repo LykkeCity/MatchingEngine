@@ -25,7 +25,8 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
 
         LOGGER.debug("Got mass limit order cancel request id: ${message.uid}, clientId: $clientId, assetPairId: $assetPairId, isBuy: $isBuy")
 
-        return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy), emptyList())
+        return Orders.notProcessed(genericLimitOrderService.searchOrders(clientId, assetPairId, isBuy),
+                genericStopLimitOrderService.searchOrders(clientId, assetPairId, isBuy))
     }
 
     private fun getMessage(messageWrapper: MessageWrapper) =
