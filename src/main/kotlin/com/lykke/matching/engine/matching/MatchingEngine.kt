@@ -398,7 +398,7 @@ class MatchingEngine(private val LOGGER: Logger,
         if (threshold == null || expectedPrice == null) {
             return true
         }
-        if (BigDecimal.ZERO.compareTo(expectedPrice) == 0) {
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, expectedPrice)) {
             return false
         }
         return if (isBuySide) {
