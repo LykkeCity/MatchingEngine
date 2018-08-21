@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -127,7 +128,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     lowerPrice = null,
                     upperLimitPrice = null,
                     upperPrice = null,
-                    previousExternalId = null)
+                    previousExternalId = null,
+                    timeInForce = null,
+                    expiryTime = null)
 
             filter.checkAndAdd(order)
 
@@ -291,7 +294,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                 if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
                                     LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${NumberUtils.roundForPrint(order.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                                     order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                                } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+                                } else if (matchingResult.matchedWithZeroLatestTrade) {
                                     LOGGER.info("Order (id: ${order.externalId}) is cancelled due to zero latest trade")
                                     order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
                                 }  else {
@@ -599,7 +602,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     upperLimitPrice = null,
                     lowerPrice = null,
                     lowerLimitPrice = null,
-                    previousExternalId = previousExternalId)
+                    previousExternalId = previousExternalId,
+                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
+                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null)
 
             val added = filter.checkAndAdd(order)
             if (previousExternalId != null) {

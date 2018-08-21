@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.AssetPair
@@ -66,7 +65,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
         try {
-            validateOrder(order, assetPair, availableBalance, limitVolume)
+            validateOrder(order, assetPair, availableBalance, limitVolume, date = now)
         } catch (e: OrderValidationException) {
             LOGGER.info("${orderInfo(order)} ${e.message}")
             order.updateStatus(e.orderStatus, now)
@@ -195,7 +194,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         messageSender.sendMessage(outgoingMessage)
     }
 
-    private fun validateOrder(order: LimitOrder, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal?) {
+    private fun validateOrder(order: LimitOrder,
+                              assetPair: AssetPair,
+                              availableBalance: BigDecimal,
+                              limitVolume: BigDecimal?,
+                              date: Date) {
         validator.validateFee(order)
         validator.validateAssets(assetPair)
         validator.validateLimitPrices(order)
@@ -205,6 +208,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
         validator.validateVolumeAccuracy(order)
         validator.validatePriceAccuracy(order)
+        validator.checkExpiration(order, date)
     }
 
     private fun orderInfo(order: LimitOrder): String {

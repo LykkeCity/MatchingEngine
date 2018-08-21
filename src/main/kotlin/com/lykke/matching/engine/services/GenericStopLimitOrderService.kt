@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -13,7 +14,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
-                                   private val genericLimitOrderService: GenericLimitOrderService): AbstractGenericLimitOrderService<AssetStopOrderBook> {
+                                   private val genericLimitOrderService: GenericLimitOrderService,
+                                   private val expiryOrdersQueue: ExpiryOrdersQueue): AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
     val initialStopOrdersCount: Int
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
@@ -33,6 +35,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
 
     fun addOrder(order: LimitOrder) {
         stopLimitOrdersMap[order.externalId] = order
+        expiryOrdersQueue.addOrder(order)
         clientStopLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
     }
 
@@ -57,6 +60,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         orders.forEach { order ->
             val uid = order.externalId
             stopLimitOrdersMap.remove(uid)
+            expiryOrdersQueue.removeOrder(order)
             removeFromClientMap(uid, clientStopLimitOrdersMap)
             orderBook.removeOrder(order)
             order.updateStatus(OrderStatus.Cancelled, date)
@@ -67,6 +71,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = stopLimitOrdersMap.remove(order.externalId)
+            expiryOrdersQueue.removeOrder(order)
             clientStopLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(OrderStatus.Cancelled, date)
@@ -116,6 +121,7 @@ class GenericStopLimitOrderService(private val stopOrderBookDatabaseAccessor: St
         }
         if (order != null) {
             stopLimitOrdersMap.remove(order.externalId)
+            expiryOrdersQueue.removeOrder(order)
             removeFromClientMap(order.externalId, clientStopLimitOrdersMap)
             stopOrderBook.removeOrder(order)
             updateOrderBook(order.assetPairId, order.isBuySide())

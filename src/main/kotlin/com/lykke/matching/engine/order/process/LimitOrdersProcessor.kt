@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
@@ -283,7 +282,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
                 LOGGER.info("$orderInfo: Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-            } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+            } else if (matchingResult.matchedWithZeroLatestTrade) {
                 LOGGER.info("$orderInfo: Cancelled due to zero latest trade")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             } else {
@@ -405,6 +404,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (orderBook.leadToNegativeSpreadForClient(order)) {
             throw OrderValidationException(OrderStatus.LeadToNegativeSpread, "${orderInfo(order)} lead to negative spread")
         }
+        validator.checkExpiration(order, date)
     }
 
     private fun orderInfo(order: LimitOrder) = "Limit order (id: ${order.externalId})"

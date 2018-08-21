@@ -8,6 +8,7 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
+import java.util.Date
 
 class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
                           private val assetsHolder: AssetsHolder,
@@ -71,6 +72,12 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
     fun checkBalance(availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (availableBalance < limitVolume) {
             throw OrderValidationException(OrderStatus.NotEnoughFunds, "not enough funds to reserve")
+        }
+    }
+
+    fun checkExpiration(order: LimitOrder, date: Date) {
+        if (order.isExpired(date)) {
+            throw OrderValidationException(OrderStatus.Cancelled, "expired")
         }
     }
 }

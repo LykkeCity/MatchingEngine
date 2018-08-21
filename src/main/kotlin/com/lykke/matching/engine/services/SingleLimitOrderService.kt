@@ -3,6 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.messages.MessageStatus
@@ -47,7 +48,9 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             val uid = UUID.randomUUID().toString()
             order = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
                     BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, now, Date(oldMessage.timestamp), now, BigDecimal.valueOf(oldMessage.volume), null,
-                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                    type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                    timeInForce = null,
+                    expiryTime = null)
 
             LOGGER.info("Got old limit order messageId: ${messageWrapper.messageId} id: ${oldMessage.uid}, client ${oldMessage.clientId}, " +
                     "assetPair: ${oldMessage.assetPairId}, " +
@@ -119,7 +122,9 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
-                previousExternalId = null)
+                previousExternalId = null,
+                timeInForce = if (message.hasTimeInForce()) OrderTimeInForce.getByExternalId(message.timeInForce) else null,
+                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null)
     }
 
     private fun parseLimitOrder(array: ByteArray): ProtocolMessages.LimitOrder {
