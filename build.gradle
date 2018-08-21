@@ -67,8 +67,9 @@ dependencies {
     compile "ch.obermuhlner:big-math:$big_math_version"
 
     compile('org.springframework.boot:spring-boot-starter')
-    compile("org.springframework.boot:spring-boot-starter-web")
-
+    compile("org.springframework.boot:spring-boot-starter-web") {
+        exclude module: "spring-boot-starter-json"
+    }
     compile "io.springfox:springfox-swagger2:$springfox_swagger2"
     compile "io.springfox:springfox-swagger-ui:$springfox_swagger_ui"
 
