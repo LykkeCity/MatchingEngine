@@ -26,6 +26,7 @@ open class SwaggerConfig {
                         "",
                         emptyList()
                 ))
+                .useDefaultResponseMessages(false)
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.lykke.matching.engine.web.controllers"))
                 .paths(PathSelectors.any())
