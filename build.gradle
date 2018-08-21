@@ -44,8 +44,8 @@ ext {
     mockito_kotlin_version = '1.5.0'
     jedis_version = '2.9.0'
     big_math_version = '2.0.0'
-    springfox_swagger2 = "2.7.0"
-    springfox_swagger_ui = "2.7.0"
+    springfox_swagger2 = "2.9.2"
+    springfox_swagger_ui = "2.9.2"
 }
 
 dependencies {
