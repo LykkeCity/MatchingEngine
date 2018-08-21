@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.web.controllers
 
-import com.lykke.matching.engine.outgoing.http.StopOrderBook
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
+import com.lykke.matching.engine.web.dto.OrderDto
+import com.lykke.matching.engine.web.dto.StopOrderBookDto
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
@@ -41,16 +43,31 @@ class OrderBooksController {
     }
 
     @GetMapping("/stopOrderBooks")
-    fun getStopOrderBooks() {
-        val books = LinkedList<StopOrderBook>()
+    fun getStopOrderBooks(request: HttpServletRequest): List<StopOrderBookDto> {
+        val books = LinkedList<StopOrderBookDto>()
         val now = Date()
+
         genericStopLimitOrderService.getAllOrderBooks().values.forEach {
             val orderBook = it.copy()
-            books.add(StopOrderBook(orderBook.assetPairId, true, true, now, orderBook.getOrderBook(true, true)))
-            books.add(StopOrderBook(orderBook.assetPairId, true, false, now, orderBook.getOrderBook(true, false)))
-            books.add(StopOrderBook(orderBook.assetPairId, false, true, now, orderBook.getOrderBook(false, true)))
-            books.add(StopOrderBook(orderBook.assetPairId, false, false, now, orderBook.getOrderBook(false, false)))
+            books.add(StopOrderBookDto(orderBook.assetPairId, true, true, now, toOrderDto(orderBook.getOrderBook(true, true))))
+            books.add(StopOrderBookDto(orderBook.assetPairId, true, false, now, toOrderDto(orderBook.getOrderBook(true, false))))
+            books.add(StopOrderBookDto(orderBook.assetPairId, false, true, now, toOrderDto(orderBook.getOrderBook(false, true))))
+            books.add(StopOrderBookDto(orderBook.assetPairId, false, false, now, toOrderDto(orderBook.getOrderBook(false, false))))
         }
 
+        LOGGER.info("Stop order book snapshot sent to ${request.remoteAddr}")
+        return books
+    }
+
+    private fun toOrderDto(limitOrders: Collection<LimitOrder>): List<OrderDto> {
+        return limitOrders.map { limitOrder ->
+            OrderDto(limitOrder.externalId,
+                    limitOrder.clientId,
+                    limitOrder.volume,
+                    limitOrder.lowerLimitPrice,
+                    limitOrder.lowerPrice,
+                    limitOrder.upperLimitPrice,
+                    limitOrder.upperPrice)
+        }
     }
 }

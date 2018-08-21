@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
@@ -21,7 +20,6 @@ import java.util.TimeZone
 
 open class JsonSerializable: OutgoingMessage {
 
-    @JsonIgnore
     override fun isNewMessageFormat() = false
 
     companion object {
