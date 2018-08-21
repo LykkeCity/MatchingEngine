@@ -314,7 +314,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
                 LOGGER.info("$orderInfo: Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-            } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+            } else if (matchingResult.matchedWithZeroLatestTrade) {
                 LOGGER.info("$orderInfo: Cancelled due to zero latest trade")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             } else {
