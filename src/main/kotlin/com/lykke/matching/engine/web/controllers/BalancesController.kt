@@ -13,13 +13,13 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@Api(description = "Read only endpoint that enables to get balance/reserved balance of the client")
+@Api(description = "Read only endpoint, returns balance information for supplied client")
 class BalancesController {
     @Autowired
     private lateinit var balancesHolder: BalancesHolder
 
     @GetMapping("/balances", produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiOperation("Returns balances/reserved balances of supplied client and assetId")
+    @ApiOperation("Returns balance information for supplied client and assetId")
     fun getBalances(@RequestParam("clientId") clientId: String,
                     @RequestParam(name = "assetId", required = false, defaultValue = "") assetId: String): Map<String, BalanceDto?>  {
 
