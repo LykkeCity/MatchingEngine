@@ -1,13 +1,6 @@
 package com.lykke.matching.engine.outgoing.messages
 
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonDeserializationContext
-import com.google.gson.JsonDeserializer
-import com.google.gson.JsonElement
-import com.google.gson.JsonPrimitive
-import com.google.gson.JsonSerializationContext
-import com.google.gson.JsonSerializer
-import com.google.gson.JsonSyntaxException
+import com.google.gson.*
 import com.lykke.matching.engine.outgoing.messages.v2.OutgoingMessage
 import java.lang.reflect.Type
 import java.math.BigDecimal
@@ -16,7 +9,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
 
 open class JsonSerializable: OutgoingMessage {
 
