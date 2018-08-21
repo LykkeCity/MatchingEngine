@@ -9,6 +9,11 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 open class WebConfig  {
+    private companion object {
+        val CONNECTOR_PROTOCOL = "org.apache.coyote.http11.Http11NioProtocol"
+        val SCHEMA = "http"
+    }
+
     @Autowired
     private lateinit var config: Config
 
@@ -23,8 +28,8 @@ open class WebConfig  {
     }
 
     private fun getConnector(port: Int): Connector {
-        val connector = Connector("org.apache.coyote.http11.Http11NioProtocol")
-        connector.scheme = "http"
+        val connector = Connector(CONNECTOR_PROTOCOL)
+        connector.scheme = SCHEMA
         connector.port = Integer.valueOf(port)
         return connector
     }
