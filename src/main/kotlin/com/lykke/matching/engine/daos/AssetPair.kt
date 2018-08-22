@@ -8,7 +8,9 @@ class AssetPair(
         val quotingAssetId: String,
         val accuracy: Int,
         val minVolume: BigDecimal? = null,
-        val minInvertedVolume: BigDecimal? = null
+        val minInvertedVolume: BigDecimal? = null,
+        val maxVolume: BigDecimal? = null,
+        val maxValue: BigDecimal? = null
 ) {
     override fun toString(): String {
         return "AssetPair(" +
@@ -17,6 +19,8 @@ class AssetPair(
                 "quotingAssetId='$quotingAssetId', " +
                 "accuracy=$accuracy, " +
                 "minVolume=$minVolume, " +
-                "minInvertedVolume=$minInvertedVolume"
+                "minInvertedVolume=$minInvertedVolume, " +
+                "maxVolume=$maxVolume, " +
+                "maxValue=$maxValue"
     }
 }
