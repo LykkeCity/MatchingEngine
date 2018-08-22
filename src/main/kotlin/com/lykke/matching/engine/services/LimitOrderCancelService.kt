@@ -31,7 +31,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
 
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.LimitOrderCancel
         val orderIds = message.limitOrderIdList.toList()
-        LOGGER.debug("Got limit order cancel request (id: ${message.uid}, orders: $orderIds)")
+        LOGGER.debug("Got limit order cancel request (messageId: ${messageWrapper.messageId}, id: ${message.uid}, orders: $orderIds)")
 
         if (orderIds.isEmpty()) {
             val errorMessage = "Orders ids list is empty (request id: ${message.uid})"

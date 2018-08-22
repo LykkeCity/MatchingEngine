@@ -92,7 +92,9 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
                 (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
                 ", cancel: ${message.cancelAllPreviousLimitOrders}" +
                 ", fee: ${order.fee}" +
-                ", fees: ${order.fees}"
+                ", fees: ${order.fees}" +
+                (if (order.timeInForce != null) ", timeInForce=${order.timeInForce}" else "") +
+                (if (order.expiryTime != null) ", expiryTime=${order.expiryTime}" else "")
     }
 
     private fun createOrder(message: ProtocolMessages.LimitOrder, now: Date): LimitOrder {
