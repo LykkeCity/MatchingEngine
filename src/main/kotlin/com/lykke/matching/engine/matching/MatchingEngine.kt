@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.LimitOrder
@@ -319,15 +320,17 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
-        val executionPrice = NumberUtils.setScale(
-                if (order.isStraight())
-                    NumberUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
-                else
-                    NumberUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
-                assetPair.accuracy,
-                order.isOrigBuySide()
-        )
-
+        val executionPrice = calculateExecutionPrice(order, assetPair, totalLimitPrice, totalVolume)
+        if (!checkMaxVolume(order, assetPair, executionPrice)) {
+            order.updateStatus(OrderStatus.InvalidVolume, now)
+            LOGGER.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+        }
+        if (!checkMaxValue(order, assetPair, executionPrice)) {
+            order.updateStatus(OrderStatus.InvalidValue, now)
+            LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+        }
         if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
             LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
@@ -389,6 +392,38 @@ class MatchingEngine(private val LOGGER: Logger,
 
     private fun setMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset, value: BigDecimal) {
         availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId] = value
+    }
+
+    private fun calculateExecutionPrice(order: Order,
+                                        assetPair: AssetPair,
+                                        totalLimitPrice: BigDecimal,
+                                        totalVolume: BigDecimal): BigDecimal {
+        return NumberUtils.setScale(if (order.isStraight())
+            NumberUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
+        else
+            NumberUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
+                assetPair.accuracy,
+                order.isOrigBuySide())
+    }
+
+    private fun checkMaxVolume(order: Order,
+                               assetPair: AssetPair,
+                               executionPrice: BigDecimal): Boolean {
+        return when {
+            order.takePrice() != null || assetPair.maxVolume == null -> true
+            order.isStraight() -> order.getAbsVolume() <= assetPair.maxVolume
+            else -> order.getAbsVolume() / executionPrice <= assetPair.maxVolume
+        }
+    }
+
+    private fun checkMaxValue(order: Order,
+                              assetPair: AssetPair,
+                              executionPrice: BigDecimal): Boolean {
+        return when {
+            order.takePrice() != null || assetPair.maxValue == null -> true
+            order.isStraight() -> order.getAbsVolume() * executionPrice <= assetPair.maxValue
+            else -> order.getAbsVolume() <= assetPair.maxValue
+        }
     }
 
     private fun checkExecutionPriceDeviation(isBuySide: Boolean,
