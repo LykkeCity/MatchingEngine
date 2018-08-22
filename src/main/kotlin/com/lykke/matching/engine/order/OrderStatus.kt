@@ -37,4 +37,5 @@ enum class OrderStatus {
     ,InvalidVolumeAccuracy
     ,InvalidVolume
     ,InvalidValue
+    ,TooHighPriceDeviation
 }

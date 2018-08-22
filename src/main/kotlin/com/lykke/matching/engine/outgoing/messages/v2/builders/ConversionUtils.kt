@@ -148,6 +148,7 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
         com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME_ACCURACY)
         com.lykke.matching.engine.order.OrderStatus.InvalidVolume.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME)
         com.lykke.matching.engine.order.OrderStatus.InvalidValue.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VALUE)
+        com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.TOO_HIGH_PRICE_DEVIATION)
         else -> OrderStatusInfo(OrderStatus.UNKNOWN_STATUS)
     }
 }

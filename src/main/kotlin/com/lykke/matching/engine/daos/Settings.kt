@@ -1,4 +1,7 @@
 package com.lykke.matching.engine.daos
 
-data class Settings(val trustedClients: Set<String> = HashSet(),
-val disabledAssets: Set<String> = HashSet())
+import java.math.BigDecimal
+
+data class Settings(val trustedClients: Set<String>,
+                    val disabledAssets: Set<String>,
+                    val moPriceDeviationThresholds: Map<String, BigDecimal>)
