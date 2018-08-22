@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
@@ -36,6 +37,7 @@ import java.math.BigDecimal
 import java.util.HashMap
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import java.util.Date
 import org.springframework.beans.factory.annotation.Autowired
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -1722,5 +1724,44 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals(3, executionEvent.orders.size)
         assertOrderBookSize("BTCUSD", true, 0)
         assertOrderBookSize("BTCUSD", false, 1)
+    }
+
+    @Test
+    fun testMatchWithExpiredOrder() {
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", volume = 20.0, price = 1.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", volume = 20.0, price = 1.2,
+                timeInForce = OrderTimeInForce.GTD,
+                expiryTime = Date(Date().time + 500))))
+
+        Thread.sleep(600)
+
+        clearMessageQueues()
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = -15.0, price = 1.1)))
+
+        assertOrderBookSize("EURUSD", true, 1)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+
+        assertEquals(3, event.orders.size)
+
+        assertEquals(OutgoingOrderStatus.CANCELLED,  event.orders.single { it.externalId == "1" }.status)
+
+        assertBalance("Client1", "USD", reserved = 5.5)
+        assertBalance("Client2", "USD", 1016.5)
+    }
+
+    @Test
+    fun testExpiredOrder() {
+        val order = buildLimitOrder(clientId = "Client1", assetId = "EURUSD", volume = 1.0, price = 1.0,
+                timeInForce = OrderTimeInForce.GTD,
+                expiryTime = Date())
+        Thread.sleep(10)
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(order))
+
+        assertOrderBookSize("EURUSD", true, 0)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single().status)
     }
 }
