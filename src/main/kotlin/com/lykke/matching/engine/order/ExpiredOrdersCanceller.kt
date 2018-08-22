@@ -23,13 +23,14 @@ class ExpiredOrdersCanceller(private val expiryOrdersQueue: ExpiryOrdersQueue,
     @Scheduled(fixedRateString = "\${expired.orders.cancel.interval}")
     fun cancelExpiredOrders() {
         try {
-            val ordersToCancelExternalIds = expiryOrdersQueue.getExpiredOrderExternalIds(Date())
+            val now = Date()
+            val ordersToCancelExternalIds = expiryOrdersQueue.getExpiredOrderExternalIds(now)
             if (ordersToCancelExternalIds.isEmpty()) {
                 return
             }
 
             val messageId = UUID.randomUUID().toString()
-            LOGGER.info("Generating message to cancel expired orders: messageId=$messageId, orders=$ordersToCancelExternalIds")
+            LOGGER.info("Generating message to cancel expired orders: messageId=$messageId, date=$now, orders=$ordersToCancelExternalIds")
 
             val messageWrapper = MessageWrapper("localhost",
                     MessageType.LIMIT_ORDER_CANCEL.type,
