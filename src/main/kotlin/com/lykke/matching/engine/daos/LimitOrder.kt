@@ -58,7 +58,9 @@ class LimitOrder(id: String,
             limitOrder.lowerPrice,
             limitOrder.upperLimitPrice,
             limitOrder.upperPrice,
-            limitOrder.previousExternalId)
+            limitOrder.previousExternalId,
+            limitOrder.timeInForce,
+            limitOrder.expiryTime)
 
     fun getAbsRemainingVolume(): BigDecimal {
         return remainingVolume.abs()

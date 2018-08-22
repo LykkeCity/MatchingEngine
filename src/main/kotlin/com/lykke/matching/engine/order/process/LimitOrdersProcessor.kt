@@ -431,7 +431,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         try {
             limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair,
                     baseAssetDisabled, quotingAssetDisabled , baseAsset)
-            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
+            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook, date)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)
         }

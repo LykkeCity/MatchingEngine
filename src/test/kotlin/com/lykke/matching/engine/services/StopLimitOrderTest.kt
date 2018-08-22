@@ -783,7 +783,7 @@ class StopLimitOrderTest : AbstractTest() {
                 expiryTime = Date())
 
         Thread.sleep(10)
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(order))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(order))
 
         assertStopOrderBookSize("BTCUSD", false, 0)
         assertEquals(1, clientsEventsQueue.size)
@@ -795,7 +795,7 @@ class StopLimitOrderTest : AbstractTest() {
     @Test
     fun testProcessExpiredStopLimitOrder() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1.0)
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
                 type = LimitOrderType.STOP_LIMIT,
                 volume = -1.0,
                 lowerLimitPrice = 1.0,
@@ -807,7 +807,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         Thread.sleep(500)
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
                 volume = 1.0, price = 1.0)))
 
         assertStopOrderBookSize("BTCUSD", false, 0)
