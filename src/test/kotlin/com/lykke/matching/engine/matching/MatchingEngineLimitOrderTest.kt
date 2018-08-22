@@ -38,7 +38,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, remainingVolume = BigDecimal.valueOf( -100.0))
+        assertLimitOrderMatchingResult(matchingResult, remainingVolume = BigDecimal.valueOf( -100.0), status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -72,7 +72,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.3, volume = -100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, remainingVolume = BigDecimal.valueOf(-100.0), orderBookSize = 1)
+        assertLimitOrderMatchingResult(matchingResult, remainingVolume = BigDecimal.valueOf(-100.0), orderBookSize = 1, status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -109,7 +109,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1, remainingVolume = BigDecimal.valueOf(-100.0))
+        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1, remainingVolume = BigDecimal.valueOf(-100.0), status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -148,7 +148,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
-        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1, remainingVolume = BigDecimal.valueOf(-100.0))
+        assertLimitOrderMatchingResult(matchingResult, cancelledSize = 1, remainingVolume = BigDecimal.valueOf(-100.0), status = OrderStatus.InOrderBook)
     }
 
     @Test
@@ -587,5 +587,23 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.Matched, marketBalance = BigDecimal.ZERO,
                 remainingVolume = BigDecimal.ZERO, skipSize = 0, cancelledSize = 0, lkkTradesSize = 4, cashMovementsSize = 10, marketOrderTradesSize = 2, completedLimitOrdersSize = 1,
                 limitOrdersReportSize = 2)
+    }
+
+    @Test
+    fun testMatchLimitOrderWithZeroLatestTrade() {
+        testBalanceHolderWrapper.updateBalance("Client1", "CHF", 1.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "CHF",  1.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.001)
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCCHF", price = 0.231, volume = 1.0, reservedVolume = 0.24))
+        initService()
+
+        val limitOrder = buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", price = 0.231, volume = -0.001)
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("BTCCHF", true),"test")
+
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.InOrderBook,
+                marketBalance = BigDecimal.valueOf(0.001),
+                remainingVolume = BigDecimal.valueOf(-0.001),
+                skipSize = 1,
+                matchedWithZeroLatestTrade = true)
     }
 }

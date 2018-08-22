@@ -24,8 +24,8 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   private val balancesHolder: BalancesHolder,
                                   orderBookQueue: BlockingQueue<OrderBook>,
                                   rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                  clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                  trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                  private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
+                                  private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   genericLimitOrderService: GenericLimitOrderService,
                                   genericStopLimitOrderService: GenericStopLimitOrderService,
                                   genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
@@ -41,8 +41,6 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             genericLimitOrderProcessorFactory,
             orderBookQueue,
             rabbitOrderBookQueue,
-            clientLimitOrdersQueue,
-            trustedClientsLimitOrdersQueue,
             date,
             LOGGER)
 
@@ -50,8 +48,6 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             assetsPairsHolder,
             balancesHolder,
             genericStopLimitOrderService,
-            clientLimitOrdersQueue,
-            trustedClientsLimitOrdersQueue,
             date)
 
     fun preProcessLimitOrders(orders: Collection<LimitOrder>): GenericLimitOrdersCanceller {
@@ -126,6 +122,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         limitOrdersCanceller.apply(messageId, processedMessage, limitOrdersCancelResult)
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
+            trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
             messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
                     messageId,
                     operationId,
@@ -135,6 +132,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         }
 
         if (limitOrdersWithTrades.isNotEmpty()) {
+            clientLimitOrdersQueue.put(LimitOrdersReport(messageId, limitOrdersWithTrades))
             messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
                     messageId,
                     operationId,

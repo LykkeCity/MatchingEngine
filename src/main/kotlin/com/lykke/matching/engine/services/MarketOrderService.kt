@@ -17,6 +17,9 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
+import com.lykke.matching.engine.order.OrderStatus.InvalidValue
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
+import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.order.OrderStatus.Matched
 import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
@@ -130,53 +133,16 @@ class MarketOrderService @Autowired constructor(
                 priceDeviationThreshold = settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
-            NoLiquidity -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
-            }
             ReservedVolumeGreaterThanBalance -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), "Reserved volume is higher than available balance")
+                writeErrorNotification(messageWrapper, order, now, "Reserved volume is higher than available balance")
             }
-            NotEnoughFunds -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
-            }
-            InvalidFee -> {
-                val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                rabbitSwapQueue.put(marketOrderWithTrades)
-                val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                        messageWrapper.messageId!!,
-                        messageWrapper.id!!,
-                        now,
-                        MessageType.MARKET_ORDER,
-                        marketOrderWithTrades)
-                messageSender.sendMessage(outgoingMessage)
-                writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status))
+            NoLiquidity,
+            NotEnoughFunds,
+            InvalidFee,
+            InvalidVolumeAccuracy,
+            InvalidVolume,
+            InvalidValue -> {
+                writeErrorNotification(messageWrapper, order, now)
             }
             TooHighPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
@@ -230,8 +196,9 @@ class MarketOrderService @Autowired constructor(
                     val sequenceNumber = messageSequenceNumberHolder.getNewValue()
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
-                    messageWrapper.processedMessagePersisted = true
                     val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(), trustedClientsSequenceNumber ?: sequenceNumber)
+                    messageWrapper.triedToPersist = true
+                    messageWrapper.persisted = updated
                     if (!updated) {
                         val message = "Unable to save result data"
                         LOGGER.error("$order: $message")

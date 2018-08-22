@@ -30,6 +30,7 @@ data class MatchingResult(
         val limitOrdersReport: LimitOrdersReport? = null,
         val orderBook: PriorityBlockingQueue<LimitOrder> = PriorityBlockingQueue(),
         val marketBalance: BigDecimal? = null,
+        val matchedWithZeroLatestTrade: Boolean = false,
         private val autoApply: Boolean = true
 ) {
 

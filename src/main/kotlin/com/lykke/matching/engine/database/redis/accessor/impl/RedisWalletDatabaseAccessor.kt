@@ -3,15 +3,15 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.*
 
-class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool, private val balancesDatabase: Int) : WalletDatabaseAccessor {
+class RedisWalletDatabaseAccessor(private val redisHolder: InitialLoadingRedisHolder, private val balancesDatabase: Int) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisWalletDatabaseAccessor::class.java.name)
@@ -25,38 +25,35 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool, private val 
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
         var balancesCount = 0
+        val jedis = redisHolder.initialLoadingRedis()
 
-        jedisPool.resource.use {
-            jedis ->
+        jedis.select(balancesDatabase)
+        val keys = balancesKeys(jedis).toList()
 
-            jedis.select(balancesDatabase)
-            val keys = balancesKeys(jedis).toList()
+        val values = if (keys.isNotEmpty())
+            jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
+        else emptyList()
 
-            val values = if (keys.isNotEmpty())
-                jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
-            else emptyList()
-
-            values.forEachIndexed { index, value ->
-                val key = keys[index]
-                try {
-                    if (value == null) {
-                        throw Exception("Balance is not exist, key: $key")
-                    }
-                    val balance = deserializeClientAssetBalance(value)
-                    if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
-                        throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
-                    }
-                    if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.asset) {
-                        throw Exception("Invalid assetId: ${balance.asset}, balance key: $key")
-                    }
-                    val clientBalances = result.getOrPut(balance.clientId) { Wallet(balance.clientId) }
-                    clientBalances.balances[balance.asset] = balance
-                    balancesCount++
-                } catch (e: Exception) {
-                    val message = "Unable to load, balanceKey: $key"
-                    LOGGER.error(message, e)
-                    METRICS_LOGGER.logError(message, e)
+        values.forEachIndexed { index, value ->
+            val key = keys[index]
+            try {
+                if (value == null) {
+                    throw Exception("Balance is not exist, key: $key")
                 }
+                val balance = deserializeClientAssetBalance(value)
+                if (!key.removePrefix(KEY_PREFIX_BALANCE).startsWith(balance.clientId)) {
+                    throw Exception("Invalid clientId: ${balance.clientId}, balance key: $key")
+                }
+                if (key.removePrefix("$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR") != balance.asset) {
+                    throw Exception("Invalid assetId: ${balance.asset}, balance key: $key")
+                }
+                val clientBalances = result.getOrPut(balance.clientId) { Wallet(balance.clientId) }
+                clientBalances.balances[balance.asset] = balance
+                balancesCount++
+            } catch (e: Exception) {
+                val message = "Unable to load, balanceKey: $key"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
 
