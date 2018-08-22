@@ -1,11 +1,13 @@
 package com.lykke.matching.engine.config.spring
 
+import com.google.gson.Gson
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.catalina.connector.Connector
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.converter.json.GsonHttpMessageConverter
 
 @Configuration
 open class WebConfig  {
@@ -31,5 +33,12 @@ open class WebConfig  {
         connector.scheme = SCHEMA
         connector.port = Integer.valueOf(port)
         return connector
+    }
+
+    @Bean
+    open fun gsonHttpMessageConverter(gson: Gson): GsonHttpMessageConverter {
+        val converter = GsonHttpMessageConverter()
+        converter.gson = gson
+        return converter
     }
 }

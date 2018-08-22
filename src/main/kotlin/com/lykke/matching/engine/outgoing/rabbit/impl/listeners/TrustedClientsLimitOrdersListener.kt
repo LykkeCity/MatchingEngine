@@ -17,7 +17,7 @@ class TrustedClientsLimitOrdersListener {
     private lateinit var trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService
+    private lateinit var rabbitMqService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config

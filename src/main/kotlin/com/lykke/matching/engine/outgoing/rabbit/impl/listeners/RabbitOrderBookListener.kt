@@ -16,7 +16,7 @@ class RabbitOrderBookListener {
     private lateinit var rabbitOrderBookQueue: BlockingQueue<OrderBook>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService
+    private lateinit var rabbitMqService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config

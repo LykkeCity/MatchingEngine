@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
+import com.google.gson.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.SocketServer
@@ -13,11 +14,17 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.core.env.get
+import org.springframework.http.converter.json.GsonHttpMessageConverter
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
+import java.lang.reflect.Type
+import java.math.BigDecimal
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
@@ -71,4 +78,9 @@ open class AppConfiguration: SchedulingConfigurer {
     open fun monitoringStatsCollector(): MonitoringStatsCollector {
         return MonitoringStatsCollector()
     }
+
+
+
+
 }
+
