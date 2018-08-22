@@ -258,10 +258,14 @@ open class TestApplicationContext {
                                     lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
                                     assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                     genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, multiLimitOrderValidator: MultiLimitOrderValidator,
-                                    feeProcessor: FeeProcessor, messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): MultiLimitOrderService {
+                                    feeProcessor: FeeProcessor, messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender,
+                                    applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
         return MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrderProcessorFactory,
                 clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, multiLimitOrderValidator, feeProcessor, messageSequenceNumberHolder, messageSender)
+                assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, multiLimitOrderValidator, feeProcessor,
+                applicationSettingsCache,
+                messageSequenceNumberHolder,
+                messageSender)
     }
 
     @Bean

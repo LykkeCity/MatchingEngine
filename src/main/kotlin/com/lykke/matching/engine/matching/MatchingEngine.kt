@@ -67,6 +67,15 @@ class MatchingEngine(private val LOGGER: Logger,
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
+        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
+        val now = Date()
+
+        if (order.takePrice() != null && !checkExecutionPriceDeviation(order.isBuySide(), order.takePrice()!!, bestPrice, priceDeviationThreshold)) {
+            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, price: ${order.takePrice()})")
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+            return MatchingResult(orderWrapper, now, emptySet())
+        }
+
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
         val skipLimitOrders = HashSet<LimitOrder>()
@@ -75,7 +84,6 @@ class MatchingEngine(private val LOGGER: Logger,
         var totalVolume = BigDecimal.ZERO
         val limitReservedBalances = HashMap<String, BigDecimal>() // limit reserved balances for trades funds control
         val availableBalances = HashMap<String, MutableMap<String, BigDecimal>>() // clientId -> assetId -> balance; available balances for market balance control and fee funds control
-        val now = Date()
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val isBuy = order.isBuySide()
         val lkkTrades = LinkedList<LkkTrade>()
@@ -86,7 +94,6 @@ class MatchingEngine(private val LOGGER: Logger,
         val allOppositeCashMovements = LinkedList<WalletOperation>()
         val asset = assetsHolder.getAsset(if (isBuy) assetPair.quotingAssetId else assetPair.baseAssetId)
         val limitAsset = assetsHolder.getAsset(if (isBuy) assetPair.baseAssetId else assetPair.quotingAssetId)
-        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
 
         setMarketBalance(availableBalances, order, asset, availableBalance)
 
@@ -234,7 +241,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     uncompletedLimitOrderWrapper = limitOrderCopyWrapper
                 }
 
-                setMarketBalance(availableBalances, order, asset, NumberUtils.setScaleRoundHalfUp(getMarketBalance(availableBalances, order, asset) - (if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs() /* - assetFeeAmount*/, asset.accuracy))
+                setMarketBalance(availableBalances, order, asset, NumberUtils.setScaleRoundHalfUp(getMarketBalance(availableBalances, order, asset) - (if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy))
 
                 remainingVolume = if (isFullyMatched) BigDecimal.ZERO else NumberUtils.setScale(remainingVolume - getVolume(marketRoundedVolume.abs(), order.isStraight(), limitOrder.price), assetsHolder.getAsset(if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId).accuracy, order.isOrigBuySide())
                 limitOrderCopy.lastMatchTime = now

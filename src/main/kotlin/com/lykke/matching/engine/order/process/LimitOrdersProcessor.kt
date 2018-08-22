@@ -39,7 +39,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            assetsPairsHolder: AssetsPairsHolder,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
-                           applicationSettingsCache: ApplicationSettingsCache,
+                           private val applicationSettingsCache: ApplicationSettingsCache,
                            ordersToCancel: Collection<LimitOrder>,
                            private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -204,7 +204,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageId, availableBalance)
+            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
+                    messageId,
+                    availableBalance,
+                    applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
@@ -220,7 +223,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
-                OrderStatus.InvalidFee -> {
+                OrderStatus.InvalidFee,
+                OrderStatus.TooHighPriceDeviation -> {
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
