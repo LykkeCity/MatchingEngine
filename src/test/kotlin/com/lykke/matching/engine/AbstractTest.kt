@@ -24,6 +24,8 @@ import com.lykke.matching.engine.notification.TestOrderBookListener
 import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
