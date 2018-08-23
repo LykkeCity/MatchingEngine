@@ -369,7 +369,6 @@ class MatchingEngine(private val LOGGER: Logger,
             LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
-
         if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
             LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
@@ -472,7 +471,7 @@ class MatchingEngine(private val LOGGER: Logger,
         if (threshold == null || expectedPrice == null) {
             return true
         }
-        if (BigDecimal.ZERO.compareTo(expectedPrice) == 0) {
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, expectedPrice)) {
             return false
         }
         return if (isBuySide) {
