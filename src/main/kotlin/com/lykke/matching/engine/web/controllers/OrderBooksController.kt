@@ -8,7 +8,10 @@ import com.lykke.matching.engine.web.dto.StopOrderDto
 import com.lykke.matching.engine.web.dto.StopOrderBookDto
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.*
@@ -57,6 +60,7 @@ class OrderBooksController {
         }
 
         LOGGER.info("Stop order book snapshot sent to ${request.remoteAddr}")
+
         return books
     }
 
@@ -70,5 +74,11 @@ class OrderBooksController {
                     limitOrder.upperLimitPrice,
                     limitOrder.upperPrice)
         }
+    }
+
+    @ExceptionHandler(Exception::class)
+    private fun handleException (request: HttpServletRequest, ex: Exception): ResponseEntity<*> {
+        LOGGER.error("Unable to write order book snapshot request to ${request.remoteAddr}", ex)
+        return ResponseEntity<Any>(null, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }
