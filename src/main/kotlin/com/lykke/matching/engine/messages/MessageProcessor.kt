@@ -26,7 +26,7 @@ import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
@@ -58,9 +58,7 @@ import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.BuiltinExchangeType
-import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
-import java.net.InetSocketAddress
 import java.time.LocalDateTime
 import java.util.HashMap
 import java.util.Timer
@@ -82,7 +80,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
-    private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable> = LinkedBlockingQueue<JsonSerializable>()
+    private val rabbitCashInOutQueue: BlockingQueue<CashOperation> = LinkedBlockingQueue<CashOperation>()
     private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -248,7 +246,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     }
 
     private fun startRabbitMqPublisher(config: RabbitConfig,
-                                       queue: BlockingQueue<JsonSerializable>,
+                                       queue: BlockingQueue<*>,
                                        messageDatabaseLogger: DatabaseLogger? = null,
                                        rabbitMqService: RabbitMqService<Any>,
                                        appName: String,

@@ -16,7 +16,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.CashOperation
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
@@ -31,7 +30,7 @@ import java.util.concurrent.BlockingQueue
 
 class CashInOutOperationService(private val assetsHolder: AssetsHolder,
                                 private val balancesHolder: BalancesHolder,
-                                private val rabbitCashInOutQueue: BlockingQueue<JsonSerializable>,
+                                private val rabbitCashInOutQueue: BlockingQueue<CashOperation>,
                                 private val feeProcessor: FeeProcessor,
                                 private val cashInOutOperationValidator: CashInOutOperationValidator,
                                 private val messageSequenceNumberHolder: MessageSequenceNumberHolder,

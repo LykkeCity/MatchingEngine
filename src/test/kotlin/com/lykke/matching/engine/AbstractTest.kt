@@ -6,13 +6,13 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
@@ -149,7 +149,7 @@ abstract class AbstractTest {
 
     protected val dbTransferOperationQueue = LinkedBlockingQueue<TransferOperation>()
 
-    protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
+    protected val cashInOutQueue = LinkedBlockingQueue<CashOperation>()
 
     @Autowired private
     lateinit var feeProcessor: FeeProcessor

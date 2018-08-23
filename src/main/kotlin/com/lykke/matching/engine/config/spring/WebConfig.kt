@@ -10,6 +10,10 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.converter.json.GsonHttpMessageConverter
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import springfox.documentation.swagger.web.UiConfigurationBuilder
+import springfox.documentation.swagger.web.UiConfiguration
+
+
 
 @Configuration
 open class WebConfig  {
@@ -32,7 +36,7 @@ open class WebConfig  {
     }
 
     @Bean
-    open fun forwardToIndex() = object : WebMvcConfigurer {
+    open fun webMvcConfigurer() = object : WebMvcConfigurer {
         override fun addViewControllers(registry: ViewControllerRegistry?) {
             registry!!.addRedirectViewController("/", ROOT_SWAGGER_PAGE_URL)
         }
@@ -43,6 +47,14 @@ open class WebConfig  {
         val converter = GsonHttpMessageConverter()
         converter.gson = gson
         return converter
+    }
+
+    @Bean
+    open fun uiConfig(): UiConfiguration {
+        return UiConfigurationBuilder.builder()
+                .displayRequestDuration(true)
+                .validatorUrl(null)
+                .build()
     }
 
     private fun getConnector(port: Int): Connector {
