@@ -2,9 +2,8 @@ package com.lykke.matching.engine.outgoing.rabbit.impl
 
 import com.lykke.matching.engine.daos.Message
 import com.lykke.matching.engine.logging.DatabaseLogger
-import com.lykke.matching.engine.logging.MessageTransformer
+import com.lykke.matching.engine.logging.LogMessageTransformer
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.rabbit.RabbitMqOldFormatPublisher
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
@@ -14,11 +13,11 @@ import java.util.concurrent.BlockingQueue
 
 class RabbitMqPublisher(uri: String,
                         exchangeName: String,
-                        queue: BlockingQueue<Event<*>>,
+                        queue: BlockingQueue<out Event<*>>,
                         appName: String,
                         appVersion: String,
                         exchangeType: BuiltinExchangeType,
-                        private val jsonMessageTransformer: MessageTransformer,
+                        private val jsonMessageTransformer: LogMessageTransformer,
                         /** null if do not need to log */
                         messageDatabaseLogger: DatabaseLogger? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,

@@ -20,7 +20,7 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.logging.MessageDatabaseLogger
+import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
@@ -218,12 +218,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         }
 
-        val rabbitMqService = applicationContext.getBean(RabbitMqService::class.java)
+        val rabbitMqService = applicationContext.getBean("RabbitMqOldServiceImpl") as  RabbitMqService<Any>
 
         val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
         startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                MessageDatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
+                DatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
                 rabbitMqService,
                 config.me.name,
                 AppVersion.VERSION,
@@ -249,8 +249,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private fun startRabbitMqPublisher(config: RabbitConfig,
                                        queue: BlockingQueue<JsonSerializable>,
-                                       messageDatabaseLogger: MessageDatabaseLogger? = null,
-                                       rabbitMqService: RabbitMqService,
+                                       messageDatabaseLogger: DatabaseLogger? = null,
+                                       rabbitMqService: RabbitMqService<Any>,
                                        appName: String,
                                        appVersion: String,
                                        exchangeType: BuiltinExchangeType) {

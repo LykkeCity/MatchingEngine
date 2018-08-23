@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
-class JsonMessageTransformer(private val gson: Gson): MessageTransformer {
+class JsonMessageTransformer(private val gson: Gson): LogMessageTransformer {
     override fun transform(message: Any): Message {
         val type = message::class.java.simpleName
         return when (message) {

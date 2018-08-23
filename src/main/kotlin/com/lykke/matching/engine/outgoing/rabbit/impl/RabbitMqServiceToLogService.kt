@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl
 
 import com.lykke.matching.engine.logging.DatabaseLogger
-import com.lykke.matching.engine.logging.MessageTransformer
+import com.lykke.matching.engine.logging.LogMessageTransformer
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
@@ -13,7 +13,7 @@ import java.util.concurrent.Executors
 
 @Service
 @Profile("local")
-class RabbitMqServiceToLogService(private val jsonMessageTransformer: MessageTransformer) : RabbitMqService<Any> {
+class RabbitMqServiceToLogService(private val jsonMessageTransformer: LogMessageTransformer) : RabbitMqService<Any> {
     companion object {
         private val LOGGER = Logger.getLogger(RabbitMqServiceToLogService::class.java)
     }

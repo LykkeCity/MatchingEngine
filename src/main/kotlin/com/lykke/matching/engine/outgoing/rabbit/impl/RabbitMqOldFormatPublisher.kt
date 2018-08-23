@@ -3,7 +3,7 @@ package com.lykke.matching.engine.outgoing.rabbit.impl
 import com.google.gson.Gson
 import com.lykke.matching.engine.daos.Message
 import com.lykke.matching.engine.logging.DatabaseLogger
-import com.lykke.matching.engine.logging.MessageTransformer
+import com.lykke.matching.engine.logging.LogMessageTransformer
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
@@ -20,7 +20,7 @@ class RabbitMqOldFormatPublisher(uri: String,
                                  appVersion: String,
                                  exchangeType: BuiltinExchangeType,
                                  private val gson: Gson,
-                                 private val messageTransformer: MessageTransformer,
+                                 private val messageTransformer: LogMessageTransformer,
                                  /** null if do not need to log */
                                  messageDatabaseLogger: DatabaseLogger? = null) : AbstractRabbitMqPublisher<Any>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,
