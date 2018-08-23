@@ -8,6 +8,8 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.converter.json.GsonHttpMessageConverter
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 open class WebConfig  {
@@ -23,6 +25,13 @@ open class WebConfig  {
     open fun tomcatServletWebServerFactory(): TomcatServletWebServerFactory {
         val tomcat = TomcatServletWebServerFactory(config.me.httpOrderBookPort)
         return tomcat
+    }
+
+    @Bean
+    open fun forwardToIndex() = object : WebMvcConfigurer {
+        override fun addViewControllers(registry: ViewControllerRegistry?) {
+            registry!!.addRedirectViewController("/", "/swagger-ui.html#/")
+        }
     }
 
     private fun getConnector(port: Int): Connector {
