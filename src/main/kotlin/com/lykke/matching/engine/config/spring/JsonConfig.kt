@@ -5,6 +5,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Scope
+import springfox.documentation.spring.web.json.Json
 import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.text.ParseException
@@ -19,6 +20,7 @@ open class JsonConfig {
         return GsonBuilder()
                 .registerTypeAdapter(Date::class.java, GmtDateTypeAdapter())
                 .registerTypeAdapter(BigDecimal::class.java, BigDecimalAdapter())
+                .registerTypeAdapter(Json::class.java, SpringfoxJsonToGsonAdapter())
                 .create()
     }
 }
@@ -54,4 +56,9 @@ class GmtDateTypeAdapter : JsonSerializer<Date>, JsonDeserializer<Date> {
             return sdf
         }
     }
+}
+
+class SpringfoxJsonToGsonAdapter : JsonSerializer<Json> {
+    override fun serialize(json: Json, type: Type, context: JsonSerializationContext): JsonElement
+            = JsonParser().parse(json.value())
 }
