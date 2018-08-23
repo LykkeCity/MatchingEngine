@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import java.util.concurrent.BlockingQueue
 
-@Service
+@Service("rabbitMqService")
 @Profile("default")
 class RabbitMqServiceImpl(private val jsonMessageTransformer: LogMessageTransformer) : RabbitMqService<Event<*>> {
     override fun startPublisher(config: RabbitConfig, queue: BlockingQueue<out Event<*>>,

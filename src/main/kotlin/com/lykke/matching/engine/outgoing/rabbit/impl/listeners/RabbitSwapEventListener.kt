@@ -19,7 +19,7 @@ class RabbitSwapEventListener {
     private lateinit var rabbitSwapQueue: BlockingQueue<MarketOrderWithTrades>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService<Any>
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
@@ -32,7 +32,7 @@ class RabbitSwapEventListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

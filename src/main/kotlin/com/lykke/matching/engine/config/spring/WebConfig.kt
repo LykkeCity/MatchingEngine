@@ -21,10 +21,7 @@ open class WebConfig  {
 
     @Bean
     open fun tomcatServletWebServerFactory(): TomcatServletWebServerFactory {
-        val tomcat = TomcatServletWebServerFactory()
-
-        tomcat.addAdditionalTomcatConnectors(getConnector(config.me.httpOrderBookPort))
-
+        val tomcat = TomcatServletWebServerFactory(config.me.httpOrderBookPort)
         return tomcat
     }
 

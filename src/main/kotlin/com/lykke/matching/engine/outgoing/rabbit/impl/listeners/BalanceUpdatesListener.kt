@@ -20,7 +20,7 @@ class BalanceUpdatesListener {
     private lateinit var  balanceUpdateQueue: BlockingQueue<BalanceUpdate>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService<Any>
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
@@ -33,7 +33,7 @@ class BalanceUpdatesListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdateQueue, config.me.name,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdateQueue, config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
                 DatabaseLogger(

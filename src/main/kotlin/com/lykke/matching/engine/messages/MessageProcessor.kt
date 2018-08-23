@@ -218,7 +218,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         }
 
-        val rabbitMqService = applicationContext.getBean("RabbitMqOldServiceImpl") as  RabbitMqService<Any>
+        val rabbitMqService = applicationContext.getBean("rabbitMqOldService") as  RabbitMqService<Any>
 
         val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
         val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")

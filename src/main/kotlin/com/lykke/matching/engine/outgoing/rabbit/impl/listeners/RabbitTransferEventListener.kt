@@ -20,7 +20,7 @@ class RabbitTransferEventListener {
     private lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService<Any>
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
@@ -33,7 +33,7 @@ class RabbitTransferEventListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
