@@ -9,6 +9,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -30,7 +31,8 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
                                                       private val balancesHolder: BalancesHolder,
                                                       private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                                       private val tradeInfoQueue: BlockingQueue<TradeInfo>,
-                                                      applicationSettingsCache: ApplicationSettingsCache) : AbstractGenericLimitOrderService<AssetOrderBook> {
+                                                      applicationSettingsCache: ApplicationSettingsCache,
+                                                      private val expiryOrdersQueue: ExpiryOrdersQueue) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
     companion object {
         private val LOGGER = Logger.getLogger(GenericLimitOrderService::class.java.name)
@@ -67,6 +69,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
+        expiryOrdersQueue.addOrder(order)
         quotesUpdateQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
@@ -80,6 +83,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
         orders.forEach { order ->
             limitOrdersMap.remove(order.externalId)
             clientLimitOrdersMap[order.clientId]?.remove(order)
+            expiryOrdersQueue.removeOrder(order)
         }
     }
 
@@ -122,6 +126,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun cancelLimitOrder(date: Date, uid: String, removeFromClientMap: Boolean = false): LimitOrder? {
         val order = limitOrdersMap.remove(uid) ?: return null
+        expiryOrdersQueue.removeOrder(order)
 
         if (removeFromClientMap) {
             removeFromClientMap(uid)
@@ -140,6 +145,7 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     override fun cancelLimitOrders(orders: Collection<LimitOrder>, date: Date) {
         orders.forEach { order ->
             val ord = limitOrdersMap.remove(order.externalId)
+            expiryOrdersQueue.removeOrder(order)
             clientLimitOrdersMap[order.clientId]?.remove(order)
             if (ord != null) {
                 ord.updateStatus(Cancelled, date)

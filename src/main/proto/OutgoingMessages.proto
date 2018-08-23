@@ -10,11 +10,10 @@ option java_outer_classname = "OutgoingMessages";
 message Header {
     enum MessageType {
         UNKNOWN_MESSAGE_TYPE = 0;
-        BALANCE_UPDATE = 1;
-        CASH_IN = 2;
-        CASH_OUT = 3;
-        CASH_TRANSFER = 4;
-        ORDER = 5;
+        CASH_IN = 1;
+        CASH_OUT = 2;
+        CASH_TRANSFER = 3;
+        ORDER = 4;
     }
     int32 messageType = 1;
     
@@ -188,6 +187,14 @@ message ExecutionEvent {
         bool straight = 20;
         repeated FeeInstruction fees = 21;
         repeated Trade trades = 22;
+
+        enum OrderTimeInForce {
+             UNKNOWN_ORDER_TIME_IN_FORCE = 0;
+             GTC = 1;
+             GTD = 2;
+        }
+        int32 timeInForce = 23;
+        google.protobuf.Timestamp expiryTime = 24;
     }
     Header header = 1;
     repeated BalanceUpdate balanceUpdates = 2;

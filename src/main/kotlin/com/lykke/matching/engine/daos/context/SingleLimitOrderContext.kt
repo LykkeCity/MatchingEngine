@@ -53,7 +53,9 @@ class SingleLimitOrderContext(val uid: String?,
                 (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
                 ", cancel: $isCancelOrders" +
                 ", fee: ${order.fee}" +
-                ", fees: ${order.fees}"
+                ", fees: ${order.fees}" +
+                (if (order.timeInForce != null) ", timeInForce=${order.timeInForce}" else "") +
+                (if (order.expiryTime != null) ", expiryTime=${order.expiryTime}" else "")
     }
 
     class Builder {

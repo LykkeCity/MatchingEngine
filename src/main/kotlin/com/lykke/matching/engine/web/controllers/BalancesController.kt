@@ -21,16 +21,20 @@ class BalancesController {
     @GetMapping("/balances", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Returns balance information for supplied client and assetId")
     fun getBalances(@RequestParam("clientId") clientId: String,
-                    @RequestParam(name = "assetId", required = false, defaultValue = "") assetId: String): Map<String, BalanceDto?>  {
+                    @RequestParam(name = "assetId", required = false, defaultValue = "") assetId: String): List<BalanceDto?>  {
 
         if (StringUtils.isNoneBlank(assetId)) {
-            return mapOf(assetId to toBalanceDto(balancesHolder.getBalances(clientId)[assetId]))
+            return listOf(toBalanceDto(assetId, balancesHolder.getBalances(clientId)[assetId]))
         }
 
-        return balancesHolder.getBalances(clientId).mapValues { entry -> toBalanceDto(entry.value) }
+        return balancesHolder
+                .getBalances(clientId)
+                .mapValues { entry -> toBalanceDto(entry.value.asset, entry.value) }
+                .values
+                .toList()
     }
 
-    private fun toBalanceDto(assetBalance: AssetBalance?): BalanceDto? {
-        return BalanceDto(assetBalance?.balance, assetBalance?.reserved)
+    private fun toBalanceDto(assetId: String, assetBalance: AssetBalance?): BalanceDto? {
+        return BalanceDto(assetId, assetBalance?.balance, assetBalance?.reserved)
     }
 }

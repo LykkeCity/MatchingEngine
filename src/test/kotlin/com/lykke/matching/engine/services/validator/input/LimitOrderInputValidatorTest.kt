@@ -325,7 +325,9 @@ class LimitOrderInputValidatorTest {
                 BigDecimal.ONE, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.ONE, null,
                 fee = getFee(), type = LimitOrderType.STOP_LIMIT, fees = null,
                 lowerLimitPrice = lowerLimitPrice, lowerPrice = lowerPrice,
-                upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null)
+                upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null,
+                timeInForce = null,
+                expiryTime = null)
     }
 
     fun getValidLimitOrder(fee: LimitOrderFeeInstruction?,
@@ -335,7 +337,9 @@ class LimitOrderInputValidatorTest {
                            volume: BigDecimal = BigDecimal.valueOf(1.0)): LimitOrder {
         return LimitOrder("test", "test", assetPair, "test", volume,
                 price, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
-                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                timeInForce = null,
+                expiryTime = null)
     }
 
     fun getNewLimitFee(): NewLimitOrderFeeInstruction {
