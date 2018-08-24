@@ -8,14 +8,13 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@RestController()
-@RequestMapping("/orders")
+@RestController("/orders")
 @Api(description = "Read only api to access orders from order book")
-class OrdersController {
+class ClientOrdersController {
 
     @Autowired
     private lateinit var genericLimitOrderService: GenericLimitOrderService
@@ -23,9 +22,9 @@ class OrdersController {
     @Autowired
     private lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
-    @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiOperation("Endpoint to access orders from current order book")
-    fun getOrders(@RequestParam clientId: String,
+    @GetMapping("client/{clientId}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiOperation("Endpoint to access orders from current order book for given client")
+    fun getOrders(@PathVariable("clientId") clientId: String,
                   @RequestParam(required = false) assetPair: String?,
                   @RequestParam(required = false) isBuy: Boolean?): ClientOrdersDto {
         val limitOrders = genericLimitOrderService.searchOrders(clientId, assetPair, isBuy)
