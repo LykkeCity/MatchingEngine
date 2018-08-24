@@ -7,6 +7,8 @@ import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.web.dto.StopOrderDto
 import com.lykke.matching.engine.web.dto.StopOrderBookDto
 import com.lykke.utils.logging.ThrottlingLogger
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -18,6 +20,7 @@ import java.util.*
 import javax.servlet.http.HttpServletRequest
 
 @RestController
+@Api(description = "Api to access order books")
 class OrderBooksController {
 
     companion object {
@@ -31,6 +34,7 @@ class OrderBooksController {
     private lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
     @GetMapping("/orderBooks", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiOperation("Endpoint to get all limit order books")
     fun getOrderBooks(request: HttpServletRequest): LinkedList<OrderBook> {
         val books = LinkedList<OrderBook>()
         val now = Date()
@@ -47,6 +51,7 @@ class OrderBooksController {
     }
 
     @GetMapping("/stopOrderBooks", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiOperation("Endpoint to get all stop order books")
     fun getStopOrderBooks(request: HttpServletRequest): List<StopOrderBookDto> {
         val books = LinkedList<StopOrderBookDto>()
         val now = Date()
