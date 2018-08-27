@@ -3,10 +3,10 @@ package com.lykke.matching.engine.database
 import com.lykke.matching.engine.daos.Settings
 import java.math.BigDecimal
 
-class TestConfigDatabaseAccessor : ConfigDatabaseAccessor {
+class TestConfigDatabaseAccessor : SettingsDatabaseAccessor {
     private var settings = Settings(emptySet(), emptySet(), emptyMap(), emptyMap())
 
-    override fun loadConfigs(): Settings {
+    override fun getAllEnabledSettingGroups(): Settings {
         return settings
     }
 

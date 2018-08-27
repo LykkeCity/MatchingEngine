@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.database.cache
 
 import com.lykke.matching.engine.daos.Settings
-import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -9,7 +9,7 @@ import java.math.BigDecimal
 import kotlin.concurrent.fixedRateTimer
 
 @Component
-class ApplicationSettingsCache @Autowired constructor (private val configDatabaseAccessor: ConfigDatabaseAccessor,
+class ApplicationSettingsCache @Autowired constructor (private val configDatabaseAccessor: SettingsDatabaseAccessor,
                                                        @Value("\${application.settings.update.interval}") updateInterval: Long) : DataCache() {
 
     private lateinit var settings: Settings
@@ -22,7 +22,7 @@ class ApplicationSettingsCache @Autowired constructor (private val configDatabas
     }
 
     override fun update() {
-        configDatabaseAccessor.loadConfigs()?.let { settings = it }
+        configDatabaseAccessor.getAllEnabledSettingGroups()?.let { settings = it }
     }
 
     fun isTrustedClient(client: String): Boolean {

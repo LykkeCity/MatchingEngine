@@ -3,7 +3,7 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.ConfigDatabaseAccessor
+import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
@@ -18,7 +18,7 @@ import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -178,8 +178,8 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
-            : ConfigDatabaseAccessor {
-        return AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
+            : SettingsDatabaseAccessor {
+        return AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
     }
 
     @Bean

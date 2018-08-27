@@ -97,7 +97,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testConfigDatabaseAccessor(): ConfigDatabaseAccessor {
+    open fun testConfigDatabaseAccessor(): SettingsDatabaseAccessor {
         return TestConfigDatabaseAccessor()
     }
 
@@ -107,7 +107,7 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun applicationSettingsCache(configDatabaseAccessor: ConfigDatabaseAccessor): ApplicationSettingsCache {
+    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor): ApplicationSettingsCache {
         return ApplicationSettingsCache(configDatabaseAccessor, 60000)
     }
 
