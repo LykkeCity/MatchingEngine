@@ -193,6 +193,7 @@ message ExecutionEvent {
              UNKNOWN_ORDER_TIME_IN_FORCE = 0;
              GTC = 1;
              GTD = 2;
+             IOC = 3;
         }
         int32 timeInForce = 23;
         google.protobuf.Timestamp expiryTime = 24;
