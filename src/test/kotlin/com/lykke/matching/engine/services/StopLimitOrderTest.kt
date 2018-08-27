@@ -289,8 +289,10 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(2, executionEvent.orders.size)
         val eventClientOrder = executionEvent.orders.single { it.walletId == "Client1" }
         assertEquals(1, eventClientOrder.trades?.size)
-        assertEquals("550.00", eventClientOrder.trades!!.first().volume)
-        assertEquals("0.05000000", eventClientOrder.trades!!.first().oppositeVolume)
+        assertEquals("BTC", eventClientOrder.trades!!.first().baseAssetId)
+        assertEquals("0.05", eventClientOrder.trades!!.first().baseVolume)
+        assertEquals("USD", eventClientOrder.trades!!.first().quotingAssetId)
+        assertEquals("-550", eventClientOrder.trades!!.first().quotingVolume)
     }
 
     @Test
