@@ -21,8 +21,8 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationIdRedis
 
     override fun isAlreadyProcessed(type: String, id: String): Boolean {
         return when (type) {
-            MessageType.CASH_TRANSFER_OPERATION.name -> isTransferAlreadyProcessed(id)
-            MessageType.CASH_IN_OUT_OPERATION.name -> isCashInOutAlreadyProcessed(id)
+            MessageType.CASH_TRANSFER_OPERATION.type.toString() -> isTransferAlreadyProcessed(id)
+            MessageType.CASH_IN_OUT_OPERATION.type.toString() -> isCashInOutAlreadyProcessed(id)
             else -> false
         }
     }
@@ -31,7 +31,7 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationIdRedis
         try {
             val jedis = cashInOutOperationIdRedisHolder.cashInOutOperationIdRedis()
             jedis.select(dbIndex)
-            return jedis.exists(getKey(MessageType.CASH_IN_OUT_OPERATION.name, id))
+            return jedis.exists(getKey(MessageType.CASH_IN_OUT_OPERATION.type.toString(), id))
         } catch (e: Exception) {
             cashInOutOperationIdRedisHolder.fail()
             throw e
@@ -42,7 +42,7 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationIdRedis
         try {
             val jedis = cashTransferOperationIdRedisHolder.cashTransferOperationIdRedis()
             jedis.select(dbIndex)
-            return jedis.exists(getKey(MessageType.CASH_TRANSFER_OPERATION.name, id))
+            return jedis.exists(getKey(MessageType.CASH_TRANSFER_OPERATION.type.toString(), id))
         } catch (e: Exception) {
             cashTransferOperationIdRedisHolder.fail()
             throw e
