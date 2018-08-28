@@ -6,7 +6,7 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
 
-class OrderBook: JsonSerializable {
+class OrderBook {
 
     val assetPair: String
     val isBuy: Boolean

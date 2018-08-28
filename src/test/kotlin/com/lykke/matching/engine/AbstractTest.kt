@@ -24,12 +24,13 @@ import com.lykke.matching.engine.notification.TestOrderBookListener
 import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
