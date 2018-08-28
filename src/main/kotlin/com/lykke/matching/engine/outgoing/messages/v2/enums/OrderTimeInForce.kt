@@ -4,5 +4,6 @@ enum class OrderTimeInForce(val id: Int) {
     UNKNOWN_ORDER_TIME_IN_FORCE(0),
     GTC(1),
     GTD(2),
-    IOC(3)
+    IOC(3),
+    FOK(4)
 }
