@@ -24,10 +24,10 @@ class RabbitMqPublisher(uri: String,
         MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger) {
 
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(RabbitMqOldFormatPublisher::class.java.name)
-        private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.message")
+        private val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
+        private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-        private val STATS_LOGGER = Logger.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.stats")
+        private val STATS_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.stats")
     }
 
     override fun getRoutingKey(item: Event<*>): String {
