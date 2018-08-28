@@ -20,10 +20,7 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
         private const val PARTITION_KEY = "PartitionKey"
 
         private const val SETTING_STATE_COLUMN_NAME = "Enabled"
-        private const val DISABLED_ASSETS = "DisabledAssets"
-        private const val TRUSTED_CLIENTS = "TrustedClients"
-        private const val MO_PRICE_DEVIATION_THRESHOLD = "MarketOrderPriceDeviationThreshold"
-        private const val LO_PRICE_DEVIATION_THRESHOLD = "LimitOrderPriceDeviationThreshold"
+
     }
 
     private val settingsTable: CloudTable = getOrCreateTable(connectionString, configTableName)
