@@ -237,7 +237,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             return
         }
 
-        if (order.timeInForce == OrderTimeInForce.IOC) {
+        if (order.timeInForce == OrderTimeInForce.IOC || order.timeInForce == OrderTimeInForce.FOK) {
             order.updateStatus(OrderStatus.Cancelled, date)
             LOGGER.info("$orderInfo: cancelled due to IOC")
             addToReport(order)
@@ -286,28 +286,9 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
-        if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
-            when {
-                assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume -> {
-                    LOGGER.info("$orderInfo: cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
-                    orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                }
-                matchingResult.matchedWithZeroLatestTrade -> {
-                    LOGGER.info("$orderInfo: cancelled due to zero latest trade")
-                    orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                }
-                order.timeInForce == OrderTimeInForce.IOC -> {
-                    LOGGER.info("$orderInfo: cancelled after matching due to IOC")
-                    orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                }
-                else -> {
-                    orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
-                    if (!isTrustedClient) {
-                        val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
-                        ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
-                    }
-                }
-            }
+
+        if (!processPartiallyMatchedOrder(matchingResult, orderCopy, orderInfo, order, limitAsset, ownWalletOperations)) {
+            return false
         }
 
         try {
@@ -393,6 +374,46 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             buySideOrderBookChanged = true
         }
         processedOrders.add(ProcessedOrder(order, true))
+        return true
+    }
+
+    private fun processPartiallyMatchedOrder(matchingResult: MatchingResult,
+                                             orderCopy: LimitOrder,
+                                             orderInfo: String,
+                                             order: LimitOrder,
+                                             limitAsset: Asset,
+                                             ownWalletOperations: MutableCollection<WalletOperation>): Boolean {
+        if (orderCopy.status != OrderStatus.Processing.name && orderCopy.status != OrderStatus.InOrderBook.name) {
+            return true
+        }
+        when {
+            assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume -> {
+                LOGGER.info("$orderInfo: cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            }
+            matchingResult.matchedWithZeroLatestTrade -> {
+                LOGGER.info("$orderInfo: cancelled due to zero latest trade")
+                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            }
+            order.timeInForce == OrderTimeInForce.IOC -> {
+                LOGGER.info("$orderInfo: cancelled after matching due to IOC, remainingVolume: ${orderCopy.remainingVolume}")
+                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            }
+            order.timeInForce == OrderTimeInForce.FOK -> {
+                LOGGER.info("$orderInfo: cancelled after matching due to FOK, remainingVolume: ${orderCopy.remainingVolume}")
+                order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                addToReport(order)
+                processedOrders.add(ProcessedOrder(order, true))
+                return false
+            }
+            else -> {
+                orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
+                if (!isTrustedClient) {
+                    val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
+                    ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
+                }
+            }
+        }
         return true
     }
 

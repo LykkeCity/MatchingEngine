@@ -241,6 +241,7 @@ private fun orderTimeInForce(internalTimeInForce: com.lykke.matching.engine.daos
         com.lykke.matching.engine.daos.order.OrderTimeInForce.GTC -> OrderTimeInForce.GTC
         com.lykke.matching.engine.daos.order.OrderTimeInForce.GTD -> OrderTimeInForce.GTD
         com.lykke.matching.engine.daos.order.OrderTimeInForce.IOC -> OrderTimeInForce.IOC
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.FOK -> OrderTimeInForce.FOK
         null -> null
     }
 }
