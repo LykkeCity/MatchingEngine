@@ -10,11 +10,10 @@ option java_outer_classname = "OutgoingMessages";
 message Header {
     enum MessageType {
         UNKNOWN_MESSAGE_TYPE = 0;
-        BALANCE_UPDATE = 1;
-        CASH_IN = 2;
-        CASH_OUT = 3;
-        CASH_TRANSFER = 4;
-        ORDER = 5;
+        CASH_IN = 1;
+        CASH_OUT = 2;
+        CASH_TRANSFER = 3;
+        ORDER = 4;
     }
     int32 messageType = 1;
     

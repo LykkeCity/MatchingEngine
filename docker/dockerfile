@@ -21,7 +21,7 @@ RUN unzip -q lykke-me-prototype-0.1.zip && \
     sed -i -e 's/\r$//' lykke-me-prototype/bin/start.sh && \
     sed -i -e 's/\r$//' lykke-me-prototype/bin/stop.sh
 
-EXPOSE 8887 8888 8889
+EXPOSE 8886 8887 8888 8889
 
 ENTRYPOINT ["/lykke-me-prototype/bin/start.sh"]
 CMD ["--console"]
