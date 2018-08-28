@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.matching
 
 import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.LimitOrder
@@ -71,11 +72,24 @@ class MatchingEngine(private val LOGGER: Logger,
         return UpdatedOrders(updatedOrderBook, updatedOrders)
     }
 
-    fun match(originOrder: Order, orderBook: PriorityBlockingQueue<LimitOrder>, messageId: String, balance: BigDecimal? = null): MatchingResult {
+    fun match(originOrder: Order,
+              orderBook: PriorityBlockingQueue<LimitOrder>,
+              messageId: String,
+              balance: BigDecimal? = null,
+              priceDeviationThreshold: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
+        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
+        val now = Date()
+
+        if (order.takePrice() != null && !checkExecutionPriceDeviation(order.isBuySide(), order.takePrice()!!, bestPrice, priceDeviationThreshold)) {
+            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, price: ${order.takePrice()})")
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+            return MatchingResult(orderWrapper, now, emptySet())
+        }
+
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
         val skipLimitOrders = HashSet<LimitOrder>()
@@ -84,7 +98,6 @@ class MatchingEngine(private val LOGGER: Logger,
         var totalVolume = BigDecimal.ZERO
         val limitReservedBalances = HashMap<String, BigDecimal>() // limit reserved balances for trades funds control
         val availableBalances = HashMap<String, MutableMap<String, BigDecimal>>() // clientId -> assetId -> balance; available balances for market balance control and fee funds control
-        val now = Date()
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val isBuy = order.isBuySide()
         val lkkTrades = LinkedList<LkkTrade>()
@@ -242,7 +255,7 @@ class MatchingEngine(private val LOGGER: Logger,
                     uncompletedLimitOrderWrapper = limitOrderCopyWrapper
                 }
 
-                setMarketBalance(availableBalances, order, asset, NumberUtils.setScaleRoundHalfUp(getMarketBalance(availableBalances, order, asset) - (if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs() /* - assetFeeAmount*/, asset.accuracy))
+                setMarketBalance(availableBalances, order, asset, NumberUtils.setScaleRoundHalfUp(getMarketBalance(availableBalances, order, asset) - (if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy))
 
                 remainingVolume = if (isFullyMatched) BigDecimal.ZERO else NumberUtils.setScale(remainingVolume - getVolume(marketRoundedVolume.abs(), order.isStraight(), limitOrder.price), assetsHolder.getAsset(if (order.isStraight()) assetPair.baseAssetId else assetPair.quotingAssetId).accuracy, order.isOrigBuySide())
                 limitOrderCopy.lastMatchTime = now
@@ -328,6 +341,23 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
+        val executionPrice = calculateExecutionPrice(order, assetPair, totalLimitPrice, totalVolume)
+        if (!checkMaxVolume(order, assetPair, executionPrice)) {
+            order.updateStatus(OrderStatus.InvalidVolume, now)
+            LOGGER.info("Too large volume of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+        }
+        if (!checkMaxValue(order, assetPair, executionPrice)) {
+            order.updateStatus(OrderStatus.InvalidValue, now)
+            LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
+            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+        }
+        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
+            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
+        }
+
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
             val newRemainingVolume = if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume
             if (newRemainingVolume.compareTo(originOrder.volume) != 0) {
@@ -339,10 +369,7 @@ class MatchingEngine(private val LOGGER: Logger,
             order.updateRemainingVolume(BigDecimal.ZERO)
         }
         order.updateMatchTime(now)
-        order.updatePrice(NumberUtils.setScale(
-                if (order.isStraight()) NumberUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
-                else NumberUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
-                assetsPairsHolder.getAssetPair(order.assetPairId).accuracy, order.isOrigBuySide()))
+        order.updatePrice(executionPrice)
 
         return MatchingResult(orderWrapper,
                 now,
@@ -386,5 +413,54 @@ class MatchingEngine(private val LOGGER: Logger,
 
     private fun setMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset, value: BigDecimal) {
         availableBalances.getOrPut(order.clientId) { HashMap() }[asset.assetId] = value
+    }
+
+    private fun calculateExecutionPrice(order: Order,
+                                        assetPair: AssetPair,
+                                        totalLimitPrice: BigDecimal,
+                                        totalVolume: BigDecimal): BigDecimal {
+        return NumberUtils.setScale(if (order.isStraight())
+            NumberUtils.divideWithMaxScale(totalLimitPrice, order.getAbsVolume())
+        else
+            NumberUtils.divideWithMaxScale(order.getAbsVolume(), totalVolume),
+                assetPair.accuracy,
+                order.isOrigBuySide())
+    }
+
+    private fun checkMaxVolume(order: Order,
+                               assetPair: AssetPair,
+                               executionPrice: BigDecimal): Boolean {
+        return when {
+            order.takePrice() != null || assetPair.maxVolume == null -> true
+            order.isStraight() -> order.getAbsVolume() <= assetPair.maxVolume
+            else -> order.getAbsVolume() / executionPrice <= assetPair.maxVolume
+        }
+    }
+
+    private fun checkMaxValue(order: Order,
+                              assetPair: AssetPair,
+                              executionPrice: BigDecimal): Boolean {
+        return when {
+            order.takePrice() != null || assetPair.maxValue == null -> true
+            order.isStraight() -> order.getAbsVolume() * executionPrice <= assetPair.maxValue
+            else -> order.getAbsVolume() <= assetPair.maxValue
+        }
+    }
+
+    private fun checkExecutionPriceDeviation(isBuySide: Boolean,
+                                             price: BigDecimal,
+                                             expectedPrice: BigDecimal?,
+                                             threshold: BigDecimal?): Boolean {
+        if (threshold == null || expectedPrice == null) {
+            return true
+        }
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, expectedPrice)) {
+            return false
+        }
+        return if (isBuySide) {
+            NumberUtils.divideWithMaxScale(price - expectedPrice, expectedPrice) <= threshold
+        } else {
+            NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
+        }
     }
 }

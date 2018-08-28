@@ -6,6 +6,7 @@ services:
         - HTTP_CONFIG=ME_HTTP_CONFIG
         - JAVA_OPTS=-ME_JAVA_OPTS
     ports:
+      - "8886:8886"
       - "8887:8887"
       - "8888:8888"
       - "8889:8889"
