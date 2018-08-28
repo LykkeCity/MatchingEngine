@@ -31,6 +31,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -64,6 +65,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
                              private val multiLimitOrderValidator: MultiLimitOrderValidator,
                              feeProcessor: FeeProcessor,
+                             private val settings: ApplicationSettingsCache,
                              private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                              private val messageSender: MessageSender) : AbstractService {
 
@@ -191,8 +193,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
 
             if (orderValid && orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageWrapper.messageId!!,
-                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.match(order,
+                        orderBook.getOrderBook(!order.isBuySide()),
+                        messageWrapper.messageId!!,
+                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId],
+                        settings.limitOrderPriceDeviationThreshold(assetPairId))
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.updateStatus(OrderStatus.NoLiquidity, matchingResult.timestamp)
@@ -202,7 +207,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
-                    OrderStatus.InvalidFee -> {
+                    OrderStatus.InvalidFee,
+                    OrderStatus.TooHighPriceDeviation -> {
                         order.updateStatus(OrderStatus.InvalidFee, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }

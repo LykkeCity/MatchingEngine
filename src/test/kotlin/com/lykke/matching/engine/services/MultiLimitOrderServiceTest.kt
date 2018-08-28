@@ -16,7 +16,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -1326,6 +1325,54 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertBalance("Client2", "USD", reserved = 0.0)
         assertBalance("Client3", "USD", reserved = 0.0)
+    }
+
+    @Test
+    fun testMaxOldOrderValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testMaxOldOrderVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testOrderMAxValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testOrderMaxVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
     }
 
     @Test
