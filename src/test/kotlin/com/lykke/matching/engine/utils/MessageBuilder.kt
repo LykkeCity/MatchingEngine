@@ -210,6 +210,8 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                 order.feeInstructions.forEach { orderBuilder.addFees(buildNewLimitOrderFee(it)) }
                 orderBuilder.uid = order.uid
                 order.oldUid?.let { orderBuilder.oldUid = order.oldUid }
+                order.timeInForce?.let { orderBuilder.timeInForce = it.externalId }
+                order.expiryTime?.let { orderBuilder.expiryTime = it.time }
                 multiOrderBuilder.addOrders(orderBuilder.build())
             }
             return multiOrderBuilder.build()
