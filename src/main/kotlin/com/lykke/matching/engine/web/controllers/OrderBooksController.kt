@@ -4,8 +4,8 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.web.dto.StopOrderDto
-import com.lykke.matching.engine.web.dto.StopOrderBookDto
+import com.lykke.matching.engine.web.dto.StopOrder
+import com.lykke.matching.engine.web.dto.StopOrderBook
 import com.lykke.utils.logging.ThrottlingLogger
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -52,16 +52,16 @@ class OrderBooksController {
 
     @GetMapping("/stopOrderBooks", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiOperation("Endpoint to get all stop order books")
-    fun getStopOrderBooks(request: HttpServletRequest): List<StopOrderBookDto> {
-        val books = LinkedList<StopOrderBookDto>()
+    fun getStopOrderBooks(request: HttpServletRequest): List<StopOrderBook> {
+        val books = LinkedList<StopOrderBook>()
         val now = Date()
 
         genericStopLimitOrderService.getAllOrderBooks().values.forEach {
             val orderBook = it.copy()
-            books.add(StopOrderBookDto(orderBook.assetPairId, true, true, now, toStopOrderDto(orderBook.getOrderBook(true, true))))
-            books.add(StopOrderBookDto(orderBook.assetPairId, true, false, now, toStopOrderDto(orderBook.getOrderBook(true, false))))
-            books.add(StopOrderBookDto(orderBook.assetPairId, false, true, now, toStopOrderDto(orderBook.getOrderBook(false, true))))
-            books.add(StopOrderBookDto(orderBook.assetPairId, false, false, now, toStopOrderDto(orderBook.getOrderBook(false, false))))
+            books.add(StopOrderBook(orderBook.assetPairId, true, true, now, toStopOrderDto(orderBook.getOrderBook(true, true))))
+            books.add(StopOrderBook(orderBook.assetPairId, true, false, now, toStopOrderDto(orderBook.getOrderBook(true, false))))
+            books.add(StopOrderBook(orderBook.assetPairId, false, true, now, toStopOrderDto(orderBook.getOrderBook(false, true))))
+            books.add(StopOrderBook(orderBook.assetPairId, false, false, now, toStopOrderDto(orderBook.getOrderBook(false, false))))
         }
 
         LOGGER.info("Stop order book snapshot sent to ${request.remoteAddr}")
@@ -69,9 +69,9 @@ class OrderBooksController {
         return books
     }
 
-    private fun toStopOrderDto(limitOrders: Collection<LimitOrder>): List<StopOrderDto> {
+    private fun toStopOrderDto(limitOrders: Collection<LimitOrder>): List<StopOrder> {
         return limitOrders.map { limitOrder ->
-            StopOrderDto(limitOrder.externalId,
+            StopOrder(limitOrder.externalId,
                     limitOrder.clientId,
                     limitOrder.volume,
                     limitOrder.lowerLimitPrice,
