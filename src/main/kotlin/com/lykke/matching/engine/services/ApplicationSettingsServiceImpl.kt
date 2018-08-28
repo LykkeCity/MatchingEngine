@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
 import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.azure.AzureSettingsDatabaseAccessor
@@ -18,11 +19,6 @@ class ApplicationSettingsServiceImpl : ApplicationSettingsService {
     @Autowired
     private lateinit var applicationSettingsCache: ApplicationSettingsCache
 
-    private val DELETE_SETTING_FROM_CACHE_STRATEGIES = mapOf("" to { settingName: String -> applicationSettingsCache.deleteTrustedClient() },
-            "" to { name: String -> applicationSettingsCache.deleteTrustedClient(name) })
-    private val DELETE_SETTING_GROUP_FROM_CACHE_STRATEGIES = mapOf("" to {settingGroupName: String -> applicationSettingsCache.deleteTrustedClient()})
-
-
     override fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroupDto> {
         return azureSettingsDatabaseAccessor.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
     }
@@ -40,16 +36,23 @@ class ApplicationSettingsServiceImpl : ApplicationSettingsService {
     }
 
     override fun createOrUpdateSetting(settingGroupName: String, settingDto: SettingDto) {
+        val settingGroup = AvailableSettingGroups.getBySettingsGroupName(settingGroupName)
         azureSettingsDatabaseAccessor.createOrUpdateSetting(settingGroupName, toSetting(settingDto))
+        applicationSettingsCache.createOrUpdateSettingValue(settingGroup, settingDto.name, settingDto.value)
     }
 
     override fun deleteSettingsGroup(settingGroupName: String) {
+        val settingGroup = AvailableSettingGroups.getBySettingsGroupName(settingGroupName)
+
         azureSettingsDatabaseAccessor.deleteSettingsGroup(settingGroupName)
+        applicationSettingsCache.deleteSettingGroup(settingGroup)
     }
 
     override fun deleteSetting(settingGroupName: String, settingName: String) {
+        val settingGroup = AvailableSettingGroups.getBySettingsGroupName(settingGroupName)
+
         azureSettingsDatabaseAccessor.deleteSetting(settingGroupName, settingName)
-        deleteSettingFromCache(settingGroupName, settingName)
+        applicationSettingsCache.deleteSetting(settingGroup, settingName)
     }
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {
@@ -63,13 +66,5 @@ class ApplicationSettingsServiceImpl : ApplicationSettingsService {
 
     private fun toSetting(settingDto: SettingDto): Setting {
         return Setting(settingDto.name, settingDto.value, settingDto.enabled, settingDto.comment)
-    }
-
-    private fun deleteSettingFromCache(settingGroupName: String, settingName: String) {
-        DELETE_SETTING_FROM_CACHE_STRATEGIES[settingGroupName]!!.invoke(settingName)
-    }
-
-    private fun deleteSettingGroupFromCache(settingGroupName: String) {
-
     }
 }
