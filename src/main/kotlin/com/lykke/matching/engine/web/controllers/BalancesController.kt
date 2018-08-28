@@ -11,7 +11,7 @@ import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@Api(description = "Read only endpoint, returns balance information for supplied client")
+@Api(description = "Read only api, returns balance information for supplied client")
 class BalancesController {
     @Autowired
     private lateinit var balancesHolder: BalancesHolder
