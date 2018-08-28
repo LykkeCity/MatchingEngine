@@ -59,15 +59,15 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroups, settingName: String, value: String) {
-        getSettingNameToBalueByGroup(settingGroup)[settingName] = value
+        getSettingNameToValueByGroup(settingGroup)[settingName] = value
     }
 
     fun deleteSetting(settingGroup: AvailableSettingGroups, settingName: String) {
-        getSettingNameToBalueByGroup(settingGroup).remove(settingName)
+        getSettingNameToValueByGroup(settingGroup).remove(settingName)
     }
 
     fun deleteSettingGroup(settingGroup: AvailableSettingGroups) {
-        getSettingNameToBalueByGroup(settingGroup).clear()
+        getSettingNameToValueByGroup(settingGroup).clear()
     }
 
     private fun getSettingNameToValueByGroupName(settingGroupName: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroups): MutableMap<String, String> {
@@ -79,7 +79,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         return result
     }
 
-    private fun getSettingNameToBalueByGroup(settingGroup: AvailableSettingGroups):  MutableMap<String, String> {
+    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroups):  MutableMap<String, String> {
         return when (settingGroup) {
             AvailableSettingGroups.TRUSTED_CLIENTS -> trustedClients
             AvailableSettingGroups.DISABLED_ASSETS -> disabledAssets
