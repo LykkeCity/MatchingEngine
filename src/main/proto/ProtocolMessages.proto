@@ -129,6 +129,8 @@ enum LimitOrderType {
 enum OrderTimeInForce {
     GTC = 0;
     GTD = 1;
+    IOC = 2;
+    FOK = 3;
 }
 
 message OldMarketOrder {

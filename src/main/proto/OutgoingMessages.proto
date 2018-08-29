@@ -116,15 +116,15 @@ message ExecutionEvent {
     message Order {
         message Trade {
             string tradeId = 1;
-            string assetId = 2;
-            string volume = 3;
+            string baseAssetId = 2;
+            string baseVolume = 3;
             string price = 4;
             google.protobuf.Timestamp timestamp = 5;
             string oppositeOrderId = 6;
             string oppositeExternalOrderId = 7;
             string oppositeWalletId = 8;
-            string oppositeAssetId = 9;
-            string oppositeVolume = 10;
+            string quotingAssetId = 9;
+            string quotingVolume = 10;
             int32 index = 11;
             string absoluteSpread = 12;
             string relativeSpread = 13;
@@ -192,6 +192,8 @@ message ExecutionEvent {
              UNKNOWN_ORDER_TIME_IN_FORCE = 0;
              GTC = 1;
              GTD = 2;
+             IOC = 3;
+             FOK = 4;
         }
         int32 timeInForce = 23;
         google.protobuf.Timestamp expiryTime = 24;

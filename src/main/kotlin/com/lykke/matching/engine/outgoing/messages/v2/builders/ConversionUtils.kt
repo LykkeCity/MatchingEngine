@@ -160,15 +160,15 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
 
 private fun convertTrade(tradeInfo: LimitTradeInfo): Trade {
     return Trade(tradeInfo.tradeId,
-            tradeInfo.asset,
-            tradeInfo.volume,
+            tradeInfo.baseAssetId,
+            tradeInfo.baseVolume,
             bigDecimalToString(tradeInfo.price)!!,
             tradeInfo.timestamp,
             tradeInfo.oppositeOrderId,
             tradeInfo.oppositeOrderExternalId,
             tradeInfo.oppositeClientId,
-            tradeInfo.oppositeAsset,
-            tradeInfo.oppositeVolume,
+            tradeInfo.quotingAssetId,
+            tradeInfo.quotingVolume,
             tradeInfo.index.toInt(),
             bigDecimalToString(tradeInfo.absoluteSpread),
             bigDecimalToString(tradeInfo.relativeSpread),
@@ -179,15 +179,15 @@ private fun convertTrade(tradeInfo: LimitTradeInfo): Trade {
 
 private fun convertTrade(tradeInfo: TradeInfo): Trade {
     return Trade(tradeInfo.tradeId,
-            tradeInfo.marketAsset,
-            tradeInfo.marketVolume,
+            tradeInfo.baseAssetId,
+            tradeInfo.baseVolume,
             bigDecimalToString(tradeInfo.price)!!,
             tradeInfo.timestamp,
             tradeInfo.limitOrderId,
             tradeInfo.limitOrderExternalId,
             tradeInfo.limitClientId,
-            tradeInfo.limitAsset,
-            tradeInfo.limitVolume,
+            tradeInfo.quotingAssetId,
+            tradeInfo.quotingVolume,
             tradeInfo.index.toInt(),
             bigDecimalToString(tradeInfo.absoluteSpread),
             bigDecimalToString(tradeInfo.relativeSpread),
@@ -243,6 +243,8 @@ private fun orderTimeInForce(internalTimeInForce: com.lykke.matching.engine.daos
     return when (internalTimeInForce) {
         com.lykke.matching.engine.daos.order.OrderTimeInForce.GTC -> OrderTimeInForce.GTC
         com.lykke.matching.engine.daos.order.OrderTimeInForce.GTD -> OrderTimeInForce.GTD
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.IOC -> OrderTimeInForce.IOC
+        com.lykke.matching.engine.daos.order.OrderTimeInForce.FOK -> OrderTimeInForce.FOK
         null -> null
     }
 }
