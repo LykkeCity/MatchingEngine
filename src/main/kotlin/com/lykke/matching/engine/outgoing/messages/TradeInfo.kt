@@ -23,5 +23,13 @@ class TradeInfo(
         val feeTransfer: FeeTransfer?,
         val fees: List<Fee>,
         val absoluteSpread: BigDecimal?,
-        val relativeSpread: BigDecimal?
+        val relativeSpread: BigDecimal?,
+        @Transient
+        val baseAssetId: String,
+        @Transient
+        val baseVolume: String,
+        @Transient
+        val quotingAssetId: String,
+        @Transient
+        val quotingVolume: String
 )
