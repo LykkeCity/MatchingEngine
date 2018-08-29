@@ -13,7 +13,6 @@ import kotlin.concurrent.fixedRateTimer
 @Component
 class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                                       @Value("\${application.settings.update.interval}") updateInterval: Long) : DataCache() {
-
     @Volatile
     private lateinit var trustedClients: MutableMap<String, String>
 

@@ -23,36 +23,32 @@ class ApplicationSettingsServiceImpl : ApplicationSettingsService {
         return azureSettingsDatabaseAccessor.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
     }
 
-    override fun getSettingsGroup(settingsGroupName: String, enabled: Boolean?): SettingsGroupDto? {
-        return azureSettingsDatabaseAccessor.getSettingsGroup(settingsGroupName, enabled)?.let {
+    override fun getSettingsGroup(settingsGroup: AvailableSettingGroups, enabled: Boolean?): SettingsGroupDto? {
+        return azureSettingsDatabaseAccessor.getSettingsGroup(settingsGroup.name, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
-    override fun getSetting(settingsGroupName: String, settingName: String, enabled: Boolean?): SettingDto? {
-        return azureSettingsDatabaseAccessor.getSetting(settingsGroupName, settingName, enabled)?.let {
+    override fun getSetting(settingsGroup: AvailableSettingGroups, settingName: String, enabled: Boolean?): SettingDto? {
+        return azureSettingsDatabaseAccessor.getSetting(settingsGroup.name, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
 
-    override fun createOrUpdateSetting(settingGroupName: String, settingDto: SettingDto) {
-        val settingGroup = AvailableSettingGroups.getBySettingsGroupName(settingGroupName)
-        azureSettingsDatabaseAccessor.createOrUpdateSetting(settingGroupName, toSetting(settingDto))
-        applicationSettingsCache.createOrUpdateSettingValue(settingGroup, settingDto.name, settingDto.value)
+    override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroups, settingDto: SettingDto) {
+        azureSettingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.name, toSetting(settingDto))
+        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
     }
 
-    override fun deleteSettingsGroup(settingGroupName: String) {
-        val settingGroup = AvailableSettingGroups.getBySettingsGroupName(settingGroupName)
+    override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroups) {
 
-        azureSettingsDatabaseAccessor.deleteSettingsGroup(settingGroupName)
-        applicationSettingsCache.deleteSettingGroup(settingGroup)
+        azureSettingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.name)
+        applicationSettingsCache.deleteSettingGroup(settingsGroup)
     }
 
-    override fun deleteSetting(settingGroupName: String, settingName: String) {
-        val settingGroup = AvailableSettingGroups.getBySettingsGroupName(settingGroupName)
-
-        azureSettingsDatabaseAccessor.deleteSetting(settingGroupName, settingName)
-        applicationSettingsCache.deleteSetting(settingGroup, settingName)
+    override fun deleteSetting(settingsGroup: AvailableSettingGroups, settingName: String) {
+        azureSettingsDatabaseAccessor.deleteSetting(settingsGroup.name, settingName)
+        applicationSettingsCache.deleteSetting(settingsGroup, settingName)
     }
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {

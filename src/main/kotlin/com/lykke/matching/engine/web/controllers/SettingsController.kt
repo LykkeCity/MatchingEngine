@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.web.controllers
 
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
 import com.lykke.matching.engine.services.ApplicationSettingsService
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -21,7 +22,7 @@ class SettingsController {
     @ApiOperation("Get all settings of given group")
     @GetMapping("/{settingGroupName}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSettingGroup(@PathVariable("settingGroupName") settingGroupName: String, @RequestParam("enabled", required = false) enabled: Boolean? = null): ResponseEntity<SettingsGroupDto> {
-        val settingsGroup = applicationSettingsService.getSettingsGroup(settingGroupName, enabled)
+        val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroups.getBySettingsGroupName(settingGroupName), enabled)
 
         return if (settingsGroup != null) {
             ResponseEntity.ok(settingsGroup)
@@ -41,7 +42,7 @@ class SettingsController {
     fun getSetting(@PathVariable("settingGroupName") settingGroupName: String,
                    @PathVariable("settingName") settingName: String,
                    @RequestParam("enabled", required = false) enabled: Boolean? =  null): ResponseEntity<SettingDto> {
-        val setting = applicationSettingsService.getSetting(settingGroupName, settingName, enabled)
+        val setting = applicationSettingsService.getSetting(AvailableSettingGroups.getBySettingsGroupName(settingGroupName), settingName, enabled)
 
         return if (setting != null) {
             ResponseEntity.ok(setting)
@@ -53,18 +54,18 @@ class SettingsController {
     @ApiOperation("Create or update setting")
     @PutMapping("/{settingGroupName}", consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun createOrUpdate(@PathVariable("settingGroupName") settingGroupName: String, settingDto: SettingDto) {
-        applicationSettingsService.createOrUpdateSetting(settingGroupName, settingDto)
+        applicationSettingsService.createOrUpdateSetting(AvailableSettingGroups.getBySettingsGroupName(settingGroupName), settingDto)
     }
 
     @ApiOperation("Delete all settings for given setting group")
     @DeleteMapping("/{settingGroupName}")
     fun deleteSettingsGroup(@PathVariable("settingGroupName") settingGroupName: String) {
-        applicationSettingsService.deleteSettingsGroup(settingGroupName)
+        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroups.getBySettingsGroupName(settingGroupName))
     }
 
     @ApiOperation("Delete setting for given setting group and given setting name")
     @DeleteMapping("/{settingGroupName}/setting/{settingName}")
     fun deleteSetting(@PathVariable("settingGroupName") settingGroupName: String, @PathVariable("settingName") settingName: String) {
-        applicationSettingsService.deleteSetting(settingGroupName, settingName)
+        applicationSettingsService.deleteSetting(AvailableSettingGroups.getBySettingsGroupName(settingGroupName), settingName)
     }
 }

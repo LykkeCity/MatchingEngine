@@ -1,48 +1,61 @@
 package com.lykke.matching.engine.database
 
-import com.lykke.matching.engine.daos.Settings
+import com.lykke.matching.engine.daos.setting.Setting
+import com.lykke.matching.engine.daos.setting.SettingsGroup
 import java.math.BigDecimal
 
 class TestConfigDatabaseAccessor : SettingsDatabaseAccessor {
-    private var settings = Settings(emptySet(), emptySet(), emptyMap(), emptyMap())
 
-    override fun getAllEnabledSettingGroups(): Settings {
-        return settings
+
+    private val trustedClients = HashMap<String, String>()
+    private val disabledAssets = HashMap<String, String>()
+    private val moPriceDeviationThresholds = HashMap<String, String>()
+    private val loPriceDeviationThresholds = HashMap<String, String>()
+
+    override fun getSetting(settingGroupName: String, settingName: String, enabled: Boolean?): Setting? {
+        throw NotImplementedError()
+    }
+
+    override fun getSettingsGroup(settingGroupName: String, enabled: Boolean?): SettingsGroup? {
+        throw NotImplementedError()
+    }
+
+    override fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroup> {
+        throw NotImplementedError()
+    }
+
+    override fun createOrUpdateSetting(settingGroupName: String, setting: Setting) {
+        throw NotImplementedError()
+    }
+
+    override fun deleteSetting(settingGroupName: String, settingName: String) {
+        throw NotImplementedError()
+    }
+
+    override fun deleteSettingsGroup(settingGroupName: String) {
+        throw NotImplementedError()
     }
 
     fun addTrustedClient(trustedClient: String) {
-        val trustedClients: MutableSet<String> = HashSet(settings.trustedClients)
-        trustedClients.add(trustedClient)
-
-        settings = Settings(trustedClients = trustedClients,
-                disabledAssets = settings.disabledAssets,
-                moPriceDeviationThresholds = settings.moPriceDeviationThresholds,
-                loPriceDeviationThresholds = settings.loPriceDeviationThresholds)
+        trustedClients.put(trustedClient, trustedClient)
     }
 
     fun addDisabledAsset(disabledAsset: String) {
-        val disabledAssets: MutableSet<String> = HashSet(settings.disabledAssets)
-        disabledAssets.add(disabledAsset)
-
-        settings = Settings(trustedClients = settings.trustedClients,
-                disabledAssets = disabledAssets,
-                moPriceDeviationThresholds = settings.moPriceDeviationThresholds,
-                loPriceDeviationThresholds = settings.loPriceDeviationThresholds)
+        disabledAssets.put(disabledAsset, disabledAsset)
     }
 
     fun addMarketOrderPriceDeviationThreshold(assetPirId: String, threshold: BigDecimal) {
-        val thresholds = HashMap(settings.moPriceDeviationThresholds)
-        thresholds[assetPirId] = threshold
-        settings = Settings(settings.trustedClients, settings.disabledAssets, thresholds, settings.loPriceDeviationThresholds)
+        moPriceDeviationThresholds.put(assetPirId, threshold.toPlainString())
     }
 
     fun addLimitOrderPriceDeviationThreshold(assetPirId: String, threshold: BigDecimal) {
-        val thresholds = HashMap(settings.loPriceDeviationThresholds)
-        thresholds[assetPirId] = threshold
-        settings = Settings(settings.trustedClients, settings.disabledAssets, settings.moPriceDeviationThresholds, thresholds)
+        loPriceDeviationThresholds.put(assetPirId, threshold.toPlainString())
     }
 
     fun clear() {
-        settings = Settings(emptySet(), emptySet(), emptyMap(), emptyMap())
+        trustedClients.clear()
+        disabledAssets.clear()
+        moPriceDeviationThresholds.clear()
+        loPriceDeviationThresholds.clear()
     }
 }
