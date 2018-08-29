@@ -5,11 +5,11 @@ import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.rabbitmq.client.BuiltinExchangeType
 import java.util.concurrent.BlockingQueue
 
-interface RabbitMqService<in T> {
+interface RabbitMqService<T> {
     fun startPublisher(config: RabbitConfig,
                        queue: BlockingQueue<out T>,
                        appName: String,
                        appVersion: String,
                        exchangeType: BuiltinExchangeType,
-                       messageDatabaseLogger: DatabaseLogger? = null)
+                       messageDatabaseLogger: DatabaseLogger<T>? = null)
 }
