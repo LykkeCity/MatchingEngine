@@ -67,17 +67,19 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         while (true) {
             try {
                 val startTime = System.nanoTime()
-                messageDatabaseLogger?.let {
-                    val logMessage = getLogMessage(item)
-                    if (!isLogged) {
-                        MESSAGES_LOGGER.info("$exchangeName : ${logMessage.message}")
-                        it.log(getLogMessage(item))
-                        isLogged = true
-                    }
+
+                val routingKey = getRoutingKey(item)
+                val props = getProps(item)
+                val body = getBody(item)
+
+                if (!isLogged) {
+                    logMessage(item)
+                    isLogged = true
                 }
 
                 val startPersistTime = System.nanoTime()
-                channel!!.basicPublish(exchangeName, getRoutingKey(item), getProps(item), getBody(item))
+                channel!!.basicPublish(exchangeName, routingKey, props, body)
+
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
@@ -89,6 +91,14 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
                     Thread.sleep(1000)
                 }
             }
+        }
+    }
+
+    private fun logMessage(item: T) {
+        messageDatabaseLogger?.let {
+            val logMessage = getLogMessage(item)
+            MESSAGES_LOGGER.info("$exchangeName : ${logMessage.message}")
+            it.log(logMessage)
         }
     }
 
