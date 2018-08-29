@@ -247,7 +247,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private fun startRabbitMqPublisher(config: RabbitConfig,
                                        queue: BlockingQueue<*>,
-                                       messageDatabaseLogger: DatabaseLogger? = null,
+                                       messageDatabaseLogger: DatabaseLogger<Any>? = null,
                                        rabbitMqService: RabbitMqService<Any>,
                                        appName: String,
                                        appVersion: String,

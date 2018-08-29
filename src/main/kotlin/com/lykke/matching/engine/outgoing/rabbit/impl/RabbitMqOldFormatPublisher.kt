@@ -1,12 +1,9 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl
 
 import com.google.gson.Gson
-import com.lykke.matching.engine.daos.Message
 import com.lykke.matching.engine.logging.DatabaseLogger
-import com.lykke.matching.engine.logging.LogMessageTransformer
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.MessageProperties
 import org.apache.commons.lang3.StringUtils
@@ -20,9 +17,7 @@ class RabbitMqOldFormatPublisher(uri: String,
                                  appVersion: String,
                                  exchangeType: BuiltinExchangeType,
                                  private val gson: Gson,
-                                 private val messageTransformer: LogMessageTransformer,
-                                 /** null if do not need to log */
-                                 messageDatabaseLogger: DatabaseLogger? = null) : AbstractRabbitMqPublisher<Any>(uri, exchangeName,
+                                 messageDatabaseLogger: DatabaseLogger<Any>? = null) : AbstractRabbitMqPublisher<Any>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,
         MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger){
 
@@ -33,19 +28,10 @@ class RabbitMqOldFormatPublisher(uri: String,
         private val STATS_LOGGER = Logger.getLogger("${RabbitMqOldFormatPublisher::class.java.name}.stats")
     }
 
-    override fun getRoutingKey(item: Any): String {
-        return StringUtils.EMPTY
-    }
+    override fun getRabbitPublishRequest(item: Any): RabbitPublishRequest {
+        val jsonString = gson.toJson(item)
+        val body = jsonString.toByteArray()
 
-    override fun getBody(item: Any): ByteArray {
-        return gson.toJson(item).toByteArray()
-    }
-
-    override fun getProps(item: Any): AMQP.BasicProperties {
-        return MessageProperties.MINIMAL_PERSISTENT_BASIC
-    }
-
-    override fun getLogMessage(item: Any): Message {
-        return messageTransformer.transform(item)
+        return RabbitPublishRequest(StringUtils.EMPTY, body, jsonString, MessageProperties.MINIMAL_PERSISTENT_BASIC)
     }
 }

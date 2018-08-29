@@ -1,8 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl
 
-import com.lykke.matching.engine.daos.Message
+import com.google.gson.Gson
 import com.lykke.matching.engine.logging.DatabaseLogger
-import com.lykke.matching.engine.logging.LogMessageTransformer
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -17,11 +16,11 @@ class RabbitMqPublisher(uri: String,
                         appName: String,
                         appVersion: String,
                         exchangeType: BuiltinExchangeType,
-                        private val jsonMessageTransformer: LogMessageTransformer,
-                        /** null if do not need to log */
-                        messageDatabaseLogger: DatabaseLogger? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
+                        private val gson: Gson,
+                        messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,
         MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger) {
+
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
@@ -30,15 +29,20 @@ class RabbitMqPublisher(uri: String,
         private val STATS_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.stats")
     }
 
-    override fun getRoutingKey(item: Event<*>): String {
+    override fun getRabbitPublishRequest(item: Event<*>): RabbitPublishRequest {
+        return RabbitPublishRequest(getRoutingKey(item), getBody(item), getLogMessage(item), getProps(item))
+
+    }
+
+    private fun getRoutingKey(item: Event<*>): String {
         return item.header.messageType.id.toString()
     }
 
-    override fun getBody(item: Event<*>): ByteArray {
+    private fun getBody(item: Event<*>): ByteArray {
         return item.buildGeneratedMessage().toByteArray()
     }
 
-    override fun getProps(item: Event<*>): AMQP.BasicProperties {
+    private fun getProps(item: Event<*>): AMQP.BasicProperties {
         val headers = mapOf(Pair("MessageType", item.header.messageType.id),
                 Pair("SequenceNumber", item.header.sequenceNumber),
                 Pair("MessageId", item.header.messageId),
@@ -54,7 +58,7 @@ class RabbitMqPublisher(uri: String,
                 .build()
     }
 
-    override fun getLogMessage(item: Event<*>): Message {
-        return jsonMessageTransformer.transform(item)
+    private fun getLogMessage(item: Event<*>): String {
+        return gson.toJson(item)
     }
 }

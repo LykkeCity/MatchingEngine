@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.logging
 
-import com.lykke.matching.engine.daos.Message
 import com.lykke.matching.engine.database.MessageLogDatabaseAccessor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -8,22 +7,23 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
-class DatabaseLogger(private val dbAccessor: MessageLogDatabaseAccessor) {
+class DatabaseLogger<in T>(private val dbAccessor: MessageLogDatabaseAccessor) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(DatabaseLogger::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val queue: BlockingQueue<Message> = LinkedBlockingQueue()
+    private val queue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue()
 
-    fun log(message: Message) {
-        queue.put(message)
+    fun log(item: T, stringRepresentation: String) {
+        queue.put(MessageWrapper(item as Any, stringRepresentation))
     }
 
     private fun takeAndSaveMessage() {
         try {
-            dbAccessor.log(queue.take())
+            val message = queue.take()
+            dbAccessor.log(toLogMessage(message.item, message.stringRepresentation))
         } catch (e: Exception) {
             val errorMessage = "Unable to write log to DB: ${e.message}"
             LOGGER.error(errorMessage, e)
@@ -39,3 +39,5 @@ class DatabaseLogger(private val dbAccessor: MessageLogDatabaseAccessor) {
         }
     }
 }
+
+private class MessageWrapper(val item: Any, val stringRepresentation: String)

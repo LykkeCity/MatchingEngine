@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl
 
-import com.lykke.matching.engine.daos.Message
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
@@ -21,7 +20,7 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
                                                private val METRICS_LOGGER: MetricsLogger,
                                                private val STATS_LOGGER: Logger,
                                                /** null if do not need to log */
-                                               private val messageDatabaseLogger: DatabaseLogger? = null) : Thread() {
+                                               private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
     companion object {
         private const val LOG_COUNT = 1000
@@ -54,13 +53,7 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         }
     }
 
-    protected abstract fun getRoutingKey(item: T): String
-
-    protected abstract fun getBody(item: T): ByteArray
-
-    protected abstract fun getProps(item: T): AMQP.BasicProperties
-
-    protected abstract fun getLogMessage(item: T): Message
+    protected abstract fun getRabbitPublishRequest(item: T): RabbitPublishRequest
 
     private fun publish(item: T) {
         var isLogged = false
@@ -68,17 +61,15 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
             try {
                 val startTime = System.nanoTime()
 
-                val routingKey = getRoutingKey(item)
-                val props = getProps(item)
-                val body = getBody(item)
+                val rabbitPublishRequest = getRabbitPublishRequest(item)
 
                 if (!isLogged) {
-                    logMessage(item)
+                    logMessage(item, rabbitPublishRequest.stringRepresentation)
                     isLogged = true
                 }
 
                 val startPersistTime = System.nanoTime()
-                channel!!.basicPublish(exchangeName, routingKey, props, body)
+                channel!!.basicPublish(exchangeName, rabbitPublishRequest.routingKey, rabbitPublishRequest.props, rabbitPublishRequest.body)
 
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
@@ -94,11 +85,10 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         }
     }
 
-    private fun logMessage(item: T) {
+    private fun logMessage(item: T, stringRepresentation: String) {
         messageDatabaseLogger?.let {
-            val logMessage = getLogMessage(item)
-            MESSAGES_LOGGER.info("$exchangeName : ${logMessage.message}")
-            it.log(logMessage)
+            MESSAGES_LOGGER.info("$exchangeName : $stringRepresentation")
+            it.log(item, stringRepresentation)
         }
     }
 
