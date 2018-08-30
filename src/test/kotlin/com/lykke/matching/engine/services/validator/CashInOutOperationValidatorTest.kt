@@ -5,6 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
@@ -12,6 +13,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,7 +53,7 @@ class CashInOutOperationValidatorTest {
 
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestSettingsDatabaseAccessor
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -61,8 +63,8 @@ class CashInOutOperationValidatorTest {
 
     @Before
     fun setUp() {
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 50.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_ID, ASSET_ID, 1000.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_ID, ASSET_ID, 50.0)
     }
 
     @Test(expected = ValidationException::class)
@@ -88,7 +90,7 @@ class CashInOutOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetEnabled() {
         //given
-        testConfigDatabaseAccessor.addDisabledAsset(CashOperationValidatorTest.ASSET_ID)
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.DISABLED_ASSETS.name, getSetting(ASSET_ID))
         applicationSettingsCache.update()
 
         //when
@@ -105,8 +107,8 @@ class CashInOutOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testBalanceValid() {
         //given
-        testBalanceHolderWrapper.updateBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 500.0)
-        testBalanceHolderWrapper.updateReservedBalance(CashOperationValidatorTest.CLIENT_NAME, CashOperationValidatorTest.ASSET_ID, 250.0)
+        testBalanceHolderWrapper.updateBalance(CLIENT_ID, ASSET_ID, 500.0)
+        testBalanceHolderWrapper.updateReservedBalance(CLIENT_ID, ASSET_ID, 250.0)
         val cashInOutOperationBuilder = getDefaultCashInOutOperationBuilder()
         cashInOutOperationBuilder.volume = -300.0
 
