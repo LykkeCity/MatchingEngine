@@ -5,7 +5,7 @@ import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
@@ -61,10 +61,10 @@ class MarketOrderValidatorTest {
 
         @Bean
         @Primary
-        open fun test(): TestConfigDatabaseAccessor {
-            val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-            testConfigDatabaseAccessor.addDisabledAsset("BTC")
-            return testConfigDatabaseAccessor
+        open fun test(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.addDisabledAsset("BTC")
+            return testSettingsDatabaseAccessor
         }
     }
 

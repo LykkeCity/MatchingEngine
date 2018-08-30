@@ -6,8 +6,9 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -32,6 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
@@ -40,7 +42,7 @@ import kotlin.test.assertTrue
 class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    private lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -309,7 +311,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Test
     fun testMatch() {
-        testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("TrustedClient"))
 
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
 

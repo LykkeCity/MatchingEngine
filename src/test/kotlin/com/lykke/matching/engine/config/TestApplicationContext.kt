@@ -98,7 +98,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun testConfigDatabaseAccessor(): SettingsDatabaseAccessor {
-        return TestConfigDatabaseAccessor()
+        return TestSettingsDatabaseAccessor()
     }
 
     @Bean
