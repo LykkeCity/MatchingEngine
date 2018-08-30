@@ -24,30 +24,29 @@ class ApplicationSettingsServiceImpl : ApplicationSettingsService {
     }
 
     override fun getSettingsGroup(settingsGroup: AvailableSettingGroups, enabled: Boolean?): SettingsGroupDto? {
-        return azureSettingsDatabaseAccessor.getSettingsGroup(settingsGroup.name, enabled)?.let {
+        return azureSettingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
     override fun getSetting(settingsGroup: AvailableSettingGroups, settingName: String, enabled: Boolean?): SettingDto? {
-        return azureSettingsDatabaseAccessor.getSetting(settingsGroup.name, settingName, enabled)?.let {
+        return azureSettingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
 
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroups, settingDto: SettingDto) {
-        azureSettingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.name, toSetting(settingDto))
+        azureSettingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingDto))
         applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
     }
 
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroups) {
-
-        azureSettingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.name)
+        azureSettingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.settingGroupName)
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
     }
 
     override fun deleteSetting(settingsGroup: AvailableSettingGroups, settingName: String) {
-        azureSettingsDatabaseAccessor.deleteSetting(settingsGroup.name, settingName)
+        azureSettingsDatabaseAccessor.deleteSetting(settingsGroup.settingGroupName, settingName)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
     }
 
@@ -61,6 +60,6 @@ class ApplicationSettingsServiceImpl : ApplicationSettingsService {
     }
 
     private fun toSetting(settingDto: SettingDto): Setting {
-        return Setting(settingDto.name, settingDto.value, settingDto.enabled, settingDto.comment)
+        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment)
     }
 }

@@ -13,10 +13,11 @@ public class AzureAppSetting extends TableServiceEntity {
     public AzureAppSetting() {
     }
 
-    public AzureAppSetting(String partitionKey, String rowKey, String value, String comment) {
+    public AzureAppSetting(String partitionKey, String rowKey, String value, Boolean enabled, String comment) {
         super(partitionKey, rowKey);
         this.value = value;
         this.comment = comment;
+        this.enabled = enabled;
     }
 
     public String getValue() {
@@ -35,7 +36,7 @@ public class AzureAppSetting extends TableServiceEntity {
         this.comment = comment;
     }
 
-    public Boolean isEnabled() {
+    public Boolean getEnabled() {
         return enabled;
     }
 

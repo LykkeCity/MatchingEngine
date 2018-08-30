@@ -9,7 +9,9 @@ enum class AvailableSettingGroups(val settingGroupName: String) {
     companion object {
         fun getBySettingsGroupName(settingGroupName: String): AvailableSettingGroups {
             return AvailableSettingGroups.values().find { it.settingGroupName == settingGroupName}
-                    ?: throw IllegalArgumentException("Setting group with name $settingGroupName was not found")
+                    ?: throw InvalidSettingGroupException("Setting group with name $settingGroupName is not supported")
         }
     }
 }
+
+class InvalidSettingGroupException(message: String): Exception(message)

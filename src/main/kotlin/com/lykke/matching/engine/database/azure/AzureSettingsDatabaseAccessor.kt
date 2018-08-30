@@ -9,6 +9,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
+import org.apache.commons.lang3.StringUtils
 import org.springframework.util.CollectionUtils
 
 class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: String) : SettingsDatabaseAccessor {
@@ -64,7 +65,7 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
                 TableQuery.from(AzureAppSetting::class.java).where(enabledFilter)
             }
 
-            val query = enabledQuery ?: TableQuery()
+            val query = enabledQuery ?: TableQuery.from(AzureAppSetting::class.java)
 
             return settingsTable.execute(query).groupBy { it.partitionKey }
         } catch (e: Exception) {
@@ -80,9 +81,9 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
             val partitionFilter = getGroupNameSetting(settingGroupName)
             val combinedFiler = getCombinedFilterUseLogicalAnd(partitionFilter, getEnabledFlagFilter(enabled))
 
-            val partitionQuery = TableQuery.from(AzureAppSetting::class.java).where(combinedFiler)
+            val query = TableQuery.from(AzureAppSetting::class.java).where(combinedFiler)
 
-            settingsTable.execute(partitionQuery).toList()
+            settingsTable.execute(query).toList()
         } catch (e: Exception) {
             val message = "Unable to load application settings for group: $settingGroupName"
             LOGGER.error(message, e)
@@ -120,16 +121,16 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
     }
 
     private fun toSetting(azureSetting: AzureAppSetting): Setting {
-        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.isEnabled, azureSetting.comment)
+        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled, azureSetting.comment)
     }
 
     private fun toAzureSetting(settingsGroupName: String, setting: Setting): AzureAppSetting {
-        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.comment)
+        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled, setting.comment)
     }
 
     private fun toSettings(azureSettings: List<AzureAppSetting>): Set<Setting> {
         return azureSettings
-                .map { Setting(it.rowKey, it.value, it.isEnabled, it.comment) }
+                .map { Setting(it.rowKey, it.value, it.enabled, it.comment ?: StringUtils.EMPTY) }
                 .toSet()
     }
 
