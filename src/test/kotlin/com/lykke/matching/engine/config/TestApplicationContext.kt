@@ -212,6 +212,12 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                        applicationSettingsCache: ApplicationSettingsCache): ApplicationSettingsService {
+        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache)
+    }
+
+    @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor, assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                       quotesUpdateQueue: BlockingQueue<QuotesUpdate>, tradeInfoQueue: BlockingQueue<TradeInfo>,
