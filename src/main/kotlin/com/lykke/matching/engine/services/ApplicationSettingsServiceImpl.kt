@@ -61,11 +61,11 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     private fun toSettingDto(setting: Setting): SettingDto {
-        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment)
+        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment, setting.user)
     }
 
     private fun toSetting(settingDto: SettingDto): Setting {
-        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment)
+        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment, settingDto.user)
     }
 
     private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {

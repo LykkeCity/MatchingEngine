@@ -121,16 +121,17 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
     }
 
     private fun toSetting(azureSetting: AzureAppSetting): Setting {
-        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled, azureSetting.comment)
+        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled,
+                azureSetting.comment ?: StringUtils.EMPTY, azureSetting.user ?: StringUtils.EMPTY)
     }
 
     private fun toAzureSetting(settingsGroupName: String, setting: Setting): AzureAppSetting {
-        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled, setting.comment)
+        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled, setting.comment, setting.user)
     }
 
     private fun toSettings(azureSettings: List<AzureAppSetting>): Set<Setting> {
         return azureSettings
-                .map { Setting(it.rowKey, it.value, it.enabled, it.comment ?: StringUtils.EMPTY) }
+                .map(::toSetting)
                 .toSet()
     }
 
