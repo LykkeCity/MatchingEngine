@@ -19,6 +19,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.TradeInfo
+import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
@@ -253,6 +254,28 @@ class MatchingEngine(private val LOGGER: Logger,
                 val roundedAbsoluteSpread = if (absoluteSpread != null) NumberUtils.setScaleRoundHalfUp(absoluteSpread, assetPair.accuracy) else null
                 val roundedRelativeSpread = if (relativeSpread != null) NumberUtils.setScaleRoundHalfUp(relativeSpread, RELATIVE_SPREAD_ACCURACY) else null
 
+                val baseAsset: Asset
+                val quotingAsset: Asset
+                val baseMarketVolume: String
+                val baseLimitVolume: String
+                val quotingMarketVolume: String
+                val quotingLimitVolume: String
+                if (isBuy) {
+                    baseAsset = limitAsset
+                    quotingAsset = asset
+                    baseMarketVolume = bigDecimalToString(marketRoundedVolume.abs())!!
+                    quotingMarketVolume = bigDecimalToString(-oppositeRoundedVolume.abs())!!
+                    baseLimitVolume = bigDecimalToString(-marketRoundedVolume.abs())!!
+                    quotingLimitVolume = bigDecimalToString(oppositeRoundedVolume.abs())!!
+                } else {
+                    baseAsset = asset
+                    quotingAsset = limitAsset
+                    baseMarketVolume = bigDecimalToString(-marketRoundedVolume.abs())!!
+                    quotingMarketVolume = bigDecimalToString(oppositeRoundedVolume.abs())!!
+                    baseLimitVolume = bigDecimalToString(marketRoundedVolume.abs())!!
+                    quotingLimitVolume = bigDecimalToString(-oppositeRoundedVolume.abs())!!
+                }
+
                 marketOrderTrades.add(TradeInfo(traderId,
                         order.clientId,
                         NumberUtils.setScaleRoundHalfUp((if (isBuy) oppositeRoundedVolume else marketRoundedVolume).abs(), asset.accuracy).toPlainString(),
@@ -269,7 +292,11 @@ class MatchingEngine(private val LOGGER: Logger,
                         singleFeeTransfer(order.fee, takerFees),
                         takerFees,
                         roundedAbsoluteSpread,
-                        roundedRelativeSpread))
+                        roundedRelativeSpread,
+                        baseAsset.assetId,
+                        baseMarketVolume,
+                        quotingAsset.assetId,
+                        quotingMarketVolume))
 
                 limitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder,
                         mutableListOf(LimitTradeInfo(traderId,
@@ -289,7 +316,11 @@ class MatchingEngine(private val LOGGER: Logger,
                                 makerFees,
                                 roundedAbsoluteSpread,
                                 roundedRelativeSpread,
-                                TradeRole.MAKER))))
+                                TradeRole.MAKER,
+                                baseAsset.assetId,
+                                baseLimitVolume,
+                                quotingAsset.assetId,
+                                quotingLimitVolume))))
                 tradeIndex++
 
                 totalVolume += volume
