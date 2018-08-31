@@ -9,8 +9,7 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
-import com.lykke.matching.engine.daos.setting.Setting
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -72,8 +71,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("Client1"))
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("Client5"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client1"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client5"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -613,7 +612,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)

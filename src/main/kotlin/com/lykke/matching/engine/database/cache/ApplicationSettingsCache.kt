@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.database.cache
 
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.springframework.beans.factory.annotation.Autowired
@@ -14,16 +14,16 @@ import kotlin.concurrent.fixedRateTimer
 class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                                       @Value("\${application.settings.update.interval}") updateInterval: Long) : DataCache() {
     @Volatile
-    private lateinit var trustedClients: MutableMap<String, String>
+    private var trustedClients: MutableMap<String, String> = ConcurrentHashMap()
 
     @Volatile
-    private lateinit var disabledAssets: MutableMap<String, String>
+    private var disabledAssets: MutableMap<String, String> = ConcurrentHashMap()
 
     @Volatile
-    private lateinit var moPriceDeviationThresholds: MutableMap<String, String>
+    private var moPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
     @Volatile
-    private lateinit var loPriceDeviationThresholds: MutableMap<String, String>
+    private var loPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
     init {
         update()
@@ -34,11 +34,11 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
 
     override fun update() {
         val allSettingGroups = settingsDatabaseAccessor.getAllSettingGroups(true)
-        trustedClients = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroups.TRUSTED_CLIENTS)
-        disabledAssets = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroups.DISABLED_ASSETS)
+        trustedClients = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.TRUSTED_CLIENTS)
+        disabledAssets = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.DISABLED_ASSETS)
 
-        moPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroups.MO_PRICE_DEVIATION_THRESHOLD)
-        loPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroups.LO_PRICE_DEVIATION_THRESHOLD)
+        moPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
+        loPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)
     }
 
     fun isTrustedClient(client: String): Boolean {
@@ -57,20 +57,20 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         return loPriceDeviationThresholds[assetPairId]?.toBigDecimal()
     }
 
-    fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroups, settingName: String, value: String) {
+    fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String) {
         getSettingNameToValueByGroup(settingGroup)[settingName] = value
     }
 
-    fun deleteSetting(settingGroup: AvailableSettingGroups, settingName: String) {
+    fun deleteSetting(settingGroup: AvailableSettingGroup, settingName: String) {
         getSettingNameToValueByGroup(settingGroup).remove(settingName)
     }
 
-    fun deleteSettingGroup(settingGroup: AvailableSettingGroups) {
+    fun deleteSettingGroup(settingGroup: AvailableSettingGroup) {
         getSettingNameToValueByGroup(settingGroup).clear()
     }
 
-    private fun getSettingNameToValueByGroupName(settingGroupName: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroups): MutableMap<String, String> {
-        val settings = settingGroupName.find { it.name == availableSettingGroups.name } ?: return ConcurrentHashMap()
+    private fun getSettingNameToValueByGroupName(settingGroups: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroup): MutableMap<String, String> {
+        val settings = settingGroups.find { it.name == availableSettingGroups.settingGroupName } ?: return ConcurrentHashMap()
 
         val result = ConcurrentHashMap<String, String>()
         settings.settings.forEach { result.put(it.name, it.value) }
@@ -78,12 +78,12 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         return result
     }
 
-    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroups):  MutableMap<String, String> {
+    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroup):  MutableMap<String, String> {
         return when (settingGroup) {
-            AvailableSettingGroups.TRUSTED_CLIENTS -> trustedClients
-            AvailableSettingGroups.DISABLED_ASSETS -> disabledAssets
-            AvailableSettingGroups.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
-            AvailableSettingGroups.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
+            AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
+            AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
+            AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
+            AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
         }
     }
 }

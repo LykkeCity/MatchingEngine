@@ -3,7 +3,7 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -210,7 +210,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchAndCancel(): Double {
         val counter = ActionTimeCounter()
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)

@@ -6,7 +6,7 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
@@ -69,7 +69,7 @@ class LimitOrderServiceTest: AbstractTest() {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("Client3"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client3"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -1675,7 +1675,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 11000.0, volume = -0.3))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.09", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.09", "BTCUSD"))
 
         applicationSettingsCache.update()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 11000.0, volume = 1.0)))
@@ -1689,7 +1689,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 2)
         assertOrderBookSize("BTCUSD", true, 0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.1", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.1", "BTCUSD"))
 
         applicationSettingsCache.update()
 
@@ -1710,7 +1710,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 13000.0, volume = 0.3))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 12000.0, volume = 0.3))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.07", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.07", "BTCUSD"))
 
         applicationSettingsCache.update()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
@@ -1724,7 +1724,7 @@ class LimitOrderServiceTest: AbstractTest() {
         assertOrderBookSize("BTCUSD", true, 2)
         assertOrderBookSize("BTCUSD", false, 0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.08", "BTCUSD"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.name, getSetting("0.08", "BTCUSD"))
         applicationSettingsCache.update()
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
 
