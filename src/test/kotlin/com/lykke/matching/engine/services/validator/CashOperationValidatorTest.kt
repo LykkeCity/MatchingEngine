@@ -3,7 +3,7 @@ package com.lykke.matching.engine.services.validator
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
@@ -103,7 +103,7 @@ class CashOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetDisabled() {
         //given
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.DISABLED_ASSETS.name, getSetting(ASSET_ID))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.name, getSetting(ASSET_ID))
         applicationSettingsCache.update()
 
         val cashOperationBuilder = getDefaultCashOperationBuilder()

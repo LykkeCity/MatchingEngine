@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
@@ -16,29 +16,29 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         return settingsDatabaseAccessor.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
     }
 
-    override fun getSettingsGroup(settingsGroup: AvailableSettingGroups, enabled: Boolean?): SettingsGroupDto? {
+    override fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean?): SettingsGroupDto? {
         return settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
-    override fun getSetting(settingsGroup: AvailableSettingGroups, settingName: String, enabled: Boolean?): SettingDto? {
+    override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean?): SettingDto? {
         return settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
 
-    override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroups, settingDto: SettingDto) {
+    override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingDto))
         applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
     }
 
-    override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroups) {
+    override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup) {
         settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.settingGroupName)
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
     }
 
-    override fun deleteSetting(settingsGroup: AvailableSettingGroups, settingName: String) {
+    override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String) {
         settingsDatabaseAccessor.deleteSetting(settingsGroup.settingGroupName, settingName)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
     }

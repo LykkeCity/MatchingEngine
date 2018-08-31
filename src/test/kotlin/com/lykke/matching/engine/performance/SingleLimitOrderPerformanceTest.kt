@@ -2,7 +2,7 @@ package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.getSetting
@@ -26,7 +26,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.name, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client3"))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))

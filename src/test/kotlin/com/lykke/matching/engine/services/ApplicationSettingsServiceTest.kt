@@ -2,7 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.web.dto.SettingDto
@@ -30,8 +30,8 @@ class ApplicationSettingsServiceTest: AbstractTest() {
     fun getAllSettingGroupsTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.DISABLED_ASSETS.settingGroupName, getSetting("BTC"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("BTC"))
 
         //when
         val allSettingGroups = applicationSettingsService.getAllSettingGroups()
@@ -39,10 +39,10 @@ class ApplicationSettingsServiceTest: AbstractTest() {
         //then
         assertEquals(2, allSettingGroups.size)
 
-        val trustedClients = allSettingGroups.find { it.groupName == AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName }
+        val trustedClients = allSettingGroups.find { it.groupName == AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName }
         assertNotNull(trustedClients)
 
-        val disabledAssets = allSettingGroups.find { it.groupName == AvailableSettingGroups.DISABLED_ASSETS.settingGroupName }
+        val disabledAssets = allSettingGroups.find { it.groupName == AvailableSettingGroup.DISABLED_ASSETS.settingGroupName }
         assertNotNull(disabledAssets)
 
         assertEquals("testClient", trustedClients!!.settings.first().value)
@@ -53,10 +53,10 @@ class ApplicationSettingsServiceTest: AbstractTest() {
     fun getSettingsGroupTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
 
         //when
-        val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroups.TRUSTED_CLIENTS)
+        val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS)
 
         //then
         assertNotNull(settingsGroup)
@@ -68,10 +68,10 @@ class ApplicationSettingsServiceTest: AbstractTest() {
     fun getSettingTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
 
         //when
-        val setting = applicationSettingsService.getSetting(AvailableSettingGroups.TRUSTED_CLIENTS, "settingName")
+        val setting = applicationSettingsService.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
 
         //then
         assertNotNull(setting)
@@ -82,13 +82,13 @@ class ApplicationSettingsServiceTest: AbstractTest() {
     fun createOrUpdateSettingTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
 
         //when
-        applicationSettingsService.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment"))
+        applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment"))
 
         //then
-        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, "settingName")
+        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNotNull(dbSetting)
         assertEquals("test", dbSetting!!.value)
         assertEquals("testComment", dbSetting.comment)
@@ -100,13 +100,13 @@ class ApplicationSettingsServiceTest: AbstractTest() {
     fun deleteSettingsGroupTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
 
         //when
-        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroups.TRUSTED_CLIENTS)
+        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS)
 
         //then
-        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, "settingName")
+        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNull(dbSetting)
 
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
@@ -116,13 +116,13 @@ class ApplicationSettingsServiceTest: AbstractTest() {
     fun deleteSettingTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
 
         //when
-        applicationSettingsService.deleteSetting(AvailableSettingGroups.TRUSTED_CLIENTS, "settingName")
+        applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
 
         //then
-        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, "settingName")
+        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNull(dbSetting)
 
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))

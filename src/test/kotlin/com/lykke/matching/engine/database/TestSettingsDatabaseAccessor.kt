@@ -3,6 +3,9 @@ package com.lykke.matching.engine.database
 import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 
+/**
+ * Enabled flag is not supported for simplicity
+ */
 class TestSettingsDatabaseAccessor : SettingsDatabaseAccessor {
 
     private val settingGroups = HashMap<String, SettingsGroup>()
