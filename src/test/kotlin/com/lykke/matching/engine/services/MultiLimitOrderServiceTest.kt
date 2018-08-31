@@ -1394,7 +1394,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testConfigDatabaseAccessor.addTrustedClient("Client1")
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
         applicationSettingsCache.update()
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("LKK1YLKK", "Client1",
@@ -1403,7 +1403,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertBalance("Client1", "LKK", 1.0, 0.0)
 
-        testConfigDatabaseAccessor.clear()
+        testSettingsDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
         reservedVolumesRecalculator.recalculate()

@@ -49,9 +49,6 @@ class NegativePriceTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
-
-    @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
     @Before
