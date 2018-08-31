@@ -12,6 +12,15 @@ import org.springframework.stereotype.Service
 @Service
 class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                      private val applicationSettingsCache: ApplicationSettingsCache) : ApplicationSettingsService {
+
+    private companion object {
+        val COMMENT_FORMAT = "[%s] %s"
+    }
+
+    private enum class SettingOperation {
+        ADD, UPDATE, ENABLE, DISABLE
+    }
+
     override fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroupDto> {
         return settingsDatabaseAccessor.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
     }
@@ -29,8 +38,11 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
-        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingDto))
-        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
+        val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
+        val settingToPersist = SettingDto(settingDto, commentWithOperationPrefix)
+
+        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingToPersist))
+        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingToPersist.name, settingToPersist.value)
     }
 
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup) {
@@ -54,5 +66,22 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     private fun toSetting(settingDto: SettingDto): Setting {
         return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment)
+    }
+
+    private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {
+        val previousSetting = getSetting(settingsGroup, setting.name)
+        return COMMENT_FORMAT.format(getSettingOperation(previousSetting, setting), setting.comment)
+    }
+
+    private fun getSettingOperation(previousSettingState: SettingDto?, nextSettingState: SettingDto): SettingOperation {
+        if (previousSettingState == null) {
+            return SettingOperation.ADD
+        }
+
+        if (previousSettingState.enabled != nextSettingState.enabled) {
+            return if(nextSettingState.enabled!!) SettingOperation.ENABLE else SettingOperation.DISABLE
+        }
+
+        return SettingOperation.UPDATE
     }
 }
