@@ -90,7 +90,7 @@ class CashInOutOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetEnabled() {
         //given
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.name, getSetting(ASSET_ID))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting(ASSET_ID))
         applicationSettingsCache.update()
 
         //when

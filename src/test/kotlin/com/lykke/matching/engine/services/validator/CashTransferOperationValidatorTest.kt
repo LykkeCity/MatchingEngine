@@ -73,7 +73,7 @@ class CashTransferOperationValidatorTest {
     fun testAssetEnabled() {
         //given
         val cashTransferOperationBuilder = getCashTransferOperationBuilder()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.name, getSetting(ASSET_ID))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting(ASSET_ID))
         applicationSettingsCache.update()
         cashTransferOperationBuilder.volume = -1.0
 

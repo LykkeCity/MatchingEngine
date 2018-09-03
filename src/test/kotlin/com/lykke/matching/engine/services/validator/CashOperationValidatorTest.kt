@@ -103,7 +103,7 @@ class CashOperationValidatorTest {
     @Test(expected = ValidationException::class)
     fun testAssetDisabled() {
         //given
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.name, getSetting(ASSET_ID))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting(ASSET_ID))
         applicationSettingsCache.update()
 
         val cashOperationBuilder = getDefaultCashOperationBuilder()
