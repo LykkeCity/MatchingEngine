@@ -31,13 +31,20 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
     }
 
     override fun get(settingGroupName: String, settingName: String): List<Setting> {
-        val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName)
-        val nameFilter =  TableQuery.generateFilterCondition(NAME_COLUMN, TableQuery.QueryComparisons.EQUAL, settingName)
+        try {
+            val partitionFilter = TableQuery.generateFilterCondition(PARTITION_KEY, TableQuery.QueryComparisons.EQUAL, settingGroupName)
+            val nameFilter =  TableQuery.generateFilterCondition(NAME_COLUMN, TableQuery.QueryComparisons.EQUAL, settingName)
 
-        val query = TableQuery.from(AzureAppSettingHistory::class.java)
-                .where(getCombinedFilterUseLogicalAnd(partitionFilter, nameFilter))
+            val query = TableQuery.from(AzureAppSettingHistory::class.java)
+                    .where(getCombinedFilterUseLogicalAnd(partitionFilter, nameFilter))
 
-        return historyTable.execute(query).map { toSetting(it) }
+            return historyTable.execute(query).map { toSetting(it) }
+        } catch (e: Exception) {
+            val message = "Not able to get from db history record for: $settingGroupName, setting name: $settingName"
+            LOGGER.error(message, e)
+            METRICS_LOGGER.logError(message, e)
+            throw e
+        }
     }
 
     private fun toSetting(azureAppSettingHistory: AzureAppSettingHistory): Setting {
