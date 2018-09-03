@@ -1,14 +1,17 @@
 package com.lykke.matching.engine.services.utils
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
+import java.util.Date
 
 class MultiOrderFilter(private val isTrustedClient: Boolean,
                        private val baseAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAccuracy: Int,
+                       private val date: Date,
                        initialCapacity: Int,
                        private val LOGGER: Logger) {
 
@@ -20,18 +23,18 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
     private var usedQuotingAssetVolume = BigDecimal.ZERO
     private val orders = ArrayList<LimitOrder>(initialCapacity)
 
-    fun checkAndAdd(order: LimitOrder): Boolean {
+    fun checkAndAdd(order: LimitOrder) {
+        orders.add(order)
         if (!isTrustedClient) {
-            return orders.add(order)
+            return
         }
-        var skip = false
         if (order.isBuySide()) {
             if (!notSortedBuySide) {
                 if (prevBidPrice == null || order.price < prevBidPrice) {
                     prevBidPrice = order.price
                     val volume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
                     if (usedQuotingAssetVolume + volume > quotingAssetAvailableBalance) {
-                        skip = true
+                        order.updateStatus(OrderStatus.NotEnoughFunds, date)
                         LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
                     } else {
                         usedQuotingAssetVolume += volume
@@ -47,7 +50,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
                     prevAskPrice = order.price
                     val volume = order.getAbsVolume()
                     if (usedBaseAssetVolume + volume > baseAssetAvailableBalance) {
-                        skip = true
+                        order.updateStatus(OrderStatus.NotEnoughFunds, date)
                         LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $baseAssetAvailableBalance, used: $usedBaseAssetVolume)")
                     } else {
                         usedBaseAssetVolume += volume
@@ -58,16 +61,14 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
                 }
             }
         }
-
-        return if (!skip) orders.add(order) else false
     }
 
-    fun filterOutIfNotSorted(): List<LimitOrder> {
+    fun checkIfNotSorted() {
         if (!isTrustedClient || !notSortedSellSide && !notSortedBuySide) {
-            return emptyList()
+            return
         }
-        val buyOrders = ArrayList<LimitOrder>(orders.size)
-        val sellOrders = ArrayList<LimitOrder>(orders.size)
+        val buyOrders = ArrayList<LimitOrder>()
+        val sellOrders = ArrayList<LimitOrder>()
         orders.forEach { order ->
             if (order.isBuySide()) {
                 buyOrders.add(order)
@@ -77,31 +78,26 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
         }
         buyOrders.sortWith(Comparator { order1, order2 -> -order1.price.compareTo(order2.price) })
         sellOrders.sortWith(Comparator { order1, order2 -> order1.price.compareTo(order2.price) })
-        val ordersToReject = ArrayList<LimitOrder>(orders.size)
         usedQuotingAssetVolume = BigDecimal.ZERO
-        ordersToReject.addAll(buyOrders.filter { order ->
+        buyOrders.forEach { order ->
             val volume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
             if (usedQuotingAssetVolume + volume > quotingAssetAvailableBalance) {
+                order.updateStatus(OrderStatus.NotEnoughFunds, date)
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
-                true
             } else {
                 usedQuotingAssetVolume += volume
-                false
             }
-        })
+        }
         usedBaseAssetVolume = BigDecimal.ZERO
-        ordersToReject.addAll(sellOrders.filter { order ->
+        sellOrders.forEach { order ->
             val volume = order.getAbsRemainingVolume()
             if (usedBaseAssetVolume + volume > baseAssetAvailableBalance) {
+                order.updateStatus(OrderStatus.NotEnoughFunds, date)
                 LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $baseAssetAvailableBalance, used: $usedBaseAssetVolume)")
-                true
             } else {
                 usedBaseAssetVolume += volume
-                false
             }
-        })
-        orders.removeAll(ordersToReject)
-        return ordersToReject
+        }
     }
 
     fun getResult() = orders
