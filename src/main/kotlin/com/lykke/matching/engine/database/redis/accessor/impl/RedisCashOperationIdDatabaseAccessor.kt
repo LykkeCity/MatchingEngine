@@ -20,8 +20,8 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationRedisCo
 
     override fun isAlreadyProcessed(type: String, id: String): Boolean {
         return when (type) {
-            MessageType.CASH_TRANSFER_OPERATION.name -> isTransferAlreadyProcessed(id)
-            MessageType.CASH_IN_OUT_OPERATION.name -> isCashInOutAlreadyProcessed(id)
+            MessageType.CASH_TRANSFER_OPERATION.type.toString() -> isTransferAlreadyProcessed(id)
+            MessageType.CASH_IN_OUT_OPERATION.type.toString() -> isCashInOutAlreadyProcessed(id)
             else -> false
         }
     }
@@ -31,7 +31,7 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationRedisCo
 
         cashInOutOperationRedisConnection.resource {
             jedis -> jedis.select(dbIndex)
-            result = jedis.exists(getKey(MessageType.CASH_IN_OUT_OPERATION.name, id))
+            result = jedis.exists(getKey(MessageType.CASH_IN_OUT_OPERATION.type.toString(), id))
         }
 
         return result
@@ -42,7 +42,7 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationRedisCo
 
         cashTransferOperationRedisConnection.resource { jedis ->
             jedis.select(dbIndex)
-            result = jedis.exists(getKey(MessageType.CASH_TRANSFER_OPERATION.name, id))
+            result = jedis.exists(getKey(MessageType.CASH_TRANSFER_OPERATION.type.toString(), id))
         }
 
         return result

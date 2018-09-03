@@ -15,7 +15,6 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -1306,8 +1305,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val order1 = event.orders.single { it.externalId == "order1" }
         assertEquals(OutgoingOrderStatus.CANCELLED, order1.status)
         assertEquals(1, order1.trades?.size)
-        assertEquals("0.01000000", order1.trades!![0].volume)
-        assertEquals("50.00", order1.trades!![0].oppositeVolume)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order1.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("50", order1.trades!![0].quotingVolume)
         assertEquals("Client2", order1.trades!![0].oppositeWalletId)
         assertEquals("-0.00000199", order1.remainingVolume)
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client2" }.status)
@@ -1315,8 +1316,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val order2 = event.orders.single { it.externalId == "order2" }
         assertEquals(OutgoingOrderStatus.MATCHED, order2.status)
         assertEquals(1, order2.trades?.size)
-        assertEquals("0.01000000", order2.trades!![0].volume)
-        assertEquals("49.99", order2.trades!![0].oppositeVolume)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order2.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("49.99", order2.trades!![0].quotingVolume)
         assertEquals("Client3", order2.trades!![0].oppositeWalletId)
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client3" }.status)
 
@@ -1325,6 +1328,54 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertBalance("Client2", "USD", reserved = 0.0)
         assertBalance("Client3", "USD", reserved = 0.0)
+    }
+
+    @Test
+    fun testMaxOldOrderValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testMaxOldOrderVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testOrderMAxValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testOrderMaxVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {

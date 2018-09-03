@@ -65,9 +65,3 @@ class TestWalletDatabaseAccessor : WalletDatabaseAccessor {
     }
 
 }
-fun buildWallet(clientId: String, assetId: String, balance: Double, reservedBalance: Double = 0.0): Wallet {
-    val wallet = Wallet(clientId)
-    wallet.setBalance(assetId, balance.toBigDecimal())
-    wallet.setReservedBalance(assetId, reservedBalance.toBigDecimal())
-    return wallet
-}

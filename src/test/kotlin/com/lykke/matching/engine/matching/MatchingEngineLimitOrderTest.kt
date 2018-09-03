@@ -202,6 +202,14 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     }
 
     @Test
+    fun testMatchLimitOrderPriceDeviation() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 1.0))
+        val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.1, volume = -100.0)
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test", priceDeviationThreshold = BigDecimal.valueOf(0.08))
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
+    }
+
+    @Test
     fun testMatchLimitOrderBuyOneToOne1() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(uid = "uncompleted", clientId = "Client2", price = 1.19, volume = -100.0, reservedVolume = 100.0))
         initService()
