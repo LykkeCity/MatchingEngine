@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*

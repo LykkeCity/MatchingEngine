@@ -10,7 +10,6 @@ import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.messages.MessageType
@@ -1395,7 +1394,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
         applicationSettingsCache.update()
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("LKK1YLKK", "Client1",

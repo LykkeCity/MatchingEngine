@@ -8,7 +8,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroups
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
@@ -61,7 +61,7 @@ class LimitOrderInputValidatorTest {
         @Primary
         open fun testConfigDatabaseAccessor(): TestSettingsDatabaseAccessor {
             val testConfigDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testConfigDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroups.DISABLED_ASSETS.settingGroupName, getSetting("JPY"))
+            testConfigDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("JPY"))
             return testConfigDatabaseAccessor
         }
     }
