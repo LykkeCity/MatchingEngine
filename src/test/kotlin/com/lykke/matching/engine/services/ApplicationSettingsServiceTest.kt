@@ -3,9 +3,14 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.daos.setting.Setting
+import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.web.dto.SettingDto
+import com.nhaarman.mockito_kotlin.argumentCaptor
+import com.nhaarman.mockito_kotlin.eq
+import com.nhaarman.mockito_kotlin.verify
 import junit.framework.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -14,6 +19,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertNotNull
+import org.mockito.ArgumentCaptor
+
+
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (BalanceUpdateServiceTest.Config::class)])
@@ -25,6 +33,9 @@ class ApplicationSettingsServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+
+    @Autowired
+    private lateinit var settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor
 
     @Test
     fun getAllSettingGroupsTest() {
@@ -85,15 +96,22 @@ class ApplicationSettingsServiceTest: AbstractTest() {
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
 
         //when
-        applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment"))
+        applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment", "testUser"))
 
         //then
         val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNotNull(dbSetting)
         assertEquals("test", dbSetting!!.value)
-        assertEquals("testComment", dbSetting.comment)
+        assertEquals("[UPDATE] testComment", dbSetting.comment)
 
         assertTrue(applicationSettingsCache.isTrustedClient("test"))
+
+        argumentCaptor<Setting>().apply {
+            verify(settingsHistoryDatabaseAccessor).add(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            assertEquals("settingName", firstValue.name)
+            assertEquals("testClient", firstValue.value)
+            assertEquals("defaultUser", firstValue.user)
+        }
     }
 
     @Test
