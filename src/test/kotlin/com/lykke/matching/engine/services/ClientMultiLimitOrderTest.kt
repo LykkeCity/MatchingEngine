@@ -314,7 +314,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Test
     fun testMatch() {
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("TrustedClient"))
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
 
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
 
