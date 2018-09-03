@@ -216,7 +216,7 @@ class InvalidBalanceTest : AbstractTest() {
 
         initServices()
 
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client1"))
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
 
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1", listOf(
@@ -262,7 +262,7 @@ class InvalidBalanceTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 275.0)
 
         initServices()
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("Client1"))
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
 
         applicationSettingsCache.update()
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("ETHUSD", "Client1",

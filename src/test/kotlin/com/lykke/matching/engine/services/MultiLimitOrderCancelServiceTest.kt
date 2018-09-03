@@ -52,7 +52,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
     fun setUp() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.name, getSetting("TrustedClient"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 1.0)
