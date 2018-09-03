@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
+import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -11,7 +12,8 @@ import org.springframework.stereotype.Service
 
 @Service
 class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
-                                     private val applicationSettingsCache: ApplicationSettingsCache) : ApplicationSettingsService {
+                                     private val applicationSettingsCache: ApplicationSettingsCache,
+                                     private val applicationSettingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor) : ApplicationSettingsService {
 
     private companion object {
         val COMMENT_FORMAT = "[%s] %s"
@@ -37,12 +39,23 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         }
     }
 
+    override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<Setting> {
+        return applicationSettingsHistoryDatabaseAccessor.get(settingsGroup.settingGroupName, settingName)
+    }
+
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
         val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
         val settingToPersist = SettingDto(settingDto, commentWithOperationPrefix)
 
+        addHistoryRecord(settingsGroup, settingDto.name)
+
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingToPersist))
         applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingToPersist.name, settingToPersist.value)
+    }
+
+    private fun addHistoryRecord(settingsGroup: AvailableSettingGroup, settingName: String) {
+        val previousSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName)
+        previousSetting?.let { applicationSettingsHistoryDatabaseAccessor.add(settingsGroup.settingGroupName, it) }
     }
 
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup) {

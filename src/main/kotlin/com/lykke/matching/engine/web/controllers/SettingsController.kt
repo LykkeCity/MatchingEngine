@@ -2,6 +2,7 @@ package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
+import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.services.ApplicationSettingsService
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -83,6 +84,14 @@ class SettingsController {
     @GetMapping("/supported", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSupportedSettings(): Set<String> {
         return AvailableSettingGroup.values().map { it.settingGroupName }.toSet()
+    }
+
+    @ApiOperation("Get history records for given setting")
+    @ApiResponses
+    @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getHistoryRecords(@PathVariable("settingGroupName") settingGroupName: String,
+                         @PathVariable("settingName") settingName: String): List<Setting> {
+        return applicationSettingsService.getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
     }
 
     @ApiOperation("Create or update setting")

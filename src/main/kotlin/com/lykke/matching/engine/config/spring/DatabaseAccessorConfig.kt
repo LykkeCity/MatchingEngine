@@ -1,31 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.SettingsDatabaseAccessor
-import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.Storage
-import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureCashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureSettingsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
@@ -177,9 +153,14 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
+    open fun azureSettingsDatabaseAccessor(@Value("\${azure.settings.database.accessor.table}") tableName: String)
             : SettingsDatabaseAccessor {
         return AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
+    }
+
+    @Bean
+    open fun aettingsHistoryDatabaseAccessor(@Value("\${azure.settings.history.database.accessor.table}") tableName: String): SettingsHistoryDatabaseAccessor {
+        return AzureSettingsHistoryDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
     }
 
     @Bean
