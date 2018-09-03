@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
+import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -11,7 +12,17 @@ import org.springframework.stereotype.Service
 
 @Service
 class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
-                                     private val applicationSettingsCache: ApplicationSettingsCache) : ApplicationSettingsService {
+                                     private val applicationSettingsCache: ApplicationSettingsCache,
+                                     private val applicationSettingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor) : ApplicationSettingsService {
+
+    private companion object {
+        val COMMENT_FORMAT = "[%s] %s"
+    }
+
+    private enum class SettingOperation {
+        ADD, UPDATE, ENABLE, DISABLE
+    }
+
     override fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroupDto> {
         return settingsDatabaseAccessor.getAllSettingGroups(enabled).map { toSettingGroupDto(it) }.toSet()
     }
@@ -28,9 +39,23 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         }
     }
 
+    override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<Setting> {
+        return applicationSettingsHistoryDatabaseAccessor.get(settingsGroup.settingGroupName, settingName)
+    }
+
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
-        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingDto))
-        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
+        val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
+        val settingToPersist = SettingDto(settingDto, commentWithOperationPrefix)
+
+        addHistoryRecord(settingsGroup, settingDto.name)
+
+        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingToPersist))
+        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingToPersist.name, settingToPersist.value)
+    }
+
+    private fun addHistoryRecord(settingsGroup: AvailableSettingGroup, settingName: String) {
+        val previousSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName)
+        previousSetting?.let { applicationSettingsHistoryDatabaseAccessor.add(settingsGroup.settingGroupName, it) }
     }
 
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup) {
@@ -49,10 +74,27 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     private fun toSettingDto(setting: Setting): SettingDto {
-        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment)
+        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment, setting.user)
     }
 
     private fun toSetting(settingDto: SettingDto): Setting {
-        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment)
+        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment, settingDto.user)
+    }
+
+    private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {
+        val previousSetting = getSetting(settingsGroup, setting.name)
+        return COMMENT_FORMAT.format(getSettingOperation(previousSetting, setting), setting.comment)
+    }
+
+    private fun getSettingOperation(previousSettingState: SettingDto?, nextSettingState: SettingDto): SettingOperation {
+        if (previousSettingState == null) {
+            return SettingOperation.ADD
+        }
+
+        if (previousSettingState.enabled != nextSettingState.enabled) {
+            return if(nextSettingState.enabled!!) SettingOperation.ENABLE else SettingOperation.DISABLE
+        }
+
+        return SettingOperation.UPDATE
     }
 }

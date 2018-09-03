@@ -285,9 +285,14 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
+    open fun azureSettingsDatabaseAccessor(@Value("\${azure.settings.database.accessor.table}") tableName: String)
             : SettingsDatabaseAccessor {
         return AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
+    }
+
+    @Bean
+    open fun aettingsHistoryDatabaseAccessor(@Value("\${azure.settings.history.database.accessor.table}") tableName: String): SettingsHistoryDatabaseAccessor {
+        return AzureSettingsHistoryDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
     }
 
     @Bean

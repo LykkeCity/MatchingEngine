@@ -53,8 +53,15 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
     }
 
     override fun createOrUpdateSetting(settingGroupName: String, setting: Setting) {
-        val azureSetting = toAzureSetting(settingGroupName, setting)
-        settingsTable.execute(TableOperation.insertOrMerge(azureSetting))
+        try {
+            val azureSetting = toAzureSetting(settingGroupName, setting)
+            settingsTable.execute(TableOperation.insertOrMerge(azureSetting))
+        } catch (e: Exception) {
+            val message = "Not able persist setting for group: $settingGroupName, name: ${setting.name}"
+            LOGGER.error(message, e)
+            METRICS_LOGGER.logError(message, e)
+        }
+
     }
 
     private fun getAllGroupNamesToAzureSettings(enabled: Boolean? = null): Map<String, List<AzureAppSetting>> {
@@ -121,16 +128,17 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
     }
 
     private fun toSetting(azureSetting: AzureAppSetting): Setting {
-        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled, azureSetting.comment)
+        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled,
+                azureSetting.comment ?: StringUtils.EMPTY, azureSetting.user ?: StringUtils.EMPTY)
     }
 
     private fun toAzureSetting(settingsGroupName: String, setting: Setting): AzureAppSetting {
-        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled, setting.comment)
+        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled, setting.comment, setting.user)
     }
 
     private fun toSettings(azureSettings: List<AzureAppSetting>): Set<Setting> {
         return azureSettings
-                .map { Setting(it.rowKey, it.value, it.enabled, it.comment ?: StringUtils.EMPTY) }
+                .map(::toSetting)
                 .toSet()
     }
 
