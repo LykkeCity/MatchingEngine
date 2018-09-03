@@ -469,9 +469,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         if (order.assetPairId != assetPair.assetPairId) {
             return OrderValidationResult(false, "${orderInfo(order)} has invalid assetPairId: ${order.assetPairId}", OrderStatus.Cancelled)
         }
-        if (order.status == OrderStatus.NotEnoughFunds.name) {
-            throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
-        }
 
         try {
             limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair,

@@ -23,6 +23,7 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
 
         leadToNegativeSpread(order, orderBook)
         previousOrderFound(order)
+        enoughFunds(order)
         checkExpiration(order, date)
     }
 
@@ -35,6 +36,12 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
     private fun previousOrderFound(order: LimitOrder) {
         if (order.status == OrderStatus.NotFoundPrevious.name) {
             throw OrderValidationException(OrderStatus.NotFoundPrevious, "${orderInfo(order)} has not found previous order (${order.previousExternalId})")
+        }
+    }
+
+    private fun enoughFunds(order: LimitOrder) {
+        if (order.status == OrderStatus.NotEnoughFunds.name) {
+            throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
         }
     }
 
