@@ -42,7 +42,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     private fun toSetting(azureAppSettingHistory: AzureAppSettingHistory): Setting {
         return azureAppSettingHistory.let {
-            Setting(it.settingName, it.value, it.enabled, it.comment, it.user)
+            Setting(it.settingName, it.value, it.enabled, it.comment, it.user, it.timestamp)
         }
     }
 

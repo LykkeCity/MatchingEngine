@@ -39,8 +39,8 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         }
     }
 
-    override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<Setting> {
-        return applicationSettingsHistoryDatabaseAccessor.get(settingsGroup.settingGroupName, settingName)
+    override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<SettingDto> {
+        return applicationSettingsHistoryDatabaseAccessor.get(settingsGroup.settingGroupName, settingName).map(::toSettingDto)
     }
 
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
@@ -74,11 +74,11 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     private fun toSettingDto(setting: Setting): SettingDto {
-        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment, setting.user)
+        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment, setting.user, setting.timestamp)
     }
 
     private fun toSetting(settingDto: SettingDto): Setting {
-        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment, settingDto.user)
+        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment, settingDto.user, null)
     }
 
     private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {

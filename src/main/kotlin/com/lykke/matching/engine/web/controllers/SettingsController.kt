@@ -87,11 +87,17 @@ class SettingsController {
     }
 
     @ApiOperation("Get history records for given setting")
-    @ApiResponses
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 400, message = "Supplied group name is not supported"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getHistoryRecords(@PathVariable("settingGroupName") settingGroupName: String,
-                         @PathVariable("settingName") settingName: String): List<Setting> {
-        return applicationSettingsService.getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
+                         @PathVariable("settingName") settingName: String): List<SettingDto> {
+        return applicationSettingsService
+                .getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
+                .sortedBy { it.timestamp }
     }
 
     @ApiOperation("Create or update setting")

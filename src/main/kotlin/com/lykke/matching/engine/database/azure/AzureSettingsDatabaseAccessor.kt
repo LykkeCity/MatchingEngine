@@ -129,7 +129,7 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
 
     private fun toSetting(azureSetting: AzureAppSetting): Setting {
         return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled,
-                azureSetting.comment ?: StringUtils.EMPTY, azureSetting.user ?: StringUtils.EMPTY)
+                azureSetting.comment ?: StringUtils.EMPTY, azureSetting.user ?: StringUtils.EMPTY, azureSetting.timestamp)
     }
 
     private fun toAzureSetting(settingsGroupName: String, setting: Setting): AzureAppSetting {
