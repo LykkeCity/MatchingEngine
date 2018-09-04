@@ -57,11 +57,8 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
             val azureSetting = toAzureSetting(settingGroupName, setting)
             settingsTable.execute(TableOperation.insertOrMerge(azureSetting))
         } catch (e: Exception) {
-            val message = "Not able persist setting for group: $settingGroupName, name: ${setting.name}"
-            LOGGER.error(message, e)
-            METRICS_LOGGER.logError(message, e)
+            throw RuntimeException("Not able persist setting for group: $settingGroupName, name: ${setting.name}", e)
         }
-
     }
 
     private fun getAllGroupNamesToAzureSettings(enabled: Boolean? = null): Map<String, List<AzureAppSetting>> {
@@ -107,7 +104,7 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
 
             val query = TableQuery.from(AzureAppSetting::class.java).where(getCombinedFilterUseLogicalAnd(partitionFilter, rowFilter, enabledFiler))
 
-            settingsTable.execute(query)?.first()
+            settingsTable.execute(query)?.firstOrNull()
         } catch (e: Exception) {
             val message = "Unable to load single application setting for group: $settingGroupName, setting: $settingName"
             LOGGER.error(message, e)
@@ -128,12 +125,11 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
     }
 
     private fun toSetting(azureSetting: AzureAppSetting): Setting {
-        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled,
-                azureSetting.comment ?: StringUtils.EMPTY, azureSetting.user ?: StringUtils.EMPTY, azureSetting.timestamp)
+        return Setting(azureSetting.rowKey, azureSetting.value, azureSetting.enabled)
     }
 
     private fun toAzureSetting(settingsGroupName: String, setting: Setting): AzureAppSetting {
-        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled, setting.comment, setting.user)
+        return AzureAppSetting(settingsGroupName, setting.name, setting.value, setting.enabled)
     }
 
     private fun toSettings(azureSettings: List<AzureAppSetting>): Set<Setting> {

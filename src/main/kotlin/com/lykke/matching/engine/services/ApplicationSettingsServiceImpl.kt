@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.Setting
+import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
@@ -40,22 +41,22 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<SettingDto> {
-        return applicationSettingsHistoryDatabaseAccessor.get(settingsGroup.settingGroupName, settingName).map(::toSettingDto)
+        return applicationSettingsHistoryDatabaseAccessor
+                .get(settingsGroup.settingGroupName, settingName)
+                .map(::toSettingDto)
     }
 
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
         val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
         val settingToPersist = SettingDto(settingDto, commentWithOperationPrefix)
 
-        addHistoryRecord(settingsGroup, settingDto.name)
-
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingToPersist))
+        addHistoryRecord(settingsGroup, settingToPersist)
         applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingToPersist.name, settingToPersist.value)
     }
 
-    private fun addHistoryRecord(settingsGroup: AvailableSettingGroup, settingName: String) {
-        val previousSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName)
-        previousSetting?.let { applicationSettingsHistoryDatabaseAccessor.add(settingsGroup.settingGroupName, it) }
+    private fun addHistoryRecord(settingGroupName: AvailableSettingGroup, settingDto: SettingDto) {
+        applicationSettingsHistoryDatabaseAccessor.save(settingGroupName.settingGroupName, toSettingHistoryRecord(settingDto))
     }
 
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup) {
@@ -74,11 +75,23 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     private fun toSettingDto(setting: Setting): SettingDto {
-        return SettingDto(setting.name, setting.value, setting.enabled, setting.comment, setting.user, setting.timestamp)
+        return SettingDto(setting.name, setting.value, setting.enabled)
+    }
+
+    private fun toSettingDto(settingHistoryRecord: SettingHistoryRecord): SettingDto {
+        return settingHistoryRecord.let {
+            SettingDto(it.name, it.value, it.enabled, it.comment, it.user, it.timestamp)
+        }
     }
 
     private fun toSetting(settingDto: SettingDto): Setting {
-        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!, settingDto.comment, settingDto.user, null)
+        return Setting(settingDto.name, settingDto.value, settingDto.enabled!!)
+    }
+
+    private fun toSettingHistoryRecord(settingDto: SettingDto): SettingHistoryRecord {
+        return settingDto.let {
+            SettingHistoryRecord(it.name, it.value, it.enabled!!, it.comment!!, it.user!!)
+        }
     }
 
     private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {
@@ -92,7 +105,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         }
 
         if (previousSettingState.enabled != nextSettingState.enabled) {
-            return if(nextSettingState.enabled!!) SettingOperation.ENABLE else SettingOperation.DISABLE
+            return if (nextSettingState.enabled!!) SettingOperation.ENABLE else SettingOperation.DISABLE
         }
 
         return SettingOperation.UPDATE
