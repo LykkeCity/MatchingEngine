@@ -47,6 +47,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
                 .map(::toSettingDto)
     }
 
+    @Synchronized
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
         val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
 
@@ -56,6 +57,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         updateSettingInCache(settingDto, settingsGroup)
     }
 
+    @Synchronized
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup, deleteSettingRequestDto: DeleteSettingRequestDto) {
         val settingsGroupToRemove = settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName) ?: return
 
@@ -65,6 +67,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
     }
 
+    @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
         val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?: return
 
@@ -75,6 +78,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
     }
 
+    @Synchronized
     private fun updateSettingInCache(settingDto: SettingDto, settingsGroup: AvailableSettingGroup) {
         if (!settingDto.enabled!!) {
             applicationSettingsCache.deleteSetting(settingsGroup, settingDto.name)
