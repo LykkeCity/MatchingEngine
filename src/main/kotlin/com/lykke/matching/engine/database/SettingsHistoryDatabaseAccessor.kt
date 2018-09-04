@@ -1,8 +1,8 @@
 package com.lykke.matching.engine.database
 
-import com.lykke.matching.engine.daos.setting.Setting
+import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 
 interface SettingsHistoryDatabaseAccessor {
-    fun add(settingGroupName: String, setting: Setting)
-    fun get(settingGroupName: String, settingName: String): List<Setting>
+    fun save(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord)
+    fun get(settingGroupName: String, settingName: String): List<SettingHistoryRecord>
 }

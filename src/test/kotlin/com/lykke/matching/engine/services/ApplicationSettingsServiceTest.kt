@@ -3,7 +3,7 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.setting.Setting
+import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.utils.getSetting
@@ -19,14 +19,11 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertNotNull
-import org.mockito.ArgumentCaptor
-
-
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (BalanceUpdateServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class ApplicationSettingsServiceTest: AbstractTest() {
+class ApplicationSettingsServiceTest : AbstractTest() {
 
     @Autowired
     private lateinit var applicationSettingsService: ApplicationSettingsService
@@ -102,15 +99,15 @@ class ApplicationSettingsServiceTest: AbstractTest() {
         val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNotNull(dbSetting)
         assertEquals("test", dbSetting!!.value)
-        assertEquals("[UPDATE] testComment", dbSetting.comment)
 
         assertTrue(applicationSettingsCache.isTrustedClient("test"))
 
-        argumentCaptor<Setting>().apply {
-            verify(settingsHistoryDatabaseAccessor).add(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+        argumentCaptor<SettingHistoryRecord>().apply {
+            verify(settingsHistoryDatabaseAccessor).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
             assertEquals("settingName", firstValue.name)
-            assertEquals("testClient", firstValue.value)
-            assertEquals("defaultUser", firstValue.user)
+            assertEquals("test", firstValue.value)
+            assertEquals("testUser", firstValue.user)
+            assertEquals("[UPDATE] testComment", firstValue.comment)
         }
     }
 
