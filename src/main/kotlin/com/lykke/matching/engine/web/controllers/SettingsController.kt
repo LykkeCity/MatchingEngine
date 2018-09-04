@@ -2,8 +2,8 @@ package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
-import com.lykke.matching.engine.daos.setting.Setting
 import com.lykke.matching.engine.services.ApplicationSettingsService
+import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
 import io.swagger.annotations.Api
@@ -97,7 +97,7 @@ class SettingsController {
                          @PathVariable("settingName") settingName: String): List<SettingDto> {
         return applicationSettingsService
                 .getHistoryRecords(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
-                .sortedBy { it.timestamp }
+                .sortedByDescending { it.timestamp }
     }
 
     @ApiOperation("Create or update setting")
@@ -121,8 +121,11 @@ class SettingsController {
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @DeleteMapping("/{settingGroupName}")
-    fun deleteSettingsGroup(@PathVariable("settingGroupName") settingGroupName: String) {
-        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.getBySettingsGroupName(settingGroupName))
+    fun deleteSettingsGroup(@PathVariable("settingGroupName") settingGroupName: String,
+                            @RequestBody
+                            @Valid
+                            deleteRequest: DeleteSettingRequestDto) {
+        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), deleteRequest)
     }
 
     @ApiOperation("Delete setting for given setting group and given setting name")
@@ -132,8 +135,12 @@ class SettingsController {
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @DeleteMapping("/{settingGroupName}/setting/{settingName}")
-    fun deleteSetting(@PathVariable("settingGroupName") settingGroupName: String, @PathVariable("settingName") settingName: String) {
-        applicationSettingsService.deleteSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName)
+    fun deleteSetting(@PathVariable("settingGroupName") settingGroupName: String,
+                      @PathVariable("settingName") settingName: String,
+                      @RequestBody
+                      @Valid
+                      deleteRequest: DeleteSettingRequestDto) {
+        applicationSettingsService.deleteSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, deleteRequest)
     }
 
     @ExceptionHandler
