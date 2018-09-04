@@ -17,7 +17,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
     override fun save(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord) {
         try {
-            historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistory(settingGroupName, settingHistoryRecord)))
+            historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistoryRecord(settingGroupName, settingHistoryRecord)))
         } catch (e: Exception) {
             throw RuntimeException("Not able to persist setting to the history, group: $settingGroupName, name: ${settingHistoryRecord.name}")
         }
@@ -31,19 +31,19 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
             val query = TableQuery.from(AzureAppSettingHistory::class.java)
                     .where(getCombinedFilterUseLogicalAnd(partitionFilter, nameFilter))
 
-            return historyTable.execute(query).map { toSetting(it) }
+            return historyTable.execute(query).map { toSettingHistoryRecord(it) }
         } catch (e: Exception) {
             throw RuntimeException("Not able to get from db history record for: $settingGroupName, setting name: $settingName")
         }
     }
 
-    private fun toSetting(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
+    private fun toSettingHistoryRecord(azureAppSettingHistory: AzureAppSettingHistory): SettingHistoryRecord {
         return azureAppSettingHistory.let {
             SettingHistoryRecord(it.settingName, it.value, it.enabled, it.comment, it.user, it.timestamp)
         }
     }
 
-    private fun toAzureSettingHistory(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
+    private fun toAzureSettingHistoryRecord(settingGroupName: String, settingHistoryRecord: SettingHistoryRecord): AzureAppSettingHistory {
         return AzureAppSettingHistory(settingGroupName,
                 settingHistoryRecord.name,
                 settingHistoryRecord.value,
