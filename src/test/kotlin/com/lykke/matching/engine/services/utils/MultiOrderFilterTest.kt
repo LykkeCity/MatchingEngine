@@ -22,16 +22,7 @@ class MultiOrderFilterTest {
             buildLimitOrder(volume = 2.0, price = 0.7))
 
     private fun notSortedOrders(): List<LimitOrder> {
-        val sortedOrders = sortedOrders()
-        return listOf(sortedOrders[0].copy(),
-                sortedOrders[1].copy(),
-                sortedOrders[2].copy(),
-                sortedOrders[4].copy(),
-                sortedOrders[3].copy(),
-                sortedOrders[8].copy(),
-                sortedOrders[7].copy(),
-                sortedOrders[6].copy(),
-                sortedOrders[5].copy())
+        return sortedOrders().map { it.copy() }.shuffled()
     }
 
     private fun createFilter(isTrustedClient: Boolean) = MultiOrderFilter(isTrustedClient,
@@ -43,59 +34,36 @@ class MultiOrderFilterTest {
             Logger.getLogger(MultiOrderFilterTest::class.java.name))
 
     @Test
-    fun checkAndAdd() {
-        var filter = createFilter(true)
+    fun testSortedOrdersOfTrustedClient() {
+        val filter = createFilter(true)
         sortedOrders().forEach { filter.checkAndAdd(it) }
-        assertEquals(9, filter.getResult().size)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-5.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-4.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-1.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(10.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(5.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(2.0)) == 0 }.status)
-        assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-2.0)) == 0 }.status)
-        assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-3.0)) == 0 }.status)
-        assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(7.0)) == 0 }.status)
+        assertFilteredResult(filter)
+    }
 
-        filter = createFilter(false)
+    @Test
+    fun testNotSortedOrdersOfTrustedClient() {
+        val filter = createFilter(true)
+        notSortedOrders().forEach { filter.checkAndAdd(it) }
+        assertFilteredResult(filter)
+    }
+
+    @Test
+    fun testSortedOrdersOfNotTrustedClient() {
+        val filter = createFilter(false)
         sortedOrders().forEach { filter.checkAndAdd(it) }
-        assertEquals(9, filter.getResult().size)
-        assertEquals(0, filter.getResult().filter { it.status == OrderStatus.NotEnoughFunds.name }.size)
-
-        filter = createFilter(true)
-        notSortedOrders().forEach { filter.checkAndAdd(it) }
-        assertEquals(9, filter.getResult().size)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-5.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-4.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-1.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(10.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(5.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(2.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-2.0)) == 0 }.status)
-        assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-3.0)) == 0 }.status)
-        assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(7.0)) == 0 }.status)
-
-        filter = createFilter(false)
-        notSortedOrders().forEach { filter.checkAndAdd(it) }
         assertEquals(9, filter.getResult().size)
         assertEquals(0, filter.getResult().filter { it.status == OrderStatus.NotEnoughFunds.name }.size)
     }
 
     @Test
-    fun filterOutIfNotSorted() {
-        var filter = createFilter(true)
-        sortedOrders().forEach { filter.checkAndAdd(it) }
-        val statuses1 = filter.getResult().map { it.status }
-        filter.checkIfNotSorted()
-        val statuses2 = filter.getResult().map { it.status }
-        assertEquals(3, statuses2.filter { it == OrderStatus.NotEnoughFunds.name }.size)
-        assertEquals(statuses1, statuses2)
-
-        filter = createFilter(true)
+    fun testNotSortedOrdersOfNotTrustedClient() {
+        val filter = createFilter(false)
         notSortedOrders().forEach { filter.checkAndAdd(it) }
-        assertEquals(1, filter.getResult().filter { it.status == OrderStatus.NotEnoughFunds.name }.size)
-        filter.checkIfNotSorted()
-        assertEquals(3, filter.getResult().filter { it.status == OrderStatus.NotEnoughFunds.name }.size)
+        assertEquals(9, filter.getResult().size)
+        assertEquals(0, filter.getResult().filter { it.status == OrderStatus.NotEnoughFunds.name }.size)
+    }
+
+    private fun assertFilteredResult(filter: MultiOrderFilter) {
         assertEquals(9, filter.getResult().size)
         assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-5.0)) == 0 }.status)
         assertEquals(OrderStatus.InOrderBook.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-4.0)) == 0 }.status)
@@ -107,5 +75,4 @@ class MultiOrderFilterTest {
         assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-3.0)) == 0 }.status)
         assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(7.0)) == 0 }.status)
     }
-
 }

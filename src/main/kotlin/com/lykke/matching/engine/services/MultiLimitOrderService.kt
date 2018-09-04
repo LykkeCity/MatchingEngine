@@ -143,8 +143,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
         }
 
-        filter.checkIfNotSorted()
-
         val orders = filter.getResult()
         val ordersToCancel = ArrayList<LimitOrder>()
 
@@ -624,8 +622,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 }
             }
         }
-
-        filter.checkIfNotSorted()
 
         return MultiLimitOrder(messageUid,
                 clientId,
