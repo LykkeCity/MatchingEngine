@@ -7,9 +7,11 @@ import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.utils.getSetting
+import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.eq
+import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import junit.framework.Assert.*
 import org.junit.Test
@@ -115,16 +117,30 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     fun deleteSettingsGroupTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient1", "settingName1"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient2", "settingName2"))
 
         //when
-        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS)
+        applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS, DeleteSettingRequestDto("delete", "testUser"))
 
         //then
         val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNull(dbSetting)
 
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
+
+        argumentCaptor<SettingHistoryRecord>().apply {
+            verify(settingsHistoryDatabaseAccessor, times(2)).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            assertEquals("settingName1", firstValue.name)
+            assertEquals("testClient1", firstValue.value)
+            assertEquals("testUser", firstValue.user)
+            assertEquals("[DELETE] delete", firstValue.comment)
+
+            assertEquals("settingName2", secondValue.name)
+            assertEquals("testClient2", secondValue.value)
+            assertEquals("testUser", secondValue.user)
+            assertEquals("[DELETE] delete", secondValue.comment)
+        }
     }
 
     @Test
@@ -134,12 +150,20 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
 
         //when
-        applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
+        applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", DeleteSettingRequestDto("delete", "testUser"))
 
         //then
         val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
         assertNull(dbSetting)
 
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
+
+        argumentCaptor<SettingHistoryRecord>().apply {
+            verify(settingsHistoryDatabaseAccessor).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            assertEquals("settingName", firstValue.name)
+            assertEquals("testClient", firstValue.value)
+            assertEquals("testUser", firstValue.user)
+            assertEquals("[DELETE] delete", firstValue.comment)
+        }
     }
 }
