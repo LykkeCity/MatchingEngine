@@ -52,7 +52,15 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, toSetting(settingToPersist))
         addHistoryRecord(settingsGroup, settingToPersist)
-        applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingToPersist.name, settingToPersist.value)
+        updateSettingInCache(settingToPersist, settingsGroup)
+    }
+
+    private fun updateSettingInCache(settingDto: SettingDto, settingsGroup: AvailableSettingGroup) {
+        if (!settingDto.enabled!!) {
+            applicationSettingsCache.deleteSetting(settingsGroup, settingDto.name)
+        } else {
+            applicationSettingsCache.createOrUpdateSettingValue(settingsGroup, settingDto.name, settingDto.value)
+        }
     }
 
     private fun addHistoryRecord(settingGroupName: AvailableSettingGroup, settingDto: SettingDto) {
