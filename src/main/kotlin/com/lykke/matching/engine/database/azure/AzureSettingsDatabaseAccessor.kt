@@ -107,7 +107,7 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
 
             val query = TableQuery.from(AzureAppSetting::class.java).where(getCombinedFilterUseLogicalAnd(partitionFilter, rowFilter, enabledFiler))
 
-            settingsTable.execute(query)?.first()
+            settingsTable.execute(query)?.firstOrNull()
         } catch (e: Exception) {
             val message = "Unable to load single application setting for group: $settingGroupName, setting: $settingName"
             LOGGER.error(message, e)
