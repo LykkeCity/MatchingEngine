@@ -3,17 +3,12 @@ package com.lykke.matching.engine.database.azure
 import com.lykke.matching.engine.daos.azure.settings.AzureAppSettingHistory
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
-import com.lykke.utils.logging.MetricsLogger
-import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
 
 class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTableName: String) : SettingsHistoryDatabaseAccessor {
     companion object {
-        private val LOGGER = ThrottlingLogger.getLogger(AzureSettingsHistoryDatabaseAccessor::class.java.name)
-        private val METRICS_LOGGER = MetricsLogger.getLogger()
-
         private const val PARTITION_KEY = "PartitionKey"
         private const val NAME_COLUMN = "SettingName"
     }
@@ -24,9 +19,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
         try {
             historyTable.execute(TableOperation.insertOrMerge(toAzureSettingHistory(settingGroupName, settingHistoryRecord)))
         } catch (e: Exception) {
-            val message = "Not able to persist setting to the history, group: $settingGroupName, name: ${settingHistoryRecord.name}"
-            LOGGER.error(message, e)
-            METRICS_LOGGER.logError(message, e)
+            throw RuntimeException("Not able to persist setting to the history, group: $settingGroupName, name: ${settingHistoryRecord.name}")
         }
     }
 
@@ -40,10 +33,7 @@ class AzureSettingsHistoryDatabaseAccessor(connectionString: String, configTable
 
             return historyTable.execute(query).map { toSetting(it) }
         } catch (e: Exception) {
-            val message = "Not able to get from db history record for: $settingGroupName, setting name: $settingName"
-            LOGGER.error(message, e)
-            METRICS_LOGGER.logError(message, e)
-            throw e
+            throw RuntimeException("Not able to get from db history record for: $settingGroupName, setting name: $settingName")
         }
     }
 

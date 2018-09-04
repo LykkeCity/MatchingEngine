@@ -57,11 +57,8 @@ class AzureSettingsDatabaseAccessor(connectionString: String, configTableName: S
             val azureSetting = toAzureSetting(settingGroupName, setting)
             settingsTable.execute(TableOperation.insertOrMerge(azureSetting))
         } catch (e: Exception) {
-            val message = "Not able persist setting for group: $settingGroupName, name: ${setting.name}"
-            LOGGER.error(message, e)
-            METRICS_LOGGER.logError(message, e)
+            throw RuntimeException("Not able persist setting for group: $settingGroupName, name: ${setting.name}", e)
         }
-
     }
 
     private fun getAllGroupNamesToAzureSettings(enabled: Boolean? = null): Map<String, List<AzureAppSetting>> {
