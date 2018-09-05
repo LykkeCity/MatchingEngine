@@ -31,6 +31,9 @@ class MessageStatusUtils {
                 OrderStatus.Cancelled -> MessageStatus.OK
                 OrderStatus.InvalidPriceAccuracy -> MessageStatus.INVALID_PRICE_ACCURACY
                 OrderStatus.InvalidVolumeAccuracy -> MessageStatus.INVALID_VOLUME_ACCURACY
+                OrderStatus.InvalidVolume -> MessageStatus.INVALID_VOLUME
+                OrderStatus.InvalidValue -> MessageStatus.INVALID_ORDER_VALUE
+                OrderStatus.TooHighPriceDeviation -> MessageStatus.TOO_HIGH_PRICE_DEVIATION
             }
         }
 
@@ -47,6 +50,7 @@ class MessageStatusUtils {
                 ValidationException.Validation.TOO_SMALL_VOLUME -> MessageStatus.TOO_SMALL_VOLUME
                 ValidationException.Validation.UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
                 ValidationException.Validation.BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
+                ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
                 ValidationException.Validation.LIMIT_ORDER_NOT_FOUND -> MessageStatus.LIMIT_ORDER_NOT_FOUND
             }
         }

@@ -146,21 +146,24 @@ private fun orderStatusInfo(order: com.lykke.matching.engine.daos.Order): OrderS
         com.lykke.matching.engine.order.OrderStatus.NotFoundPrevious.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.NOT_FOUND_PREVIOUS)
         com.lykke.matching.engine.order.OrderStatus.InvalidPriceAccuracy.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_PRICE_ACCURACY)
         com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME_ACCURACY)
+        com.lykke.matching.engine.order.OrderStatus.InvalidVolume.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VOLUME)
+        com.lykke.matching.engine.order.OrderStatus.InvalidValue.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.INVALID_VALUE)
+        com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation.name -> OrderStatusInfo(OrderStatus.REJECTED, OrderRejectReason.TOO_HIGH_PRICE_DEVIATION)
         else -> OrderStatusInfo(OrderStatus.UNKNOWN_STATUS)
     }
 }
 
 private fun convertTrade(tradeInfo: LimitTradeInfo): Trade {
     return Trade(tradeInfo.tradeId,
-            tradeInfo.asset,
-            tradeInfo.volume,
+            tradeInfo.baseAssetId,
+            tradeInfo.baseVolume,
             bigDecimalToString(tradeInfo.price)!!,
             tradeInfo.timestamp,
             tradeInfo.oppositeOrderId,
             tradeInfo.oppositeOrderExternalId,
             tradeInfo.oppositeClientId,
-            tradeInfo.oppositeAsset,
-            tradeInfo.oppositeVolume,
+            tradeInfo.quotingAssetId,
+            tradeInfo.quotingVolume,
             tradeInfo.index.toInt(),
             bigDecimalToString(tradeInfo.absoluteSpread),
             bigDecimalToString(tradeInfo.relativeSpread),
@@ -171,15 +174,15 @@ private fun convertTrade(tradeInfo: LimitTradeInfo): Trade {
 
 private fun convertTrade(tradeInfo: TradeInfo): Trade {
     return Trade(tradeInfo.tradeId,
-            tradeInfo.marketAsset,
-            tradeInfo.marketVolume,
+            tradeInfo.baseAssetId,
+            tradeInfo.baseVolume,
             bigDecimalToString(tradeInfo.price)!!,
             tradeInfo.timestamp,
             tradeInfo.limitOrderId,
             tradeInfo.limitOrderExternalId,
             tradeInfo.limitClientId,
-            tradeInfo.limitAsset,
-            tradeInfo.limitVolume,
+            tradeInfo.quotingAssetId,
+            tradeInfo.quotingVolume,
             tradeInfo.index.toInt(),
             bigDecimalToString(tradeInfo.absoluteSpread),
             bigDecimalToString(tradeInfo.relativeSpread),

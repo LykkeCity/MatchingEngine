@@ -16,6 +16,8 @@ import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationPars
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -26,8 +28,9 @@ import java.math.BigDecimal
 import java.util.Date
 import java.util.UUID
 
-@Component
-class MessageBuilder(private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
+class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
+                     private val cashTransferContextParser: CashTransferContextParser,
+                     private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
                      private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>) {
     companion object {
         fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
@@ -305,23 +308,6 @@ class MessageBuilder(private val limitOrderCancelOperationContextParser: Context
                     if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
 
-        fun buildTransferWrapper(fromClientId: String,
-                                 toClientId: String,
-                                 assetId: String,
-                                 amount: Double,
-                                 overdraftLimit: Double,
-                                 businessId: String = UUID.randomUUID().toString()
-        ): MessageWrapper {
-            return MessageWrapper("Test", MessageType.CASH_TRANSFER_OPERATION.type, ProtocolMessages.CashTransferOperation.newBuilder()
-                    .setId(businessId)
-                    .setFromClientId(fromClientId)
-                    .setToClientId(toClientId)
-                    .setAssetId(assetId)
-                    .setVolume(amount)
-                    .setOverdraftLimit(overdraftLimit)
-                    .setTimestamp(Date().time).build().toByteArray(), null)
-        }
-
         fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double, uid: String = "123"): MessageWrapper {
             return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
                     .setUid(uid)
@@ -329,20 +315,38 @@ class MessageBuilder(private val limitOrderCancelOperationContextParser: Context
                     .setAssetId(assetId)
                     .setAmount(amount).build().toByteArray(), null)
         }
+    }
 
-        fun buildCashInOutWrapper(clientId: String, assetId: String, amount: Double, businessId: String = UUID.randomUUID().toString(),
-                                  fees: List<NewFeeInstruction> = listOf()): MessageWrapper {
-            val builder = ProtocolMessages.CashInOutOperation.newBuilder()
-                    .setId(businessId)
-                    .setClientId(clientId)
-                    .setAssetId(assetId)
-                    .setVolume(amount)
-                    .setTimestamp(Date().time)
-            fees.forEach {
-                builder.addFees(MessageBuilder.buildFee(it))
-            }
-            return MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)
+    fun buildTransferWrapper(fromClientId: String,
+                             toClientId: String,
+                             assetId: String,
+                             amount: Double,
+                             overdraftLimit: Double,
+                             businessId: String = UUID.randomUUID().toString()
+    ): MessageWrapper {
+        return cashTransferContextParser.parse(MessageWrapper("Test", MessageType.CASH_TRANSFER_OPERATION.type, ProtocolMessages.CashTransferOperation.newBuilder()
+                .setId(businessId)
+                .setFromClientId(fromClientId)
+                .setToClientId(toClientId)
+                .setAssetId(assetId)
+                .setVolume(amount)
+                .setOverdraftLimit(overdraftLimit)
+                .setTimestamp(Date().time).build().toByteArray(), null)).messageWrapper
+    }
+
+    fun buildCashInOutWrapper(clientId: String, assetId: String, amount: Double, businessId: String = UUID.randomUUID().toString(),
+                              fees: List<NewFeeInstruction> = listOf()): MessageWrapper {
+        val builder = ProtocolMessages.CashInOutOperation.newBuilder()
+                .setId(businessId)
+                .setClientId(clientId)
+                .setAssetId(assetId)
+                .setVolume(amount)
+                .setTimestamp(Date().time)
+        fees.forEach {
+            builder.addFees(MessageBuilder.buildFee(it))
         }
+
+        return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
     }
 
 

@@ -12,6 +12,7 @@ import java.util.Date
 
 @Service
 class LimitOrderMassCancelService(private val genericLimitOrderService: GenericLimitOrderService,
+                                  private val genericStopLimitOrderService: GenericStopLimitOrderService,
                                   private val cancellerFactory: GenericLimitOrdersCancellerFactory) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderMassCancelService::class.java.name)
@@ -23,9 +24,10 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         LOGGER.debug("Got mass limit order cancel request id: ${context.uid}, clientId: ${context.clientId}, assetPairId: ${context.assetPairId}, isBuy: ${context.isBuy}")
 
         val orders = getOrders(context)
+        val stopOrders = getStopOrders(context)
 
-        if (orders.isNotEmpty()) {
-            cancelOrders(orders, now, context)
+        if (orders.isNotEmpty() || stopOrders.isNotEmpty()) {
+            cancelOrders(orders, stopOrders, now, context)
         }
 
         writeResponse(messageWrapper, MessageStatus.OK)
@@ -36,11 +38,17 @@ class LimitOrderMassCancelService(private val genericLimitOrderService: GenericL
         return genericLimitOrderService.searchOrders(clientId, context.assetPairId, context.isBuy)
     }
 
-    private fun cancelOrders(orders: List<LimitOrder>, now: Date,
+    private fun getStopOrders(context: LimitOrderMassCancelOperationContext): List<LimitOrder> {
+        val clientId = context.clientId
+        return genericStopLimitOrderService.searchOrders(clientId, context.assetPairId, context.isBuy)
+    }
+
+    private fun cancelOrders(orders: List<LimitOrder>, stopOrders: List<LimitOrder>, now: Date,
                              context: LimitOrderMassCancelOperationContext) {
         val canceller = cancellerFactory.create(LOGGER, now)
 
         canceller.preProcessLimitOrders(orders)
+                .preProcessStopLimitOrders(stopOrders)
                 .applyFull(context.uid,
                         context.messageId,
                         context.processedMessage,

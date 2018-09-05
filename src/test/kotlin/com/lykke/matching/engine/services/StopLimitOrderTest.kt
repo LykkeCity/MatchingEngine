@@ -103,7 +103,7 @@ class StopLimitOrderTest : AbstractTest() {
     @Test
     fun testInvalidPrice() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
-                clientId = "Client1", assetId = "BTCUSD", volume = -1.01,
+                clientId = "Client1", assetId = "BTCUSD", volume = -1.0,
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.0, lowerPrice = 9000.0,
                 upperLimitPrice = 9500.0, upperPrice = 9100.0
         )))
@@ -116,6 +116,25 @@ class StopLimitOrderTest : AbstractTest() {
 
         assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).size)
         assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", false).size)
+
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(executionEvent.header.eventType, MessageType.LIMIT_ORDER.name)
+        assertEquals(executionEvent.header.messageType, OutgoingMessageType.ORDER)
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.first().status)
+        assertEquals(OrderRejectReason.INVALID_PRICE, executionEvent.orders.first().rejectReason)
+        assertEquals(0, executionEvent.balanceUpdates!!.size)
+    }
+
+    @Test
+    fun testEmptyPrices() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
+                assetId = "BTCUSD",
+                volume = 1.0,
+                type = LimitOrderType.STOP_LIMIT)))
+
+        assertStopOrderBookSize("BTCUSD", false, 0)
 
         assertEquals(1, clientsEventsQueue.size)
         val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
@@ -314,8 +333,10 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(2, executionEvent.orders.size)
         val eventClientOrder = executionEvent.orders.single { it.walletId == "Client1" }
         assertEquals(1, eventClientOrder.trades?.size)
-        assertEquals("550.00", eventClientOrder.trades!!.first().volume)
-        assertEquals("0.05000000", eventClientOrder.trades!!.first().oppositeVolume)
+        assertEquals("BTC", eventClientOrder.trades!!.first().baseAssetId)
+        assertEquals("0.05", eventClientOrder.trades!!.first().baseVolume)
+        assertEquals("USD", eventClientOrder.trades!!.first().quotingAssetId)
+        assertEquals("-550", eventClientOrder.trades!!.first().quotingVolume)
     }
 
     @Test

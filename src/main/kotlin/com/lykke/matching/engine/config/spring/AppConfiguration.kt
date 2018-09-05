@@ -3,11 +3,9 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
-import com.lykke.utils.AppInitializer
 import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
 import com.lykke.utils.logging.MetricsLogger
-import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -18,7 +16,6 @@ import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
-import javax.annotation.PostConstruct
 
 @Configuration
 @EnableScheduling
@@ -62,12 +59,5 @@ open class AppConfiguration: SchedulingConfigurer {
     @Bean
     open fun monitoringStatsCollector(): MonitoringStatsCollector {
         return MonitoringStatsCollector()
-    }
-
-    @PostConstruct
-    open fun init() {
-        AppInitializer.init()
-        MetricsLogger.init("ME", config.slackNotifications)
-        ThrottlingLogger.init(config.throttlingLogger)
     }
 }

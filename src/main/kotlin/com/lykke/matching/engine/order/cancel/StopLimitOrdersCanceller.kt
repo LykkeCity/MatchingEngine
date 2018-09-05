@@ -6,26 +6,20 @@ import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.AssetStopOrderBook
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
 
 class StopLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                assetsPairsHolder: AssetsPairsHolder,
                                balancesHolder: BalancesHolder,
                                genericStopLimitOrderService: GenericStopLimitOrderService,
-                               clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                               trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                date: Date) :
         AbstractLimitOrdersCanceller<AssetStopOrderBook, StopLimitOrdersCancelResult>(dictionariesDatabaseAccessor,
                 assetsPairsHolder,
                 balancesHolder,
                 genericStopLimitOrderService,
-                clientLimitOrdersQueue,
-                trustedClientsLimitOrdersQueue,
                 date) {
 
     override fun processChangedOrderBook(orderBookCopy: AssetStopOrderBook, isBuy: Boolean) {
