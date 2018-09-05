@@ -157,13 +157,14 @@ abstract class AbstractTest {
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
 
     @Autowired
+    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
+
+    @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
-    protected lateinit var singleLimitOrderService: SingleLimitOrderService
-
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
-    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
+    protected lateinit var singleLimitOrderService: SingleLimitOrderService
+    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
 
     protected open fun initServices() {
         testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
@@ -175,8 +176,6 @@ abstract class AbstractTest {
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService,  genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 

@@ -21,6 +21,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
@@ -46,7 +47,6 @@ import com.lykke.matching.engine.services.validators.input.CashInOutOperationInp
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
-import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.input.LimitOrderInputCancelOperationValidatorImpl
 import com.lykke.matching.engine.utils.MessageBuilder
@@ -451,8 +451,10 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser): MessageBuilder {
-        return MessageBuilder(cashInOutContextParser, cashTransferContextParser)
+    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser,
+                            limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
+                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>): MessageBuilder {
+        return MessageBuilder(cashInOutContextParser, cashTransferContextParser, limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser)
     }
 
     @Bean
@@ -491,5 +493,18 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderMassCancelOperationContextParser(): ContextParser<LimitOrderMassCancelOperationParsedData> {
         return LimitOrderMassCancelOperationContextParser()
+    }
+
+    @Bean
+    open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
+                                         genericStopLimitOrderService: GenericStopLimitOrderService,
+                                         cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrderMassCancelService {
+        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory)
+    }
+
+    @Bean
+    open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
+                                          genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): MultiLimitOrderCancelService {
+        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 }
