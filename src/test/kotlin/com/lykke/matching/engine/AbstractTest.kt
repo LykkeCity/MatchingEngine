@@ -22,8 +22,6 @@ import com.lykke.matching.engine.notification.TestOrderBookListener
 import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
-import com.lykke.matching.engine.holders.*
-import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
@@ -34,7 +32,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
-import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
@@ -150,7 +147,8 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
 
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+    @Autowired
+    protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
@@ -194,8 +192,6 @@ abstract class AbstractTest {
     }
 
     protected fun clearMessageQueues() {
-        quotesNotificationQueue.clear()
-
         balanceUpdateHandlerTest.clear()
         tradesInfoListener.clear()
 

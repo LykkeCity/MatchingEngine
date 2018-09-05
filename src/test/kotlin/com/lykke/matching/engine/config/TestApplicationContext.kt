@@ -34,7 +34,6 @@ import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
-import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
@@ -43,7 +42,6 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocesso
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -560,11 +558,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser, singleLimitOrderContextParser: SingleLimitOrderContextParser): MessageBuilder {
-        return MessageBuilder(cashInOutContextParser, cashTransferContextParser, singleLimitOrderContextParser)
-    }
-
-    @Bean
     open fun cashTransferOperationService(balancesHolder: BalancesHolder, notification: BlockingQueue<CashTransferOperation>,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
@@ -614,6 +607,7 @@ open class TestApplicationContext {
     @Bean
     open fun messageRouter(): MessageRouter {
         return MessageRouter(LinkedBlockingQueue<MessageWrapper>(),
+                LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>())
