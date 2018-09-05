@@ -89,7 +89,7 @@ abstract class AbstractPerformanceTest {
     open fun initServices() {
         testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor, 60000)
+        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
