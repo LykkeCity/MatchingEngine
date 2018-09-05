@@ -4,15 +4,13 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingsGroup
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.fixedRateTimer
+import javax.annotation.PostConstruct
 
 @Component
-class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
-                                                      @Value("\${application.settings.update.interval}") updateInterval: Long) : DataCache() {
+class ApplicationSettingsCache @Autowired constructor(private val settingsDatabaseAccessor: SettingsDatabaseAccessor) : DataCache() {
     @Volatile
     private var trustedClients: MutableMap<String, String> = ConcurrentHashMap()
 
@@ -25,13 +23,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     @Volatile
     private var loPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
-    init {
-        update()
-        fixedRateTimer(name = "Application Properties Updater", initialDelay = updateInterval, period = updateInterval, daemon = true) {
-            update()
-        }
-    }
-
+    @PostConstruct
     override fun update() {
         val allSettingGroups = settingsDatabaseAccessor.getAllSettingGroups(true)
         trustedClients = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.TRUSTED_CLIENTS)
@@ -78,7 +70,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         return result
     }
 
-    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroup):  MutableMap<String, String> {
+    private fun getSettingNameToValueByGroup(settingGroup: AvailableSettingGroup): MutableMap<String, String> {
         return when (settingGroup) {
             AvailableSettingGroup.TRUSTED_CLIENTS -> trustedClients
             AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
