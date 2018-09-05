@@ -138,7 +138,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor): ApplicationSettingsCache {
-        return ApplicationSettingsCache(configDatabaseAccessor, 60000)
+        return ApplicationSettingsCache(configDatabaseAccessor)
     }
 
     @Bean
