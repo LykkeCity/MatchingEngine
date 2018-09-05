@@ -36,9 +36,9 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
     }
 
     override fun run() {
-        val messageWrapper = limitOrderMassCancelInputQueue.take()
-
         while (true) {
+            val messageWrapper = limitOrderMassCancelInputQueue.take()
+
             try {
                 preProcess(messageWrapper)
             } catch (e: Exception) {

@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashTransferContext
@@ -122,10 +121,7 @@ class CashTransferPreprocessor(
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                val context = message.context
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                        if (context != null) "Error details: $context" else "", exception)
-
+                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
                 METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
                 writeResponse(message, RUNTIME)
             }

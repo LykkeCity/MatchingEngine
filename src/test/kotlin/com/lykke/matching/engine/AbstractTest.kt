@@ -32,6 +32,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
@@ -80,6 +81,9 @@ abstract class AbstractTest {
 
     @Autowired
     private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
+
+    @Autowired
+    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
@@ -169,7 +173,6 @@ abstract class AbstractTest {
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
-
     protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
@@ -187,7 +190,6 @@ abstract class AbstractTest {
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 

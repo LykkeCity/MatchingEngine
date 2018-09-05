@@ -16,7 +16,7 @@ class LimitOrderInputCancelOperationValidatorImpl: LimitOrderCancelOperationInpu
     private fun validateOrderIds(context: LimitOrderCancelOperationContext) {
         if (context.limitOrderIds.isEmpty()) {
             val errorMessage = "Orders ids list is empty (request id: ${context.uid})"
-            throw ValidationException(message = errorMessage)
+            throw ValidationException(ValidationException.Validation.GENERIC_VALIDATION_FAILURE, errorMessage)
         }
     }
 }
