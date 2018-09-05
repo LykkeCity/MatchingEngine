@@ -55,7 +55,9 @@ class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
                     order.lowerPrice,
                     order.upperLimitPrice,
                     order.upperPrice,
-                    order.previousExternalId)
+                    order.previousExternalId,
+                    order.timeInForce,
+                    order.expiryTime)
         }
     }
 }

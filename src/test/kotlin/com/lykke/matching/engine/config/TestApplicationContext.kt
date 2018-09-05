@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.config.spring.LoggerConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -10,6 +9,7 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
@@ -34,12 +34,17 @@ import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestReservedCashOperationListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
+import com.lykke.matching.engine.messages.MessageWrapper
+import com.lykke.matching.engine.notification.*
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -149,8 +154,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testConfigDatabaseAccessor(): ConfigDatabaseAccessor {
-        return TestConfigDatabaseAccessor()
+    open fun testSettingsDatabaseAccessor(): SettingsDatabaseAccessor {
+        return TestSettingsDatabaseAccessor()
     }
 
     @Bean
@@ -159,8 +164,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun applicationSettingsCache(configDatabaseAccessor: ConfigDatabaseAccessor): ApplicationSettingsCache {
-        return ApplicationSettingsCache(configDatabaseAccessor, 60000)
+    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor): ApplicationSettingsCache {
+        return ApplicationSettingsCache(configDatabaseAccessor)
     }
 
     @Bean
@@ -227,13 +232,24 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationInputValidator(balancesHolder: BalancesHolder, applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
-        return CashInOutOperationInputValidatorImpl(balancesHolder, applicationSettingsCache)
+    open fun cashInOutOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
+        return CashInOutOperationInputValidatorImpl(applicationSettingsCache)
     }
 
     @Bean
-    open fun cashTransferOperationInputValidator(assetsHolder: AssetsHolder, applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
-        return CashTransferOperationInputValidatorImpl(assetsHolder, applicationSettingsCache)
+    open fun cashTransferOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
+        return CashTransferOperationInputValidatorImpl(applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashInOutOperationService(balancesHolder: BalancesHolder,
+                                       rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+                                       feeProcessor: FeeProcessor,
+                                       cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
+                                       messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                       messageSender: MessageSender): CashInOutOperationService {
+        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean
@@ -291,20 +307,33 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
+        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
+    }
+
+    @Bean
+    open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                        applicationSettingsCache: ApplicationSettingsCache,
+                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor): ApplicationSettingsService {
+        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor)
+    }
+
+    @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: OrdersDatabaseAccessorsHolder,
                                       assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
                                       quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                       tradeInfoQueue: BlockingQueue<TradeInfo>,
-                                      applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
+                                      applicationSettingsCache: ApplicationSettingsCache,
+                                      expiryOrdersQueue: ExpiryOrdersQueue): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 quotesUpdateQueue,
                 tradeInfoQueue,
-                applicationSettingsCache)
+                applicationSettingsCache, expiryOrdersQueue)
     }
 
     @Bean
@@ -396,8 +425,9 @@ open class TestApplicationContext {
     @Bean
     open fun genericStopLimitOrderService(persistenceManager: TestPersistenceManager,
                                           stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                          genericLimitOrderService: GenericLimitOrderService): GenericStopLimitOrderService {
-        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService, persistenceManager)
+                                          genericLimitOrderService: GenericLimitOrderService,
+                                          expiryOrdersQueue: ExpiryOrdersQueue): GenericStopLimitOrderService {
+        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService, persistenceManager, expiryOrdersQueue)
     }
 
     @Bean
@@ -509,9 +539,14 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutPreprocessor(applicationContext: ApplicationContext): CashInOutPreprocessor {
+    open fun processedMessagesCache(): ProcessedMessagesCache {
+        return Mockito.mock(ProcessedMessagesCache::class.java)
+    }
+
+    @Bean
+    open fun cashInOutPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager, processedMessagesCache: ProcessedMessagesCache): CashInOutPreprocessor {
         return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
-                Mockito.mock(CashOperationIdDatabaseAccessor::class.java))
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), persistenceManager, processedMessagesCache)
     }
 
     @Bean
@@ -520,8 +555,13 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashTransferPreprocessor(applicationContext: ApplicationContext): CashTransferPreprocessor {
-        return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java))
+    open fun cashTransferPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager, processedMessagesCache: ProcessedMessagesCache): CashTransferPreprocessor {
+        return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java), persistenceManager, processedMessagesCache)
+    }
+
+    @Bean
+    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser, singleLimitOrderContextParser: SingleLimitOrderContextParser): MessageBuilder {
+        return MessageBuilder(cashInOutContextParser, cashTransferContextParser, singleLimitOrderContextParser)
     }
 
     @Bean
@@ -566,5 +606,16 @@ open class TestApplicationContext {
     @Bean
     open fun singleLimitOrderContextPreprocessorLogger(): ThrottlingLogger {
         return ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
+    }
+
+    @Bean
+    open fun expiryOrdersQueue() = ExpiryOrdersQueue()
+
+    @Bean
+    open fun messageRouter(): MessageRouter {
+        return MessageRouter(LinkedBlockingQueue<MessageWrapper>(),
+                LinkedBlockingQueue<MessageWrapper>(),
+                LinkedBlockingQueue<MessageWrapper>(),
+                LinkedBlockingQueue<MessageWrapper>())
     }
 }

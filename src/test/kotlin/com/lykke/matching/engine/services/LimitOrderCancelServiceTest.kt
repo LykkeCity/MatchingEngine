@@ -106,7 +106,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, executionEvent.orders.size)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders.first().status)
 
-        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        assertEquals(1, tradesInfoListener.getCount())
         val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
         assertEquals(BigDecimal.ZERO, tradeInfo.price)
         assertEquals(false, tradeInfo.isBuy)
@@ -170,7 +170,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[1].status)
         assertEquals(OutgoingOrderStatus.CANCELLED, executionEvent.orders[2].status)
 
-        assertEquals(2, tradesInfoListener.getProcessingQueue().size)
+        assertEquals(2, tradesInfoListener.getCount())
         val buyTradeInfo = tradesInfoListener.getProcessingQueue().single { it.isBuy }
         assertEquals(BigDecimal.ZERO, buyTradeInfo.price)
         val sellTradeInfo = tradesInfoListener.getProcessingQueue().single { !it.isBuy }

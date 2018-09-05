@@ -8,9 +8,10 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageType
@@ -19,6 +20,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -57,9 +59,9 @@ class LimitOrderInputValidatorTest {
 
         @Bean
         @Primary
-        open fun testConfigDatabaseAccessor(): TestConfigDatabaseAccessor {
-            val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-            testConfigDatabaseAccessor.addDisabledAsset("JPY")
+        open fun testConfigDatabaseAccessor(): TestSettingsDatabaseAccessor {
+            val testConfigDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testConfigDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("JPY"))
             return testConfigDatabaseAccessor
         }
     }
@@ -263,7 +265,7 @@ class LimitOrderInputValidatorTest {
             limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
         } catch (e: OrderValidationException) {
             //then
-            assertEquals(OrderStatus.InvalidVolume, e.orderStatus)
+            assertEquals(OrderStatus.InvalidValue, e.orderStatus)
             throw e
         }
     }
@@ -310,7 +312,6 @@ class LimitOrderInputValidatorTest {
         builder.uid("test")
                 .messageId("test")
                 .limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee())))
-                .orderProcessingStartTime(Date())
                 .assetPair(BTC_USD_ASSET_PAIR)
                 .baseAsset(Asset("BTC", 5))
                 .quotingAsset(Asset("USD", 2))
@@ -326,7 +327,9 @@ class LimitOrderInputValidatorTest {
                 BigDecimal.ONE, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.ONE, null,
                 fee = getFee(), type = LimitOrderType.STOP_LIMIT, fees = null,
                 lowerLimitPrice = lowerLimitPrice, lowerPrice = lowerPrice,
-                upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null)
+                upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null,
+                timeInForce = null,
+                expiryTime = null)
     }
 
     fun getValidLimitOrder(fee: LimitOrderFeeInstruction?,
@@ -336,7 +339,9 @@ class LimitOrderInputValidatorTest {
                            volume: BigDecimal = BigDecimal.valueOf(1.0)): LimitOrder {
         return LimitOrder("test", "test", assetPair, "test", volume,
                 price, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
-                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                timeInForce = null,
+                expiryTime = null)
     }
 
     fun getNewLimitFee(): NewLimitOrderFeeInstruction {

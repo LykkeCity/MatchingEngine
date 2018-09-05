@@ -17,4 +17,4 @@ class CashTransferOperation(
         val feeInstruction: FeeInstruction?,
         val feeTransfer: FeeTransfer?,
         val fees: List<Fee>?,
-        val messageId: String): JsonSerializable()
+        val messageId: String)

@@ -97,7 +97,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
 
     fun validateValue(order: LimitOrder, assetPair: AssetPair) {
         if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
-            throw OrderValidationException(OrderStatus.InvalidVolume, "value is too large")
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
         }
     }
 

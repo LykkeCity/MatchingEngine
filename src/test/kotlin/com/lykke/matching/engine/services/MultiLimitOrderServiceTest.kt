@@ -9,6 +9,8 @@ import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -38,6 +40,7 @@ import java.math.BigDecimal
 import java.util.Date
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import kotlin.test.assertTrue
 
@@ -47,7 +50,7 @@ import kotlin.test.assertTrue
 class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
@@ -73,10 +76,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): TestConfigDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-            testSettingsDatabaseAccessor.addTrustedClient("Client1")
-            testSettingsDatabaseAccessor.addTrustedClient("Client5")
+        open fun testConfig(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client5"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -164,7 +167,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals("1.2", event.orders[0].price)
         assertEquals("1.3", event.orders[1].price)
 
-        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        assertEquals(1, tradesInfoListener.getCount())
         val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
         assertEquals(BigDecimal.valueOf(1.3), tradeInfo.price)
         assertEquals(true, tradeInfo.isBuy)
@@ -620,7 +623,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testConfigDatabaseAccessor.addTrustedClient("Client3")
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -1314,8 +1317,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val order1 = event.orders.single { it.externalId == "order1" }
         assertEquals(OutgoingOrderStatus.CANCELLED, order1.status)
         assertEquals(1, order1.trades?.size)
-        assertEquals("0.01000000", order1.trades!![0].volume)
-        assertEquals("50.00", order1.trades!![0].oppositeVolume)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order1.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("50", order1.trades!![0].quotingVolume)
         assertEquals("Client2", order1.trades!![0].oppositeWalletId)
         assertEquals("-0.00000199", order1.remainingVolume)
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client2" }.status)
@@ -1323,8 +1328,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val order2 = event.orders.single { it.externalId == "order2" }
         assertEquals(OutgoingOrderStatus.MATCHED, order2.status)
         assertEquals(1, order2.trades?.size)
-        assertEquals("0.01000000", order2.trades!![0].volume)
-        assertEquals("49.99", order2.trades!![0].oppositeVolume)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order2.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("49.99", order2.trades!![0].quotingVolume)
         assertEquals("Client3", order2.trades!![0].oppositeWalletId)
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client3" }.status)
 
@@ -1360,7 +1367,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderValue() {
+    fun testOrderMAxValue() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxValue = BigDecimal.valueOf(10000.0)))
@@ -1372,7 +1379,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testMaxOrderVolume() {
+    fun testOrderMaxVolume() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 maxVolume = BigDecimal.valueOf(1.0)))
@@ -1387,7 +1394,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testConfigDatabaseAccessor.addTrustedClient("Client1")
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
         applicationSettingsCache.update()
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("LKK1YLKK", "Client1",
@@ -1396,7 +1403,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertBalance("Client1", "LKK", 1.0, 0.0)
 
-        testConfigDatabaseAccessor.clear()
+        testSettingsDatabaseAccessor.clear()
         applicationSettingsCache.update()
 
         reservedVolumesRecalculator.recalculate()
@@ -1409,6 +1416,74 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
         assertOrderBookSize("LKK1YLKK", true, 0)
         assertBalance("Client1", "LKK", 1.0, 0.0)
+    }
+
+    @Test
+    fun testImmediateOrCancelOrders() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2",
+                assetId = "EURUSD",
+                volume = -10.0,
+                price = 10.0))
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+                pair = "EURUSD",
+                orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.IOC),
+                        IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.IOC),
+                        IncomingLimitOrder(6.0, 9.0, uid = "WithoutTrades", timeInForce = OrderTimeInForce.IOC),
+                        IncomingLimitOrder(6.0, 8.0, timeInForce = OrderTimeInForce.GTC))))
+
+        assertOrderBookSize("EURUSD", false, 0)
+        assertOrderBookSize("EURUSD", true, 1)
+        assertEquals(BigDecimal.valueOf(8.0), genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "Matched" }.status)
+
+        assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "PartiallyMatched" }.status)
+        assertEquals(1, event.orders.single { it.externalId == "PartiallyMatched" }.trades?.size)
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val trustedEvent = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.CANCELLED, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.status)
+        assertEquals(0, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.trades?.size)
+
+        assertBalance("Client1", "EUR", 1010.0, 0.0)
+        assertBalance("Client1", "USD", 900.0, 0.0)
+    }
+
+    @Test
+    fun testFillOrKillOrders() {
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2",
+                assetId = "EURUSD",
+                volume = -10.0,
+                price = 10.0))
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = "Client1",
+                pair = "EURUSD",
+                orders = listOf(IncomingLimitOrder(6.0, 11.0, uid = "Matched", timeInForce = OrderTimeInForce.FOK),
+                        IncomingLimitOrder(6.0, 10.0, uid = "PartiallyMatched", timeInForce = OrderTimeInForce.FOK),
+                        IncomingLimitOrder(6.0, 9.0, uid = "WithoutTrades", timeInForce = OrderTimeInForce.FOK),
+                        IncomingLimitOrder(6.0, 8.0, timeInForce = OrderTimeInForce.GTC))))
+
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 1)
+        assertEquals(BigDecimal.valueOf(8.0), genericLimitOrderService.getOrderBook("EURUSD").getBidPrice())
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.externalId == "Matched" }.status)
+
+        assertEquals(1, trustedClientsEventsQueue.size)
+        val trustedEvent = trustedClientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(OutgoingOrderStatus.CANCELLED, trustedEvent.orders.single { it.externalId == "PartiallyMatched" }.status)
+        assertEquals(0, trustedEvent.orders.single { it.externalId == "PartiallyMatched" }.trades?.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.status)
+        assertEquals(0, trustedEvent.orders.single { it.externalId == "WithoutTrades" }.trades?.size)
+
+        assertBalance("Client1", "EUR", 1006.0, 0.0)
+        assertBalance("Client1", "USD", 940.0, 0.0)
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {

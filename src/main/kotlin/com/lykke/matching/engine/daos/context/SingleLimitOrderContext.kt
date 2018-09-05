@@ -6,13 +6,11 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
-import java.util.*
 
 class SingleLimitOrderContext(val uid: String?,
                               val messageId: String,
-                              val limitOrder: LimitOrder,
+                              var limitOrder: LimitOrder,
                               val isCancelOrders: Boolean,
-                              val orderProcessingStartTime: Date,
                               val assetPair: AssetPair,
                               val baseAsset: Asset,
                               val quotingAsset: Asset,
@@ -27,7 +25,6 @@ class SingleLimitOrderContext(val uid: String?,
             builder.messageId,
             builder.limitOrder,
             builder.isCancelOrders,
-            builder.orderProcessingStartTime,
             builder.assetPair,
             builder.baseAsset,
             builder.quotingAsset,
@@ -42,7 +39,6 @@ class SingleLimitOrderContext(val uid: String?,
 
         return "id: $uid" +
                 ", messageId: $messageId" +
-                ", orderProcessingStartTime: $orderProcessingStartTime" +
                 ", type: ${order.type}" +
                 ", client: ${order.clientId}" +
                 ", isTrustedClient: $isTrustedClient" +
@@ -57,14 +53,15 @@ class SingleLimitOrderContext(val uid: String?,
                 (if (order.upperPrice != null) ", upperPrice: ${NumberUtils.roundForPrint(order.upperPrice)}" else "") +
                 ", cancel: $isCancelOrders" +
                 ", fee: ${order.fee}" +
-                ", fees: ${order.fees}"
+                ", fees: ${order.fees}" +
+                (if (order.timeInForce != null) ", timeInForce=${order.timeInForce}" else "") +
+                (if (order.expiryTime != null) ", expiryTime=${order.expiryTime}" else "")
     }
 
     class Builder {
         var uid: String? = null
         lateinit var messageId: String
         lateinit var limitOrder: LimitOrder
-        lateinit var orderProcessingStartTime: Date
         var processedMessage: ProcessedMessage? = null
         lateinit var assetPair: AssetPair
         lateinit var baseAsset: Asset
@@ -76,7 +73,6 @@ class SingleLimitOrderContext(val uid: String?,
         var isCancelOrders: Boolean = false
 
         fun limitOrder(limitOrder: LimitOrder) = apply { this.limitOrder = limitOrder }
-        fun orderProcessingStartTime(orderProcessingStartTime: Date) = apply { this.orderProcessingStartTime = orderProcessingStartTime }
         fun cancelOrders(cancelOrders: Boolean) = apply { this.isCancelOrders = cancelOrders }
         fun uid(uid: String?) = apply { this.uid = uid }
         fun messageId(messageId: String) = apply { this.messageId = messageId }

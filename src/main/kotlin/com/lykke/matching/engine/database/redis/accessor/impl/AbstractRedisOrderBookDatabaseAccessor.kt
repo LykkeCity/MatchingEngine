@@ -1,13 +1,13 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Transaction
 
-abstract class AbstractRedisOrderBookDatabaseAccessor(private val redisHolder: InitialLoadingRedisHolder,
+abstract class AbstractRedisOrderBookDatabaseAccessor(private val redisConnection: RedisConnection,
                                                       private val db: Int,
                                                       private val keyPrefix: String,
                                                       private val logPrefix: String = "") {
@@ -22,30 +22,33 @@ abstract class AbstractRedisOrderBookDatabaseAccessor(private val redisHolder: I
 
     protected fun loadOrders(): List<LimitOrder> {
         val result = ArrayList<LimitOrder>()
-        val jedis = redisHolder.initialLoadingRedis()
-        if (jedis.db != db.toLong()) {
-            jedis.select(db)
-        }
-        val keys = jedis.keys("$keyPrefix*").toList()
+        redisConnection.resource { jedis ->
 
-        val values = if (keys.isNotEmpty())
-            jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
-        else emptyList()
 
-        values.forEachIndexed { index, value ->
-            val key = keys[index]
-            try {
-                if (value == null) {
-                    throw Exception("${logPrefix}order doesn't exist, key: $key")
-                }
-                result.add(deserializeOrder(value))
-            } catch (e: Exception) {
-                val message = "Unable to load ${logPrefix}order, key: $key"
-                LOGGER.error(message, e)
-                METRICS_LOGGER.logError(message, e)
+            if (jedis.db != db.toLong()) {
+                jedis.select(db)
             }
+            val keys = jedis.keys("$keyPrefix*").toList()
+
+            val values = if (keys.isNotEmpty())
+                jedis.mget(*keys.map { it.toByteArray() }.toTypedArray())
+            else emptyList()
+
+            values.forEachIndexed { index, value ->
+                val key = keys[index]
+                try {
+                    if (value == null) {
+                        throw Exception("${logPrefix}order doesn't exist, key: $key")
+                    }
+                    result.add(deserializeOrder(value))
+                } catch (e: Exception) {
+                    val message = "Unable to load ${logPrefix}order, key: $key"
+                    LOGGER.error(message, e)
+                    METRICS_LOGGER.logError(message, e)
+                }
+            }
+            LOGGER.info("Loaded ${result.size} ${logPrefix}limit orders")
         }
-        LOGGER.info("Loaded ${result.size} ${logPrefix}limit orders")
         return result
     }
 

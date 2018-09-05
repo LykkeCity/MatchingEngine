@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
+import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -41,27 +42,17 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         initialBalancesCount = wallets.values.sumBy { it.balances.size }
     }
 
-    fun getBalance(clientId: String, assetId: String): BigDecimal {
+    fun getBalances(clientId: String): Map<String, AssetBalance> {
         val wallet = wallets[clientId]
-        if (wallet != null) {
-            val balance = wallet.balances[assetId]
-            if (balance != null) {
-                return balance.balance
-            }
-        }
-        return BigDecimal.ZERO
+        return wallet?.balances ?: emptyMap()
+    }
+
+    fun getBalance(clientId: String, assetId: String): BigDecimal {
+        return getBalances(clientId)[assetId]?.balance ?: BigDecimal.ZERO
     }
 
     fun getReservedBalance(clientId: String, assetId: String): BigDecimal {
-        val wallet = wallets[clientId]
-        if (wallet != null) {
-            val balance = wallet.balances[assetId]
-            if (balance != null) {
-                return balance.reserved
-            }
-        }
-
-        return BigDecimal.ZERO
+        return getBalances(clientId)[assetId]?.reserved ?: BigDecimal.ZERO
     }
 
     fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: BigDecimal = BigDecimal.ZERO): BigDecimal {

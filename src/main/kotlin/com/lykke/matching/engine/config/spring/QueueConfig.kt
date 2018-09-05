@@ -63,6 +63,11 @@ open class QueueConfig {
     }
 
     @Bean
+    open fun rabbitCashInOutQueue(): BlockingQueue<CashOperation> {
+        return LinkedBlockingQueue<CashOperation>()
+    }
+
+    @Bean
     open fun rabbitSwapQueue(): BlockingQueue<MarketOrderWithTrades> {
         return LinkedBlockingQueue<MarketOrderWithTrades>()
     }

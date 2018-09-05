@@ -4,15 +4,16 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,7 +33,7 @@ import kotlin.test.assertEquals
 class MultiLimitOrderCancelServiceTest : AbstractTest() {
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -51,7 +52,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
     fun setUp() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
-        testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
 
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.0)
         testBalanceHolderWrapper.updateReservedBalance("Client1", "BTC", 1.0)
@@ -93,7 +94,7 @@ class MultiLimitOrderCancelServiceTest : AbstractTest() {
         assertEquals(1, (trustedClientsEventsQueue.first() as ExecutionEvent).orders.size)
         assertEquals(0, (trustedClientsEventsQueue.first() as ExecutionEvent).balanceUpdates!!.size)
 
-        assertEquals(1, tradesInfoListener.getProcessingQueue().size)
+        assertEquals(1, tradesInfoListener.getCount())
         val tradeInfo = tradesInfoListener.getProcessingQueue().poll()
         assertEquals(BigDecimal.valueOf(10000.0), tradeInfo.price)
         assertEquals(false, tradeInfo.isBuy)

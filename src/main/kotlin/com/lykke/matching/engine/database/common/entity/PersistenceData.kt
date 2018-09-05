@@ -10,6 +10,7 @@ class PersistenceData(val balancesData: BalancesData?,
                       val messageSequenceNumber: Long?) {
 
     constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?) : this(null, processedMessage, null, null, messageSequenceNumber)
+    constructor(processedMessage: ProcessedMessage?) : this(null, processedMessage, null, null, null)
 
     fun details(): String {
         val result = StringBuilder()

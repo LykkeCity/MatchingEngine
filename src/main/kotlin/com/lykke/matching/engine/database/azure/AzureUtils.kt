@@ -2,10 +2,7 @@ package com.lykke.matching.engine.database.azure
 
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.blob.CloudBlobContainer
-import com.microsoft.azure.storage.table.CloudTable
-import com.microsoft.azure.storage.table.DynamicTableEntity
-import com.microsoft.azure.storage.table.TableBatchOperation
-import com.microsoft.azure.storage.table.TableEntity
+import com.microsoft.azure.storage.table.*
 
 fun getOrCreateTable(connectionString: String, tableName: String): CloudTable {
     val storageAccount = CloudStorageAccount.parse(connectionString)
@@ -77,5 +74,17 @@ fun batchDelete(table: CloudTable, elements: List<TableEntity>) {
         if (batchOperation.size > 0) {
             table.execute(batchOperation)
         }
+    }
+}
+
+fun getCombinedFilterUseLogicalAnd(mandatoryFilter: String, vararg optionalFilters: String?): String {
+    val combinedOptionalFilters = optionalFilters
+            .reduce { accumulated, currentValue ->
+                currentValue?.let {TableQuery.combineFilters(accumulated, TableQuery.Operators.AND, currentValue)} ?: accumulated}
+
+    return if (combinedOptionalFilters != null) {
+        TableQuery.combineFilters(mandatoryFilter, TableQuery.Operators.AND, combinedOptionalFilters)
+    } else {
+        mandatoryFilter
     }
 }

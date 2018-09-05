@@ -73,7 +73,7 @@ class MarketOrderValidatorImpl
 
         if (!order.isStraight() && assetPair.maxValue != null && order.getAbsVolume() > assetPair.maxValue) {
             LOGGER.info("Too large value for $order")
-            throw OrderValidationException(OrderStatus.InvalidVolume)
+            throw OrderValidationException(OrderStatus.InvalidValue)
         }
     }
 

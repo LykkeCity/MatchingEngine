@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.daos
 
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.Date
@@ -16,7 +18,7 @@ class LimitOrder(id: String,
                  status: String,
                  statusDate: Date?,
                  createdAt: Date,
-                 registered: Date,
+                 registered: Date?,
                  var remainingVolume: BigDecimal,
                  var lastMatchTime: Date?,
                  reservedLimitVolume: BigDecimal? = null,
@@ -28,8 +30,37 @@ class LimitOrder(id: String,
                  val upperLimitPrice: BigDecimal?,
                  val upperPrice: BigDecimal?,
                  @Transient
-                 val previousExternalId: String?)
+                 val previousExternalId: String?,
+                 @Version(1)
+                 val timeInForce: OrderTimeInForce?,
+                 @Version(1)
+                 val expiryTime: Date?)
     : Order(id, externalId, assetPairId, clientId, volume, status, createdAt, registered, reservedLimitVolume, fee, fees, statusDate), Serializable {
+
+    constructor(limitOrder: LimitOrder, statusDate: Date, registered: Date): this(
+            limitOrder.id,
+            limitOrder.externalId,
+            limitOrder.assetPairId,
+            limitOrder.clientId,
+            limitOrder.volume,
+            limitOrder.price,
+            limitOrder.status,
+            statusDate,
+            limitOrder.createdAt,
+            registered,
+            limitOrder.remainingVolume,
+            limitOrder.lastMatchTime,
+            limitOrder.reservedLimitVolume,
+            limitOrder.fee as? LimitOrderFeeInstruction,
+            limitOrder.fees?.map { it as NewLimitOrderFeeInstruction },
+            limitOrder.type,
+            limitOrder.lowerLimitPrice,
+            limitOrder.lowerPrice,
+            limitOrder.upperLimitPrice,
+            limitOrder.upperPrice,
+            limitOrder.previousExternalId,
+            limitOrder.timeInForce,
+            limitOrder.expiryTime)
 
     fun getAbsRemainingVolume(): BigDecimal {
         return remainingVolume.abs()
@@ -71,7 +102,7 @@ class LimitOrder(id: String,
         return LimitOrder(id, externalId, assetPairId, clientId, volume, price, status, statusDate, createdAt,
                 registered, remainingVolume, lastMatchTime, reservedLimitVolume, fee as? LimitOrderFeeInstruction,
                 fees?.map { it as NewLimitOrderFeeInstruction }, type, lowerLimitPrice, lowerPrice, upperLimitPrice,
-                upperPrice, previousExternalId)
+                upperPrice, previousExternalId, timeInForce, expiryTime)
     }
 
     override fun applyToOrigin(origin: Copyable) {
@@ -79,5 +110,13 @@ class LimitOrder(id: String,
         origin as LimitOrder
         origin.remainingVolume = remainingVolume
         origin.lastMatchTime = lastMatchTime
+    }
+
+    fun hasExpiryTime(): Boolean {
+        return timeInForce == OrderTimeInForce.GTD && expiryTime != null
+    }
+
+    fun isExpired(date: Date): Boolean {
+        return hasExpiryTime() && !expiryTime!!.after(date)
     }
 }

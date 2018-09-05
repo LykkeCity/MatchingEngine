@@ -29,6 +29,9 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         isSpreadValid(orderBook, order)
         isVolumeAccuracyValid(order, assetPair)
         isPriceAccuracyValid(order, assetPair)
+        if (order.status != OrderStatus.InOrderBook.name) {
+            throw OrderValidationException(OrderStatus.InOrderBook)
+        }
     }
 
     private fun isSpreadValid(orderBook: AssetOrderBook, order: LimitOrder) {
@@ -76,7 +79,7 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
     private fun isValueValid(order: LimitOrder, assetPair: AssetPair) {
         if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large value")
-            throw OrderValidationException(OrderStatus.InvalidVolume)
+            throw OrderValidationException(OrderStatus.InvalidValue)
         }
     }
 

@@ -22,17 +22,19 @@ import com.lykke.matching.engine.notification.TestOrderBookListener
 import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
+import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
-import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
@@ -40,6 +42,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.springframework.beans.factory.annotation.Qualifier
 import java.util.concurrent.BlockingQueue
 
 abstract class AbstractTest {
@@ -146,12 +150,11 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var limitOrderCancelService: LimitOrderCancelService
 
-    @Autowired
-    protected lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
+    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     @Autowired
-    protected lateinit var messageSender: MessageSender
-
+    @Qualifier("rabbitCashInOutQueue")
+    protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
     @Autowired
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
@@ -162,16 +165,10 @@ abstract class AbstractTest {
     private lateinit var feeProcessor: FeeProcessor
 
     @Autowired
-    protected lateinit var cashTransferOperationsService: CashTransferOperationService
+    protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     @Autowired
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
-
-    private val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-
-    protected val cashInOutQueue = LinkedBlockingQueue<JsonSerializable>()
-
-    protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
 
@@ -190,7 +187,6 @@ abstract class AbstractTest {
         applicationSettingsCache.update()
 
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
-        cashInOutOperationService = CashInOutOperationService(assetsHolder, balancesHolder, cashInOutQueue, feeProcessor, cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)

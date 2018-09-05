@@ -11,6 +11,7 @@ import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
@@ -49,12 +50,16 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
-                            previousExternalId: String? = null): LimitOrder =
+                            previousExternalId: String? = null,
+                            timeInForce: OrderTimeInForce? = null,
+                            expiryTime: Date? = null): LimitOrder =
                 LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf(volume), BigDecimal.valueOf(price), status, registered, registered, registered, BigDecimal.valueOf(volume), null,
                         reservedVolume?.toBigDecimal(), fee, fees,
                         type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
                         upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
-                        previousExternalId)
+                        previousExternalId,
+                        timeInForce,
+                        expiryTime)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -157,8 +162,6 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
 
-
-
         @Deprecated("Use buildMultiLimitOrderWrapper(5)")
         fun buildMultiLimitOrderWrapper(pair: String,
                                         clientId: String,
@@ -212,6 +215,8 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                 order.feeInstructions.forEach { orderBuilder.addFees(buildNewLimitOrderFee(it)) }
                 orderBuilder.uid = order.uid
                 order.oldUid?.let { orderBuilder.oldUid = order.oldUid }
+                order.timeInForce?.let { orderBuilder.timeInForce = it.externalId }
+                order.expiryTime?.let { orderBuilder.expiryTime = it.time }
                 multiOrderBuilder.addOrders(orderBuilder.build())
             }
             return multiOrderBuilder.build()
@@ -326,6 +331,7 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
         return cashInOutContextParser.parse(MessageWrapper("Test", MessageType.CASH_IN_OUT_OPERATION.type, builder.build().toByteArray(), null)).messageWrapper
     }
 
+
     fun buildLimitOrderWrapper(order: LimitOrder,
                                cancel: Boolean = false): MessageWrapper {
         val builder = ProtocolMessages.LimitOrder.newBuilder()
@@ -349,6 +355,8 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
         order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
+        order.expiryTime?.let { builder.setExpiryTime(it.time) }
+        order.timeInForce?.let { builder.setTimeInForce(it.externalId) }
         val messageWrapper = singleLimitOrderContextParser
                 .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
                 .messageWrapper

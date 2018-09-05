@@ -6,6 +6,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderSide
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.createProtobufTimestampBuilder
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderTimeInForce
 import java.util.Date
 
 class Order(val orderType: OrderType,
@@ -29,7 +30,9 @@ class Order(val orderType: OrderType,
             val upperPrice: String?,
             val straight: Boolean?,
             val fees: List<FeeInstruction>?,
-            val trades: List<Trade>?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
+            val trades: List<Trade>?,
+            val timeInForce: OrderTimeInForce?,
+            val expiryTime: Date?) : EventPart<OutgoingMessages.ExecutionEvent.Order.Builder> {
 
     override fun createGeneratedMessageBuilder(): OutgoingMessages.ExecutionEvent.Order.Builder {
         val builder = OutgoingMessages.ExecutionEvent.Order.newBuilder()
@@ -60,7 +63,7 @@ class Order(val orderType: OrderType,
             builder.lowerLimitPrice = it
         }
         lowerPrice?.let {
-            builder.lowerLimitPrice = it
+            builder.lowerPrice = it
         }
         upperLimitPrice?.let {
             builder.upperLimitPrice = it
@@ -76,6 +79,12 @@ class Order(val orderType: OrderType,
         }
         trades?.forEach { trade ->
             builder.addTrades(trade.createGeneratedMessageBuilder())
+        }
+        timeInForce?.let { timeInForce ->
+            builder.timeInForce = timeInForce.id
+        }
+        expiryTime?.let { expiryTime ->
+            builder.setExpiryTime(expiryTime.createProtobufTimestampBuilder())
         }
         return builder
     }

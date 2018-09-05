@@ -19,6 +19,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.InvalidFee
+import com.lykke.matching.engine.order.OrderStatus.InvalidValue
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
 import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
 import com.lykke.matching.engine.order.OrderStatus.Matched
@@ -26,12 +27,12 @@ import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
 import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
+import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
@@ -144,7 +145,9 @@ class MarketOrderService @Autowired constructor(
             NotEnoughFunds,
             InvalidFee,
             InvalidVolumeAccuracy,
-            InvalidVolume -> {
+            InvalidVolume,
+            InvalidValue,
+            TooHighPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             TooHighPriceDeviation -> {

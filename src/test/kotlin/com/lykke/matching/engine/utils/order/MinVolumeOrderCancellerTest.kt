@@ -5,8 +5,9 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -26,6 +27,7 @@ import java.util.Date
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
@@ -33,12 +35,6 @@ import kotlin.test.assertNull
 @SpringBootTest(classes = [(TestApplicationContext::class), (MinVolumeOrderCancellerTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
-
-    @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -56,15 +52,21 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
         }
         @Bean
         @Primary
-        open fun testConfig(): TestConfigDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-            testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+        open fun testConfig(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
             return testSettingsDatabaseAccessor
         }
 
     }
 
+    @Autowired
+    private lateinit var recalculator: ReservedVolumesRecalculator
+
     private lateinit var canceller: MinVolumeOrderCanceller
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
