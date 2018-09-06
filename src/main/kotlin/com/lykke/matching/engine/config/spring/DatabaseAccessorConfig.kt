@@ -61,36 +61,24 @@ open class DatabaseAccessorConfig {
     private lateinit var persistenceManagerFactory: PersistenceManagerFactory
 
     @Bean
-    open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+    open fun persistenceManager(): PersistenceManager {
         return persistenceManagerFactory.get("persistenceRedisConnection")
     }
 
     @Bean
-    open fun cashInOutOperationPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                                              redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                                              cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                                              messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+    open fun cashInOutOperationPreprocessorPersistenceManager(): PersistenceManager {
         return persistenceManagerFactory.get("cashInOutOperationPreprocessorRedisConnection")
     }
 
 
     @Bean
-    open fun limitOrderCancelOperationPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                                   redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                                   cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                                   messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+    open fun limitOrderCancelOperationPreprocessorPersistenceManager(): PersistenceManager {
         return persistenceManagerFactory.get("limitOrderCancelOperationPreprocessorRedisConnection")
 
     }
 
     @Bean
-    open fun cashTransferPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                                        redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                                        cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                                        messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
+    open fun cashTransferPreprocessorPersistenceManager(): PersistenceManager {
         return persistenceManagerFactory.get("cashTransferOperationsPreprocessorRedisConnection")
     }
 
