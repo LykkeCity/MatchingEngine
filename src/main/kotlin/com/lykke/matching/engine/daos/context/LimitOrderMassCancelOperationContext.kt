@@ -7,6 +7,6 @@ class LimitOrderMassCancelOperationContext(val uid: String,
                                            val messageId: String,
                                            val clientId: String,
                                            val processedMessage: ProcessedMessage,
-                                           val type: MessageType,
+                                           val messageType: MessageType,
                                            val assetPairId: String?,
                                            val isBuy: Boolean?)

@@ -19,12 +19,14 @@ import java.util.stream.Collectors
 @Service
 class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
-                              private val cancellerFactory: GenericLimitOrdersCancellerFactory,
-                              private val validator: LimitOrderCancelOperationBusinessValidator) : AbstractService {
-    companion object {
+                              private val validator: LimitOrderCancelOperationBusinessValidator,
+                              private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
 
+
+    companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
+
     override fun processMessage(messageWrapper: MessageWrapper) {
         val now = Date()
         val context = messageWrapper.context as LimitOrderCancelOperationContext
@@ -34,7 +36,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         }
 
         val orderIds = context.limitOrderIds
-
         LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: $orderIds)")
         val typeToOrder = getLimitOrderTypeToLimitOrders(orderIds)
 
@@ -46,35 +47,21 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             return
         }
 
-        val updateSuccessful = cancelOrders(typeToOrder[LimitOrderType.LIMIT], typeToOrder[LimitOrderType.STOP_LIMIT], now, context)
+        val updateSuccessful = limitOrdersCancelHelper.cancelOrders(LimitOrdersCancelHelper.CancelRequest(context.uid,
+                context.messageId,
+                context.messageType,
+                typeToOrder[LimitOrderType.LIMIT],
+                typeToOrder[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false))
 
-        if (!updateSuccessful) {
-            writeResponse(messageWrapper, MessageStatus.RUNTIME, "Unable to save result")
-            return
-        }
-
-        writeResponse(messageWrapper, MessageStatus.OK)
+        limitOrdersCancelHelper.processPersistResults(updateSuccessful, messageWrapper, context.messageId)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        writeResponse(messageWrapper, status, null)
+        messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
         //nothing to do
-    }
-
-    private fun cancelOrders(limitOrders: List<LimitOrder>?, stopOrders: List<LimitOrder>?, now: Date, context: LimitOrderCancelOperationContext): Boolean {
-        val canceller = cancellerFactory.create(LOGGER, now)
-
-        canceller.preProcessLimitOrders(limitOrders ?: emptyList())
-        canceller.preProcessStopLimitOrders(stopOrders ?: emptyList())
-
-        return canceller.applyFull(context.uid,
-                context.messageId,
-                context.processedMessage,
-                context.messageType,
-                false)
     }
 
     private fun getLimitOrderTypeToLimitOrders(orderIds: Set<String>): Map<LimitOrderType, List<LimitOrder>> {
@@ -94,20 +81,5 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
         genericLimitOrderService.cancelLimitOrder(now, context.limitOrderIds.first().toString(), true)
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-    }
-
-    private fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-            return
-        }
-
-        val builder = ProtocolMessages.NewResponse.newBuilder().setStatus(status.type)
-
-        message?.let {
-            builder.statusReason = message
-        }
-
-        messageWrapper.writeNewResponse(builder)
     }
 }

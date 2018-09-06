@@ -294,7 +294,7 @@ open class TestApplicationContext {
                                                feeProcessor: FeeProcessor,
                                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): GenericLimitOrderProcessorFactory {
         return GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrderProcessorFactory, assetsHolder, assetsPairsHolder, balancesHolder,
-                applicationSettingsCache, clientLimitOrdersQueue, feeProcessor,  messageSequenceNumberHolder, messageSender)
+                applicationSettingsCache, clientLimitOrdersQueue, feeProcessor, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean
@@ -478,11 +478,17 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun limitOrdersCancelHelper(cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrdersCancelHelper {
+        return LimitOrdersCancelHelper(cancellerFactory)
+    }
+
+    @Bean
     open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
-                                     validator: LimitOrderCancelOperationBusinessValidator): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory, validator)
+                                     validator: LimitOrderCancelOperationBusinessValidator,
+                                     limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper)
     }
 
     @Bean
@@ -498,8 +504,9 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
                                          genericStopLimitOrderService: GenericStopLimitOrderService,
-                                         cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrderMassCancelService {
-        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory)
+                                         cancellerFactory: GenericLimitOrdersCancellerFactory,
+                                         limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderMassCancelService {
+        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCancelHelper)
     }
 
     @Bean
