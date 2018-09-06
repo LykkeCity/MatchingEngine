@@ -22,7 +22,6 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildTransferWrapper
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.After
 import org.junit.Before
