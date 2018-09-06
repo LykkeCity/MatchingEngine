@@ -60,10 +60,10 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     }
 
+    private lateinit var canceller: MinVolumeOrderCanceller
+
     @Autowired
     private lateinit var recalculator: ReservedVolumesRecalculator
-
-    private lateinit var canceller: MinVolumeOrderCanceller
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
