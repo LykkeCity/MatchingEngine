@@ -519,13 +519,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser,
-                            limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
-                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>): MessageBuilder {
-        return MessageBuilder(cashInOutContextParser, cashTransferContextParser, limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser)
-    }
-
-    @Bean
     open fun cashTransferOperationService(balancesHolder: BalancesHolder, notification: BlockingQueue<CashTransferOperation>,
                                           dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
                                           cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,

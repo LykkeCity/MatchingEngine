@@ -56,9 +56,6 @@ class CashTransferOperationInputValidatorTest {
     private lateinit var cashTransferParser: CashTransferContextParser
 
     @Autowired
-    private lateinit var cashTransferParser: CashTransferContextParser
-
-    @Autowired
     private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Autowired

@@ -62,7 +62,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun cashTransferPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
+    open fun cashTransferOperationPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                                                         redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                                         cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                                         messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {

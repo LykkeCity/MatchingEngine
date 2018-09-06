@@ -6,18 +6,19 @@ import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseA
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnectionFactory
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
 class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
+                                    private val ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
+                                    private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                     private val redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                     private val cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
@@ -27,13 +28,20 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
 
     override fun get(connectionName: String): PersistenceManager {
         return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor)
+            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                    ordersDatabaseAccessorsHolder.primaryAccessor,
+                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                    fileProcessedMessagesDatabaseAccessor)
             Storage.Redis -> {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         redisConnectionFactory.getConnection(connectionName)!!,
                         config
