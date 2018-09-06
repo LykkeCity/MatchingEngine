@@ -31,7 +31,7 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
         val responseBuilder = ProtocolMessages.NewResponse.newBuilder()
                 .setStatus(status.type)
 
-        message.let { responseBuilder.setStatusReason(it) }
+        message?.let { responseBuilder.setStatusReason(it) }
         messageWrapper.writeNewResponse(responseBuilder)
     }
 
