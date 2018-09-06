@@ -18,8 +18,6 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.holders.*
-import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
@@ -548,8 +546,9 @@ open class TestApplicationContext {
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
+                                     persistenceManager: PersistenceManager,
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper)
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, persistenceManager,  limitOrdersCancelHelper)
     }
 
     @Bean

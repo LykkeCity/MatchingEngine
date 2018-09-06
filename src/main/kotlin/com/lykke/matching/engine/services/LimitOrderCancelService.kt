@@ -24,6 +24,7 @@ import java.util.stream.Collectors
 class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
+                              private val persistenceManager: PersistenceManager,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
 
 
