@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -39,11 +38,9 @@ import kotlin.test.assertNull
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MinVolumeOrderCancellerTest : AbstractTest() {
 
-    @Autowired
-    private lateinit var recalculator: ReservedVolumesRecalculator
-
     @TestConfiguration
     open class Config {
+
         @Bean
         @Primary
         open fun testBackOfficeDatabaseAccessor(): TestBackOfficeDatabaseAccessor {
@@ -55,7 +52,6 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
             return testBackOfficeDatabaseAccessor
         }
-
         @Bean
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
@@ -63,10 +59,13 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
             testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
             return testSettingsDatabaseAccessor
         }
+
     }
 
+    private lateinit var canceller: MinVolumeOrderCanceller
+
     @Autowired
-    lateinit var applicationContext: ApplicationContext
+    private lateinit var recalculator: ReservedVolumesRecalculator
 
     @Autowired
     lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>

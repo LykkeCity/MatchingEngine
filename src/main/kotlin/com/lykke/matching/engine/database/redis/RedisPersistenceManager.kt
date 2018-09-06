@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperation
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
@@ -16,7 +17,6 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
-import redis.clients.jedis.Jedis
 import redis.clients.jedis.Transaction
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -27,7 +27,7 @@ class RedisPersistenceManager(
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val redisHolder: PersistenceRedisHolder,
+        private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
 
     companion object {
@@ -49,10 +49,9 @@ class RedisPersistenceManager(
             return true
         }
         return try {
-            persistData(redisHolder.persistenceRedis(), data)
+            persistData(redisConnection, data)
             true
         } catch (e: Exception) {
-            redisHolder.fail()
             val message = "Unable to save data (${data.details()})"
             LOGGER.error(message, e)
             METRICS_LOGGER.logError(message, e)
@@ -60,9 +59,9 @@ class RedisPersistenceManager(
         }
     }
 
-    private fun persistData(jedis: Jedis, data: PersistenceData) {
+    private fun persistData(redisConnection: RedisConnection, data: PersistenceData) {
         val startTime = System.nanoTime()
-        jedis.multi().use { transaction ->
+        redisConnection.transactionalResource { transaction ->
             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
 

@@ -20,11 +20,11 @@ class AzureCashOperationsDatabaseAccessor(connectionString: String,
 
     override fun insertTransferOperation(operation: TransferOperation) {
         try {
-            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.id, operation.externalId,
-                    operation.fromClientId, operation.toClientId, operation.asset, operation.dateTime, operation.volume.toDouble())))
+            transferOperationsTable.execute(TableOperation.insertOrMerge(AzureWalletTransferOperation(operation.matchingEngineOperationId, operation.externalId,
+                    operation.fromClientId, operation.toClientId, operation.asset!!.assetId, operation.dateTime, operation.volume.toDouble())))
         } catch (e: Exception) {
-            LOGGER.error("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
-            METRICS_LOGGER.logError("Unable to insert operation: ${operation.id}, external id: ${operation.externalId}", e)
+            LOGGER.error("Unable to insert operation: ${operation.matchingEngineOperationId}, external id: ${operation.externalId}", e)
+            METRICS_LOGGER.logError("Unable to insert operation: ${operation.matchingEngineOperationId}, external id: ${operation.externalId}", e)
         }
     }
 
