@@ -539,12 +539,17 @@ open class TestApplicationContext {
     }
 
     @Bean
+    open fun limitOrdersCancelHelper(cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrdersCancelHelper {
+        return LimitOrdersCancelHelper(cancellerFactory)
+    }
+
+    @Bean
     open fun limitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
                                      genericStopLimitOrderService: GenericStopLimitOrderService,
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
-                                     persistenceManager: PersistenceManager): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory, validator, persistenceManager)
+                                     limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper)
     }
 
     @Bean
@@ -569,8 +574,9 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderService,
                                          genericStopLimitOrderService: GenericStopLimitOrderService,
-                                         cancellerFactory: GenericLimitOrdersCancellerFactory): LimitOrderMassCancelService {
-        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, cancellerFactory)
+                                         cancellerFactory: GenericLimitOrdersCancellerFactory,
+                                         limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderMassCancelService {
+        return LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, limitOrdersCancelHelper)
     }
 
     @Bean
