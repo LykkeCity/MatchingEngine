@@ -43,6 +43,6 @@ class BalancesController {
     }
 
     private fun toBalanceDto(assetId: String, assetBalance: AssetBalance): BalanceDto? {
-        return BalanceDto(assetId, assetBalance?.balance, assetBalance?.reserved)
+        return BalanceDto(assetId, assetBalance.balance, assetBalance.reserved)
     }
 }
