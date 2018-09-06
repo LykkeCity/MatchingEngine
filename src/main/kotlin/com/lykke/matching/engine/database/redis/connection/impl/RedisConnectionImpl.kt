@@ -29,11 +29,21 @@ class RedisConnectionImpl(private val connectionName: String,
     @Synchronized
     override fun resource(unitOfWork: (Jedis) -> Unit) {
         return try {
-            unitOfWork.invoke(jedis)
+            invokeUnitOfWork(unitOfWork)
         } catch (e: JedisException) {
-            LOGGER.error("Redis exception occurred during data persistence, $connectionName", e)
+            LOGGER.error("Redis exception occurred, $connectionName", e)
             applicationEventPublisher.publishEvent(RedisFailureEvent(connectionName))
             throw e
+        }
+    }
+
+    private fun invokeUnitOfWork(unitOfWork: (Jedis) -> Unit) {
+        return try {
+            unitOfWork.invoke(jedis)
+        } catch (e: JedisException) {
+            LOGGER.error("Redis exception occurred, $connectionName; trying to reconnect and retry.", e)
+            reconnect()
+            unitOfWork.invoke(jedis)
         }
     }
 
