@@ -31,6 +31,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
         val allSettingGroups = settingsDatabaseAccessor.getAllSettingGroups(true)
         trustedClients = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.TRUSTED_CLIENTS)
         disabledAssets = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.DISABLED_ASSETS)
+        messageProcessingSwitch = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH)
 
         moPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD)
         loPriceDeviationThresholds = getSettingNameToValueByGroupName(allSettingGroups, AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD)

@@ -9,6 +9,7 @@ import com.lykke.utils.logging.MetricsLogger
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.logging.Logger
+import javax.annotation.PostConstruct
 
 @Component
 class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationSettingsCache) {
@@ -54,6 +55,16 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
         val message = getLogMessageMessage(START_ACTION, deleteSettingGroupEvent.user, deleteSettingGroupEvent.comment)
         LOGGER.info(message)
         METRICS_LOGGER.logWarning(message)
+    }
+
+    @PostConstruct
+    private fun logInitialSwitchStatus() {
+        if (!applicationSettingsCache.isMessageProcessingEnabled()) {
+            val message = "ME started with message processing DISABLED, all incoming messages will be rejected " +
+                    "for enabling message processing change setting group \"${AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH.settingGroupName}\""
+            LOGGER.info(message)
+            METRICS_LOGGER.logWarning(message)
+        }
     }
 
     private fun getLogMessageMessage(action: String, user: String, comment: String): String {
