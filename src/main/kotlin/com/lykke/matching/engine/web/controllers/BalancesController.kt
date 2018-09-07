@@ -2,6 +2,7 @@ package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.web.dto.BalanceDto
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.apache.commons.lang3.StringUtils
