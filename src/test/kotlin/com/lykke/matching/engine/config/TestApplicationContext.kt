@@ -45,6 +45,7 @@ import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.mockito.Mockito
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -258,8 +259,9 @@ open class TestApplicationContext {
     @Bean
     open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                         applicationSettingsCache: ApplicationSettingsCache,
-                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor): ApplicationSettingsService {
-        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor)
+                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
+                                        applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsService {
+        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean
@@ -464,5 +466,11 @@ open class TestApplicationContext {
                                           messageSender: MessageSender): CashTransferOperationService {
         return CashTransferOperationService(balancesHolder, notification, dbTransferOperationQueue, feeProcessor,
                 cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
+    }
+
+
+    @Bean
+    open fun settingsListener(): SettingsListener {
+        return SettingsListener()
     }
 }
