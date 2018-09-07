@@ -4,15 +4,20 @@ import com.lykke.matching.engine.daos.setting.*
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.services.events.DeleteSettingEvent
+import com.lykke.matching.engine.services.events.DeleteSettingGroupEvent
+import com.lykke.matching.engine.services.events.SettingChangedEvent
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 
 @Service
 class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                      private val applicationSettingsCache: ApplicationSettingsCache,
-                                     private val applicationSettingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor) : ApplicationSettingsService {
+                                     private val applicationSettingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
+                                     private val applicationEventPublisher: ApplicationEventPublisher) : ApplicationSettingsService {
 
     private companion object {
         val COMMENT_FORMAT = "[%s] %s"
@@ -44,7 +49,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     @Synchronized
     override fun getHistoryRecords(settingsGroup: AvailableSettingGroup, settingName: String): List<SettingDto> {
         return applicationSettingsHistoryDatabaseAccessor
-                .get(settingsGroup.settingGroupName, settingName)
+                .get(settingsGroup, settingName)
                 .map(::toSettingDto)
     }
 
@@ -53,9 +58,17 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
 
         val setting = toSetting(settingDto)
+        val settingHistoryRecord = toSettingHistoryRecord(settingsGroup, setting, commentWithOperationPrefix, settingDto.user!!)
+
         settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, setting)
-        addHistoryRecord(settingsGroup, commentWithOperationPrefix, settingDto.user!!, setting)
+        applicationSettingsHistoryDatabaseAccessor.save(settingHistoryRecord)
         updateSettingInCache(settingDto, settingsGroup)
+
+        applicationEventPublisher.publishEvent(SettingChangedEvent(settingsGroup,
+                settingDto.name,
+                settingDto.value,
+                settingDto.comment!!,
+                settingDto.user))
     }
 
     @Synchronized
@@ -66,6 +79,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
         settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
+        applicationEventPublisher.publishEvent(DeleteSettingGroupEvent(settingsGroup, deleteSettingRequestDto.comment, deleteSettingRequestDto.user))
     }
 
     @Synchronized
@@ -78,6 +92,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
                 getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
                 deleteSettingRequestDto.user, settingToBeDeleted)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
+        applicationEventPublisher.publishEvent(DeleteSettingEvent(settingsGroup, settingName, deleteSettingRequestDto.comment, deleteSettingRequestDto.user))
     }
 
     @Synchronized
@@ -90,7 +105,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     private fun addHistoryRecord(settingGroupName: AvailableSettingGroup, comment: String, user: String, setting: Setting) {
-        applicationSettingsHistoryDatabaseAccessor.save(settingGroupName.settingGroupName, toSettingHistoryRecord(setting, comment, user))
+        applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingGroupName, setting, comment, user))
     }
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {
@@ -112,13 +127,16 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         return Setting(settingDto.name, settingDto.value, settingDto.enabled!!)
     }
 
-    private fun toSettingHistoryRecord(settingDto: Setting, comment: String, user: String): SettingHistoryRecord {
-        return settingDto.let {
-            SettingHistoryRecord(it.name, it.value, it.enabled, comment, user)
+    private fun toSettingHistoryRecord(settingsGroup: AvailableSettingGroup,
+                                       setting: Setting,
+                                       comment: String,
+                                       user: String): SettingHistoryRecord {
+        return setting.let {
+            SettingHistoryRecord(settingsGroup, it.name, it.value, it.enabled, comment, user)
         }
     }
 
-    private fun getCommentWithOperationPrefix(prefix: SettingOperation, comment: String): String  {
+    private fun getCommentWithOperationPrefix(prefix: SettingOperation, comment: String): String {
         return COMMENT_FORMAT.format(prefix, comment)
     }
 

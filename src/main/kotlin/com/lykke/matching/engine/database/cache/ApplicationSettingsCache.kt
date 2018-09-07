@@ -23,6 +23,9 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     @Volatile
     private var loPriceDeviationThresholds: MutableMap<String, String> = ConcurrentHashMap()
 
+    @Volatile
+    private var messageProcessingSwitch: MutableMap<String, String> = ConcurrentHashMap()
+
     @PostConstruct
     override fun update() {
         val allSettingGroups = settingsDatabaseAccessor.getAllSettingGroups(true)
@@ -47,6 +50,10 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
 
     fun limitOrderPriceDeviationThreshold(assetPairId: String): BigDecimal? {
         return loPriceDeviationThresholds[assetPairId]?.toBigDecimal()
+    }
+
+    fun isMessageProcessingEnabled(): Boolean {
+        return messageProcessingSwitch.isEmpty()
     }
 
     fun createOrUpdateSettingValue(settingGroup: AvailableSettingGroup, settingName: String, value: String) {
@@ -76,6 +83,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
             AvailableSettingGroup.DISABLED_ASSETS -> disabledAssets
             AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD -> moPriceDeviationThresholds
             AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD -> loPriceDeviationThresholds
+            AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH -> messageProcessingSwitch
         }
     }
 }
