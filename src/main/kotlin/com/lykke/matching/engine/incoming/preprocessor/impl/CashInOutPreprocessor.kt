@@ -70,6 +70,7 @@ class CashInOutPreprocessor(
                                    message: String) {
         val messageWrapper = cashInOutParsedData.messageWrapper
         val context = messageWrapper.context as CashInOutContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashInOutOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
