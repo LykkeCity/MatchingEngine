@@ -615,6 +615,7 @@ open class TestApplicationContext {
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>(),
+                LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>())
     }
 }
