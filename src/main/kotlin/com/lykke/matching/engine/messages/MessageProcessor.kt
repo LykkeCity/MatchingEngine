@@ -239,16 +239,17 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 service.parseMessage(message)
             }
 
+
+            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
+                service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+                return
+            }
+
             if (!messageProcessingStatusHolder.isHealthStatusOk()) {
                 service.writeResponse(message, MessageStatus.RUNTIME)
                 val errorMessage = "Message processing is disabled"
                 LOGGER.error(errorMessage)
                 METRICS_LOGGER.logError(errorMessage)
-                return
-            }
-
-            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
-                service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
                 return
             }
 
