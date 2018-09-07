@@ -4,10 +4,12 @@ import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -16,22 +18,18 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
-import com.lykke.matching.engine.notification.RabbitSwapListener
-import com.lykke.matching.engine.notification.TestClientLimitOrderListener
-import com.lykke.matching.engine.notification.TestLkkTradeListener
-import com.lykke.matching.engine.notification.TestOrderBookListener
-import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
-import com.lykke.matching.engine.notification.TestReservedCashOperationListener
-import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
-import com.lykke.matching.engine.notification.TradeInfoListener
+import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.outgoing.messages.CashOperation
+import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
@@ -39,6 +37,8 @@ import com.lykke.matching.engine.outgoing.messages.ReservedCashOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.BalanceUpdateService
+import com.lykke.matching.engine.services.CashInOutOperationService
+import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MarketOrderService
@@ -46,14 +46,26 @@ import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.MultiLimitOrderService
 import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
+import com.lykke.matching.engine.services.validators.business.impl.CashInOutOperationBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
+import com.lykke.matching.engine.services.validators.input.impl.CashInOutOperationInputValidatorImpl
+import com.lykke.matching.engine.services.validators.input.impl.CashTransferOperationInputValidatorImpl
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
 import com.lykke.matching.engine.utils.order.AllOrdersCanceller
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.mockito.Mockito
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 @Import(QueueConfig::class)
@@ -97,7 +109,7 @@ open class TestApplicationContext {
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
-                testReservedVolumesDatabaseAccessor,  assetHolder,
+                testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
                 false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
     }
@@ -191,17 +203,34 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashInOutOperationValidator(balancesHolder: BalancesHolder,
-                                         assetsHolder: AssetsHolder,
-                                         applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationValidator {
-        return CashInOutOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+    open fun cashInOutOperationBusinessValidator(balancesHolder: BalancesHolder): CashInOutOperationBusinessValidator {
+        return CashInOutOperationBusinessValidatorImpl(balancesHolder)
     }
 
     @Bean
-    open fun cashTransferOperationValidator(balancesHolder: BalancesHolder,
-                                            assetsHolder: AssetsHolder,
-                                            applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationValidator {
-        return CashTransferOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
+    open fun cashTransferOperationBusinessValidator(balancesHolder: BalancesHolder): CashTransferOperationBusinessValidator {
+        return CashTransferOperationBusinessValidatorImpl(balancesHolder)
+    }
+
+    @Bean
+    open fun cashInOutOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashInOutOperationInputValidator {
+        return CashInOutOperationInputValidatorImpl(applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashTransferOperationInputValidator(applicationSettingsCache: ApplicationSettingsCache): CashTransferOperationInputValidator {
+        return CashTransferOperationInputValidatorImpl(applicationSettingsCache)
+    }
+
+    @Bean
+    open fun cashInOutOperationService(balancesHolder: BalancesHolder,
+                                       rabbitCashInOutQueue: BlockingQueue<CashOperation>,
+                                       feeProcessor: FeeProcessor,
+                                       cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator,
+                                       messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                       messageSender: MessageSender): CashInOutOperationService {
+        return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
+                cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean
@@ -427,5 +456,46 @@ open class TestApplicationContext {
     @Bean
     open fun feeProcessor(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
         return FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+    }
+
+
+    @Bean
+    open fun cashInOutContextParser(assetsHolder: AssetsHolder): CashInOutContextParser {
+        return CashInOutContextParser(assetsHolder)
+    }
+
+    @Bean
+    open fun processedMessagesCache(): ProcessedMessagesCache {
+        return Mockito.mock(ProcessedMessagesCache::class.java)
+    }
+
+    @Bean
+    open fun cashInOutPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager, processedMessagesCache: ProcessedMessagesCache): CashInOutPreprocessor {
+        return CashInOutPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(),
+                Mockito.mock(CashOperationIdDatabaseAccessor::class.java), persistenceManager, processedMessagesCache)
+    }
+
+    @Bean
+    open fun cashTransferInitializer(assetsHolder: AssetsHolder): CashTransferContextParser {
+        return CashTransferContextParser(assetsHolder)
+    }
+
+    @Bean
+    open fun cashTransferPreprocessor(applicationContext: ApplicationContext, persistenceManager: PersistenceManager, processedMessagesCache: ProcessedMessagesCache): CashTransferPreprocessor {
+        return CashTransferPreprocessor(LinkedBlockingQueue(), LinkedBlockingQueue(), Mockito.mock(CashOperationIdDatabaseAccessor::class.java), persistenceManager, processedMessagesCache)
+    }
+
+    @Bean
+    open fun messageBuilder(cashTransferContextParser: CashTransferContextParser, cashInOutContextParser: CashInOutContextParser): MessageBuilder {
+        return MessageBuilder(cashInOutContextParser, cashTransferContextParser)
+    }
+
+    @Bean
+    open fun cashTransferOperationService(balancesHolder: BalancesHolder, notification: BlockingQueue<CashTransferOperation>,
+                                          dbTransferOperationQueue: BlockingQueue<TransferOperation>, feeProcessor: FeeProcessor,
+                                          cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator, messageSequenceNumberHolder: MessageSequenceNumberHolder,
+                                          messageSender: MessageSender): CashTransferOperationService {
+        return CashTransferOperationService(balancesHolder, notification, dbTransferOperationQueue, feeProcessor,
+                cashTransferOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
     }
 }

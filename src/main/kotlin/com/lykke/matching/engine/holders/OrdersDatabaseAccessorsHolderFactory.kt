@@ -2,8 +2,8 @@ package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,7 +17,7 @@ class OrdersDatabaseAccessorsHolderFactory : FactoryBean<OrdersDatabaseAccessors
     private lateinit var config: Config
 
     @Autowired
-    private lateinit var redisHolder: Optional<InitialLoadingRedisHolder>
+    private lateinit var initialLoadingRedisConnection: Optional<RedisConnection>
 
     override fun getObjectType(): Class<*> {
         return OrdersDatabaseAccessorsHolder::class.java
@@ -28,7 +28,7 @@ class OrdersDatabaseAccessorsHolderFactory : FactoryBean<OrdersDatabaseAccessors
             Storage.Azure ->
                 OrdersDatabaseAccessorsHolder(FileOrderBookDatabaseAccessor(config.me.orderBookPath), null)
             Storage.Redis ->
-                OrdersDatabaseAccessorsHolder(RedisOrderBookDatabaseAccessor(redisHolder.get(), config.me.redis.ordersDatabase),
+                OrdersDatabaseAccessorsHolder(RedisOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase),
                         if (config.me.writeOrdersToSecondaryDb)
                             FileOrderBookDatabaseAccessor(config.me.secondaryOrderBookPath)
                         else null)

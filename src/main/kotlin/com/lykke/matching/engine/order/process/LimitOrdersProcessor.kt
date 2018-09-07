@@ -374,7 +374,11 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                             it.fees,
                             it.absoluteSpread,
                             it.relativeSpread,
-                            TradeRole.TAKER)
+                            TradeRole.TAKER,
+                            it.baseAssetId,
+                            it.baseVolume,
+                            it.quotingAssetId,
+                            it.quotingVolume)
                 }.toMutableList()))
 
         matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
