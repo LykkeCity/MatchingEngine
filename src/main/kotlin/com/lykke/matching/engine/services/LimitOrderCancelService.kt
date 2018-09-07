@@ -42,7 +42,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         try {
             validator.performValidation(typeToOrder, context)
         } catch (e: ValidationException) {
-            LOGGER.info(e.message)
+            LOGGER.info("Business validation failed: ${context.messageId}, details: ${e.message}")
             writeResponse(messageWrapper, MessageStatusUtils.toMessageStatus(e.validationType))
             return
         }

@@ -80,6 +80,7 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
                                    message: String) {
         val messageWrapper = data.messageWrapper
         val context = messageWrapper.context as LimitOrderCancelOperationContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistenceSuccess = limitOrderCancelOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
 

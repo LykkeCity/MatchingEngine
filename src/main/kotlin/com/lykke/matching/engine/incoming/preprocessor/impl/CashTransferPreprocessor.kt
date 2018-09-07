@@ -71,6 +71,7 @@ class CashTransferPreprocessor(
                                    message: String) {
         val messageWrapper = cashTransferParsedData.messageWrapper
         val context = messageWrapper.context as CashTransferContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashTransferPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
