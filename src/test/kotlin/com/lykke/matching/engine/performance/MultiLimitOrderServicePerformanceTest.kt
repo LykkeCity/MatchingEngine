@@ -210,7 +210,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchAndCancel(): Double {
         val counter = ActionTimeCounter()
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)

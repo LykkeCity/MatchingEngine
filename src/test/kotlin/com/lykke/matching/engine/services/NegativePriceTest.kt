@@ -71,7 +71,7 @@ class NegativePriceTest : AbstractTest() {
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client"))
 
         initServices()
 
