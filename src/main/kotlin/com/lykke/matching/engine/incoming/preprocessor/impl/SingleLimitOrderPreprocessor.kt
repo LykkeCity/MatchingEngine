@@ -83,7 +83,7 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         this.start()
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {

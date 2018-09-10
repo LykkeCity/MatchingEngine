@@ -2,14 +2,12 @@ package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -24,8 +22,6 @@ import com.lykke.matching.engine.notification.TestOrderBookListener
 import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
-import com.lykke.matching.engine.holders.*
-import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
@@ -85,6 +81,9 @@ abstract class AbstractTest {
 
     @Autowired
     private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
+
+    @Autowired
+    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
@@ -150,14 +149,10 @@ abstract class AbstractTest {
     protected lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
 
     @Autowired
+    protected lateinit var limitOrderCancelService: LimitOrderCancelService
+
+    @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
-
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-    @Autowired
-    protected lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
-
-    @Autowired
-    protected lateinit var messageSender: MessageSender
 
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
@@ -174,11 +169,11 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
-    protected lateinit var singleLimitOrderService: SingleLimitOrderService
-
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
-    protected lateinit var limitOrderCancelService: LimitOrderCancelService
+    @Autowired
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
+
+    protected lateinit var singleLimitOrderService: SingleLimitOrderService
+    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     private var initialized = false
@@ -195,15 +190,10 @@ abstract class AbstractTest {
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
     }
 
     protected fun clearMessageQueues() {
-        quotesNotificationQueue.clear()
-
         balanceUpdateHandlerTest.clear()
         tradesInfoListener.clear()
 

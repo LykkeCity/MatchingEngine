@@ -3,6 +3,7 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
+import com.lykke.matching.engine.database.common.PersistenceManagerFactory
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.*
@@ -31,94 +32,29 @@ open class DatabaseAccessorConfig {
     @Autowired
     private lateinit var redisConnectionFactory: RedisConnectionFactory
 
+    @Autowired
+    private lateinit var persistenceManagerFactory: PersistenceManagerFactory
+
     @Bean
-    open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
-                                stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
-        return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
-                    ordersDatabaseAccessorsHolder.primaryAccessor,
-                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                    fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
-                        redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.secondaryAccessor,
-                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        persistenceRedisConnection()!!,
-                        config
-                )
-            }
-        }
+    open fun persistenceManager(): PersistenceManager {
+        return persistenceManagerFactory.get("persistenceRedisConnection")
     }
 
     @Bean
-    open fun cashInOutOperationPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
-                                stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
-        return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
-                    ordersDatabaseAccessorsHolder.primaryAccessor,
-                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                    fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
-                        redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.secondaryAccessor,
-                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        cashInOutOperationsPreprocessorRedisConnection()!!,
-                        config
-                )
-            }
-        }
+    open fun cashInOutOperationPreprocessorPersistenceManager(): PersistenceManager {
+        return persistenceManagerFactory.get("cashInOutOperationPreprocessorRedisConnection")
+    }
+
+
+    @Bean
+    open fun limitOrderCancelOperationPreprocessorPersistenceManager(): PersistenceManager {
+        return persistenceManagerFactory.get("limitOrderCancelOperationPreprocessorRedisConnection")
+
     }
 
     @Bean
-    open fun cashTransferOperationPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                                              redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                                              ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
-                                                              stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                                              cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                                              messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
-        return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
-                    ordersDatabaseAccessorsHolder.primaryAccessor,
-                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                    fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
-                        redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.secondaryAccessor,
-                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        cashTransferOperationsPreprocessorRedisConnection()!!,
-                        config
-                )
-            }
-        }
+    open fun cashTransferOperationPreprocessorPersistenceManager(): PersistenceManager {
+        return persistenceManagerFactory.get("cashTransferOperationsPreprocessorRedisConnection")
     }
 
     @Bean
@@ -207,28 +143,12 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun persistenceRedisConnection(): RedisConnection? {
-        return redisConnectionFactory.getConnection("persistenceRedisConnection")
-    }
-
-    @Bean
-    open fun cashInOutOperationsPreprocessorRedisConnection(): RedisConnection? {
-        return redisConnectionFactory.getConnection("cashOperationsPreprocessorRedisConnection")
-    }
-
-    @Bean
-    open fun cashTransferOperationsPreprocessorRedisConnection(): RedisConnection? {
-        return redisConnectionFactory.getConnection("cashTransferOperationsPreprocessorRedisConnection")
-    }
-
-
-    @Bean
     open fun backOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
         return AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
     }
 
     @Bean
-    open fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
+    open fun azureCashOperationsDatabaseAccessor(@Value("\${azure.cache.operation.table}") tableName: String)
             : CashOperationsDatabaseAccessor {
         return AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
     }
@@ -240,9 +160,9 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
-                                             @Value("\${azure.candles.table}")candlesTable: String,
-                                             @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
+    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable: String,
+                                             @Value("\${azure.candles.table}") candlesTable: String,
+                                             @Value("\${azure.hour.candles.table}") hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
         return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
                 bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)
