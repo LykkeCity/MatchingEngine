@@ -217,7 +217,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchAndCancel(): Double {
         val counter = ActionTimeCounter()
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
 
         initServices()
 

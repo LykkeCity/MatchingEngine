@@ -34,14 +34,14 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean?): SettingsGroupDto? {
-        return settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
+        return settingsDatabaseAccessor.getSettingsGroup(settingsGroup, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
     @Synchronized
     override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean?): SettingDto? {
-        return settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
+        return settingsDatabaseAccessor.getSetting(settingsGroup, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
@@ -60,7 +60,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         val setting = toSetting(settingDto)
         val settingHistoryRecord = toSettingHistoryRecord(settingsGroup, setting, commentWithOperationPrefix, settingDto.user!!)
 
-        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, setting)
+        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup, setting)
         applicationSettingsHistoryDatabaseAccessor.save(settingHistoryRecord)
         updateSettingInCache(settingDto, settingsGroup)
 
@@ -75,7 +75,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup, deleteSettingRequestDto: DeleteSettingRequestDto) {
         val settingsGroupToBeDeleted = settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName) ?: return
 
-        settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.settingGroupName)
+        settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup)
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
         settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)

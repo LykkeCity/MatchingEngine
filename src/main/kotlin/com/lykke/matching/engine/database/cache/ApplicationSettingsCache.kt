@@ -70,7 +70,7 @@ class ApplicationSettingsCache @Autowired constructor(private val settingsDataba
     }
 
     private fun getSettingNameToValueByGroupName(settingGroups: Set<SettingsGroup>, availableSettingGroups: AvailableSettingGroup): MutableMap<String, String> {
-        val settings = settingGroups.find { it.name == availableSettingGroups.settingGroupName } ?: return ConcurrentHashMap()
+        val settings = settingGroups.find { it.settingGroup == availableSettingGroups } ?: return ConcurrentHashMap()
 
         val result = ConcurrentHashMap<String, String>()
         settings.settings.forEach { result.put(it.name, it.value) }
