@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.config.spring
 
 import com.google.gson.*
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
+import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.catalina.connector.Connector
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,6 +43,11 @@ open class WebConfig  {
         val converter = GsonHttpMessageConverter()
         converter.gson = gson()
         return converter
+    }
+
+    @Bean
+    open fun settingValidators(settingValidators: List<SettingValidator>): Map<AvailableSettingGroup, List<SettingValidator>> {
+        return settingValidators.groupBy { it.getSettingGroup() }
     }
 
     private fun gson(): Gson = GsonBuilder()
