@@ -16,6 +16,7 @@ class ValidationException(val validationType: Validation, validationMessage: Str
         UNKNOWN_ASSET("Unknown asset"),
         BALANCE_LOWER_THAN_RESERVED("Balance lower than reserved"),
         LIMIT_ORDER_NOT_FOUND("Limit order not found"),
-        GENERIC_VALIDATION_FAILURE("Input data is not valid")
+        GENERIC_VALIDATION_FAILURE("Input data is not valid"),
+        NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE("Supplied value is not supported")
     }
 }

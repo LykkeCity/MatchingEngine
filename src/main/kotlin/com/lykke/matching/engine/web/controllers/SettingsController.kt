@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.InvalidSettingGroupException
 import com.lykke.matching.engine.daos.setting.SettingNotFoundException
 import com.lykke.matching.engine.services.ApplicationSettingsService
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
@@ -149,6 +150,11 @@ class SettingsController {
                       @Valid
                       deleteRequest: DeleteSettingRequestDto) {
         applicationSettingsService.deleteSetting(AvailableSettingGroup.getBySettingsGroupName(settingGroupName), settingName, deleteRequest)
+    }
+
+    @ExceptionHandler
+    private fun handleApplicationValidationException(request: HttpServletRequest, exception: ValidationException): ResponseEntity<*> {
+        return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler

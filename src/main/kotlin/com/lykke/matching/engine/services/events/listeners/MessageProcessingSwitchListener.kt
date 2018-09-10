@@ -20,12 +20,14 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
         val LOG_MESSAGE_FORMAT = "Message processing has been %s, " +
                 "by user: %s, comment: %s"
         val START_ACTION = "STARTED"
-        val STOP_ACTION = "STOPED"
+        val STOP_ACTION = "STOPPED"
     }
 
     @EventListener
     private fun messageProcessingSwitchChanged(settingChangedEvent: SettingChangedEvent) {
-        if (settingChangedEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH) {
+        if (settingChangedEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH
+                || settingChangedEvent.previousSetting == null && !settingChangedEvent.setting.enabled
+                || settingChangedEvent.previousSetting?.enabled == settingChangedEvent.setting.enabled) {
             return
         }
 
@@ -37,7 +39,8 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
 
     @EventListener
     private fun messageProcessingSwitchRemoved(deleteSettingEvent: DeleteSettingEvent) {
-        if (deleteSettingEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH) {
+        if (deleteSettingEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH
+                || !deleteSettingEvent.deletedSetting.enabled) {
             return
         }
 
@@ -48,7 +51,8 @@ class MessageProcessingSwitchListener(val applicationSettingsCache: ApplicationS
 
     @EventListener
     private fun messageProcessingSwtichGroupRemoved(deleteSettingGroupEvent: DeleteSettingGroupEvent) {
-        if (deleteSettingGroupEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH) {
+        if (deleteSettingGroupEvent.settingGroup != AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH ||
+                deleteSettingGroupEvent.deletedSettings.find { it.enabled } == null) {
             return
         }
 

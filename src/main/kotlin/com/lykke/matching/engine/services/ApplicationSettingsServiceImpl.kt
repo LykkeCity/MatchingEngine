@@ -7,9 +7,11 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.services.events.DeleteSettingEvent
 import com.lykke.matching.engine.services.events.DeleteSettingGroupEvent
 import com.lykke.matching.engine.services.events.SettingChangedEvent
+import com.lykke.matching.engine.services.validators.settings.SettingValidator
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.lykke.matching.engine.web.dto.SettingsGroupDto
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 
@@ -26,6 +28,9 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     private enum class SettingOperation {
         CREATE, UPDATE, ENABLE, DISABLE, DELETE
     }
+
+    @Autowired
+    private lateinit var settingGroupToValidator: Map<AvailableSettingGroup, List<SettingValidator>>
 
     @Synchronized
     override fun getAllSettingGroups(enabled: Boolean?): Set<SettingsGroupDto> {
@@ -55,7 +60,10 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun createOrUpdateSetting(settingsGroup: AvailableSettingGroup, settingDto: SettingDto) {
-        val commentWithOperationPrefix = getCommentWithOperationPrefix(settingsGroup, settingDto)
+        settingGroupToValidator[settingsGroup]?.forEach { it.validate(settingDto) }
+
+        val previousSetting = getSetting(settingsGroup, settingDto.name)
+        val commentWithOperationPrefix = getCommentWithOperationPrefix(getSettingOperation(previousSetting, settingDto), settingDto.comment!!)
 
         val setting = toSetting(settingDto)
         val settingHistoryRecord = toSettingHistoryRecord(settingsGroup, setting, commentWithOperationPrefix, settingDto.user!!)
@@ -66,8 +74,9 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
         applicationEventPublisher.publishEvent(SettingChangedEvent(settingsGroup,
                 settingDto.name,
-                settingDto.value,
-                settingDto.comment!!,
+                setting,
+                previousSetting?.let{toSetting(it)},
+                settingDto.comment,
                 settingDto.user))
     }
 
@@ -79,7 +88,10 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
         settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
-        applicationEventPublisher.publishEvent(DeleteSettingGroupEvent(settingsGroup, deleteSettingRequestDto.comment, deleteSettingRequestDto.user))
+        applicationEventPublisher.publishEvent(DeleteSettingGroupEvent(settingsGroup,
+                settingsGroupToRemove.settings,
+                deleteSettingRequestDto.comment,
+                deleteSettingRequestDto.user))
     }
 
     @Synchronized
@@ -92,7 +104,11 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
                 getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
                 deleteSettingRequestDto.user, settingToBeDeleted)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
-        applicationEventPublisher.publishEvent(DeleteSettingEvent(settingsGroup, settingName, deleteSettingRequestDto.comment, deleteSettingRequestDto.user))
+
+        applicationEventPublisher.publishEvent(DeleteSettingEvent(settingsGroup,
+                deletedSetting,
+                deleteSettingRequestDto.comment,
+                deleteSettingRequestDto.user))
     }
 
     @Synchronized
@@ -138,11 +154,6 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     private fun getCommentWithOperationPrefix(prefix: SettingOperation, comment: String): String {
         return COMMENT_FORMAT.format(prefix, comment)
-    }
-
-    private fun getCommentWithOperationPrefix(settingsGroup: AvailableSettingGroup, setting: SettingDto): String {
-        val previousSetting = getSetting(settingsGroup, setting.name)
-        return getCommentWithOperationPrefix(getSettingOperation(previousSetting, setting), setting.comment!!)
     }
 
     private fun getSettingOperation(previousSettingState: SettingDto?, nextSettingState: SettingDto): SettingOperation {
