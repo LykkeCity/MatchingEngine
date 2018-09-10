@@ -37,14 +37,14 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun getSettingsGroup(settingsGroup: AvailableSettingGroup, enabled: Boolean?): SettingsGroupDto? {
-        return settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName, enabled)?.let {
+        return settingsDatabaseAccessor.getSettingsGroup(settingsGroup, enabled)?.let {
             toSettingGroupDto(it)
         }
     }
 
     @Synchronized
     override fun getSetting(settingsGroup: AvailableSettingGroup, settingName: String, enabled: Boolean?): SettingDto? {
-        return settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName, enabled)?.let {
+        return settingsDatabaseAccessor.getSetting(settingsGroup, settingName, enabled)?.let {
             toSettingDto(it)
         }
     }
@@ -63,7 +63,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         val setting = toSetting(settingDto)
         val settingHistoryRecord = toSettingHistoryRecord(settingsGroup, setting, commentWithOperationPrefix, settingDto.user!!)
 
-        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup.settingGroupName, setting)
+        settingsDatabaseAccessor.createOrUpdateSetting(settingsGroup, setting)
         applicationSettingsHistoryDatabaseAccessor.save(settingHistoryRecord)
         updateSettingInCache(settingDto, settingsGroup)
 
@@ -76,9 +76,9 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val settingsGroupToRemove = settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName) ?: return
+        val settingsGroupToRemove = settingsDatabaseAccessor.getSettingsGroup(settingsGroup) ?: return
 
-        settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.settingGroupName)
+        settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup)
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
         settingsGroupToRemove.settings.forEach { applicationSettingsHistoryDatabaseAccessor.save(toSettingHistoryRecord(settingsGroup, it, commentWithPrefix, deleteSettingRequestDto.user)) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
@@ -87,9 +87,9 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?: return
+        val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup, settingName) ?: return
 
-        settingsDatabaseAccessor.deleteSetting(settingsGroup.settingGroupName, settingName)
+        settingsDatabaseAccessor.deleteSetting(settingsGroup, settingName)
         applicationSettingsHistoryDatabaseAccessor
                 .save(toSettingHistoryRecord(settingsGroup, deletedSetting,
                         getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
@@ -109,7 +109,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     private fun toSettingGroupDto(settingGroup: SettingsGroup): SettingsGroupDto {
         val settingsDtos = settingGroup.settings.map { toSettingDto(it) }.toSet()
-        return SettingsGroupDto(settingGroup.name, settingsDtos)
+        return SettingsGroupDto(settingGroup.settingGroup.settingGroupName, settingsDtos)
     }
 
     private fun toSettingDto(setting: Setting): SettingDto {

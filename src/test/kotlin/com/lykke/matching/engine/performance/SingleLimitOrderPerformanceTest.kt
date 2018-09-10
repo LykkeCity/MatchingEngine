@@ -26,7 +26,7 @@ class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
         testBackOfficeDatabaseAccessor.addAsset(Asset("ETH", 6))
         testBackOfficeDatabaseAccessor.addAsset(Asset("BTC", 8))
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURCHF", "EUR", "CHF", 5))
