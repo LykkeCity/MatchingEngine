@@ -122,7 +122,7 @@ open class TestApplicationContext {
                                          messageSender: MessageSender): ReservedVolumesRecalculator {
 
         return ReservedVolumesRecalculator(testOrderDatabaseAccessorHolder, stopOrdersDatabaseAccessorsHolder,
-                testReservedVolumesDatabaseAccessor,  assetHolder,
+                testReservedVolumesDatabaseAccessor, assetHolder,
                 assetsPairsHolder, balancesHolder, applicationSettingsCache,
                 false, balanceUpdateNotificationQueue, messageSequenceNumberHolder, messageSender)
     }
@@ -548,7 +548,7 @@ open class TestApplicationContext {
                                      validator: LimitOrderCancelOperationBusinessValidator,
                                      persistenceManager: PersistenceManager,
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, persistenceManager,  limitOrdersCancelHelper)
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, persistenceManager, limitOrdersCancelHelper)
     }
 
     @Bean
@@ -560,8 +560,8 @@ open class TestApplicationContext {
     open fun messageBuilder(cashInOutContextParser: CashInOutContextParser,
                             cashTransferContextParser: CashTransferContextParser,
                             limitOrderCancelOperationContextParser: LimitOrderCancelOperationContextParser,
-                            limitOrderMassCancelOperationContextParser:  ContextParser<LimitOrderMassCancelOperationParsedData>,
-                            singleLimitOrderContextParser: ContextParser<SingleLimitOrderParsedData> ): MessageBuilder {
+                            limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
+                            singleLimitOrderContextParser: ContextParser<SingleLimitOrderParsedData>): MessageBuilder {
         return MessageBuilder(cashInOutContextParser, cashTransferContextParser, limitOrderCancelOperationContextParser, limitOrderMassCancelOperationContextParser, singleLimitOrderContextParser)
     }
 
@@ -610,12 +610,17 @@ open class TestApplicationContext {
     open fun expiryOrdersQueue() = ExpiryOrdersQueue()
 
     @Bean
-    open fun messageRouter(): MessageRouter {
-        return MessageRouter(LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>())
+    open fun messageRouter(cashInOutInputQueue: BlockingQueue<MessageWrapper>,
+                           cashTransferInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessageRouter {
+        return MessageRouter(cashInOutInputQueue,
+                cashTransferInputQueue,
+                limitOrderCancelInputQueue,
+                limitOrderMassCancelInputQueue,
+                limitOrderInputQueue,
+                preProcessedMessageQueue)
     }
 }
