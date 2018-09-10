@@ -63,7 +63,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 emptyList(),
                 LOGGER)
 
-        matchingEngine.initTransaction()
+        matchingEngine.initTransaction(processor.walletOperationsProcessor)
         val result = processor.preProcess(messageId, listOf(order))
                 .apply(messageId, processedMessage, order.externalId, MessageType.LIMIT_ORDER, buySideOrderBookChanged, sellSideOrderBookChanged)
         messageWrapper?.triedToPersist = true

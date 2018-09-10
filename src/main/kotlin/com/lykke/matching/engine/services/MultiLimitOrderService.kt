@@ -79,7 +79,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
+    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, feeProcessor)
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 
@@ -179,7 +179,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         val completedOrders = mutableListOf<LimitOrder>()
 
-        matchingEngine.initTransaction()
+        matchingEngine.initTransaction(walletOperationsProcessor)
         orders.forEach { order ->
             var orderValid = true
             try {
@@ -515,7 +515,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 cancelResult.trustedClientsOrdersWithTrades,
                 LOGGER)
 
-        matchingEngine.initTransaction()
+        matchingEngine.initTransaction(processor.walletOperationsProcessor)
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
                 .apply(messageWrapper.messageId!!,
                         messageWrapper.processedMessage(),

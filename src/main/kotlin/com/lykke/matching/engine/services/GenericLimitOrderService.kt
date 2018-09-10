@@ -5,12 +5,10 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
-import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -25,9 +23,8 @@ import java.util.concurrent.PriorityBlockingQueue
 
 @Component
 class GenericLimitOrderService @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
-                                                      private val assetsHolder: AssetsHolder,
-                                                      private val assetsPairsHolder: AssetsPairsHolder,
-                                                      private val balancesHolder: BalancesHolder,
+                                                      assetsPairsHolder: AssetsPairsHolder,
+                                                      balancesHolder: BalancesHolder,
                                                       private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                                       private val tradeInfoQueue: BlockingQueue<TradeInfo>,
                                                       applicationSettingsCache: ApplicationSettingsCache) : AbstractGenericLimitOrderService<AssetOrderBook> {
@@ -91,19 +88,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
 
     fun setOrderBook(assetPair: String, isBuy: Boolean, book: PriorityBlockingQueue<LimitOrder>) {
         limitOrdersQueues.getOrPut(assetPair) { AssetOrderBook(assetPair) }.setOrderBook(isBuy, book)
-    }
-
-    fun checkAndReduceBalance(order: LimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
-        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
-        val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val availableBalance = limitBalances[order.clientId] ?: balancesHolder.getAvailableReservedBalance(order.clientId, limitAssetId)
-        val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
-        val result = availableBalance >= volume
-        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
-        if (result) {
-            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
-        }
-        return result
     }
 
     fun getOrder(uid: String) = limitOrdersMap[uid]

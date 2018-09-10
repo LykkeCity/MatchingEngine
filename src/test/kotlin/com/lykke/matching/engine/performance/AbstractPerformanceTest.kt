@@ -110,10 +110,9 @@ abstract class AbstractPerformanceTest {
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
         genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor,
-                assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 quotesUpdateQueue, tradeInfoQueue,
@@ -161,6 +160,7 @@ abstract class AbstractPerformanceTest {
         val marketOrderValidator = MarketOrderValidatorImpl(assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(
                 genericLimitOrderService,
+                genericLimitOrdersCancellerFactory,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,

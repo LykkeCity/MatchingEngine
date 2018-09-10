@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.holders
 
+import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.balance.WalletOperationsProcessor
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
@@ -22,7 +23,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
                      private val assetsHolder: AssetsHolder,
                      private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                      private val balanceUpdateQueue: BlockingQueue<BalanceUpdate>,
-                     private val applicationSettingsCache: ApplicationSettingsCache) {
+                     private val applicationSettingsCache: ApplicationSettingsCache): BalancesGetter {
 
     companion object {
         private val LOGGER = Logger.getLogger(BalancesHolder::class.java.name)
@@ -55,7 +56,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return getBalances(clientId)[assetId]?.reserved ?: BigDecimal.ZERO
     }
 
-    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: BigDecimal = BigDecimal.ZERO): BigDecimal {
+    fun getAvailableBalance(clientId: String, assetId: String, reservedAdjustment: BigDecimal): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]
@@ -69,7 +70,11 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         return BigDecimal.ZERO
     }
 
-    fun getAvailableReservedBalance(clientId: String, assetId: String): BigDecimal {
+    override fun getAvailableBalance(clientId: String, assetId: String): BigDecimal {
+        return getAvailableBalance(clientId, assetId, BigDecimal.ZERO)
+    }
+
+    override fun getAvailableReservedBalance(clientId: String, assetId: String): BigDecimal {
         val wallet = wallets[clientId]
         if (wallet != null) {
             val balance = wallet.balances[assetId]

@@ -39,7 +39,7 @@ class GenericLimitOrderProcessorFactory @Autowired constructor(private val gener
                 assetsPairsHolder,
                 balancesHolder,
                 applicationSettingsCache,
-                MatchingEngine(logger, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor),
+                MatchingEngine(logger, genericLimitOrderService, assetsHolder, assetsPairsHolder, feeProcessor),
                 messageSequenceNumberHolder,
                 messageSender,
                 logger)
