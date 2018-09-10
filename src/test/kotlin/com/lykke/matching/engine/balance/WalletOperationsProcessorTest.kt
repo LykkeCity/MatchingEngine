@@ -4,9 +4,10 @@ import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,6 +21,7 @@ import java.math.BigDecimal
 import java.util.Date
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import org.springframework.beans.factory.annotation.Autowired
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -45,7 +47,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
     }
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    private lateinit var settingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @Test
     fun testPreProcessWalletOperations() {
@@ -149,8 +151,8 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
     @Test
     fun testTrustedClientReservedOperations() {
-        testConfigDatabaseAccessor.addTrustedClient("TrustedClient1")
-        testConfigDatabaseAccessor.addTrustedClient("TrustedClient2")
+        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient1"))
+        settingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient2"))
         applicationSettingsCache.update()
 
         testBalanceHolderWrapper.updateBalance("TrustedClient1", "BTC", 1.0)

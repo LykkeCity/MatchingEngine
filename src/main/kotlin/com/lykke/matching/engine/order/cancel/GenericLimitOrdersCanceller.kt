@@ -101,6 +101,11 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                 date)
     }
 
+    fun getPersistenceData(): OrdersCancelPersistenceData {
+        return OrdersCancelPersistenceData(limitOrdersCanceller.getPersistenceData(),
+                stopLimitOrdersCanceller.getPersistenceData())
+    }
+
     fun checkAndProcessStopOrders(messageId: String) {
         limitOrdersCanceller.checkAndProcessStopOrders(messageId)
     }

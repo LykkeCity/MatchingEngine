@@ -88,7 +88,11 @@ object CancelOrdersUtils {
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletProcessor.persistBalances(processedMessage, sequenceNumber)
+        val persistenceData = canceller.getPersistenceData()
+        val updated = walletProcessor.persistBalances(processedMessage,
+                persistenceData.limitOrderBooksPersistenceData,
+                persistenceData.stopLimitOrderBooksPersistenceData,
+                sequenceNumber)
         if (!updated) {
             return false
         }
