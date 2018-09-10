@@ -30,7 +30,7 @@ class LimitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCa
         val assetPairId = if (message.hasAssetPairId()) message.assetPairId else null
         val isBuy = if (message.hasIsBuy()) message.isBuy else null
 
-        return LimitOrderMassCancelOperationContext(message.uid, message.messageId, message.clientId,
+        return LimitOrderMassCancelOperationContext(message.uid, messageId, message.clientId,
                 ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageId), messageType,
                 assetPairId, isBuy)
     }
