@@ -40,6 +40,10 @@ class LimitOrdersCancelHelper(private val cancellerFactory: GenericLimitOrdersCa
     }
 
     fun processPersistResults(updateSuccessful: Boolean, messageWrapper: MessageWrapper, messageId: String) {
+
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updateSuccessful
+
         if (!updateSuccessful) {
             val message = "Unable to save result"
             writeResponse(messageWrapper, MessageStatus.RUNTIME, message)
