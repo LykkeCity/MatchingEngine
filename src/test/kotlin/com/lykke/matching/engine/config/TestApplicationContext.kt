@@ -53,6 +53,7 @@ import org.apache.log4j.Logger
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -287,8 +288,9 @@ open class TestApplicationContext {
     @Bean
     open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
                                         applicationSettingsCache: ApplicationSettingsCache,
-                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor): ApplicationSettingsService {
-        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor)
+                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor,
+                                        applicationEventPublisher: ApplicationEventPublisher): ApplicationSettingsService {
+        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor, applicationEventPublisher)
     }
 
     @Bean
@@ -545,5 +547,11 @@ open class TestApplicationContext {
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>(),
                 LinkedBlockingQueue<MessageWrapper>())
+    }
+
+
+    @Bean
+    open fun settingsListener(): SettingsListener {
+        return SettingsListener()
     }
 }

@@ -14,10 +14,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
@@ -48,7 +45,6 @@ import com.lykke.matching.engine.services.ReservedCashInOutOperationService
 import com.lykke.matching.engine.services.SingleLimitOrderService
 import com.lykke.matching.engine.services.TradesInfoService
 import com.lykke.matching.engine.utils.config.Config
-import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.ApplicationContext
@@ -113,12 +109,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
-    private val healthMonitor: GeneralHealthMonitor
+    private val messageProcessingStatusHolder: MessageProcessingStatusHolder
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
 
     init {
         val isLocalProfile = applicationContext.environment.acceptsProfiles("local")
-        healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
+        messageProcessingStatusHolder = applicationContext.getBean(MessageProcessingStatusHolder::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
         messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
@@ -250,7 +246,13 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 service.parseMessage(message)
             }
 
-            if (!healthMonitor.ok()) {
+
+            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
+                service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+                return
+            }
+
+            if (!messageProcessingStatusHolder.isHealthStatusOk()) {
                 service.writeResponse(message, MessageStatus.RUNTIME)
                 val errorMessage = "Message processing is disabled"
                 LOGGER.error(errorMessage)
