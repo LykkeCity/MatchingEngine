@@ -64,7 +64,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
     private val persistenceManager: PersistenceManager
 
-    private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
     private val cashTransferOperationService: CashTransferOperationService
     private val cashSwapOperationService: CashSwapOperationService
@@ -134,7 +133,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericLimitOrderProcessorFactory = applicationContext.getBean(GenericLimitOrderProcessorFactory::class.java)
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
-        this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
@@ -280,7 +278,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
         val result = HashMap<MessageType, AbstractService>()
-        result[MessageType.CASH_OPERATION] = cashOperationService
         result[MessageType.CASH_IN_OUT_OPERATION] = cashInOutOperationService
         result[MessageType.CASH_TRANSFER_OPERATION] = cashTransferOperationService
         result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
