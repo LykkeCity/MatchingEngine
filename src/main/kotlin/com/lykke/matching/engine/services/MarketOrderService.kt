@@ -41,6 +41,9 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.matching.MatchingResult
+import com.lykke.matching.engine.order.cancel.CancelOrdersUtils
+import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -54,6 +57,7 @@ import java.util.concurrent.BlockingQueue
 @Service
 class MarketOrderService @Autowired constructor(
         private val genericLimitOrderService: GenericLimitOrderService,
+        private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
         assetsHolder: AssetsHolder,
         private val assetsPairsHolder: AssetsPairsHolder,
         private val balancesHolder: BalancesHolder,
@@ -78,7 +82,7 @@ class MarketOrderService @Autowired constructor(
     private var logCount = 100
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
+    private val matchingEngine = MatchingEngine(LOGGER, genericLimitOrderService, assetsHolder, assetsPairsHolder, feeProcessor)
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
 
@@ -118,28 +122,22 @@ class MarketOrderService @Autowired constructor(
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
         } catch (e: OrderValidationException) {
             order.updateStatus(e.orderStatus, now)
-            val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-            rabbitSwapQueue.put(marketOrderWithTrades)
-            val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                    messageWrapper.messageId!!,
-                    messageWrapper.id!!,
-                    now,
-                    MessageType.MARKET_ORDER, marketOrderWithTrades)
-            messageSender.sendMessage(outgoingMessage)
-            writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(e.orderStatus), e.message)
+            sendErrorNotification(messageWrapper, order, now)
+            writeErrorResponse(messageWrapper, order, e.message)
             return
         }
 
         val assetPair = getAssetPair(order)
 
-        val matchingResult = matchingEngine.initTransaction().match(order,
+        val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
+        val matchingResult = matchingEngine.initTransaction(walletOperationsProcessor).match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
                 priceDeviationThreshold = settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             ReservedVolumeGreaterThanBalance -> {
-                writeErrorNotification(messageWrapper, order, now, "Reserved volume is higher than available balance")
+                processRejectedMatchingResult(messageWrapper, matchingResult, now, "Reserved volume is higher than available balance")
             }
             NoLiquidity,
             NotEnoughFunds,
@@ -148,10 +146,7 @@ class MarketOrderService @Autowired constructor(
             InvalidVolume,
             InvalidValue,
             TooHighPriceDeviation -> {
-                writeErrorNotification(messageWrapper, order, now)
-            }
-            TooHighPriceDeviation -> {
-                writeErrorNotification(messageWrapper, order, now)
+                processRejectedMatchingResult(messageWrapper, matchingResult, now)
             }
             Matched -> {
                 val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
@@ -169,7 +164,6 @@ class MarketOrderService @Autowired constructor(
                 }
                 val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
-                val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
                 val preProcessResult = try {
                     walletOperationsProcessor.preProcess(matchingResult.ownCashMovements).preProcess(matchingResult.oppositeCashMovements, true)
                     try {
@@ -180,17 +174,9 @@ class MarketOrderService @Autowired constructor(
                     true
                 } catch (e: BalanceException) {
                     order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
-                    val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
-                    rabbitSwapQueue.put(marketOrderWithTrades)
-                    val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
-                            messageWrapper.messageId!!,
-                            messageWrapper.id!!,
-                            now,
-                            MessageType.MARKET_ORDER,
-                            marketOrderWithTrades)
-                    messageSender.sendMessage(outgoingMessage)
                     LOGGER.error("$order: Unable to process wallet operations after matching: ${e.message}")
-                    writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), e.message)
+                    sendErrorNotification(messageWrapper, order, now)
+                    writeErrorResponse(messageWrapper, order, e.message)
                     false
                 }
 
@@ -225,9 +211,7 @@ class MarketOrderService @Autowired constructor(
                     messageWrapper.triedToPersist = true
                     messageWrapper.persisted = updated
                     if (!updated) {
-                        val message = "Unable to save result data"
-                        LOGGER.error("$order: $message")
-                        writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), message)
+                        writePersistenceErrorResponse(messageWrapper, order)
                         return
                     }
                     walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
@@ -312,10 +296,61 @@ class MarketOrderService @Autowired constructor(
         return ProtocolMessages.MarketOrder.parseFrom(array)
     }
 
-    private fun writeErrorNotification(messageWrapper: MessageWrapper,
-                                       order: MarketOrder,
-                                       now: Date,
-                                       statusReason: String? = null) {
+    private fun processRejectedMatchingResult(messageWrapper: MessageWrapper,
+                                              matchingResult: MatchingResult,
+                                              now: Date,
+                                              statusReason: String? = null) {
+
+        val order = matchingResult.order as MarketOrder
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            val genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, now)
+                    .preProcessLimitOrders(matchingResult.cancelledLimitOrders.map { it.origin!! })
+
+            val updated = CancelOrdersUtils.persistAndSendNotifications(genericLimitOrdersCanceller,
+                    order.externalId,
+                    messageWrapper.messageId!!,
+                    messageWrapper.processedMessage(),
+                    MessageType.MARKET_ORDER,
+                    false,
+                    balancesHolder,
+                    messageSequenceNumberHolder,
+                    clientLimitOrdersQueue,
+                    trustedClientsLimitOrdersQueue,
+                    messageSender,
+                    now,
+                    order,
+                    rabbitSwapQueue)
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = updated
+            if (!updated) {
+                writePersistenceErrorResponse(messageWrapper, order)
+                return
+            }
+        } else {
+            sendErrorNotification(messageWrapper, order, now)
+        }
+
+        writeErrorResponse(messageWrapper,
+                order,
+                statusReason)
+    }
+
+    private fun writePersistenceErrorResponse(messageWrapper: MessageWrapper, order: MarketOrder) {
+        val message = "Unable to save result data"
+        LOGGER.error("$order: $message")
+        writeResponse(messageWrapper, order, MessageStatus.RUNTIME, message)
+        return
+    }
+
+    private fun writeErrorResponse(messageWrapper: MessageWrapper,
+                                   order: MarketOrder,
+                                   statusReason: String? = null) {
+        writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), statusReason)
+    }
+
+    private fun sendErrorNotification(messageWrapper: MessageWrapper,
+                                      order: MarketOrder,
+                                      now: Date) {
         val marketOrderWithTrades = MarketOrderWithTrades(messageWrapper.messageId!!, order)
         rabbitSwapQueue.put(marketOrderWithTrades)
         val outgoingMessage = EventFactory.createExecutionEvent(messageSequenceNumberHolder.getNewValue(),
@@ -325,7 +360,6 @@ class MarketOrderService @Autowired constructor(
                 MessageType.MARKET_ORDER,
                 marketOrderWithTrades)
         messageSender.sendMessage(outgoingMessage)
-        writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), statusReason)
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {

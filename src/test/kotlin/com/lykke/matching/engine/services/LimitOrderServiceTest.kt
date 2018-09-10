@@ -8,6 +8,7 @@ import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
@@ -37,15 +38,12 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.HashMap
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
 import java.util.Date
 import org.springframework.beans.factory.annotation.Autowired
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
@@ -338,38 +336,6 @@ class LimitOrderServiceTest: AbstractTest() {
         event = clientsEventsQueue.poll() as ExecutionEvent
         assertEquals(1, event.orders.size)
         assertTrue(OutgoingOrderStatus.REJECTED != event.orders.single().status)
-    }
-
-    @Test
-    fun testBalanceCheck() {
-        val balances = HashMap<String, BigDecimal>()
-
-        assertTrue { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(price = 2.0, volume =-1000.0),
-                BigDecimal.valueOf(1000.0), balances) }
-        assertEquals(BigDecimal.ZERO, balances["Client1"] as BigDecimal)
-
-        balances.clear()
-        assertFalse { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder( price = 2.0, volume = -1001.0), BigDecimal.valueOf(1001.0), balances) }
-        assertNull(balances["Client1"])
-
-        balances.clear()
-        assertTrue { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 500.0), BigDecimal.valueOf(1000.0), balances) }
-        assertEquals(BigDecimal.ZERO, balances["Client2"] as BigDecimal)
-
-        balances.clear()
-        assertFalse { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(clientId = "Client2", price = 2.0, volume = 501.0), BigDecimal.valueOf(1001.0), balances) }
-        assertNull(balances["Client2"])
-    }
-
-    @Test
-    fun testReservedBalanceCheck() {
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 700.04)
-        testBalanceHolderWrapper.updateReservedBalance("Client2", "USD",  700.04)
-        initServices()
-        val balances: MutableMap<String, BigDecimal> = HashMap()
-
-        assertTrue { genericLimitOrderService.checkAndReduceBalance(buildLimitOrder(assetId = "BTCUSD", clientId = "Client2", price = 4722.00, volume = 0.14825074), BigDecimal.valueOf(700.04), balances) }
-        assertEquals(BigDecimal.ZERO, balances["Client2"] as BigDecimal)
     }
 
     @Test
@@ -1903,5 +1869,50 @@ class LimitOrderServiceTest: AbstractTest() {
         assertEquals("Client1", eventOrder.walletId)
         assertEquals(0, eventOrder.trades?.size)
         assertEquals(OutgoingOrderStatus.CANCELLED, eventOrder.status)
+    }
+
+    @Test
+    fun testCancelLimitOrdersAfterRejectedIncomingOrder() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateReservedBalance("Client1", "EUR", 100.0)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 60.0)
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", volume = -50.0, price = 1.1,
+                // 'not enough funds' fee to cancel this order during matching
+                fees = listOf(NewLimitOrderFeeInstruction(FeeType.CLIENT_FEE, null, null, FeeSizeType.PERCENTAGE, BigDecimal.valueOf(0.1), null, "FeeTargetClient", listOf("BTC"), null))
+        ))
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", volume = -50.0, price = 1.2))
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = 50.0, price = 1.2,
+                // 'not enough funds' fee to cancel this order after matching
+                fees = listOf(NewLimitOrderFeeInstruction(FeeType.CLIENT_FEE, FeeSizeType.PERCENTAGE, BigDecimal.valueOf(0.1), null, null, null, "FeeTargetClient", listOf("BTC"), null))
+        )))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+
+        assertEquals(1, event.balanceUpdates?.size)
+        assertEquals("Client1", event.balanceUpdates!!.single().walletId)
+        assertEquals("EUR", event.balanceUpdates!!.single().assetId)
+        assertEquals("100", event.balanceUpdates!!.single().oldReserved)
+        assertEquals("50", event.balanceUpdates!!.single().newReserved)
+
+        assertEquals(2, event.orders.size)
+
+        val incomingLimitOrder = event.orders.single { it.walletId == "Client2" }
+        assertEquals(OutgoingOrderStatus.REJECTED, incomingLimitOrder.status)
+        assertEquals(OrderRejectReason.INVALID_FEE, incomingLimitOrder.rejectReason)
+        assertEquals(0, incomingLimitOrder.trades?.size)
+
+        val cancelledLimitOrder = event.orders.single {it.walletId == "Client1"}
+        assertEquals(OutgoingOrderStatus.CANCELLED, cancelledLimitOrder.status)
+        assertEquals(0, cancelledLimitOrder.trades?.size)
+
+        assertOrderBookSize("EURUSD", false, 1)
+        assertOrderBookSize("EURUSD", true, 0)
+        assertEquals(BigDecimal.valueOf(1.2), genericLimitOrderService.getOrderBook("EURUSD").getAskPrice())
+
+        assertBalance("Client1", "EUR", 100.0, 50.0)
     }
 }

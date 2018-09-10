@@ -3,7 +3,6 @@ package com.lykke.matching.engine.updaters
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.BalancesHolder
 import java.math.BigDecimal
 
