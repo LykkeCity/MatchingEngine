@@ -9,7 +9,6 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
@@ -24,9 +23,9 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (BalanceUpdateServiceTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class), (ReservedBalanceUpdateServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class BalanceUpdateServiceTest: AbstractTest() {
+class ReservedBalanceUpdateServiceTest : AbstractTest() {
 
     @TestConfiguration
     open class Config {
@@ -45,43 +44,6 @@ class BalanceUpdateServiceTest: AbstractTest() {
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
         initServices()
-    }
-
-    @Test
-    fun testUpdateBalance() {
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
-
-        assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "Client1", "Asset1", 999.0, 1000.0, 0.0, 0.0)
-    }
-
-    @Test
-    fun testUpdateBalanceWithAnotherAssetBalance() {
-        testBalanceHolderWrapper.updateBalance("Client1", "Asset2", 2000.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset2",  500.0)
-        initServices()
-
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
-
-        assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "Client1", "Asset1", 999.0, 1000.0, 0.0, 0.0)
-        assertUpdateResult("Client1", "Asset2", BigDecimal.valueOf(2000.0), BigDecimal.valueOf(500.0))
-    }
-
-    @Test
-    fun testUpdateBalanceOfNewClient() {
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("ClientNew", "Asset1", 999.0))
-
-        assertSuccessfulUpdate(MessageType.BALANCE_UPDATE, "ClientNew", "Asset1", 999.0, 0.0, 0.0, 0.0)
-    }
-
-    @Test
-    fun testUpdateBalanceLowerThanResolved() {
-        testBalanceHolderWrapper.updateBalance("Client1", "Asset1", 1000.0)
-        testBalanceHolderWrapper.updateReservedBalance("Client1", "Asset1",  1000.0)
-        initServices()
-
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 999.0))
-
-        assertUnsuccessfulUpdate("Client1", "Asset1", BigDecimal.valueOf(1000.0), BigDecimal.valueOf(1000.0))
     }
 
     @Test
@@ -121,10 +83,6 @@ class BalanceUpdateServiceTest: AbstractTest() {
                                        balance: Double, oldBalance: Double, reserved: Double, oldReserved: Double) {
         assertUpdateResult(clientId, assetId, BigDecimal.valueOf(balance), BigDecimal.valueOf(reserved))
 
-        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        val notification = balanceUpdateHandlerTest.balanceUpdateNotificationQueue.poll()
-        assertEquals(clientId, notification.clientId)
-
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(messageType.name, balanceUpdate.type)
@@ -139,7 +97,6 @@ class BalanceUpdateServiceTest: AbstractTest() {
 
     private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: BigDecimal, reserved: BigDecimal) {
         assertUpdateResult(clientId, assetId, balance, reserved)
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 

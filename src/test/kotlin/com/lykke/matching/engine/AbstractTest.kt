@@ -58,7 +58,6 @@ abstract class AbstractTest {
     protected lateinit var stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder
 
     protected lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
-    protected lateinit var testOrderDatabaseAccessor: TestOrderBookDatabaseAccessor
     protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
 
     @Autowired
@@ -66,9 +65,6 @@ abstract class AbstractTest {
 
     @Autowired
     private lateinit var assetsCache: AssetsCache
-
-    @Autowired
-    protected lateinit var assetsHolder: AssetsHolder
 
     @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -80,25 +76,16 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
-
-    @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
-
-    @Autowired
-    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
-
-    @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
 
     @Autowired
-    protected lateinit var balanceUpdateService: BalanceUpdateService
+    protected lateinit var persistenceManager: TestPersistenceManager
 
     @Autowired
-    protected lateinit var persistenceManager: TestPersistenceManager
+    protected lateinit var testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor
 
     @Autowired
     private lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory

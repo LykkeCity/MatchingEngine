@@ -166,8 +166,6 @@ class ReservedVolumesRecalculatorTest {
         assertBalanceUpdateNotification("Client1", "EUR", 10.0, 3.0, 0.7, balanceUpdate.balances)
         assertBalanceUpdateNotification("Client2", "USD", 990.0, 1.0, 2080.0, balanceUpdate.balances)
 
-        assertEquals(5, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
-
         assertEquals(7, clientsEventsQueue.size)
         assertEvent(false, "trustedClient", "BTC", "10", "2", "0", clientsEventsQueue)
         assertEvent(true, "trustedClient2", "BTC", "1", "-0.001", "0", clientsEventsQueue)

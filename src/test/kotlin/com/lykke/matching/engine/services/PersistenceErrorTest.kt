@@ -17,7 +17,6 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
@@ -112,12 +111,6 @@ class PersistenceErrorTest : AbstractTest() {
     override fun tearDown() {
         super.tearDown()
         persistenceManager.persistenceErrorMode = false
-    }
-
-    @Test
-    fun testBalanceUpdate() {
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "EUR", 5.0))
-        assertData()
     }
 
     @Test
@@ -382,7 +375,6 @@ class PersistenceErrorTest : AbstractTest() {
 
     private fun assertNotifications() {
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
     }
 
     private fun assertBalances() {
