@@ -74,7 +74,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val limitOrderCancelService: LimitOrderCancelService
     private val limitOrderMassCancelService: LimitOrderMassCancelService
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
-    private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
     private val historyTicksService: HistoryTicksService
     private val transferOperationSaveService: TransferOperationSaveService
@@ -146,7 +145,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
@@ -291,8 +289,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
-        result[MessageType.OLD_BALANCE_UPDATE] = balanceUpdateService
-        result[MessageType.BALANCE_UPDATE] = balanceUpdateService
         result[MessageType.RESERVED_BALANCE_UPDATE] = reservedBalanceUpdateService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
         result[MessageType.OLD_MULTI_LIMIT_ORDER] = multiLimitOrderService

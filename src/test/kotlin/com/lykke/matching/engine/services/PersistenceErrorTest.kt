@@ -12,7 +12,6 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
@@ -107,12 +106,6 @@ class PersistenceErrorTest : AbstractTest() {
     @After
     fun tearDown() {
         persistenceManager.persistenceErrorMode = false
-    }
-
-    @Test
-    fun testBalanceUpdate() {
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "EUR", 5.0))
-        assertData()
     }
 
     @Test

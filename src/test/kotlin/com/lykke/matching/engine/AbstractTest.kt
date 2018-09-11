@@ -46,9 +46,6 @@ abstract class AbstractTest {
     private lateinit var assetsCache: AssetsCache
 
     @Autowired
-    protected lateinit var assetsHolder: AssetsHolder
-
-    @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Autowired
@@ -58,34 +55,13 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
-
-    @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
-
-    @Autowired
-    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
-
-    @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
-
-    @Autowired
-    protected lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
 
     @Autowired
-    protected lateinit var balanceUpdateService: BalanceUpdateService
-
-    @Autowired
     protected lateinit var persistenceManager: TestPersistenceManager
-
-    @Autowired
-    protected lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
-
-    @Autowired
-    protected lateinit var messageSender: MessageSender
 
     @Autowired
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>

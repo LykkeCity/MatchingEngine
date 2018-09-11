@@ -246,11 +246,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun balance(balancesHolder: BalancesHolder, balanceUpdateValidator: BalanceUpdateValidator): BalanceUpdateService {
-        return BalanceUpdateService(balancesHolder, balanceUpdateValidator)
-    }
-
-    @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor, assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
                                       quotesUpdateQueue: BlockingQueue<QuotesUpdate>, tradeInfoQueue: BlockingQueue<TradeInfo>,
