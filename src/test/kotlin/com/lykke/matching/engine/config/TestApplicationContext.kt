@@ -24,8 +24,6 @@ import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.RabbitSwapListener
 import com.lykke.matching.engine.notification.TestClientLimitOrderListener
 import com.lykke.matching.engine.notification.TestLkkTradeListener
@@ -309,7 +307,6 @@ open class TestApplicationContext {
                                       assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
-                                      quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                       tradeInfoQueue: BlockingQueue<TradeInfo>,
                                       applicationSettingsCache: ApplicationSettingsCache,
                                       expiryOrdersQueue: ExpiryOrdersQueue): GenericLimitOrderService {
