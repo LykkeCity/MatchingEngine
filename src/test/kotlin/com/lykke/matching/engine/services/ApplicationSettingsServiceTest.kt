@@ -7,6 +7,7 @@ import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.notification.SettingsListener
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import java.util.*
 import kotlin.test.assertNotNull
 
 @RunWith(SpringRunner::class)
@@ -109,7 +111,6 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertTrue(applicationSettingsCache.isTrustedClient("test"))
         assertEquals(1, settingsListener.getSettingChangeSize())
 
-
         argumentCaptor<SettingHistoryRecord>().apply {
             verify(settingsHistoryDatabaseAccessor).save(capture())
             assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
@@ -177,6 +178,46 @@ class ApplicationSettingsServiceTest : AbstractTest() {
             assertEquals("testClient", firstValue.value)
             assertEquals("testUser", firstValue.user)
             assertEquals("[DELETE] delete", firstValue.comment)
+        }
+    }
+
+    @Test(expected = ValidationException::class)
+    fun messageProcessingFlagValidationFailedTest() {
+        //given
+        testSettingsDatabaseAccessor.clear()
+
+        //when
+        try {
+            applicationSettingsService
+                    .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
+                            SettingDto("test", "test", false, "testComment", "testUser"))
+        } catch (e: ValidationException) {
+            assertEquals(ValidationException.Validation.NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE, e.validationType)
+            throw e
+        }
+    }
+
+    @Test
+    fun messageProcessingFlagValidationPassedTest() {
+        //given
+        testSettingsDatabaseAccessor.clear()
+
+        //when
+        applicationSettingsService
+                .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
+                        SettingDto("stop", "stop", true, "testComment", "testUser"))
+
+        //then
+        assertFalse(applicationSettingsCache.isMessageProcessingEnabled())
+        assertEquals(1, settingsListener.getSettingChangeSize())
+
+        argumentCaptor<SettingHistoryRecord>().apply {
+            verify(settingsHistoryDatabaseAccessor).save(capture())
+            assertEquals(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH, firstValue.settingGroup)
+            assertEquals("stop", firstValue.name)
+            assertEquals("stop", firstValue.value)
+            assertEquals("testUser", firstValue.user)
+            assertEquals("[ADD] testComment", firstValue.comment)
         }
     }
 }
