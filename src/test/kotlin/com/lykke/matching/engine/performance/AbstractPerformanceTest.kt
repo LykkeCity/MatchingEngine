@@ -10,7 +10,6 @@ import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -80,8 +79,6 @@ abstract class AbstractPerformanceTest {
 
     val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
-    val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
-
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     open fun initServices() {
@@ -111,7 +108,7 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue, tradeInfoQueue,
+                tradeInfoQueue,
                 applicationSettingsCache)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())

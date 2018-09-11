@@ -8,7 +8,6 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.OrderStatus.Cancelled
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -28,7 +27,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
                                                       private val assetsHolder: AssetsHolder,
                                                       private val assetsPairsHolder: AssetsPairsHolder,
                                                       private val balancesHolder: BalancesHolder,
-                                                      private val quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                                       private val tradeInfoQueue: BlockingQueue<TradeInfo>,
                                                       applicationSettingsCache: ApplicationSettingsCache) : AbstractGenericLimitOrderService<AssetOrderBook> {
 
@@ -61,7 +59,6 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     fun addOrder(order: LimitOrder) {
         limitOrdersMap[order.externalId] = order
         clientLimitOrdersMap.getOrPut(order.clientId) { ArrayList() }.add(order)
-        quotesUpdateQueue.put(QuotesUpdate(order.assetPairId, order.price, order.volume))
     }
 
     fun addOrders(orders: List<LimitOrder>) {

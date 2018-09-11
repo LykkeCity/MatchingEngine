@@ -245,10 +245,10 @@ open class TestApplicationContext {
     @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor, assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
-                                      quotesUpdateQueue: BlockingQueue<QuotesUpdate>, tradeInfoQueue: BlockingQueue<TradeInfo>,
+                                      tradeInfoQueue: BlockingQueue<TradeInfo>,
                                       applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor, assetsHolder, assetsPairsHolder, balancesHolder,
-                quotesUpdateQueue, tradeInfoQueue, applicationSettingsCache)
+                tradeInfoQueue, applicationSettingsCache)
     }
 
     @Bean
@@ -276,7 +276,7 @@ open class TestApplicationContext {
                                                feeProcessor: FeeProcessor,
                                                messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender): GenericLimitOrderProcessorFactory {
         return GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrderProcessorFactory, assetsHolder, assetsPairsHolder, balancesHolder,
-                applicationSettingsCache, clientLimitOrdersQueue, feeProcessor,  messageSequenceNumberHolder, messageSender)
+                applicationSettingsCache, clientLimitOrdersQueue, feeProcessor, messageSequenceNumberHolder, messageSender)
     }
 
     @Bean

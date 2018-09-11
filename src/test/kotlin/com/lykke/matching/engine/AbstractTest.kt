@@ -126,8 +126,6 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
@@ -159,8 +157,6 @@ abstract class AbstractTest {
     }
 
     protected fun clearMessageQueues() {
-        quotesNotificationQueue.clear()
-
         balanceUpdateHandlerTest.clear()
         tradesInfoListener.clear()
 
