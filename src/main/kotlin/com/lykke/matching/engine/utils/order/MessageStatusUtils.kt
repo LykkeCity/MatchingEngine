@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.order
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.impl.ValidationException.Validation.*
 
 class MessageStatusUtils {
     companion object {
