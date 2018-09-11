@@ -50,6 +50,7 @@ class MessageStatusUtils {
                 ValidationException.Validation.UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
                 ValidationException.Validation.BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
                 ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
+                ValidationException.Validation.NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE -> MessageStatus.BAD_REQUEST
             }
         }
     }
