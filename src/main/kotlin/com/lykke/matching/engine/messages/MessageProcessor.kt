@@ -18,7 +18,6 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -54,8 +53,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
     private val cashTransferPreprocessor: CashTransferPreprocessor
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
-
-    private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
@@ -116,8 +113,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
         this.orderBookDatabaseAccessor = applicationContext.getBean(FileOrderBookDatabaseAccessor::class.java)
-
-        balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
 
         val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
@@ -221,9 +216,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             if (service == null) {
                 when (messageType) {
-                    MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
-                        balanceUpdateHandler.subscribe(message.clientHandler!!)
-                    }
                     MessageType.QUOTES_UPDATE_SUBSCRIBE -> {
                         quotesUpdateHandler.subscribe(message.clientHandler!!)
                     }
