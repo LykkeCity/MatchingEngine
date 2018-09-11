@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -27,7 +26,6 @@ import java.util.Date
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
-import java.util.concurrent.BlockingQueue
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
@@ -60,13 +58,8 @@ class MinVolumeOrderCancellerTest : AbstractTest() {
 
     }
 
-    private lateinit var canceller: MinVolumeOrderCanceller
-
     @Autowired
     private lateinit var recalculator: ReservedVolumesRecalculator
-
-    @Autowired
-    lateinit var balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>
 
     @Before
     fun setUp() {

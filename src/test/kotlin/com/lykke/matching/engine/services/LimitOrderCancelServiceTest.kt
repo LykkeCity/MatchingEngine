@@ -73,8 +73,6 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
         assertEquals(1, testClientLimitOrderListener.getCount())
         assertEquals(OrderStatus.Cancelled.name, (testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport).orders.first().order.status)
-        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.poll().clientId)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate

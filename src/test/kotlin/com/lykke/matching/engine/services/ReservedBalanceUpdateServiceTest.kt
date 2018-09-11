@@ -83,10 +83,6 @@ class ReservedBalanceUpdateServiceTest : AbstractTest() {
                                        balance: Double, oldBalance: Double, reserved: Double, oldReserved: Double) {
         assertUpdateResult(clientId, assetId, BigDecimal.valueOf(balance), BigDecimal.valueOf(reserved))
 
-        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        val notification = balanceUpdateHandlerTest.balanceUpdateNotificationQueue.poll()
-        assertEquals(clientId, notification.clientId)
-
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
         assertEquals(messageType.name, balanceUpdate.type)
@@ -101,7 +97,6 @@ class ReservedBalanceUpdateServiceTest : AbstractTest() {
 
     private fun assertUnsuccessfulUpdate(clientId: String, assetId: String, balance: BigDecimal, reserved: BigDecimal) {
         assertUpdateResult(clientId, assetId, balance, reserved)
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }
 

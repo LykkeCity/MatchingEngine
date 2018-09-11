@@ -375,7 +375,6 @@ class PersistenceErrorTest : AbstractTest() {
 
     private fun assertNotifications() {
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
     }
 
     private fun assertBalances() {

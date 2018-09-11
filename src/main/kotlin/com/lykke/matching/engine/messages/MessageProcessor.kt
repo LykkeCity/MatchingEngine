@@ -18,7 +18,6 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
@@ -77,8 +76,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val marketStateCache: MarketStateCache
     private val applicationSettingsCache: ApplicationSettingsCache
-
-    private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
@@ -160,7 +157,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             this.historyTicksBuilder = historyTicksService.start()
         }
 
-        this.quotesUpdateHandler = applicationContext.getBean(QuotesUpdateHandler::class.java)
         val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
@@ -215,15 +211,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             val service = servicesMap[messageType]
 
             if (service == null) {
-                when (messageType) {
-                    MessageType.QUOTES_UPDATE_SUBSCRIBE -> {
-                        quotesUpdateHandler.subscribe(message.clientHandler!!)
-                    }
-                    else -> {
-                        LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
-                        METRICS_LOGGER.logError("Unknown message type: ${message.type}")
-                    }
-                }
+                LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
+                METRICS_LOGGER.logError("Unknown message type: ${message.type}")
                 return
             }
 

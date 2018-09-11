@@ -14,7 +14,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
@@ -33,7 +32,6 @@ import java.util.Date
 import java.util.HashMap
 import java.util.LinkedList
 import java.util.UUID
-import java.util.concurrent.BlockingQueue
 
 @Component
 @Order(2)
@@ -46,7 +44,6 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
                                                          private val applicationSettingsCache: ApplicationSettingsCache,
                                                          @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
-                                                         private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                                          private val messageSender: MessageSender) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
@@ -197,9 +194,6 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             balancesHolder.insertOrUpdateWallets(updatedWallets, sequenceNumber)
             reservedVolumesDatabaseAccessor.addCorrectionsInfo(corrections)
             balancesHolder.sendBalanceUpdate(BalanceUpdate(operationId, MessageType.LIMIT_ORDER.name, now, balanceUpdates, operationId))
-            updatedWallets.map { it.clientId }.toSet().forEach {
-                balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it))
-            }
             cashInOutEvents.forEach { messageSender.sendMessage(it) }
 
         }
