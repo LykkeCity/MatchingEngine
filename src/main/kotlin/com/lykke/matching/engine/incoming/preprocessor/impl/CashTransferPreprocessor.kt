@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashTransferContext
@@ -27,7 +26,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashTransferPreprocessor(
-        private val cashTransferQueue: BlockingQueue<MessageWrapper>,
+        private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferOperationPreprocessorPersistenceManager: PersistenceManager,
@@ -71,6 +70,7 @@ class CashTransferPreprocessor(
                                    message: String) {
         val messageWrapper = cashTransferParsedData.messageWrapper
         val context = messageWrapper.context as CashTransferContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashTransferOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
@@ -99,7 +99,7 @@ class CashTransferPreprocessor(
         }
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
@@ -118,14 +118,11 @@ class CashTransferPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashTransferQueue.take()
+            val message = cashTransferInputQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                val context = message.context
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                        if (context != null) "Error details: $context" else "", exception)
-
+                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
                 METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
                 writeResponse(message, RUNTIME)
             }

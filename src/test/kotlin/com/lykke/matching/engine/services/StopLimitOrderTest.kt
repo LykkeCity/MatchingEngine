@@ -20,7 +20,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as Outgo
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
@@ -183,7 +182,7 @@ class StopLimitOrderTest : AbstractTest() {
         )))
 
         clearMessageQueues()
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("order1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("order1"))
 
         assertTrue(stopOrderDatabaseAccessor.getStopOrders("BTCUSD", false).isEmpty())
         assertTrue(genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(false).isEmpty())
@@ -319,7 +318,7 @@ class StopLimitOrderTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.2, price = 10000.0)))
 
         clearMessageQueues()
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("order2"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("order2"))
 
         assertEquals(0, genericStopLimitOrderService.getOrderBook("BTCUSD").getOrderBook(true).size)
         assertEquals(0, stopOrderDatabaseAccessor.getStopOrders("BTCUSD", true).size)

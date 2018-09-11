@@ -27,7 +27,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashInOutPreprocessor(
-        private val cashInOutQueue: BlockingQueue<MessageWrapper>,
+        private val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
@@ -70,6 +70,7 @@ class CashInOutPreprocessor(
                                    message: String) {
         val messageWrapper = cashInOutParsedData.messageWrapper
         val context = messageWrapper.context as CashInOutContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashInOutOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
@@ -97,7 +98,7 @@ class CashInOutPreprocessor(
         }
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
@@ -116,7 +117,7 @@ class CashInOutPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashInOutQueue.take()
+            val message = cashInOutInputQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {

@@ -40,6 +40,7 @@ class MessageStatusUtils {
 
         fun toMessageStatus(validationErrorType: ValidationException.Validation): MessageStatus {
             return when (validationErrorType) {
+                ValidationException.Validation.GENERIC_VALIDATION_FAILURE -> MessageStatus.BAD_REQUEST
                 ValidationException.Validation.DISABLED_ASSET -> MessageStatus.DISABLED_ASSET
                 ValidationException.Validation.INVALID_VOLUME_ACCURACY -> MessageStatus.INVALID_VOLUME_ACCURACY
                 ValidationException.Validation.INVALID_PRICE_ACCURACY -> MessageStatus.INVALID_PRICE_ACCURACY
@@ -50,6 +51,8 @@ class MessageStatusUtils {
                 ValidationException.Validation.TOO_SMALL_VOLUME -> MessageStatus.TOO_SMALL_VOLUME
                 ValidationException.Validation.UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
                 ValidationException.Validation.BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
+                ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
+                ValidationException.Validation.LIMIT_ORDER_NOT_FOUND -> MessageStatus.LIMIT_ORDER_NOT_FOUND
                 ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
                 ValidationException.Validation.NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE -> MessageStatus.BAD_REQUEST
             }
