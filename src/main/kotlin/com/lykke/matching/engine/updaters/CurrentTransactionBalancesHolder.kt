@@ -6,7 +6,7 @@ import com.lykke.matching.engine.database.common.entity.BalancesData
 import com.lykke.matching.engine.holders.BalancesHolder
 import java.math.BigDecimal
 
-class BalancesUpdater(private val balancesHolder: BalancesHolder) {
+class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolder) {
 
     private val changedBalances = mutableMapOf<String, MutableMap<String, AssetBalance>>()
     private val changedWallets = mutableMapOf<String, Wallet>()
