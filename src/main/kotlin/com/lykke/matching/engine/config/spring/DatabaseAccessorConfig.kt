@@ -9,6 +9,9 @@ import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.RedisPersistenceManager
+import com.lykke.matching.engine.database.redis.accessor.impl.*
+import com.lykke.matching.engine.database.redis.connection.impl.RedisReconnectionManager
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
