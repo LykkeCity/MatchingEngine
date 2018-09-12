@@ -10,6 +10,7 @@ import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperation
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.database.redis.connection.RedisConnectionFactory
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
@@ -22,10 +23,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
                                     private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor,
-                                    private val redisConnectionFactory: RedisConnectionFactory,
                                     private val config: Config) : PersistenceManagerFactory {
 
-    override fun get(connectionName: String): PersistenceManager {
+    override fun get(redisConnection: Optional<RedisConnection>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor)
             Storage.Redis -> {
@@ -35,7 +35,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        redisConnectionFactory.getConnection(connectionName)!!,
+                        redisConnection.get(),
                         config
                 )
             }

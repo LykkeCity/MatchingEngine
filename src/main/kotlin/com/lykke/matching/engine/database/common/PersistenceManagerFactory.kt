@@ -1,8 +1,10 @@
 package com.lykke.matching.engine.database.common
 
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
+import java.util.*
 
 @FunctionalInterface
 interface PersistenceManagerFactory {
-    fun get(connectionName: String): PersistenceManager
+    fun get(redisConnection: Optional<RedisConnection>): PersistenceManager
 }
