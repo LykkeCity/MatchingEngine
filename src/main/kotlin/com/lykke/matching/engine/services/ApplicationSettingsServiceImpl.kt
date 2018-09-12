@@ -73,7 +73,6 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
         updateSettingInCache(settingDto, settingsGroup)
 
         applicationEventPublisher.publishEvent(SettingChangedEvent(settingsGroup,
-                settingDto.name,
                 setting,
                 previousSetting?.let{toSetting(it)},
                 settingDto.comment,
