@@ -51,7 +51,7 @@ class MessageStatusUtils {
                 UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
                 BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
                 NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
-                NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE -> MessageStatus.BAD_REQUEST
+                GENERIC_VALIDATION_FAILURE -> MessageStatus.BAD_REQUEST
             }
         }
     }
