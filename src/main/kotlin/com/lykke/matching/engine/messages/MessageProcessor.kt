@@ -247,7 +247,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             }
 
 
-            if (!messageProcessingStatusHolder.isMessageProcessingEnabled()) {
+            if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
                 service.writeResponse(message, MessageStatus.MESSAGE_PROCESSING_DISABLED)
                 return
             }
