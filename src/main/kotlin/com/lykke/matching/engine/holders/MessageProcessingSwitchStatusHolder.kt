@@ -14,8 +14,4 @@ class MessageProcessingStatusHolder(private val generalHealthMonitor: GeneralHea
     fun isHealthStatusOk(): Boolean {
         return generalHealthMonitor.ok()
     }
-
-    fun isMessageProcessingEnabled(): Boolean {
-        return isMessageSwitchEnabled() && isHealthStatusOk()
-    }
 }
