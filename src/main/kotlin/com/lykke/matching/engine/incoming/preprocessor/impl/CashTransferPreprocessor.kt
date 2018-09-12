@@ -28,8 +28,8 @@ import java.util.concurrent.BlockingQueue
 class CashTransferPreprocessor(
         private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor,
-        private val cashTransferOperationPreprocessorPersistenceManager: PersistenceManager,
+        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
+        private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
@@ -72,7 +72,7 @@ class CashTransferPreprocessor(
         val context = messageWrapper.context as CashTransferContext
         LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
-        val persistSuccess = cashTransferOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
+        val persistSuccess = cashTransferPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
             throw Exception("Persistence error")
         }
@@ -90,7 +90,7 @@ class CashTransferPreprocessor(
         val parsedMessageWrapper = cashTransferParsedData.messageWrapper
         val context = parsedMessageWrapper.context as CashTransferContext
 
-        if (databaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
+        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")

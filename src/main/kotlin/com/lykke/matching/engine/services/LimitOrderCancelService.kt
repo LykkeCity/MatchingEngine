@@ -59,7 +59,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 typeToOrder[LimitOrderType.STOP_LIMIT], now, context.processedMessage, false))
 
 
-
         limitOrdersCancelHelper.processPersistResults(updateSuccessful, messageWrapper, context.messageId)
     }
 
