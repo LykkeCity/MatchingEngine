@@ -14,8 +14,7 @@ class MessageProcessingSwitchSettingValidator:  SettingValidator {
 
     override fun validate(settingDto: SettingDto) {
         if (settingDto.name != SUPPORTED_VALUE || settingDto.value != SUPPORTED_VALUE) {
-            throw ValidationException(ValidationException.Validation.NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE,
-                    "Not acceptable setting value/setting name was supplied. Acceptable setting value/name is: '$SUPPORTED_VALUE'")
+            throw ValidationException(validationMessage = "Not acceptable setting value/setting name was supplied. Acceptable setting value/name is: '$SUPPORTED_VALUE'")
         }
     }
 

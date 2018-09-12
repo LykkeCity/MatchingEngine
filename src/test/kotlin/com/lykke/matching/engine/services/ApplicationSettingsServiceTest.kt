@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
-import java.util.*
 import kotlin.test.assertNotNull
 
 @RunWith(SpringRunner::class)
@@ -171,7 +170,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
-            verify(settingsHistoryDatabaseAccessor).save( capture())
+            verify(settingsHistoryDatabaseAccessor).save(capture())
 
             assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
             assertEquals("settingName", firstValue.name)
@@ -187,14 +186,10 @@ class ApplicationSettingsServiceTest : AbstractTest() {
         testSettingsDatabaseAccessor.clear()
 
         //when
-        try {
-            applicationSettingsService
-                    .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
-                            SettingDto("test", "test", false, "testComment", "testUser"))
-        } catch (e: ValidationException) {
-            assertEquals(ValidationException.Validation.NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE, e.validationType)
-            throw e
-        }
+        applicationSettingsService
+                .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
+                        SettingDto("test", "test", false, "testComment", "testUser"))
+
     }
 
     @Test
