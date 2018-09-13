@@ -5,6 +5,7 @@ import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -30,6 +31,7 @@ class CashTransferPreprocessor(
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferOperationPreprocessorPersistenceManager: PersistenceManager,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
         private val processedMessagesCache: ProcessedMessagesCache
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
@@ -46,6 +48,19 @@ class CashTransferPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val cashTransferParsedData = contextParser.parse(messageWrapper)
+
+        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
+        if (!messageProcessingStatusHolder.isHealthStatusOk()) {
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.RUNTIME)
+            val errorMessage = "Message processing is disabled"
+            CashInOutPreprocessor.LOGGER.error(errorMessage)
+            CashInOutPreprocessor.METRICS_LOGGER.logError(errorMessage)
+            return
+        }
 
         if (!validateData(cashTransferParsedData)) {
             return
