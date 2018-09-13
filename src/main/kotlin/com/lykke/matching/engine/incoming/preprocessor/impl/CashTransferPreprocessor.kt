@@ -48,20 +48,20 @@ class CashTransferPreprocessor(
     private lateinit var cashTransferOperationInputValidator: CashTransferOperationInputValidator
 
     override fun preProcess(messageWrapper: MessageWrapper) {
+        val cashTransferParsedData = contextParser.parse(messageWrapper)
+
         if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
-            writeResponse(messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
             return
         }
 
         if (!messageProcessingStatusHolder.isHealthStatusOk()) {
-            writeResponse(messageWrapper, MessageStatus.RUNTIME)
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.RUNTIME)
             val errorMessage = "Message processing is disabled"
             CashInOutPreprocessor.LOGGER.error(errorMessage)
             CashInOutPreprocessor.METRICS_LOGGER.logError(errorMessage)
             return
         }
-
-        val cashTransferParsedData = contextParser.parse(messageWrapper)
 
         if (!validateData(cashTransferParsedData)) {
             return
