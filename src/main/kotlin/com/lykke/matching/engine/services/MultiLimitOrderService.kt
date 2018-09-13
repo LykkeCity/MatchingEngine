@@ -194,7 +194,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         orderBook.getOrderBook(!order.isBuySide()),
                         messageWrapper.messageId!!,
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId],
-                        settings.limitOrderPriceDeviationThreshold(assetPairId))
+                        assetPair.limitOrderPriceDeviationThreshold ?: settings.limitOrderPriceDeviationThreshold(assetPairId))
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.updateStatus(OrderStatus.NoLiquidity, matchingResult.timestamp)

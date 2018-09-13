@@ -207,7 +207,7 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
                     availableBalance,
-                    applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
+                    assetPair.limitOrderPriceDeviationThreshold ?: applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
