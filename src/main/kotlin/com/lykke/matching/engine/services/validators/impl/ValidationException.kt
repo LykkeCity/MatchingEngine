@@ -16,7 +16,6 @@ class ValidationException(val validationType: Validation = Validation.GENERIC_VA
         TOO_SMALL_VOLUME("Too small volume"),
         UNKNOWN_ASSET("Unknown asset"),
         LIMIT_ORDER_NOT_FOUND("Limit order not found"),
-        BALANCE_LOWER_THAN_RESERVED("Balance lower than reserved"),
-        NOT_ACCEPTABLE_MESSAGE_SWITCH_SETTING_VALUE("Supplied value is not supported")
+        BALANCE_LOWER_THAN_RESERVED("Balance lower than reserved")
     }
 }
