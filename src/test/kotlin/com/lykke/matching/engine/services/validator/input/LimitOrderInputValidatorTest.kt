@@ -258,13 +258,7 @@ class LimitOrderInputValidatorTest {
         singleLimitContextBuilder.limitOrder(getValidLimitOrder(fee = getFee()))
 
         //when
-        try {
-            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
-        } catch (e: OrderValidationException) {
-            //then
-            assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
-            throw e
-        }
+        limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
     }
 
     fun getMessageWrapper(singleLimitContext: SingleLimitOrderContext): MessageWrapper {
