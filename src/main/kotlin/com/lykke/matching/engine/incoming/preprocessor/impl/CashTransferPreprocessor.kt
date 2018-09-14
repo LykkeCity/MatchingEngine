@@ -31,8 +31,8 @@ class CashTransferPreprocessor(
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
         private val databaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferOperationPreprocessorPersistenceManager: PersistenceManager,
-        private val messageProcessingStatusHolder: MessageProcessingStatusHolder,
-        private val processedMessagesCache: ProcessedMessagesCache
+        private val processedMessagesCache: ProcessedMessagesCache,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
     companion object {
