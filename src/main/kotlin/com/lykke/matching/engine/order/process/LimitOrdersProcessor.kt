@@ -39,6 +39,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val limitOrderInputValidator: LimitOrderInputValidator,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
+                           private val applicationSettingsCache: ApplicationSettingsCache,
                            ordersToCancel: Collection<LimitOrder>,
                            private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -190,18 +191,21 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
 
-        val orderValidationResult = validateLimitOrder(isTrustedClient, order,
-                orderBook, assetPair, baseAssetDisabled,
-                quotingAssetDisabled, availableBalance, limitVolume)
-
-        if (!orderValidationResult.isValid) {
-            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
-            processInvalidOrder(orderValidationResult, order)
+        try {
+            validateLimitOrder(isTrustedClient, order, orderBook, assetPair, availableBalance, limitVolume)
+        } catch (e: OrderValidationException) {
+            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
+            order.updateStatus(e.orderStatus, date)
+            addToReportIfNotTrusted(order)
+            processedOrders.add(ProcessedOrder(order, false, e.message))
             return
         }
 
         if (orderBook.leadToNegativeSpread(order)) {
-            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageId, availableBalance)
+            val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
+                    messageId,
+                    availableBalance,
+                    applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
@@ -217,7 +221,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
-                OrderStatus.InvalidFee -> {
+                OrderStatus.InvalidFee,
+                OrderStatus.TooHighPriceDeviation -> {
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
@@ -253,7 +258,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             sellSideOrderBookChanged = true
         }
 
-        LOGGER.info("$orderInfo added to order book")
+        if (!isTrustedClient) {
+            LOGGER.info("$orderInfo added to order book")
+        }
     }
 
     private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
@@ -281,7 +288,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             if (assetPair.minVolume != null && orderCopy.getAbsRemainingVolume() < assetPair.minVolume) {
-                LOGGER.info("$orderInfo:  Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                LOGGER.info("$orderInfo: Cancelled due to min remaining volume (${NumberUtils.roundForPrint(orderCopy.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
+                orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+                LOGGER.info("$orderInfo: Cancelled due to zero latest trade")
                 orderCopy.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
             } else {
                 orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
@@ -345,7 +355,11 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                             it.fees,
                             it.absoluteSpread,
                             it.relativeSpread,
-                            TradeRole.TAKER)
+                            TradeRole.TAKER,
+                            it.baseAssetId,
+                            it.baseVolume,
+                            it.quotingAssetId,
+                            it.quotingVolume)
                 }.toMutableList()))
 
         matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->

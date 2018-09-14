@@ -7,7 +7,7 @@ import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.PriorityBlockingQueue
 
-class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBook {
+class AssetStopOrderBook(val assetPairId: String): AbstractAssetOrderBook {
 
     companion object {
 
@@ -71,6 +71,12 @@ class AssetStopOrderBook(private val assetPairId: String): AbstractAssetOrderBoo
     private val bidOrderBook = ConcurrentHashMap<String, LimitOrder>(50)
 
     override fun getOrderBook(buySide: Boolean) = (if (buySide) bidOrderBook else askOrderBook).values.toList()
+
+    fun getOrderBook(isBuySide: Boolean, isLower: Boolean) = if (isBuySide) {
+        if (isLower) lowerBidOrderBook else upperBidOrderBook
+    } else {
+        if (isLower) lowerAskOrderBook else upperAskOrderBook
+    }
 
     fun addOrder(order: LimitOrder) {
         if (order.assetPairId != assetPairId) {

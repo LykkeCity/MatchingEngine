@@ -3,15 +3,15 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.*
 
-class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool, private val balancesDatabase: Int) : WalletDatabaseAccessor {
+class RedisWalletDatabaseAccessor(private val redisConnection: RedisConnection, private val balancesDatabase: Int) : WalletDatabaseAccessor {
 
     companion object {
         private val LOGGER = Logger.getLogger(RedisWalletDatabaseAccessor::class.java.name)
@@ -24,10 +24,8 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool, private val 
 
     override fun loadWallets(): HashMap<String, Wallet> {
         val result = HashMap<String, Wallet>()
-        var balancesCount = 0
-
-        jedisPool.resource.use {
-            jedis ->
+        redisConnection.resource { jedis ->
+            var balancesCount = 0
 
             jedis.select(balancesDatabase)
             val keys = balancesKeys(jedis).toList()
@@ -58,9 +56,10 @@ class RedisWalletDatabaseAccessor(private val jedisPool: JedisPool, private val 
                     METRICS_LOGGER.logError(message, e)
                 }
             }
+
+            LOGGER.info("Loaded ${result.size} wallets, $balancesCount balances")
         }
 
-        LOGGER.info("Loaded ${result.size} wallets, $balancesCount balances")
         return result
     }
 

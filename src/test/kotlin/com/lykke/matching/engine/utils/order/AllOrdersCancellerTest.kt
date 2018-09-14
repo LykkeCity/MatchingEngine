@@ -99,9 +99,8 @@ class AllOrdersCancellerTest: AbstractTest() {
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
 
-        assertEquals(2, testClientLimitOrderListener.getCount())
-        assertEquals(1, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
-        assertEquals(2, (testClientLimitOrderListener.getQueue().last() as LimitOrdersReport).orders.size)
+        assertEquals(1, testClientLimitOrderListener.getCount())
+        assertEquals(3, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }

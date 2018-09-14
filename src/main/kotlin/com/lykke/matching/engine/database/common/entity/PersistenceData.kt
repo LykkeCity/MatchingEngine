@@ -7,6 +7,7 @@ class PersistenceData(val balancesData: BalancesData?,
                       val messageSequenceNumber: Long?) {
 
     constructor(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?): this(null, processedMessage, messageSequenceNumber)
+    constructor(processedMessage: ProcessedMessage?): this(null, processedMessage, null)
 
     fun details() = "w: ${balancesData?.wallets?.size}, b: ${balancesData?.balances?.size}, m: ${processedMessage?.messageId}, sn: $messageSequenceNumber"
 }

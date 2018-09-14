@@ -30,6 +30,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -63,6 +64,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
                              private val multiLimitOrderValidator: MultiLimitOrderValidator,
                              feeProcessor: FeeProcessor,
+                             private val settings: ApplicationSettingsCache,
                              private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                              private val messageSender: MessageSender) : AbstractService {
 
@@ -188,8 +190,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             }
 
             if (orderValid && orderBook.leadToNegativeSpreadByOtherClient(order)) {
-                val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()), messageWrapper.messageId!!,
-                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId])
+                val matchingResult = matchingEngine.match(order,
+                        orderBook.getOrderBook(!order.isBuySide()),
+                        messageWrapper.messageId!!,
+                        balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId],
+                        settings.limitOrderPriceDeviationThreshold(assetPairId))
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.updateStatus(OrderStatus.NoLiquidity, matchingResult.timestamp)
@@ -199,7 +204,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         order.updateStatus(OrderStatus.NotEnoughFunds, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
-                    OrderStatus.InvalidFee -> {
+                    OrderStatus.InvalidFee,
+                    OrderStatus.TooHighPriceDeviation -> {
                         order.updateStatus(OrderStatus.InvalidFee, matchingResult.timestamp)
                         trustedClientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
                     }
@@ -275,7 +281,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                         it.fees,
                                         it.absoluteSpread,
                                         it.relativeSpread,
-                                        TradeRole.TAKER)
+                                        TradeRole.TAKER,
+                                        it.baseAssetId,
+                                        it.baseVolume,
+                                        it.quotingAssetId,
+                                        it.quotingVolume)
                             })
 
                             matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
@@ -291,7 +301,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                 if (assetPair.minVolume != null && order.getAbsRemainingVolume() < assetPair.minVolume) {
                                     LOGGER.info("Order (id: ${order.externalId}) is cancelled due to min remaining volume (${NumberUtils.roundForPrint(order.getAbsRemainingVolume())} < ${NumberUtils.roundForPrint(assetPair.minVolume)})")
                                     order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                                } else {
+                                } else if (matchingResult.matchedWithZeroLatestTrade == true) {
+                                    LOGGER.info("Order (id: ${order.externalId}) is cancelled due to zero latest trade")
+                                    order.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                                }  else {
                                     ordersToAdd.add(order)
                                     orderBook.addOrder(order)
                                 }
@@ -328,7 +341,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
 
         val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(), sequenceNumber)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
         if (!updated) {
             LOGGER.error("Unable to save result data (multi limit order id $messageUid)")
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
@@ -412,12 +426,15 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
         val assetPair = assetsPairsHolder.getAssetPair(message.assetPairId)
         val isTrustedClient = balancesHolder.isTrustedClient(message.clientId)
+
+        LOGGER.debug("Got ${if (!isTrustedClient) "client " else ""}multi limit order id: ${message.uid}, " +
+                (if (messageWrapper.messageId != message.uid) "messageId: ${messageWrapper.messageId}, " else "") +
+                "client ${message.clientId}, " +
+                "assetPair: ${message.assetPairId}, " +
+                (if (message.hasCancelAllPreviousLimitOrders()) "cancelPrevious: ${message.cancelAllPreviousLimitOrders}, " else "") +
+                (if (message.hasCancelMode()) "cancelMode: ${message.cancelMode}" else ""))
+
         val multiLimitOrder = readMultiLimitOrder(message, isTrustedClient, assetPair)
-        if (isTrustedClient) {
-            LOGGER.debug("Got multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}")
-        } else {
-            LOGGER.debug("Got client multi limit order id: ${multiLimitOrder.messageUid}, client ${multiLimitOrder.clientId}, assetPair: ${multiLimitOrder.assetPairId}, cancelPrevious: ${multiLimitOrder.cancelAllPreviousLimitOrders}, cancelMode: ${multiLimitOrder.cancelMode}")
-        }
         val now = Date()
 
         var buySideOrderBookChanged = false
@@ -505,7 +522,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         messageWrapper.processedMessage(),
                         multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
-        messageWrapper.processedMessagePersisted = true
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = result.success
         val responseBuilder = ProtocolMessages.MultiLimitOrderResponse.newBuilder()
 
         if (!result.success) {

@@ -89,6 +89,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("TIMEUSD", "TIME", "USD", 6))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "EUR", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 8))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
 
         initServices()
     }
@@ -1279,6 +1280,103 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val event = trustedClientsEventsQueue.poll() as ExecutionEvent
         assertEquals(1, event.orders.size)
         assertEquals("1", event.orders.single().externalId)
+    }
+
+    @Test
+    fun testMatchSellMinRemaining() {
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 50.00)
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.02000199)
+        testBalanceHolderWrapper.updateBalance("Client3", "USD", 49.99)
+
+        initServices()
+
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 5000.0, volume = 0.01, clientId = "Client2")))
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCUSD", price = 4999.0, volume = 0.01, clientId = "Client3")))
+
+        clearMessageQueues()
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
+                IncomingLimitOrder(-0.01000199, 4998.0, "order1"),
+                IncomingLimitOrder(-0.01, 4999.0, "order2")
+        )))
+
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(4, event.orders.size)
+
+        val order1 = event.orders.single { it.externalId == "order1" }
+        assertEquals(OutgoingOrderStatus.CANCELLED, order1.status)
+        assertEquals(1, order1.trades?.size)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order1.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("50", order1.trades!![0].quotingVolume)
+        assertEquals("Client2", order1.trades!![0].oppositeWalletId)
+        assertEquals("-0.00000199", order1.remainingVolume)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client2" }.status)
+
+        val order2 = event.orders.single { it.externalId == "order2" }
+        assertEquals(OutgoingOrderStatus.MATCHED, order2.status)
+        assertEquals(1, order2.trades?.size)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order2.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("49.99", order2.trades!![0].quotingVolume)
+        assertEquals("Client3", order2.trades!![0].oppositeWalletId)
+        assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client3" }.status)
+
+        assertOrderBookSize("BTCUSD", true, 0)
+        assertOrderBookSize("BTCUSD", false, 0)
+
+        assertBalance("Client2", "USD", reserved = 0.0)
+        assertBalance("Client3", "USD", reserved = 0.0)
+    }
+
+    @Test
+    fun testMaxOldOrderValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testMaxOldOrderVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(VolumePrice(BigDecimal.valueOf(-1.1), BigDecimal.valueOf(10000.0)))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testOrderMAxValue() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxValue = BigDecimal.valueOf(10000.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
+    }
+
+    @Test
+    fun testOrderMaxVolume() {
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 1.1)
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
+                maxVolume = BigDecimal.valueOf(1.0)))
+        assetPairsCache.update()
+
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(IncomingLimitOrder(-1.1, 10000.0))))
+
+        assertOrderBookSize("BTCUSD", false, 0)
     }
 
     private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {

@@ -40,10 +40,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val limitOrder = singleLimitContext.limitOrder
 
         val limitAsset = singleLimitContext.limitAsset
-        val limitVolume = if (limitOrder.isBuySide())
-            NumberUtils.setScaleRoundUp(limitOrder.volume * (limitOrder.upperPrice ?: limitOrder.lowerPrice)!!, limitAsset.accuracy)
-        else
-            limitOrder.getAbsVolume()
+        val limitVolume = if (limitOrder.isBuySide()) {
+            val limitPrice = limitOrder.upperPrice ?: limitOrder.lowerPrice
+            if (limitPrice != null)
+                NumberUtils.setScaleRoundUp(limitOrder.volume * limitPrice, limitAsset.accuracy)
+            else null
+        } else limitOrder.getAbsVolume()
 
         val balance = balancesHolder.getBalance(limitOrder.clientId, limitAsset.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(limitOrder.clientId, limitAsset.assetId)
@@ -88,10 +90,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             limitOrder.price = price
 
             genericLimitOrderProcessor.processLimitOrder(singleLimitContext, now, BigDecimal.ZERO)
+            writeResponse(messageWrapper, limitOrder, MessageStatus.OK)
             return
         }
 
-        val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume, limitAsset.accuracy)
+        val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume!!, limitAsset.accuracy)
 
         val clientBalanceUpdates = listOf(ClientBalanceUpdate(limitOrder.clientId,
                 limitAsset.assetId,
@@ -107,6 +110,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 limitOrder.clientId,
                 limitAsset.assetId,
                 newReservedBalance)
+        messageWrapper.triedToPersist = true
+        messageWrapper.persisted = updated
 
         if (!updated) {
             writePersistenceErrorResponse(messageWrapper, limitOrder)
@@ -197,15 +202,17 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         return
     }
 
-    private fun validateOrder(availableBalance: BigDecimal, limitVolume: BigDecimal, singleLimitContext: SingleLimitOrderContext): OrderValidationResult {
+    private fun validateOrder(availableBalance: BigDecimal, limitVolume: BigDecimal?, singleLimitContext: SingleLimitOrderContext): OrderValidationResult {
         if (!singleLimitContext.validationResult!!.isValid) {
             return singleLimitContext.validationResult!!
         }
 
-        try {
-            limitOrderBusinessValidator.validateBalance(availableBalance, limitVolume)
-        } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, e.message, e.orderStatus)
+        if (limitVolume != null) {
+            try {
+                limitOrderBusinessValidator.validateBalance(availableBalance, limitVolume)
+            } catch (e: OrderValidationException) {
+                return OrderValidationResult(false, e.message, e.orderStatus)
+            }
         }
 
         return OrderValidationResult(true)
