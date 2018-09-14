@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.services.validators.input.impl
 
 import com.lykke.matching.engine.daos.Asset
@@ -23,15 +24,12 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     }
 
     private fun validateLimitOrder(singleLimitContext: SingleLimitOrderContext) {
-        if (!singleLimitContext.isTrustedClient) {
-            validateFee(singleLimitContext.limitOrder)
-            validateAssets(singleLimitContext.baseAssetDisabled, singleLimitContext.quotingAssetDisabled)
-        }
-
-        validatePrice(singleLimitContext.limitOrder)
-        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
-        validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
-        validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
+        validateLimitOrder(singleLimitContext.isTrustedClient,
+                singleLimitContext.limitOrder,
+                singleLimitContext.assetPair,
+                singleLimitContext.baseAssetDisabled,
+                singleLimitContext.quotingAssetDisabled,
+                singleLimitContext.baseAsset)
     }
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
@@ -49,12 +47,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         validateVolume(order, assetPair)
         validatePriceAccuracy(order, assetPair)
         validateVolumeAccuracy(order, baseAsset)
-    }
-
-    override fun checkVolume(order: Order, assetPair: AssetPair): Boolean {
-        val volume = order.getAbsVolume()
-        val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
+        validateValue(order, assetPair)
     }
 
     override fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
@@ -66,6 +59,12 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
+    }
+
+    override fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean {
+        val volume = order.getAbsVolume()
+        val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
+        return minVolume == null || volume >= minVolume
     }
 
     fun validateFee(order: LimitOrder) {
@@ -87,7 +86,8 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     }
 
     fun validateLimitPrices(order: LimitOrder) {
-        if (((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) ||
+        if ((order.lowerLimitPrice == null && order.lowerPrice == null && order.upperLimitPrice == null && order.upperPrice == null) ||
+                ((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) ||
                 ((order.upperLimitPrice == null).xor(order.upperPrice == null)) ||
                 (order.lowerLimitPrice != null && (order.lowerLimitPrice <= BigDecimal.ZERO || order.lowerPrice!! <= BigDecimal.ZERO)) ||
                 (order.upperLimitPrice != null && (order.upperLimitPrice <= BigDecimal.ZERO || order.upperPrice!! <= BigDecimal.ZERO)) ||
@@ -96,9 +96,19 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         }
     }
 
+    fun validateValue(order: LimitOrder, assetPair: AssetPair) {
+        if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
+        }
+    }
+
     fun validateVolume(limitOrder: LimitOrder, assetPair: AssetPair) {
-        if (!checkVolume(limitOrder, assetPair)) {
+        if (!checkMinVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
+        }
+
+        if (assetPair.maxVolume != null && limitOrder.getAbsVolume() > assetPair.maxVolume) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
         }
     }
 

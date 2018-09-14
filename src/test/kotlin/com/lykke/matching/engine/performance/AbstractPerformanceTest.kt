@@ -9,6 +9,8 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
@@ -68,6 +70,8 @@ abstract class AbstractPerformanceTest {
     protected lateinit var rabbitTrustedClientsEventsQueue: LinkedBlockingQueue<ExecutionEvent>
 
     protected lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
+    protected lateinit var cashInOutContextParser: CashInOutContextParser
+    protected lateinit var cashTransferContextParser: CashTransferContextParser
 
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
@@ -131,13 +135,15 @@ abstract class AbstractPerformanceTest {
         val limitOrderInputValidator = LimitOrderInputValidatorImpl()
         val singleLimitOrderPreprocessorLogger = ThrottlingLogger.getLogger(SingleLimitOrderContextParser::class.java.name)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger)
+        cashInOutContextParser = CashInOutContextParser(assetsHolder)
+        cashTransferContextParser = CashTransferContextParser(assetsHolder)
 
         stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService)
 
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator, applicationSettingsCache,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender)
+                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache)
 
         genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
                 genericStopLimitOrderService,

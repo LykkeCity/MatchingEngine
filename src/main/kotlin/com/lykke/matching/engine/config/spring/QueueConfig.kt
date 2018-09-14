@@ -4,8 +4,6 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*

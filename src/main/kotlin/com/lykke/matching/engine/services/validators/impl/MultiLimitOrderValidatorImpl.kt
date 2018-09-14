@@ -61,10 +61,13 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
     }
 
     private fun isVolumeValid(order: LimitOrder) {
-        if (!limitOrderInputValidator.checkVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
+        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+
+        if (!limitOrderInputValidator.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due too small volume")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
+
         if (assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
             LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} due to too large volume")
             throw OrderValidationException(OrderStatus.InvalidVolume)

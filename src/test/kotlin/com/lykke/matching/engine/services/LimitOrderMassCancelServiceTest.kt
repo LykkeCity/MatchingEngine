@@ -116,7 +116,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelOrdersOneSide() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
+        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 1)

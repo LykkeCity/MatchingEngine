@@ -103,7 +103,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testEmptyPrices() {
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
                 assetId = "BTCUSD",
                 volume = 1.0,
                 type = LimitOrderType.STOP_LIMIT)))

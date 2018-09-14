@@ -21,8 +21,8 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
@@ -71,6 +71,9 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @Before
     fun setUp() {
@@ -740,8 +743,8 @@ class MarketOrderServiceTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", price = 5000.0, volume = 0.01, clientId = "Client1")))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", price = 4999.0, volume = 0.01, clientId = "Client3")))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", price = 5000.0, volume = 0.01, clientId = "Client1")))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(assetId = "BTCEUR", price = 4999.0, volume = 0.01, clientId = "Client3")))
 
         clearMessageQueues()
         marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCEUR", volume = -0.01000199)))

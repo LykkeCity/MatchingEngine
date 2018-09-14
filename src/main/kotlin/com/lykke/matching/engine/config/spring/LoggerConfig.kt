@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.AppInitializer
 import com.lykke.utils.logging.MetricsLogger

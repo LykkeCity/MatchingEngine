@@ -88,8 +88,4 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
                     .setStatus(status.type))
         }
     }
-
-    override fun parseMessage(messageWrapper: MessageWrapper) {
-        //do nothing
-    }
 }

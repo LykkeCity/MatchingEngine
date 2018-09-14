@@ -74,45 +74,45 @@ class LimitOrderInputValidatorTest {
 
     @Test
     fun testCheckVolume() {
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 1.0), BTC_USD_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.1), BTC_USD_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.00000001), BTC_USD_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 1.0), BTC_USD_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.1), BTC_USD_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 0.00000001), BTC_USD_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = 1.0), MIN_VOLUME_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = 0.1), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = 0.09), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = 1.0), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = 0.1), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = 0.09), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = -1.0), MIN_VOLUME_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = -0.1), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(volume = -0.09), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = -1.0), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = -0.1), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(volume = -0.09), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 1.0), MIN_VOLUME_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.1), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.09), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 1.0), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.1), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = 0.09), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -1.0), MIN_VOLUME_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.1), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.09), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -1.0), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.1), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(price = 1.0, volume = -0.09), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 1.0), BTC_USD_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.1), BTC_USD_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.00000001), BTC_USD_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 1.0), BTC_USD_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.1), BTC_USD_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(assetId = "BTCUSD", volume = 0.00000001), BTC_USD_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 1.0), MIN_VOLUME_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.1), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.09), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 1.0), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.1), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.09), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -1.0), MIN_VOLUME_ASSET_PAIR) }
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.1), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.09), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -1.0), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.1), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.09), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 1.0, straight = false), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.1, straight = false), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = 0.09, straight = false), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 1.0, straight = false), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.1, straight = false), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = 0.09, straight = false), MIN_VOLUME_ASSET_PAIR) }
 
-        assertTrue { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -1.0, straight = false), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.1, straight = false), MIN_VOLUME_ASSET_PAIR) }
-        assertFalse { limitOrderInputValidator.checkVolume(MessageBuilder.buildMarketOrder(volume = -0.09, straight = false), MIN_VOLUME_ASSET_PAIR) }
+        assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -1.0, straight = false), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.1, straight = false), MIN_VOLUME_ASSET_PAIR) }
+        assertFalse { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildMarketOrder(volume = -0.09, straight = false), MIN_VOLUME_ASSET_PAIR) }
     }
 
     @Test(expected = OrderValidationException::class)

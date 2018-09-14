@@ -1,7 +1,6 @@
 package com.lykke.matching.engine.config
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.config.spring.LoggerConfig
 import com.lykke.matching.engine.config.spring.QueueConfig
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
@@ -12,7 +11,6 @@ import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -23,6 +21,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
+import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -61,7 +60,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
-@Import(QueueConfig::class, LoggerConfig::class)
+@Import(QueueConfig::class)
 open class TestApplicationContext {
 
     @Bean
@@ -285,7 +284,7 @@ open class TestApplicationContext {
                                          limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                          messageSender: MessageSender): LimitOrdersProcessorFactory {
         return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, settingsCache, genericLimitOrderService, clientLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender)
+                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender, applicationSettingsCache)
     }
 
     @Bean
@@ -475,11 +474,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun messageBuilder(singleLimitOrderContextParser: SingleLimitOrderContextParser): MessageBuilder {
-        return MessageBuilder(singleLimitOrderContextParser)
-    }
-
-    @Bean
     open fun limitOrderInputValidator(): LimitOrderInputValidator {
         return LimitOrderInputValidatorImpl()
     }
@@ -488,5 +482,10 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {
         return LimitOrderBusinessValidatorImpl()
+    }
+
+    @Bean
+    open fun singleLimitOrderContextPreprocessorLogger(): ThrottlingLogger {
+        return ThrottlingLogger.getLogger(SingleLimitOrderPreprocessor::class.java.name)
     }
 }

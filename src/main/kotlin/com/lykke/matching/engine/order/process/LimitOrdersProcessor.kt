@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -192,7 +193,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val availableBalance = availableBalances[limitAsset.assetId]!!
 
         try {
-            validateLimitOrder(isTrustedClient, order, orderBook, assetPair, availableBalance, limitVolume)
+            validateLimitOrder(isTrustedClient, order, orderBook,
+                    assetPair, baseAssetDisabled, quotingAssetDisabled,
+                    availableBalance, limitVolume)
         } catch (e: OrderValidationException) {
             LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
             order.updateStatus(e.orderStatus, date)

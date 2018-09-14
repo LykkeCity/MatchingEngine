@@ -37,30 +37,30 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val LOGGER: Logger) {
 
     fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) {
-        val limitOrder = singleLimitContext.limitOrder
+        val order = singleLimitContext.limitOrder
 
         val limitAsset = singleLimitContext.limitAsset
-        val limitVolume = if (limitOrder.isBuySide()) {
-            val limitPrice = limitOrder.upperPrice ?: limitOrder.lowerPrice
+        val limitVolume = if (order.isBuySide()) {
+            val limitPrice = order.upperPrice ?: order.lowerPrice
             if (limitPrice != null)
-                NumberUtils.setScaleRoundUp(limitOrder.volume * limitPrice, limitAsset.accuracy)
+                NumberUtils.setScaleRoundUp(order.volume * limitPrice, limitAsset.accuracy)
             else null
-        } else limitOrder.getAbsVolume()
+        } else order.getAbsVolume()
 
-        val balance = balancesHolder.getBalance(limitOrder.clientId, limitAsset.assetId)
-        val reservedBalance = balancesHolder.getReservedBalance(limitOrder.clientId, limitAsset.assetId)
+        val balance = balancesHolder.getBalance(order.clientId, limitAsset.assetId)
+        val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
         val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         var cancelVolume = BigDecimal.ZERO
         val ordersToCancel = mutableListOf<LimitOrder>()
         if (singleLimitContext.isCancelOrders) {
-            stopLimitOrderService.searchOrders(limitOrder.clientId, limitOrder.assetPairId, limitOrder.isBuySide()).forEach { orderToCancel ->
+            stopLimitOrderService.searchOrders(order.clientId, order.assetPairId, order.isBuySide()).forEach { orderToCancel ->
                 ordersToCancel.add(orderToCancel)
                 clientLimitOrdersReport.orders.add(LimitOrderWithTrades(orderToCancel))
                 cancelVolume += orderToCancel.reservedLimitVolume!!
             }
         }
 
-        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(limitOrder.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
+        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
 
         val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext)
 
@@ -71,32 +71,32 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             return
         }
 
-        val orderBook = limitOrderService.getOrderBook(limitOrder.assetPairId)
+        val orderBook = limitOrderService.getOrderBook(order.assetPairId)
         val bestBidPrice = orderBook.getBidPrice()
         val bestAskPrice = orderBook.getAskPrice()
 
         var price: BigDecimal? = null
-        if (limitOrder.lowerLimitPrice != null && (limitOrder.isBuySide() && bestAskPrice > BigDecimal.ZERO && bestAskPrice <= limitOrder.lowerLimitPrice ||
-                !limitOrder.isBuySide() && bestBidPrice > BigDecimal.ZERO && bestBidPrice <= limitOrder.lowerLimitPrice)) {
-            price = limitOrder.lowerPrice
-        } else if (limitOrder.upperLimitPrice != null && (limitOrder.isBuySide() && bestAskPrice >= limitOrder.upperLimitPrice ||
-                !limitOrder.isBuySide() && bestBidPrice >= limitOrder.upperLimitPrice)) {
-            price = limitOrder.upperPrice
+        if (order.lowerLimitPrice != null && (order.isBuySide() && bestAskPrice > BigDecimal.ZERO && bestAskPrice <= order.lowerLimitPrice ||
+                !order.isBuySide() && bestBidPrice > BigDecimal.ZERO && bestBidPrice <= order.lowerLimitPrice)) {
+            price = order.lowerPrice
+        } else if (order.upperLimitPrice != null && (order.isBuySide() && bestAskPrice >= order.upperLimitPrice ||
+                !order.isBuySide() && bestBidPrice >= order.upperLimitPrice)) {
+            price = order.upperPrice
         }
 
         if (price != null) {
-            LOGGER.info("Process stop order ${limitOrder.externalId}, client ${limitOrder.clientId} immediately (bestBidPrice=$bestBidPrice, bestAskPrice=$bestAskPrice)")
-            limitOrder.updateStatus(OrderStatus.InOrderBook, now)
-            limitOrder.price = price
+            LOGGER.info("Process stop order ${order.externalId}, client ${order.clientId} immediately (bestBidPrice=$bestBidPrice, bestAskPrice=$bestAskPrice)")
+            order.updateStatus(OrderStatus.InOrderBook, now)
+            order.price = price
 
             genericLimitOrderProcessor.processLimitOrder(singleLimitContext, now, BigDecimal.ZERO)
-            writeResponse(messageWrapper, limitOrder, MessageStatus.OK)
+            writeResponse(messageWrapper, order, MessageStatus.OK)
             return
         }
 
         val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume + limitVolume!!, limitAsset.accuracy)
 
-        val clientBalanceUpdates = listOf(ClientBalanceUpdate(limitOrder.clientId,
+        val clientBalanceUpdates = listOf(ClientBalanceUpdate(order.clientId,
                 limitAsset.assetId,
                 balance,
                 balance,
@@ -107,31 +107,31 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val updated = balancesHolder.updateReservedBalance(singleLimitContext.processedMessage,
                 sequenceNumber,
-                limitOrder.clientId,
+                order.clientId,
                 limitAsset.assetId,
                 newReservedBalance)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
 
         if (!updated) {
-            writePersistenceErrorResponse(messageWrapper, limitOrder)
+            writePersistenceErrorResponse(messageWrapper, order)
             return
         }
 
-        balancesHolder.sendBalanceUpdate(BalanceUpdate(limitOrder.externalId,
+        balancesHolder.sendBalanceUpdate(BalanceUpdate(order.externalId,
                 MessageType.LIMIT_ORDER.name,
                 now,
                 clientBalanceUpdates,
                 messageWrapper.messageId!!))
-        stopLimitOrderService.cancelStopLimitOrders(limitOrder.assetPairId, limitOrder.isBuySide(), ordersToCancel, now)
+        stopLimitOrderService.cancelStopLimitOrders(order.assetPairId, order.isBuySide(), ordersToCancel, now)
 
-        limitOrder.reservedLimitVolume = limitVolume
-        stopLimitOrderService.addStopOrder(limitOrder)
+        order.reservedLimitVolume = limitVolume
+        stopLimitOrderService.addStopOrder(order)
 
-        clientLimitOrdersReport.orders.add(LimitOrderWithTrades(limitOrder))
+        clientLimitOrdersReport.orders.add(LimitOrderWithTrades(order))
 
-        writeResponse(messageWrapper, limitOrder, MessageStatus.OK)
-        LOGGER.info("${orderInfo(limitOrder)} added to stop order book")
+        writeResponse(messageWrapper, order, MessageStatus.OK)
+        LOGGER.info("${orderInfo(order)} added to stop order book")
 
         clientLimitOrdersQueue.put(clientLimitOrdersReport)
 
@@ -169,6 +169,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                     limitOrder.clientId,
                     limitAsset.assetId,
                     newReservedBalance)
+            messageWrapper.triedToPersist = true
+            messageWrapper.persisted = updated
             if (updated) {
                 clientBalanceUpdates.add(ClientBalanceUpdate(limitOrder.clientId, limitAsset.assetId, balance, balance, reservedBalance, newReservedBalance))
                 balancesHolder.sendBalanceUpdate(BalanceUpdate(limitOrder.externalId, MessageType.LIMIT_ORDER.name, Date(),

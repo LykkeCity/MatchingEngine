@@ -34,7 +34,8 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                                   private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
                                   private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                  private val messageSender: MessageSender) {
+                                  private val messageSender: MessageSender,
+                                  private val applicationSettingsCache: ApplicationSettingsCache) {
 
     fun create(matchingEngine: MatchingEngine,
                date: Date,
@@ -58,6 +59,7 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                     limitOrderInputValidator,
                     balancesHolder,
                     genericLimitOrderService,
+                    applicationSettingsCache,
                     ordersToCancel,
                     clientLimitOrdersQueue,
                     lkkTradesQueue,
