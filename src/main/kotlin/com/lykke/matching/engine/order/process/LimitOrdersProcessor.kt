@@ -192,15 +192,16 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
 
-        try {
-            validateLimitOrder(isTrustedClient, order, orderBook,
-                    assetPair, baseAssetDisabled, quotingAssetDisabled,
-                    availableBalance, limitVolume)
-        } catch (e: OrderValidationException) {
-            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
-            order.updateStatus(e.orderStatus, date)
+
+        val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
+                assetPair, baseAssetDisabled, quotingAssetDisabled,
+                availableBalance, limitVolume)
+
+         if(!orderValidationResult.isValid) {
+            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
+            order.updateStatus(orderValidationResult.status!!, date)
             addToReportIfNotTrusted(order)
-            processedOrders.add(ProcessedOrder(order, false, e.message))
+            processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
             return
         }
 
