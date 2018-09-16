@@ -255,7 +255,7 @@ class LimitOrderInputValidatorTest {
     fun testValidStopOrder() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(fee = getFee()))
+        singleLimitContextBuilder.limitOrder(getValidStopOrder(BigDecimal.ONE, BigDecimal.ONE, null, null))
 
         //when
         limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
