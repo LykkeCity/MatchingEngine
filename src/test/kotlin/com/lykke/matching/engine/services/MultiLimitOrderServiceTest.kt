@@ -78,8 +78,8 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         @Primary
         open fun testConfig(): TestSettingsDatabaseAccessor {
             val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client5"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client5"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -623,7 +623,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testAddAndMatchAndCancel() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -1394,7 +1394,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     fun testCancelAllOrdersOfExTrustedClient() {
         testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client1"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
         applicationSettingsCache.update()
 
         multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("LKK1YLKK", "Client1",

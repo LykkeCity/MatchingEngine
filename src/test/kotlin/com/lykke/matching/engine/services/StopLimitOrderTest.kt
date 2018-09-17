@@ -433,7 +433,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     private fun processStopLimitOrderAfterMultiLimitOrder(forTrustedClient: Boolean) {
         if (forTrustedClient) {
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
         }
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
@@ -521,7 +521,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     private fun processStopLimitOrderAfterMultiLimitOrderCancellation(forTrustedClient: Boolean) {
         if (forTrustedClient) {
-            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client2"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client2"))
         }
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.3)
@@ -710,7 +710,7 @@ class StopLimitOrderTest : AbstractTest() {
 
     @Test
     fun testProcessBothSideStopLimitOrders() {
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client2"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client2"))
 
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1050.0)
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.1)
