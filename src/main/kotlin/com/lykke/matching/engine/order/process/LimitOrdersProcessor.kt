@@ -197,11 +197,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 assetPair, baseAssetDisabled, quotingAssetDisabled,
                 availableBalance, limitVolume)
 
-         if(!orderValidationResult.isValid) {
-            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
-            order.updateStatus(orderValidationResult.status!!, date)
-            addToReportIfNotTrusted(order)
-            processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
+        if (!orderValidationResult.isValid) {
+            processInvalidOrder(orderValidationResult, order)
             return
         }
 
@@ -268,6 +265,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
+        LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
         order.updateStatus(orderValidationResult.status!!, date)
         addToReportIfNotTrusted(order)
         processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
@@ -404,17 +402,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    quotingAssetDisabled: Boolean,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
-
-        if (order.clientId != clientId) {
-            return OrderValidationResult(false, "${orderInfo(order)} has invalid clientId: ${order.clientId}", OrderStatus.Cancelled)
-         }
-        if (order.assetPairId != assetPair.assetPairId) {
-            return OrderValidationResult(false, "${orderInfo(order)} has invalid assetPairId: ${order.assetPairId}", OrderStatus.Cancelled)
-        }
-
         try {
+            //input validator will be moved from the business thread after multilimit order context release
             limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair,
-                    baseAssetDisabled, quotingAssetDisabled , baseAsset)
+                    baseAssetDisabled, quotingAssetDisabled, baseAsset)
             businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)
