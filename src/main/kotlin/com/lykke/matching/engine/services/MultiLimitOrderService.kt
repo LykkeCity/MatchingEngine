@@ -281,7 +281,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                         it.fees,
                                         it.absoluteSpread,
                                         it.relativeSpread,
-                                        TradeRole.TAKER)
+                                        TradeRole.TAKER,
+                                        it.baseAssetId,
+                                        it.baseVolume,
+                                        it.quotingAssetId,
+                                        it.quotingVolume)
                             })
 
                             matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->

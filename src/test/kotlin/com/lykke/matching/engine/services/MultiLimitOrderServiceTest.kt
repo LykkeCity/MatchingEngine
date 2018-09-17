@@ -1305,8 +1305,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val order1 = event.orders.single { it.externalId == "order1" }
         assertEquals(OutgoingOrderStatus.CANCELLED, order1.status)
         assertEquals(1, order1.trades?.size)
-        assertEquals("0.01000000", order1.trades!![0].volume)
-        assertEquals("50.00", order1.trades!![0].oppositeVolume)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order1.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("50", order1.trades!![0].quotingVolume)
         assertEquals("Client2", order1.trades!![0].oppositeWalletId)
         assertEquals("-0.00000199", order1.remainingVolume)
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client2" }.status)
@@ -1314,8 +1316,10 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         val order2 = event.orders.single { it.externalId == "order2" }
         assertEquals(OutgoingOrderStatus.MATCHED, order2.status)
         assertEquals(1, order2.trades?.size)
-        assertEquals("0.01000000", order2.trades!![0].volume)
-        assertEquals("49.99", order2.trades!![0].oppositeVolume)
+        assertEquals("BTC", order1.trades!![0].baseAssetId)
+        assertEquals("-0.01", order2.trades!![0].baseVolume)
+        assertEquals("USD", order1.trades!![0].quotingAssetId)
+        assertEquals("49.99", order2.trades!![0].quotingVolume)
         assertEquals("Client3", order2.trades!![0].oppositeWalletId)
         assertEquals(OutgoingOrderStatus.MATCHED, event.orders.single { it.walletId == "Client3" }.status)
 
