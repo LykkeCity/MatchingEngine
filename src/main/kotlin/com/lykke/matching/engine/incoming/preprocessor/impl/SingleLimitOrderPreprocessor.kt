@@ -24,7 +24,7 @@ import javax.annotation.PostConstruct
 class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                                    private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                   private val logger: ThrottlingLogger): MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
+                                   private val logger: ThrottlingLogger) : MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
@@ -47,10 +47,9 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         try {
-            if (singleLimitContext.limitOrder.type == LimitOrderType.LIMIT) {
-                limitOrderInputValidator.validateLimitOrder(singleLimitOrderParsedData)
-            } else {
-                limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
+            when (singleLimitContext.limitOrder.type) {
+                LimitOrderType.LIMIT -> limitOrderInputValidator.validateLimitOrder(singleLimitOrderParsedData)
+                LimitOrderType.STOP_LIMIT -> limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
             }
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)
