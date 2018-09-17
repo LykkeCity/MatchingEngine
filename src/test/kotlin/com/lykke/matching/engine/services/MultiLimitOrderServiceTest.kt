@@ -1343,34 +1343,6 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     }
 
     @Test
-    fun testCancelAllOrdersOfExTrustedClient() {
-        testBalanceHolderWrapper.updateBalance("Client1", "LKK", 1.0)
-
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client1"))
-        applicationSettingsCache.update()
-
-        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper("LKK1YLKK", "Client1",
-                listOf(VolumePrice(BigDecimal.valueOf(5.0), BigDecimal.valueOf(0.021)),
-                        VolumePrice(BigDecimal.valueOf(5.0), BigDecimal.valueOf(0.021)))))
-
-        assertBalance("Client1", "LKK", 1.0, 0.0)
-
-        testSettingsDatabaseAccessor.clear()
-        applicationSettingsCache.update()
-
-        reservedVolumesRecalculator.recalculate()
-
-        assertBalance("Client1", "LKK", 1.0, 0.2)
-
-        val message = buildMultiLimitOrderCancelWrapper("Client1", "LKK1YLKK", true)
-        multiLimitOrderCancelService.parseMessage(message)
-        multiLimitOrderCancelService.processMessage(message)
-
-        assertOrderBookSize("LKK1YLKK", true, 0)
-        assertBalance("Client1", "LKK", 1.0, 0.0)
-    }
-
-    @Test
     fun testImmediateOrCancelOrders() {
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2",
                 assetId = "EURUSD",
