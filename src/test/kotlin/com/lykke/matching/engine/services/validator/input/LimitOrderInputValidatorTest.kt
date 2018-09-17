@@ -75,7 +75,7 @@ class LimitOrderInputValidatorTest {
     fun testEmptyPrice() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidStopOrder(null, null, null, null))
+        singleLimitContextBuilder.limitOrder(getStopOrder(null, null, null, null))
         singleLimitContextBuilder.assetPair(MIN_VOLUME_ASSET_PAIR)
         //when
         try {
@@ -134,7 +134,7 @@ class LimitOrderInputValidatorTest {
     fun testInvalidFee() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee(), getNewLimitFee())))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee(), getNewLimitFee())))
 
         //when
         try {
@@ -150,7 +150,7 @@ class LimitOrderInputValidatorTest {
     fun testInvalidAssets() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee()), "JPYUSD"))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), "JPYUSD"))
         singleLimitContextBuilder.assetPair(DISABLED_ASSET_PAIR)
         singleLimitContextBuilder.baseAsset(Asset("JPY", 2))
         singleLimitContextBuilder.quotingAsset(Asset("USD", 2))
@@ -171,7 +171,7 @@ class LimitOrderInputValidatorTest {
     fun testInvalidPrice() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee()), price = BigDecimal.valueOf(-1.0)))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), price = BigDecimal.valueOf(-1.0)))
 
         //when
         try {
@@ -188,7 +188,7 @@ class LimitOrderInputValidatorTest {
     fun testInvalidVolume() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee()), assetPair = "EURUSD", volume = BigDecimal.valueOf(0.001)))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), assetPair = "EURUSD", volume = BigDecimal.valueOf(0.001)))
         singleLimitContextBuilder.assetPair(MIN_VOLUME_ASSET_PAIR)
 
         //when
@@ -202,10 +202,29 @@ class LimitOrderInputValidatorTest {
     }
 
     @Test(expected = OrderValidationException::class)
+    fun testInvalidVolumeEqualsZero() {
+        //given
+        val singleLimitContextBuilder = getSingleLimitContextBuilder()
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), assetPair = "EURUSD", volume = BigDecimal.ZERO))
+        singleLimitContextBuilder.assetPair(BTC_USD_ASSET_PAIR)
+
+        //when
+        try {
+            limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.InvalidVolume, e.orderStatus)
+            throw e
+        }
+
+    }
+
+
+    @Test(expected = OrderValidationException::class)
     fun testInvalidPriceAccuracy() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee()), assetPair = "EURUSD", price = BigDecimal.valueOf(0.00000000001)))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), assetPair = "EURUSD", price = BigDecimal.valueOf(0.00000000001)))
 
         //when
         try {
@@ -221,7 +240,7 @@ class LimitOrderInputValidatorTest {
     fun testInvalidVolumeAccuracy() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee()), volume = BigDecimal.valueOf(1.000000001)))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), volume = BigDecimal.valueOf(1.000000001)))
 
         //when
         try {
@@ -237,7 +256,7 @@ class LimitOrderInputValidatorTest {
     fun testInvalidLimitPrice() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidStopOrder(lowerLimitPrice = BigDecimal.valueOf(9500.0), lowerPrice = BigDecimal.valueOf(9000.0),
+        singleLimitContextBuilder.limitOrder(getStopOrder(lowerLimitPrice = BigDecimal.valueOf(9500.0), lowerPrice = BigDecimal.valueOf(9000.0),
                 upperLimitPrice = BigDecimal.valueOf(9500.0), upperPrice = BigDecimal.valueOf(9100.0)))
 
         //when
@@ -254,7 +273,7 @@ class LimitOrderInputValidatorTest {
     fun testValidLimitOrder() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(fee = getFee()))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(fee = getFee()))
 
         //when
         limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
@@ -264,7 +283,7 @@ class LimitOrderInputValidatorTest {
     fun testValidStopOrder() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidStopOrder(BigDecimal.ONE, BigDecimal.ONE, null, null))
+        singleLimitContextBuilder.limitOrder(getStopOrder(BigDecimal.ONE, BigDecimal.ONE, null, null))
 
         //when
         limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
@@ -279,7 +298,7 @@ class LimitOrderInputValidatorTest {
 
         builder.uid("test")
                 .messageId("test")
-                .limitOrder(getValidLimitOrder(getFee(), listOf(getNewLimitFee())))
+                .limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee())))
                 .assetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
                 .baseAsset(Asset("BTC", 5))
                 .quotingAsset(Asset("USD", 2))
@@ -290,7 +309,7 @@ class LimitOrderInputValidatorTest {
         return builder
     }
 
-    fun getValidStopOrder(lowerLimitPrice: BigDecimal?, lowerPrice: BigDecimal?, upperLimitPrice: BigDecimal?, upperPrice: BigDecimal?): LimitOrder {
+    fun getStopOrder(lowerLimitPrice: BigDecimal?, lowerPrice: BigDecimal?, upperLimitPrice: BigDecimal?, upperPrice: BigDecimal?): LimitOrder {
         return LimitOrder("test", "test", "BTCUSD", "test", BigDecimal.ONE,
                 BigDecimal.ONE, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.ONE, null,
                 fee = getFee(), type = LimitOrderType.STOP_LIMIT, fees = null,
@@ -298,11 +317,11 @@ class LimitOrderInputValidatorTest {
                 upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null)
     }
 
-    fun getValidLimitOrder(fee: LimitOrderFeeInstruction?,
-                           fees: List<NewLimitOrderFeeInstruction>? = null,
-                           assetPair: String = "BTCUSD",
-                           price: BigDecimal = BigDecimal.valueOf(1.0),
-                           volume: BigDecimal = BigDecimal.valueOf(1.0)): LimitOrder {
+    fun getLimitOrder(fee: LimitOrderFeeInstruction?,
+                      fees: List<NewLimitOrderFeeInstruction>? = null,
+                      assetPair: String = "BTCUSD",
+                      price: BigDecimal = BigDecimal.valueOf(1.0),
+                      volume: BigDecimal = BigDecimal.valueOf(1.0)): LimitOrder {
         return LimitOrder("test", "test", assetPair, "test", volume,
                 price, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
                 type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)

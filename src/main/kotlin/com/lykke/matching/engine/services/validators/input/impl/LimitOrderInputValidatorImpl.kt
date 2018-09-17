@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services.validators.input.impl
 
 import com.lykke.matching.engine.daos.Asset
@@ -21,15 +20,6 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         validateLimitOrder(singleLimitContext)
-    }
-
-    private fun validateLimitOrder(singleLimitContext: SingleLimitOrderContext) {
-        validateLimitOrder(singleLimitContext.isTrustedClient,
-                singleLimitContext.limitOrder,
-                singleLimitContext.assetPair,
-                singleLimitContext.baseAssetDisabled,
-                singleLimitContext.quotingAssetDisabled,
-                singleLimitContext.baseAsset)
     }
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
@@ -67,25 +57,34 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         return minVolume == null || volume >= minVolume
     }
 
-    fun validateFee(order: LimitOrder) {
+    private fun validateLimitOrder(singleLimitContext: SingleLimitOrderContext) {
+        validateLimitOrder(singleLimitContext.isTrustedClient,
+                singleLimitContext.limitOrder,
+                singleLimitContext.assetPair,
+                singleLimitContext.baseAssetDisabled,
+                singleLimitContext.quotingAssetDisabled,
+                singleLimitContext.baseAsset)
+    }
+
+    private fun validateFee(order: LimitOrder) {
         if (order.fee != null && order.fees?.size ?: 0 > 1 || !checkFee(null, order.fees)) {
             throw OrderValidationException(OrderStatus.InvalidFee, "has invalid fee")
         }
     }
 
-    fun validateAssets(baseAssetDisabled: Boolean, quotingAssetDisabled: Boolean) {
+    private fun validateAssets(baseAssetDisabled: Boolean, quotingAssetDisabled: Boolean) {
         if (baseAssetDisabled || quotingAssetDisabled) {
             throw OrderValidationException(OrderStatus.DisabledAsset, "disabled asset")
         }
     }
 
-    fun validatePrice(limitOrder: LimitOrder) {
+    private fun validatePrice(limitOrder: LimitOrder) {
         if (limitOrder.price <= BigDecimal.ZERO) {
             throw OrderValidationException(OrderStatus.InvalidPrice, "price is invalid")
         }
     }
 
-    fun validateLimitPrices(order: LimitOrder) {
+    private fun validateLimitPrices(order: LimitOrder) {
         if ((order.lowerLimitPrice == null && order.lowerPrice == null && order.upperLimitPrice == null && order.upperPrice == null) ||
                 ((order.lowerLimitPrice == null).xor(order.lowerPrice == null)) ||
                 ((order.upperLimitPrice == null).xor(order.upperPrice == null)) ||
@@ -96,13 +95,18 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         }
     }
 
-    fun validateValue(order: LimitOrder, assetPair: AssetPair) {
+    private fun validateValue(order: LimitOrder, assetPair: AssetPair) {
         if (assetPair.maxValue != null && order.getAbsVolume() * order.price > assetPair.maxValue) {
             throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
         }
     }
 
-    fun validateVolume(limitOrder: LimitOrder, assetPair: AssetPair) {
+    private fun validateVolume(limitOrder: LimitOrder, assetPair: AssetPair) {
+
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, limitOrder.volume)) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "volume can not be equal to zero")
+        }
+
         if (!checkMinVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
         }
@@ -112,7 +116,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         }
     }
 
-    fun validateVolumeAccuracy(limitOrder: LimitOrder, baseAsset: Asset) {
+    private fun validateVolumeAccuracy(limitOrder: LimitOrder, baseAsset: Asset) {
         val baseAssetAccuracy = baseAsset.accuracy
 
         val volumeAccuracyValid = NumberUtils.isScaleSmallerOrEqual(limitOrder.volume, baseAssetAccuracy)
@@ -121,7 +125,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         }
     }
 
-    fun validatePriceAccuracy(limitOrder: LimitOrder, assetPair: AssetPair) {
+    private fun validatePriceAccuracy(limitOrder: LimitOrder, assetPair: AssetPair) {
         val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(limitOrder.price, assetPair.accuracy)
         if (!priceAccuracyValid) {
             throw OrderValidationException(OrderStatus.InvalidPriceAccuracy, "price accuracy is invalid")
