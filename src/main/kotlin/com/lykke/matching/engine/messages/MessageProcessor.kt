@@ -298,7 +298,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.BALANCE_UPDATE] = balanceUpdateService
         result[MessageType.RESERVED_BALANCE_UPDATE] = reservedBalanceUpdateService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
-        result[MessageType.OLD_MULTI_LIMIT_ORDER] = multiLimitOrderService
         return result
     }
 }
