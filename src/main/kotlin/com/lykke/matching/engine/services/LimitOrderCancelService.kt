@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -91,6 +92,7 @@ class LimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService
             messageWrapper.timestamp = Date().time
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid
+            messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
         }
     }
 

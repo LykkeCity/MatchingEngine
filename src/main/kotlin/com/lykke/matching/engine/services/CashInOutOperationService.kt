@@ -6,7 +6,6 @@ import com.lykke.matching.engine.daos.converters.CashInOutOperationConverter
 import com.lykke.matching.engine.daos.fee.v2.Fee
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -97,7 +96,7 @@ class CashInOutOperationService(private val balancesHolder: BalancesHolder,
         val outgoingMessage = EventFactory.createCashInOutEvent(walletOperation.amount,
                 sequenceNumber,
                 cashInOutContext.messageId,
-                cashInOutOperation.externalId!!,
+                cashInOutOperation.externalId,
                 now,
                 MessageType.CASH_IN_OUT_OPERATION,
                 walletProcessor.getClientBalanceUpdates(),

@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -143,6 +144,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid
             messageWrapper.timestamp = message.timestamp
+            messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
         }
     }
 

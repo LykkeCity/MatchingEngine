@@ -46,7 +46,7 @@ abstract class AbstractLimitOrdersCancelService(protected val genericLimitOrderS
                 .preProcessStopLimitOrders(orders.stopOrders)
                 .applyFull(operationId,
                         messageId,
-                        messageWrapper.processedMessage(),
+                        messageWrapper.processedMessage,
                         operationType,
                         false)
         messageWrapper.triedToPersist = true

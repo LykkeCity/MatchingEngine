@@ -147,7 +147,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
@@ -251,7 +251,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 return
             }
 
-            if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
+            val processedMessage = message.processedMessage
+            if (processedMessage != null && processedMessagesCache.isProcessed(processedMessage.type, processedMessage.messageId)) {
                 service.writeResponse(message, MessageStatus.DUPLICATE)
                 LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
                 METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
@@ -260,7 +261,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             service.processMessage(message)
 
-            message.processedMessage()?.let {
+            processedMessage?.let {
                 if (!message.triedToPersist) {
                     message.persisted = persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
                 }

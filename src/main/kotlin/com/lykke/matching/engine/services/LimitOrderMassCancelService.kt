@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -38,6 +39,7 @@ class LimitOrderMassCancelService(genericLimitOrderService: GenericLimitOrderSer
         messageWrapper.id = message.uid
         messageWrapper.timestamp = Date().time
         messageWrapper.parsedMessage = message
+        messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

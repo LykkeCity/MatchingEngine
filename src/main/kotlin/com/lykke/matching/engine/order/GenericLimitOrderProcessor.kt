@@ -69,7 +69,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
 
     fun processOrder(messageWrapper: MessageWrapper, order: LimitOrder, isCancelOrders: Boolean, now: Date) {
         when(order.type) {
-            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper.messageId!!, messageWrapper.processedMessage(),
+            LimitOrderType.LIMIT -> processLimitOrder(messageWrapper.messageId!!, messageWrapper.processedMessage,
                     messageWrapper, order, isCancelOrders, now)
             LimitOrderType.STOP_LIMIT -> processStopOrder(messageWrapper, order, isCancelOrders, now)
         }

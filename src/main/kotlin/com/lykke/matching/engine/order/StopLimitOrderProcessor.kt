@@ -77,7 +77,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             val sequenceNumber = messageSequenceNumberHolder.getNewValue()
             if (cancelVolume > BigDecimal.ZERO) {
                 val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume, limitAsset.accuracy)
-                updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
+                updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage,
                         sequenceNumber,
                         order.clientId,
                         limitAsset.assetId,
@@ -136,7 +136,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             order.price = price
 
             genericLimitOrderProcessor.processLimitOrder(messageWrapper.messageId!!,
-                    messageWrapper.processedMessage(),
+                    messageWrapper.processedMessage,
                     order,
                     now,
                     BigDecimal.ZERO)
@@ -155,7 +155,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
 
-        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
+        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage,
                 sequenceNumber,
                 order.clientId,
                 limitAsset.assetId,
