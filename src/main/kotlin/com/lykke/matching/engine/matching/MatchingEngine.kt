@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.matching
 
+import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.CopyWrapper
@@ -13,7 +14,6 @@ import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
 import com.lykke.matching.engine.fee.singleFeeTransfer
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -36,7 +36,6 @@ class MatchingEngine(private val LOGGER: Logger,
                      private val genericLimitOrderService: GenericLimitOrderService,
                      private val assetsHolder: AssetsHolder,
                      private val assetsPairsHolder: AssetsPairsHolder,
-                     private val balancesHolder: BalancesHolder,
                      private val feeProcessor: FeeProcessor) {
 
     companion object {
@@ -45,10 +44,12 @@ class MatchingEngine(private val LOGGER: Logger,
 
     private var tradeIndex: Long = 0
     private val changedOrders = HashMap<LimitOrder, CopyWrapper<LimitOrder>>()
+    private var balancesGetter: BalancesGetter? = null
 
-    fun initTransaction(): MatchingEngine {
+    fun initTransaction(balancesGetter: BalancesGetter): MatchingEngine {
         tradeIndex = 0
         changedOrders.clear()
+        this.balancesGetter = balancesGetter
         return this
     }
 
@@ -56,6 +57,7 @@ class MatchingEngine(private val LOGGER: Logger,
         val copyWrappers = changedOrders.values.toList()
         changedOrders.clear()
         copyWrappers.forEach { it.applyToOrigin() }
+        this.balancesGetter = null
     }
 
     fun updatedOrders(orderBook: Collection<LimitOrder>, newOrders: Collection<LimitOrder>): UpdatedOrders {
@@ -164,7 +166,7 @@ class MatchingEngine(private val LOGGER: Logger,
 
                 val limitOrderInfo = "id: ${limitOrder.externalId}, client: ${limitOrder.clientId}, asset: ${limitOrder.assetPairId}"
 
-                if (!genericLimitOrderService.checkAndReduceBalance(
+                if (!checkAndReduceBalance(
                         limitOrder,
                         if (isBuy) marketRoundedVolume else oppositeRoundedVolume,
                         limitReservedBalances)) {
@@ -217,7 +219,8 @@ class MatchingEngine(private val LOGGER: Logger,
                             oppositeCashMovements,
                             relativeSpread,
                             mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
-                            availableBalances)
+                            availableBalances,
+                            balancesGetter!!)
                 } catch (e: FeeException) {
                     LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
@@ -225,7 +228,12 @@ class MatchingEngine(private val LOGGER: Logger,
                 }
 
                 val takerFees = try {
-                    feeProcessor.processFee(order.fees ?: emptyList(), if (isBuy) baseAssetOperation else quotingAssetOperation, ownCashMovements, mapOf(Pair(assetPair.assetPairId, limitOrder.price)), availableBalances)
+                    feeProcessor.processFee(order.fees ?: emptyList(),
+                            if (isBuy) baseAssetOperation else quotingAssetOperation,
+                            ownCashMovements,
+                            mapOf(Pair(assetPair.assetPairId, limitOrder.price)),
+                            availableBalances,
+                            balancesGetter!!)
                 } catch (e: NotEnoughFundsFeeException) {
                     order.updateStatus(OrderStatus.NotEnoughFunds, now)
                     LOGGER.info("Not enough funds for fee for order id: ${order.externalId}, client: ${order.clientId}, asset: ${order.assetPairId}, volume: ${NumberUtils.roundForPrint(order.volume)}, price: ${order.takePrice()}, marketBalance: ${getMarketBalance(availableBalances, order, asset)} : ${e.message}")
@@ -452,7 +460,7 @@ class MatchingEngine(private val LOGGER: Logger,
     private fun getBalance(order: Order): BigDecimal {
         val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
         val asset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        return balancesHolder.getAvailableBalance(order.clientId, asset)
+        return balancesGetter!!.getAvailableBalance(order.clientId, asset)
     }
 
     private fun getMarketBalance(availableBalances: MutableMap<String, MutableMap<String, BigDecimal>>, order: Order, asset: Asset): BigDecimal {
@@ -510,5 +518,18 @@ class MatchingEngine(private val LOGGER: Logger,
         } else {
             NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
         }
+    }
+
+    private fun checkAndReduceBalance(order: LimitOrder, volume: BigDecimal, limitBalances: MutableMap<String, BigDecimal>): Boolean {
+        val assetPair = assetsPairsHolder.getAssetPair(order.assetPairId)
+        val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+        val availableBalance = limitBalances[order.clientId] ?: balancesGetter!!.getAvailableReservedBalance(order.clientId, limitAssetId)
+        val accuracy = assetsHolder.getAsset(limitAssetId).accuracy
+        val result = availableBalance >= volume
+        LOGGER.debug("order=${order.externalId}, client=${order.clientId}, $limitAssetId : ${NumberUtils.roundForPrint(availableBalance)} >= ${NumberUtils.roundForPrint(volume)} = $result")
+        if (result) {
+            limitBalances[order.clientId] = NumberUtils.setScaleRoundHalfUp(availableBalance - volume, accuracy)
+        }
+        return result
     }
 }

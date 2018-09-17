@@ -35,7 +35,9 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         asset.minVolume?.toBigDecimal(),
                         asset.minInvertedVolume?.toBigDecimal(),
                         asset.maxVolume?.toBigDecimal(),
-                        asset.maxValue?.toBigDecimal())
+                        asset.maxValue?.toBigDecimal(),
+                        asset.limitOrderPriceDeviationThreshold?.toBigDecimal(),
+                        asset.marketOrderPriceDeviationThreshold?.toBigDecimal())
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
@@ -50,10 +52,16 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
             val retrieveAssetPair = TableOperation.retrieve(ASSET_PAIR, assetId, AzureAssetPair::class.java)
             val assetPair = assetsTable.execute(retrieveAssetPair).getResultAsType<AzureAssetPair>()
             if (assetPair != null) {
-                return AssetPair(assetPair.assetPairId, assetPair.baseAssetId,
-                        assetPair.quotingAssetId, assetPair.accuracy,
-                        assetPair.minVolume?.toBigDecimal(), assetPair.minInvertedVolume?.toBigDecimal(),
-                        assetPair.maxVolume?.toBigDecimal(), assetPair.maxValue?.toBigDecimal())
+                return AssetPair(assetPair.assetPairId,
+                        assetPair.baseAssetId,
+                        assetPair.quotingAssetId,
+                        assetPair.accuracy,
+                        assetPair.minVolume?.toBigDecimal(),
+                        assetPair.minInvertedVolume?.toBigDecimal(),
+                        assetPair.maxVolume?.toBigDecimal(),
+                        assetPair.maxValue?.toBigDecimal(),
+                        assetPair.limitOrderPriceDeviationThreshold?.toBigDecimal(),
+                        assetPair.marketOrderPriceDeviationThreshold?.toBigDecimal())
             }
         } catch(e: Exception) {
             if (throwException) {

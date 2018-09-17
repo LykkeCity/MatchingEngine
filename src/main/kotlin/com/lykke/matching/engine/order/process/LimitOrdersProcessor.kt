@@ -26,6 +26,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.AssetOrderBook
+import com.lykke.matching.engine.services.CancelledOrdersOperationsResult
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
@@ -71,7 +72,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val LOGGER: Logger) {
 
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
-    private val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
+    val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
     private val availableBalances = HashMap<String, BigDecimal>()
 
@@ -85,8 +86,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     private val ordersToAdd = mutableListOf<LimitOrder>()
 
     private val lkkTrades = mutableListOf<LkkTrade>()
-    private val clientsLimitOrdersWithTrades = clientsLimitOrdersWithTrades.toMutableList()
-    private val trustedClientsLimitOrdersWithTrades = trustedClientsLimitOrdersWithTrades.toMutableList()
+    private val clientsLimitOrdersWithTrades = toLimitOrdersWithTradesMap(clientsLimitOrdersWithTrades)
+    private val trustedClientsLimitOrdersWithTrades = toLimitOrdersWithTradesMap(trustedClientsLimitOrdersWithTrades)
 
     init {
         if (orderBook.assetPairId != assetPair.assetPairId) {
@@ -105,6 +106,12 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             }
         }
         walletOperationsProcessor.preProcess(payBackReservedOperations, true)
+    }
+
+    private fun toLimitOrdersWithTradesMap(limitOrdersWithTrades: Collection<LimitOrderWithTrades>): MutableMap<String, LimitOrderWithTrades> {
+        return limitOrdersWithTrades.groupBy { it.order.id }
+                .mapValues { it.value.single() }
+                .toMutableMap()
     }
 
     fun preProcess(messageId: String, orders: Collection<LimitOrder>): LimitOrdersProcessor {
@@ -185,6 +192,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
 
         if (trustedClientsLimitOrdersWithTrades.isNotEmpty()) {
+            val trustedClientsLimitOrdersWithTrades = this.trustedClientsLimitOrdersWithTrades.values.toMutableList()
             trustedClientsLimitOrdersQueue.put(LimitOrdersReport(messageId, trustedClientsLimitOrdersWithTrades))
             messageSender.sendTrustedClientsMessage(EventFactory.createTrustedClientsExecutionEvent(trustedClientsSequenceNumber!!,
                     messageId,
@@ -195,6 +203,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
 
         if (clientsLimitOrdersWithTrades.isNotEmpty()) {
+            val clientsLimitOrdersWithTrades = this.clientsLimitOrdersWithTrades.values.toMutableList()
             clientLimitOrdersQueue.put(LimitOrdersReport(messageId, clientsLimitOrdersWithTrades))
             messageSender.sendMessage(EventFactory.createExecutionEvent(clientsSequenceNumber!!,
                     messageId,
@@ -230,26 +239,18 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
                     availableBalance,
-                    applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
+                    assetPair.limitOrderPriceDeviationThreshold ?: applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
-                OrderStatus.NoLiquidity -> {
-                    addToReportIfNotTrusted(order)
-                    processedOrders.add(ProcessedOrder(order, false))
-                }
                 OrderStatus.ReservedVolumeGreaterThanBalance -> {
-                    addToReportIfNotTrusted(order)
-                    processedOrders.add(ProcessedOrder(order, false, "Reserved volume is higher than available balance"))
+                    processRejectedMatchingResult(matchingResult, order, "Reserved volume is higher than available balance")
                 }
-                OrderStatus.NotEnoughFunds -> {
-                    addToReportIfNotTrusted(order)
-                    processedOrders.add(ProcessedOrder(order, false))
-                }
+                OrderStatus.NoLiquidity,
+                OrderStatus.NotEnoughFunds,
                 OrderStatus.InvalidFee,
                 OrderStatus.TooHighPriceDeviation -> {
-                    addToReportIfNotTrusted(order)
-                    processedOrders.add(ProcessedOrder(order, false))
+                    processRejectedMatchingResult(matchingResult, order)
                 }
                 OrderStatus.InOrderBook,
                 OrderStatus.Matched,
@@ -303,19 +304,12 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun processMatchingResult(matchingResult: MatchingResult, orderCopy: LimitOrder, orderInfo: String, order: LimitOrder, limitAsset: Asset): Boolean {
-        val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
-        val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
         val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
-        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-            val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
-                val cancelledOrder = it.copy
-                cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                cancelledOrder
-            })
-            cancelledOrdersWalletOperations.addAll(result.walletOperations)
-            cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
-            cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
-        }
+        val cancelResult = if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            val cancelResult = calculateCancelledOrdersOperations(matchingResult)
+            cancelledOrdersWalletOperations.addAll(cancelResult.walletOperations)
+            cancelResult
+        } else null
         val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
 
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
@@ -326,11 +320,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         try {
             walletOperationsProcessor.preProcess(ownWalletOperations).preProcess(matchingResult.oppositeCashMovements, true)
-            try {
-                walletOperationsProcessor.preProcess(cancelledOrdersWalletOperations)
-            } catch (e: BalanceException) {
-                LOGGER.error("$orderInfo: Unable to process cancelled orders wallet operations after matching: ${e.message}")
-            }
+            preProcessCancelledOrdersWalletOperations(cancelledOrdersWalletOperations, order)
         } catch (e: BalanceException) {
             val message = "$orderInfo: Unable to process wallet operations after matching: ${e.message}"
             LOGGER.error(message)
@@ -343,13 +333,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         matchingResult.apply()
         completedOrders.addAll(matchingResult.completedLimitOrders.map { it.origin!! })
 
-        val originCancelledLimitOrders = matchingResult.cancelledLimitOrders.map { it.origin!! }
-        if (originCancelledLimitOrders.isNotEmpty()) {
-            ordersToCancel.addAll(originCancelledLimitOrders)
-            trustedClientsLimitOrdersWithTrades.addAll(cancelledTrustedOrdersWithTrades)
-            clientsLimitOrdersWithTrades.addAll(cancelledOrdersWithTrades)
-            buySideOrderBookChanged = buySideOrderBookChanged || originCancelledLimitOrders.any { it.isBuySide() }
-            sellSideOrderBookChanged = sellSideOrderBookChanged || originCancelledLimitOrders.any { !it.isBuySide() }
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            applyCancelledOrders(matchingResult, cancelResult!!)
         }
 
         matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
@@ -358,7 +343,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
         lkkTrades.addAll(matchingResult.lkkTrades)
 
-        clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order.copy(),
+        val limitOrderWithTrades = LimitOrderWithTrades(order.copy(),
                 matchingResult.marketOrderTrades.map { it ->
                     LimitTradeInfo(it.tradeId,
                             it.marketClientId,
@@ -382,16 +367,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                             it.baseVolume,
                             it.quotingAssetId,
                             it.quotingVolume)
-                }.toMutableList()))
+                }.toMutableList())
+        clientsLimitOrdersWithTrades[limitOrderWithTrades.order.id] = limitOrderWithTrades
 
-        matchingResult.limitOrdersReport?.orders?.forEach { orderReport ->
-            var orderWithTrades = clientsLimitOrdersWithTrades.find { it.order.id == orderReport.order.id }
-            if (orderWithTrades == null) {
-                orderWithTrades = LimitOrderWithTrades(orderReport.order)
-                clientsLimitOrdersWithTrades.add(orderWithTrades)
-            }
-            orderWithTrades.trades.addAll(orderReport.trades)
-        }
+        matchingResult.limitOrdersReport?.orders?.forEach { addToReport(clientsLimitOrdersWithTrades, it) }
 
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
             orderBook.addOrder(order)
@@ -412,6 +391,50 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
         processedOrders.add(ProcessedOrder(order, true))
         return true
+    }
+
+    private fun processRejectedMatchingResult(matchingResult: MatchingResult, order: LimitOrder, reason: String? = null) {
+        addToReportIfNotTrusted(order)
+        processedOrders.add(ProcessedOrder(order, false, reason))
+        processMatchingResultCancelledOrders(matchingResult, order)
+    }
+
+    private fun processMatchingResultCancelledOrders(matchingResult: MatchingResult, order: LimitOrder) {
+        if (matchingResult.cancelledLimitOrders.isEmpty()) {
+            return
+        }
+        val cancelResult = calculateCancelledOrdersOperations(matchingResult)
+        preProcessCancelledOrdersWalletOperations(cancelResult.walletOperations, order)
+        applyCancelledOrders(matchingResult, cancelResult)
+        matchingResult.cancelledLimitOrders.forEach { orderBook.removeOrder(it.origin!!) }
+    }
+
+    private fun calculateCancelledOrdersOperations(matchingResult: MatchingResult): CancelledOrdersOperationsResult {
+        return genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
+            val cancelledOrder = it.copy
+            cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+            cancelledOrder
+        })
+    }
+
+    private fun preProcessCancelledOrdersWalletOperations(walletOperations: List<WalletOperation>, order: LimitOrder) {
+        try {
+            walletOperationsProcessor.preProcess(walletOperations)
+        } catch (e: BalanceException) {
+            LOGGER.error("${orderInfo(order)}: Unable to process cancelled orders wallet operations after matching: ${e.message}")
+        }
+    }
+
+    private fun applyCancelledOrders(matchingResult: MatchingResult, cancelResult: CancelledOrdersOperationsResult) {
+        if (matchingResult.cancelledLimitOrders.isEmpty()) {
+            return
+        }
+        val originCancelledLimitOrders = matchingResult.cancelledLimitOrders.map { it.origin!! }
+        ordersToCancel.addAll(originCancelledLimitOrders)
+        cancelResult.trustedClientLimitOrderWithTrades.forEach { addToReport(trustedClientsLimitOrdersWithTrades, it) }
+        cancelResult.clientLimitOrderWithTrades.forEach { addToReport(clientsLimitOrdersWithTrades, it) }
+        buySideOrderBookChanged = buySideOrderBookChanged || originCancelledLimitOrders.any { it.isBuySide() }
+        sellSideOrderBookChanged = sellSideOrderBookChanged || originCancelledLimitOrders.any { !it.isBuySide() }
     }
 
     private fun processPartiallyMatchedOrder(matchingResult: MatchingResult,
@@ -485,15 +508,23 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
     private fun addToReportIfNotTrusted(order: LimitOrder) {
         if (!isTrustedClient) {
-            clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
+            clientsLimitOrdersWithTrades[order.id] = LimitOrderWithTrades(order)
         }
     }
 
     private fun addToReport(order: LimitOrder) {
         if (isTrustedClient) {
-            trustedClientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
+            trustedClientsLimitOrdersWithTrades[order.id] = LimitOrderWithTrades(order)
         } else {
-            clientsLimitOrdersWithTrades.add(LimitOrderWithTrades(order))
+            clientsLimitOrdersWithTrades[order.id] = LimitOrderWithTrades(order)
+        }
+    }
+
+    private fun addToReport(limitOrdersWithTrades: MutableMap<String, LimitOrderWithTrades>, limitOrderWithTrades: LimitOrderWithTrades) {
+        if (limitOrdersWithTrades.containsKey(limitOrderWithTrades.order.id)) {
+            limitOrdersWithTrades[limitOrderWithTrades.order.id]!!.trades.addAll(limitOrderWithTrades.trades)
+        } else {
+            limitOrdersWithTrades[limitOrderWithTrades.order.id] = limitOrderWithTrades
         }
     }
 

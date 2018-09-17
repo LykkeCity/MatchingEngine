@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.fee
 
+import com.lykke.matching.engine.balance.BalancesGetter
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.FeeSizeType
@@ -12,7 +13,6 @@ import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
@@ -23,8 +23,7 @@ import java.util.LinkedList
 import java.util.UUID
 
 @Component
-class FeeProcessor(private val balancesHolder: BalancesHolder,
-                   private val assetsHolder: AssetsHolder,
+class FeeProcessor(private val assetsHolder: AssetsHolder,
                    private val assetsPairsHolder: AssetsPairsHolder,
                    private val genericLimitOrderService: GenericLimitOrderService) {
 
@@ -38,35 +37,40 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                         operations: MutableList<WalletOperation>,
                         relativeSpread: BigDecimal? = null,
                         convertPrices: Map<String, BigDecimal> = emptyMap(),
-                        balances: MutableMap<String, MutableMap<String, BigDecimal>>? = null) =
+                        balances: MutableMap<String, MutableMap<String, BigDecimal>>? = null,
+                        balancesGetter: BalancesGetter) =
             processFees(feeInstructions,
                     receiptOperation,
                     operations,
                     MakerFeeCoefCalculator(relativeSpread),
                     convertPrices,
                     true,
-                    balances)
+                    balances,
+                    balancesGetter)
 
     fun processFee(feeInstructions: List<FeeInstruction>?,
                    receiptOperation: WalletOperation,
                    operations: MutableList<WalletOperation>,
                    convertPrices: Map<String, BigDecimal> = emptyMap(),
-                   balances: MutableMap<String, MutableMap<String, BigDecimal>>? = null) =
+                   balances: MutableMap<String, MutableMap<String, BigDecimal>>? = null,
+                   balancesGetter: BalancesGetter) =
             processFees(feeInstructions,
                     receiptOperation,
                     operations,
                     DefaultFeeCoefCalculator(),
                     convertPrices,
                     false,
-                    balances)
+                    balances,
+                    balancesGetter)
 
     private fun processFees(feeInstructions: List<FeeInstruction>?,
-                           receiptOperation: WalletOperation,
-                           operations: MutableList<WalletOperation>,
-                           feeCoefCalculator: FeeCoefCalculator,
-                           convertPrices: Map<String, BigDecimal>,
-                           isMakerFee: Boolean,
-                           externalBalances: MutableMap<String, MutableMap<String, BigDecimal>>? = null): List<Fee> {
+                            receiptOperation: WalletOperation,
+                            operations: MutableList<WalletOperation>,
+                            feeCoefCalculator: FeeCoefCalculator,
+                            convertPrices: Map<String, BigDecimal>,
+                            isMakerFee: Boolean,
+                            externalBalances: MutableMap<String, MutableMap<String, BigDecimal>>?,
+                            balancesGetter: BalancesGetter): List<Fee> {
         if (feeInstructions?.isNotEmpty() != true) {
             return listOf()
         }
@@ -83,17 +87,17 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                     is LimitOrderFeeInstruction -> {
                         feeCoefCalculator.feeModificator = null
                         processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType,
-                                feeInstruction.makerSize, feeCoefCalculator.calculate(), balances, convertPrices)
+                                feeInstruction.makerSize, feeCoefCalculator.calculate(), balances, balancesGetter, convertPrices)
                     }
                     is NewLimitOrderFeeInstruction -> {
                         feeCoefCalculator.feeModificator = feeInstruction.makerFeeModificator
                         processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.makerSizeType, feeInstruction.makerSize,
-                                feeCoefCalculator.calculate(), balances, convertPrices)
+                                feeCoefCalculator.calculate(), balances, balancesGetter, convertPrices)
                     }
                     else -> throw FeeException("Fee instruction should be instance of LimitOrderFeeInstruction")
                 }
             } else {
-                processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.sizeType, feeInstruction.size, feeCoefCalculator.calculate(), balances, convertPrices)
+                processFee(feeInstruction, receiptOperationWrapper, newOperations, feeInstruction.sizeType, feeInstruction.size, feeCoefCalculator.calculate(), balances, balancesGetter, convertPrices)
             }
             Fee(feeInstruction, feeTransfer)
         }
@@ -120,6 +124,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                            feeSize: BigDecimal?,
                            feeCoef: BigDecimal?,
                            balances: MutableMap<String, MutableMap<String, BigDecimal>>,
+                           balancesGetter: BalancesGetter,
                            convertPrices: Map<String, BigDecimal>): FeeTransfer? {
         if (feeInstruction.type == FeeType.NO_FEE || feeSize == null) {
             return null
@@ -142,8 +147,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         }, feeAsset.accuracy)
 
         return when (feeInstruction.type) {
-            FeeType.CLIENT_FEE -> processClientFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances)
-            FeeType.EXTERNAL_FEE -> processExternalFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, feeCoef, balances)
+            FeeType.CLIENT_FEE -> processClientFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances, balancesGetter)
+            FeeType.EXTERNAL_FEE -> processExternalFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, feeCoef, balances, balancesGetter)
             else -> {
                 LOGGER.error("Unknown fee type: ${feeInstruction.type}")
                 null
@@ -157,12 +162,13 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                                    absFeeAmount: BigDecimal,
                                    feeAsset: Asset,
                                    feeCoef: BigDecimal?,
-                                   balances: MutableMap<String, MutableMap<String, BigDecimal>>): FeeTransfer? {
+                                   balances: MutableMap<String, MutableMap<String, BigDecimal>>,
+                                   balancesGetter: BalancesGetter): FeeTransfer? {
         if (feeInstruction.sourceClientId == null) {
             throw FeeException("Source client is null for external fee")
         }
         val clientBalances = balances.getOrPut(feeInstruction.sourceClientId) { HashMap() }
-        val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesHolder.getAvailableBalance(feeInstruction.sourceClientId, feeAsset.assetId) }
+        val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesGetter.getAvailableBalance(feeInstruction.sourceClientId, feeAsset.assetId) }
         if (balance < absFeeAmount) {
             throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
         }
@@ -181,10 +187,11 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                                  feeAsset: Asset,
                                  isAnotherAsset: Boolean,
                                  feeCoef: BigDecimal?,
-                                 balances: MutableMap<String, MutableMap<String, BigDecimal>>): FeeTransfer? {
+                                 balances: MutableMap<String, MutableMap<String, BigDecimal>>,
+                                 balancesGetter: BalancesGetter): FeeTransfer? {
         val receiptOperation = receiptOperationWrapper.currentReceiptOperation
         val clientBalances = balances.getOrPut(receiptOperation.clientId) { HashMap() }
-        val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesHolder.getAvailableBalance(receiptOperation.clientId, feeAsset.assetId) }
+        val balance = clientBalances.getOrPut(feeAsset.assetId) { balancesGetter.getAvailableBalance(receiptOperation.clientId, feeAsset.assetId) }
 
         if (isAnotherAsset) {
             if (balance < absFeeAmount) {

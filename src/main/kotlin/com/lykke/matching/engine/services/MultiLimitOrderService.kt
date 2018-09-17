@@ -82,7 +82,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
 
-    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
+    private val matchingEngine = MatchingEngine(LOGGER, limitOrderService, assetsHolder, assetsPairsHolder, feeProcessor)
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory?.create(LOGGER)
     private val orderServiceHelper = OrderServiceHelper(limitOrderService, LOGGER)
 
@@ -185,7 +185,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         val completedOrders = mutableListOf<LimitOrder>()
 
-        matchingEngine.initTransaction()
+        matchingEngine.initTransaction(walletOperationsProcessor)
         orders.forEach { order ->
             var orderValid = true
             try {
@@ -200,7 +200,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                         orderBook.getOrderBook(!order.isBuySide()),
                         messageWrapper.messageId!!,
                         balances[if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId],
-                        settings.limitOrderPriceDeviationThreshold(assetPairId))
+                        assetPair.limitOrderPriceDeviationThreshold ?: settings.limitOrderPriceDeviationThreshold(assetPairId))
                 when (OrderStatus.valueOf(matchingResult.order.status)) {
                     OrderStatus.NoLiquidity -> {
                         order.updateStatus(OrderStatus.NoLiquidity, matchingResult.timestamp)
@@ -535,7 +535,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 cancelResult.trustedClientsOrdersWithTrades,
                 LOGGER)
 
-        matchingEngine.initTransaction()
+        matchingEngine.initTransaction(processor.walletOperationsProcessor)
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
                 .apply(messageWrapper.messageId!!,
                         messageWrapper.processedMessage(),

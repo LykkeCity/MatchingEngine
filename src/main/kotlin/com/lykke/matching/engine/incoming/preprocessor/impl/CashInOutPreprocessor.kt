@@ -31,7 +31,7 @@ import java.util.concurrent.BlockingQueue
 class CashInOutPreprocessor(
         private val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor,
+        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache,
         private val messageProcessingStatusHolder: MessageProcessingStatusHolder): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
@@ -105,7 +105,7 @@ class CashInOutPreprocessor(
     private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
-        if (databaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
+        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")

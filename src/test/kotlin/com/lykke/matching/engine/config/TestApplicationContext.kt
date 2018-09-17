@@ -314,7 +314,6 @@ open class TestApplicationContext {
 
     @Bean
     open fun genericLimitOrderService(testOrderDatabaseAccessor: OrdersDatabaseAccessorsHolder,
-                                      assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
                                       quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
@@ -322,7 +321,6 @@ open class TestApplicationContext {
                                       applicationSettingsCache: ApplicationSettingsCache,
                                       expiryOrdersQueue: ExpiryOrdersQueue): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
-                assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 quotesUpdateQueue,
@@ -380,6 +378,7 @@ open class TestApplicationContext {
 
     @Bean
     open fun marketOrderService(genericLimitOrderService: GenericLimitOrderService, assetsHolder: AssetsHolder,
+                                genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                 assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder, clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                 trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                 orderBookQueue: BlockingQueue<OrderBook>,
@@ -391,7 +390,7 @@ open class TestApplicationContext {
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
                                 applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
-        return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
+        return MarketOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
                 lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator, feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, messageSender)
     }
 
@@ -485,8 +484,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun feeProcessor(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
-        return FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+    open fun feeProcessor(assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
+        return FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
 
 
