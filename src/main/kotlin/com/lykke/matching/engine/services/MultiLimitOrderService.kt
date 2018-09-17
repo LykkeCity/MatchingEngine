@@ -34,6 +34,7 @@ import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
@@ -362,7 +363,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
                 sequenceNumber)
@@ -538,7 +539,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         matchingEngine.initTransaction(processor.walletOperationsProcessor)
         val result = processor.preProcess(messageWrapper.messageId!!, multiLimitOrder.orders)
                 .apply(messageWrapper.messageId!!,
-                        messageWrapper.processedMessage(),
+                        messageWrapper.processedMessage,
                         multiLimitOrder.messageUid, MessageType.MULTI_LIMIT_ORDER,
                         buySideOrderBookChanged, sellSideOrderBookChanged)
         messageWrapper.triedToPersist = true
@@ -710,6 +711,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageWrapper.timestamp = message.timestamp
             messageWrapper.parsedMessage = message
             messageWrapper.id = message.uid
+            messageWrapper.processedMessage = if (settings.isTrustedClient(message.clientId))
+                null
+            else
+                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
         }
     }
 
@@ -717,8 +722,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         if (messageWrapper.type == MessageType.OLD_MULTI_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setStatus(status.type))
+            val assetPairId = (messageWrapper.parsedMessage as ProtocolMessages.MultiLimitOrder).assetPairId
+            messageWrapper.writeMultiLimitOrderResponse(ProtocolMessages.MultiLimitOrderResponse.newBuilder()
+                    .setStatus(status.type).setAssetPairId(assetPairId))
         }
     }
 }
