@@ -310,7 +310,7 @@ class MarketOrderService @Autowired constructor(
             val updated = CancelOrdersUtils.persistAndSendNotifications(genericLimitOrdersCanceller,
                     order.externalId,
                     messageWrapper.messageId!!,
-                    messageWrapper.processedMessage(),
+                    messageWrapper.processedMessage,
                     MessageType.MARKET_ORDER,
                     false,
                     balancesHolder,
