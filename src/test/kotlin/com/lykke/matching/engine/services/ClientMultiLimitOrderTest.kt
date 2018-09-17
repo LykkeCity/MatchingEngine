@@ -711,7 +711,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Test
     fun testCancelPartiallyMatchedOrderAfterRejectedIncomingOrder() {
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient"))
         applicationSettingsCache.update()
 
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 0.0)
@@ -766,7 +766,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Test
     fun testCancelPartiallyMatchedOrderDueToNotEnoughFunds() {
-        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient"))
         applicationSettingsCache.update()
 
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 0.0)
