@@ -72,6 +72,21 @@ class LimitOrderInputValidatorTest {
         testDictionariesDatabaseAccessor.addAssetPair(DISABLED_ASSET_PAIR)
     }
 
+    fun testEmptyPrice() {
+        //given
+        val singleLimitContextBuilder = getSingleLimitContextBuilder()
+        singleLimitContextBuilder.limitOrder(getValidStopOrder(null, null, null, null))
+        singleLimitContextBuilder.assetPair(MIN_VOLUME_ASSET_PAIR)
+        //when
+        try {
+            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
+            throw e
+        }
+    }
+
     @Test
     fun testCheckVolume() {
         assertTrue { limitOrderInputValidator.checkMinVolume(MessageBuilder.buildLimitOrder(assetId = "BTCUSD", volume = 1.0), BTC_USD_ASSET_PAIR) }
@@ -242,13 +257,7 @@ class LimitOrderInputValidatorTest {
         singleLimitContextBuilder.limitOrder(getValidLimitOrder(fee = getFee()))
 
         //when
-        try {
-            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
-        } catch (e: OrderValidationException) {
-            //then
-            assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
-            throw e
-        }
+        limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
     }
 
     @Test

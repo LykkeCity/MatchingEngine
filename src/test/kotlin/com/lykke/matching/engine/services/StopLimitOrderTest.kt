@@ -102,25 +102,6 @@ class StopLimitOrderTest : AbstractTest() {
     }
 
     @Test
-    fun testEmptyPrices() {
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
-                assetId = "BTCUSD",
-                volume = 1.0,
-                type = LimitOrderType.STOP_LIMIT)))
-
-        assertStopOrderBookSize("BTCUSD", false, 0)
-
-        assertEquals(1, clientsEventsQueue.size)
-        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
-        assertEquals(executionEvent.header.eventType, MessageType.LIMIT_ORDER.name)
-        assertEquals(executionEvent.header.messageType, OutgoingMessageType.ORDER)
-        assertEquals(1, executionEvent.orders.size)
-        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.first().status)
-        assertEquals(OrderRejectReason.INVALID_PRICE, executionEvent.orders.first().rejectReason)
-        assertEquals(0, executionEvent.balanceUpdates!!.size)
-    }
-
-    @Test
     fun testAddStopLimitOrder() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "BTCUSD", volume = -0.01,
