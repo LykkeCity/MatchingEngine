@@ -7,8 +7,7 @@ import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
 
-class SingleLimitOrderContext(val uid: String?,
-                              val messageId: String,
+class SingleLimitOrderContext(val messageId: String,
                               val limitOrder: LimitOrder,
                               val isCancelOrders: Boolean,
                               val assetPair: AssetPair,
@@ -21,7 +20,7 @@ class SingleLimitOrderContext(val uid: String?,
                               val processedMessage: ProcessedMessage?,
                               var validationResult: OrderValidationResult? = null) {
 
-    private constructor(builder: Builder) : this(builder.uid,
+    private constructor(builder: Builder) : this(
             builder.messageId,
             builder.limitOrder,
             builder.isCancelOrders,
@@ -37,8 +36,8 @@ class SingleLimitOrderContext(val uid: String?,
     override fun toString(): String {
         val order = this.limitOrder
 
-        return "id: $uid" +
-                ", messageId: $messageId" +
+        return  "id: ${limitOrder.externalId}"
+                "messageId: $messageId" +
                 ", type: ${order.type}" +
                 ", client: ${order.clientId}" +
                 ", isTrustedClient: $isTrustedClient" +
@@ -57,7 +56,6 @@ class SingleLimitOrderContext(val uid: String?,
     }
 
     class Builder {
-        var uid: String? = null
         lateinit var messageId: String
         lateinit var limitOrder: LimitOrder
         var processedMessage: ProcessedMessage? = null
@@ -72,7 +70,6 @@ class SingleLimitOrderContext(val uid: String?,
 
         fun limitOrder(limitOrder: LimitOrder) = apply { this.limitOrder = limitOrder }
         fun cancelOrders(cancelOrders: Boolean) = apply { this.isCancelOrders = cancelOrders }
-        fun uid(uid: String?) = apply { this.uid = uid }
         fun messageId(messageId: String) = apply { this.messageId = messageId }
         fun processedMessage(processedMessage: ProcessedMessage?) = apply { this.processedMessage = processedMessage }
         fun assetPair(assetPair: AssetPair) = apply { this.assetPair = assetPair }

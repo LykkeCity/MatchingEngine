@@ -296,8 +296,7 @@ class LimitOrderInputValidatorTest {
     fun getSingleLimitContextBuilder(): SingleLimitOrderContext.Builder {
         val builder = SingleLimitOrderContext.Builder()
 
-        builder.uid("test")
-                .messageId("test")
+        builder.messageId("test")
                 .limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee())))
                 .assetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
                 .baseAsset(Asset("BTC", 5))

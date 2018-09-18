@@ -35,7 +35,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         val context = parseMessage(messageWrapper)
 
         messageWrapper.context = context
-        messageWrapper.id = context.uid
+        messageWrapper.id = context.limitOrder.externalId
         messageWrapper.messageId = context.messageId
         messageWrapper.timestamp = context.processedMessage?.timestamp
 
@@ -43,17 +43,16 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
     }
 
     fun getStopOrderContext(messageId: String, order: LimitOrder): SingleLimitOrderContext {
-        return getContext(messageId, null, order, false,  null)
+        return getContext(messageId, order, false,  null)
     }
 
-    private fun getContext(messageId: String, uid: String?,
+    private fun getContext(messageId: String,
                            order: LimitOrder, cancelOrders: Boolean,
                            processedMessage: ProcessedMessage?): SingleLimitOrderContext {
         val builder = SingleLimitOrderContext.Builder()
         val assetPair = getAssetPair(order.assetPairId)
 
-        builder.uid(uid)
-                .messageId(messageId)
+        builder.messageId(messageId)
                 .limitOrder(order)
                 .assetPair(assetPair)
                 .baseAsset(getBaseAsset(assetPair))
@@ -107,8 +106,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
 
-        return getContext(messageId, oldMessage.uid.toString(),
-                limitOrder, oldMessage.cancelAllPreviousLimitOrders,
+        return getContext(messageId, limitOrder, oldMessage.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, oldMessage.timestamp, messageId))
     }
 
@@ -118,8 +116,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         val limitOrder = createOrder(message)
 
-        val singleLimitOrderContext = getContext(messageId, message.uid,
-                limitOrder, message.cancelAllPreviousLimitOrders,
+        val singleLimitOrderContext = getContext(messageId, limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
 
         logger.info("Got limit order  messageId: $messageId, id: ${message.uid}, client ${message.clientId}")
