@@ -51,8 +51,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val date: Date,
                            private val clientId: String,
                            private val assetPair: AssetPair,
-                           private val baseAssetDisabled: Boolean,
-                           private val quotingAssetDisabled: Boolean,
                            private val orderBook: AssetOrderBook,
                            payBackBaseReserved: BigDecimal,
                            payBackQuotingReserved: BigDecimal,
@@ -194,8 +192,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
 
         val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
-                assetPair, baseAssetDisabled, quotingAssetDisabled,
-                availableBalance, limitVolume)
+                assetPair, availableBalance, limitVolume)
 
         if (!orderValidationResult.isValid) {
             processInvalidOrder(orderValidationResult, order)
@@ -398,14 +395,11 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    order: LimitOrder,
                                    orderBook: AssetOrderBook,
                                    assetPair: AssetPair,
-                                   baseAssetDisabled: Boolean,
-                                   quotingAssetDisabled: Boolean,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
         try {
             //input validator will be moved from the business thread after multilimit order context release
-            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair,
-                    baseAssetDisabled, quotingAssetDisabled, baseAsset)
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset)
             businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)

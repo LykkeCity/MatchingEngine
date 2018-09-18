@@ -154,8 +154,6 @@ class LimitOrderInputValidatorTest {
         singleLimitContextBuilder.assetPair(DISABLED_ASSET_PAIR)
         singleLimitContextBuilder.baseAsset(Asset("JPY", 2))
         singleLimitContextBuilder.quotingAsset(Asset("USD", 2))
-        singleLimitContextBuilder.baseAssetDisabled(true)
-        singleLimitContextBuilder.quotingAssetDisabled(true)
 
         //when
         try {

@@ -26,7 +26,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                           messageWrapper: MessageWrapper? = null) {
         val order = singleLimitContext.limitOrder
         val assetPair = singleLimitContext.assetPair
-        val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+        val limitAsset = singleLimitContext.limitAsset.assetId
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
         val clientsLimitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
         var buySideOrderBookChanged = false

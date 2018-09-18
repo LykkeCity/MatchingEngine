@@ -283,7 +283,7 @@ open class TestApplicationContext {
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          limitOrderBusinessValidator: LimitOrderBusinessValidator,
                                          messageSender: MessageSender): LimitOrdersProcessorFactory {
-        return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, settingsCache, genericLimitOrderService, clientLimitOrdersQueue,
+        return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, genericLimitOrderService, clientLimitOrdersQueue,
                 lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender, applicationSettingsCache)
     }
 
@@ -474,8 +474,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun limitOrderInputValidator(): LimitOrderInputValidator {
-        return LimitOrderInputValidatorImpl()
+    open fun limitOrderInputValidator(applicationSettingsCache: ApplicationSettingsCache): LimitOrderInputValidator {
+        return LimitOrderInputValidatorImpl(applicationSettingsCache)
     }
 
 

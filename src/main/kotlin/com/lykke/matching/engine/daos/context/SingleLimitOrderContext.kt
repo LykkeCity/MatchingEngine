@@ -13,8 +13,6 @@ class SingleLimitOrderContext(val messageId: String,
                               val assetPair: AssetPair,
                               val baseAsset: Asset,
                               val quotingAsset: Asset,
-                              val baseAssetDisabled: Boolean,
-                              val quotingAssetDisabled: Boolean,
                               val limitAsset: Asset,
                               val isTrustedClient: Boolean,
                               val processedMessage: ProcessedMessage?,
@@ -27,8 +25,6 @@ class SingleLimitOrderContext(val messageId: String,
             builder.assetPair,
             builder.baseAsset,
             builder.quotingAsset,
-            builder.baseAssetDisabled,
-            builder.quotingAssetDisabled,
             builder.limitAsset,
             builder.isTrustedClient,
             builder.processedMessage)
@@ -36,14 +32,12 @@ class SingleLimitOrderContext(val messageId: String,
     override fun toString(): String {
         val order = this.limitOrder
 
-        return  "id: ${limitOrder.externalId}"
+        return  "id: ${limitOrder.externalId}" +
                 "messageId: $messageId" +
                 ", type: ${order.type}" +
                 ", client: ${order.clientId}" +
                 ", isTrustedClient: $isTrustedClient" +
                 ", assetPair: ${order.assetPairId}" +
-                ", baseAssetDisabled: $baseAssetDisabled" +
-                ", quotingAssetDisabled: $quotingAssetDisabled" +
                 ", volume: ${NumberUtils.roundForPrint(order.volume)}" +
                 ", price: ${NumberUtils.roundForPrint(order.price)}" +
                 (if (order.lowerLimitPrice != null) ", lowerLimitPrice: ${NumberUtils.roundForPrint(order.lowerLimitPrice)}" else "") +
@@ -63,8 +57,6 @@ class SingleLimitOrderContext(val messageId: String,
         lateinit var baseAsset: Asset
         lateinit var quotingAsset: Asset
         lateinit var limitAsset: Asset
-        var baseAssetDisabled: Boolean = false
-        var quotingAssetDisabled: Boolean = false
         var isTrustedClient: Boolean = false
         var isCancelOrders: Boolean = false
 
@@ -77,8 +69,6 @@ class SingleLimitOrderContext(val messageId: String,
         fun quotingAsset(asset: Asset) = apply { this.quotingAsset = asset }
         fun trustedClient(trustedClient: Boolean) = apply { this.isTrustedClient = trustedClient }
         fun limitAsset(limitAsset: Asset) = apply { this.limitAsset = limitAsset }
-        fun baseAssetDisabled(baseAssetDisabled: Boolean) = apply { this.baseAssetDisabled = baseAssetDisabled }
-        fun quotingAssetDisabled(quotingAssetDisabled: Boolean) = apply { this.quotingAssetDisabled = quotingAssetDisabled }
 
         fun build() = SingleLimitOrderContext(this)
     }

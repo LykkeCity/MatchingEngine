@@ -132,7 +132,7 @@ abstract class AbstractPerformanceTest {
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
-        val limitOrderInputValidator = LimitOrderInputValidatorImpl()
+        val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsCache)
         val singleLimitOrderPreprocessorLogger = ThrottlingLogger.getLogger(SingleLimitOrderContextParser::class.java.name)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger)
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
@@ -141,7 +141,7 @@ abstract class AbstractPerformanceTest {
         stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService)
 
-        limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator, applicationSettingsCache,
+        limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
                 trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache)
 

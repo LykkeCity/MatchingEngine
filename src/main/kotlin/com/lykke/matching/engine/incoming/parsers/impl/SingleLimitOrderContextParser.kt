@@ -56,8 +56,6 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 .limitOrder(order)
                 .assetPair(assetPair)
                 .baseAsset(getBaseAsset(assetPair))
-                .baseAssetDisabled(applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId))
-                .quotingAssetDisabled(applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId))
                 .quotingAsset(getQuotingAsset(assetPair))
                 .trustedClient(getTrustedClient(builder.limitOrder.clientId))
                 .limitAsset(getLimitAsset(order, assetPair))

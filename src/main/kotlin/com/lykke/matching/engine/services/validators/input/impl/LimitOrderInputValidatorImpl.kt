@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 @Component
-class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
+class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSettingsCache) : LimitOrderInputValidator {
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
@@ -25,12 +26,10 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
     override fun validateLimitOrder(isTrustedClient: Boolean,
                                     order: LimitOrder,
                                     assetPair: AssetPair,
-                                    baseAssetDisabled: Boolean,
-                                    quotingAssetDisabled: Boolean,
                                     baseAsset: Asset) {
         if (!isTrustedClient) {
             validateFee(order)
-            validateAssets(baseAssetDisabled, quotingAssetDisabled)
+            validateAssets(assetPair)
         }
 
         validatePrice(order)
@@ -44,7 +43,7 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         validateFee(singleLimitContext.limitOrder)
-        validateAssets(singleLimitContext.baseAssetDisabled, singleLimitContext.quotingAssetDisabled)
+        validateAssets(singleLimitContext.assetPair)
         validateLimitPrices(singleLimitContext.limitOrder)
         validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
@@ -61,8 +60,6 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         validateLimitOrder(singleLimitContext.isTrustedClient,
                 singleLimitContext.limitOrder,
                 singleLimitContext.assetPair,
-                singleLimitContext.baseAssetDisabled,
-                singleLimitContext.quotingAssetDisabled,
                 singleLimitContext.baseAsset)
     }
 
@@ -72,8 +69,8 @@ class LimitOrderInputValidatorImpl : LimitOrderInputValidator {
         }
     }
 
-    private fun validateAssets(baseAssetDisabled: Boolean, quotingAssetDisabled: Boolean) {
-        if (baseAssetDisabled || quotingAssetDisabled) {
+    private fun validateAssets(assetPair: AssetPair) {
+        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
             throw OrderValidationException(OrderStatus.DisabledAsset, "disabled asset")
         }
     }
