@@ -43,11 +43,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val limitVolume = if (order.isBuySide()) {
             val limitPrice = order.upperPrice ?: order.lowerPrice
             if (limitPrice != null)
-                NumberUtils.setScaleRoundUp(order.volume * limitPrice, limitAsset.accuracy)
+                NumberUtils.setScaleRoundUp(order.volume * limitPrice, limitAsset!!.accuracy)
             else null
         } else order.getAbsVolume()
 
-        val balance = balancesHolder.getBalance(order.clientId, limitAsset.assetId)
+        val balance = balancesHolder.getBalance(order.clientId, limitAsset!!.assetId)
         val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
         val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         var cancelVolume = BigDecimal.ZERO
@@ -163,7 +163,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
         if (cancelVolume > BigDecimal.ZERO) {
-            val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume, limitAsset.accuracy)
+            val newReservedBalance = NumberUtils.setScaleRoundHalfUp(reservedBalance - cancelVolume, limitAsset!!.accuracy)
             updated = balancesHolder.updateReservedBalance(singleLimitContext.processedMessage,
                     sequenceNumber,
                     limitOrder.clientId,

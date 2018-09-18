@@ -25,17 +25,18 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
                                     order: LimitOrder,
-                                    assetPair: AssetPair,
-                                    baseAsset: Asset) {
+                                    assetPair: AssetPair?,
+                                    baseAsset: Asset?,
+                                    quotingAsset: Asset?) {
         if (!isTrustedClient) {
             validateFee(order)
-            validateAssets(assetPair)
+            validateAssets(assetPair, baseAsset, quotingAsset)
         }
 
         validatePrice(order)
-        validateVolume(order, assetPair)
+        validateVolume(order, assetPair!!)
         validatePriceAccuracy(order, assetPair)
-        validateVolumeAccuracy(order, baseAsset)
+        validateVolumeAccuracy(order, baseAsset!!)
         validateValue(order, assetPair)
     }
 
@@ -43,10 +44,10 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         validateFee(singleLimitContext.limitOrder)
-        validateAssets(singleLimitContext.assetPair)
+        validateAssets(singleLimitContext.assetPair, singleLimitContext.baseAsset, singleLimitContext.quotingAsset)
         validateLimitPrices(singleLimitContext.limitOrder)
-        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair)
-        validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset)
+        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair!!)
+        validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset!!)
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
     }
 
@@ -60,7 +61,8 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         validateLimitOrder(singleLimitContext.isTrustedClient,
                 singleLimitContext.limitOrder,
                 singleLimitContext.assetPair,
-                singleLimitContext.baseAsset)
+                singleLimitContext.baseAsset,
+                singleLimitContext.quotingAsset)
     }
 
     private fun validateFee(order: LimitOrder) {
@@ -69,7 +71,11 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         }
     }
 
-    private fun validateAssets(assetPair: AssetPair) {
+    private fun validateAssets(assetPair: AssetPair?, baseAsset: Asset?, quotingAsset: Asset?) {
+        if (assetPair == null || baseAsset == null || quotingAsset == null) {
+            throw OrderValidationException(OrderStatus.UnknownAsset, "Unknown asset")
+        }
+
         if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
             throw OrderValidationException(OrderStatus.DisabledAsset, "disabled asset")
         }

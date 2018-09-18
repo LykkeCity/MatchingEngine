@@ -192,7 +192,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
 
         val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
-                assetPair, availableBalance, limitVolume)
+                assetPair, baseAsset, quotingAsset, availableBalance, limitVolume)
 
         if (!orderValidationResult.isValid) {
             processInvalidOrder(orderValidationResult, order)
@@ -395,11 +395,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    order: LimitOrder,
                                    orderBook: AssetOrderBook,
                                    assetPair: AssetPair,
+                                   baseAsset: Asset,
+                                   quotingAsset: Asset,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
         try {
             //input validator will be moved from the business thread after multilimit order context release
-            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset)
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset, quotingAsset)
             businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, e.message, e.orderStatus)

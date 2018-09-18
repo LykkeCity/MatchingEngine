@@ -40,6 +40,7 @@ import kotlin.test.assertTrue
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderInputValidatorTest {
     companion object {
+        val NON_EXISTENT_ASSET_PAIR = AssetPair("BTCOOO", "BTC", "OOO", 8)
         val DISABLED_ASSET_PAIR = AssetPair("JPYUSD", "JPY", "USD", 8)
         val MIN_VOLUME_ASSET_PAIR = AssetPair("EURUSD", "EUR", "USD", 5,
                 BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.2))
@@ -145,6 +146,26 @@ class LimitOrderInputValidatorTest {
             throw e
         }
     }
+
+    @Test(expected = OrderValidationException::class)
+    fun testAssetDoesNotExist() {
+        //given
+        val singleLimitContextBuilder = getSingleLimitContextBuilder()
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), NON_EXISTENT_ASSET_PAIR.assetPairId))
+        singleLimitContextBuilder.assetPair(null)
+        singleLimitContextBuilder.baseAsset(null)
+        singleLimitContextBuilder.quotingAsset(null)
+
+        //when
+        try {
+            limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.UnknownAsset, e.orderStatus)
+            throw e
+        }
+    }
+
 
     @Test(expected = OrderValidationException::class)
     fun testInvalidAssets() {

@@ -11,7 +11,8 @@ interface LimitOrderInputValidator {
     fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData)
     fun validateLimitOrder(isTrustedClient: Boolean,
                            order: LimitOrder,
-                           assetPair: AssetPair,
-                           baseAsset: Asset)
+                           assetPair: AssetPair?,
+                           baseAsset: Asset?,
+                           quotingAsset: Asset?)
     fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean
 }

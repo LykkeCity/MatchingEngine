@@ -43,7 +43,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
     }
 
     fun getStopOrderContext(messageId: String, order: LimitOrder): SingleLimitOrderContext {
-        return getContext(messageId, order, false,  null)
+        return getContext(messageId, order, false, null)
     }
 
     private fun getContext(messageId: String,
@@ -55,34 +55,34 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         builder.messageId(messageId)
                 .limitOrder(order)
                 .assetPair(assetPair)
-                .baseAsset(getBaseAsset(assetPair))
-                .quotingAsset(getQuotingAsset(assetPair))
+                .baseAsset(assetPair?.let { getBaseAsset(it) })
+                .quotingAsset(assetPair?.let { getQuotingAsset(it) })
                 .trustedClient(getTrustedClient(builder.limitOrder.clientId))
-                .limitAsset(getLimitAsset(order, assetPair))
+                .limitAsset(assetPair?.let { getLimitAsset(order, assetPair) })
                 .cancelOrders(cancelOrders)
                 .processedMessage(processedMessage)
 
         return builder.build()
     }
 
-    private fun getLimitAsset(order: LimitOrder, assetPair: AssetPair): Asset {
-        return assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+    private fun getLimitAsset(order: LimitOrder, assetPair: AssetPair): Asset? {
+        return assetsHolder.getAssetAllowNulls(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
     }
 
     private fun getTrustedClient(clientId: String): Boolean {
         return applicationSettingsCache.isTrustedClient(clientId)
     }
 
-    fun getAssetPair(assetPairId: String): AssetPair {
-        return assetsPairsHolder.getAssetPair(assetPairId)
+    fun getAssetPair(assetPairId: String): AssetPair? {
+        return assetsPairsHolder.getAssetPairAllowNulls(assetPairId)
     }
 
-    private fun getBaseAsset(assetPair: AssetPair): Asset {
-        return assetsHolder.getAsset(assetPair.baseAssetId)
+    private fun getBaseAsset(assetPair: AssetPair): Asset? {
+        return assetsHolder.getAssetAllowNulls(assetPair.baseAssetId)
     }
 
-    private fun getQuotingAsset(assetPair: AssetPair): Asset {
-        return assetsHolder.getAsset(assetPair.quotingAssetId)
+    private fun getQuotingAsset(assetPair: AssetPair): Asset? {
+        return assetsHolder.getAssetAllowNulls(assetPair.quotingAssetId)
     }
 
     private fun parseMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
