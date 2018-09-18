@@ -29,7 +29,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         val now = Date()
         LOGGER.info("Got limit order: $context")
 
-        context.limitOrder = LimitOrder(context.limitOrder, now, now)
+        context.limitOrder.register(now)
 
         val startTime = System.nanoTime()
         genericLimitOrderProcessor.processOrder(messageWrapper, context, now)

@@ -9,7 +9,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 
 class SingleLimitOrderContext(val uid: String?,
                               val messageId: String,
-                              var limitOrder: LimitOrder,
+                              val limitOrder: LimitOrder,
                               val isCancelOrders: Boolean,
                               val assetPair: AssetPair,
                               val baseAsset: Asset,
