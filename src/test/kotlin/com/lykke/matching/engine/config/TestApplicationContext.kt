@@ -42,11 +42,11 @@ import com.lykke.matching.engine.services.validators.*
 import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.business.impl.CashInOutOperationBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.CashTransferOperationBusinessValidatorImpl
-import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
-import com.lykke.matching.engine.services.validators.business.impl.LimitOrderCancelOperationBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.*
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
@@ -341,8 +341,8 @@ open class TestApplicationContext {
                                                limitOrderProcessorFactory: LimitOrdersProcessorFactory, balancesHolder: BalancesHolder,
                                                clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>, assetsHolder: AssetsHolder,
                                                assetsPairsHolder: AssetsPairsHolder, feeProcessor: FeeProcessor, messageSequenceNumberHolder: MessageSequenceNumberHolder,
-                                               messageSender: MessageSender, limitOrderBusinessValidator: LimitOrderBusinessValidator, singleLimitOrderContextParser: SingleLimitOrderContextParser): GenericLimitOrderProcessorFactory {
-        return GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrderProcessorFactory, limitOrderBusinessValidator, assetsHolder, assetsPairsHolder, balancesHolder,
+                                               messageSender: MessageSender, stopOrderBusinessValidatorImpl: StopOrderBusinessValidator, singleLimitOrderContextParser: SingleLimitOrderContextParser): GenericLimitOrderProcessorFactory {
+        return GenericLimitOrderProcessorFactory(genericLimitOrderService, genericStopLimitOrderService, limitOrderProcessorFactory, stopOrderBusinessValidatorImpl, assetsHolder, assetsPairsHolder, balancesHolder,
                 clientLimitOrdersQueue, feeProcessor, singleLimitOrderContextParser, messageSequenceNumberHolder, messageSender)
     }
 
@@ -598,6 +598,11 @@ open class TestApplicationContext {
     @Bean
     open fun limitOrderBusinessValidator(): LimitOrderBusinessValidator {
         return LimitOrderBusinessValidatorImpl()
+    }
+
+    @Bean
+    open fun stopOrderBusinessValidatorImpl(): StopOrderBusinessValidatorImpl {
+        return StopOrderBusinessValidatorImpl()
     }
 
     @Bean(destroyMethod = "")
