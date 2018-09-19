@@ -214,7 +214,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             try {
                 OrderValidationUtils.validateBalance(availableBalance, limitVolume)
             } catch (e: OrderValidationException) {
-                return OrderValidationResult(false, e.message, e.orderStatus)
+                return OrderValidationResult(false, false, e.message, e.orderStatus)
             }
         }
 

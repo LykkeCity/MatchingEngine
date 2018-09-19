@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -20,19 +21,23 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
     override fun validateLimitOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
-        validateLimitOrder(singleLimitContext)
+        validateLimitOrder(singleLimitContext.isTrustedClient,
+                singleLimitContext.limitOrder,
+                singleLimitContext.assetPair,
+                singleLimitOrderParsedData.inputAssetPairId,
+                singleLimitContext.baseAsset)
     }
 
     override fun validateLimitOrder(isTrustedClient: Boolean,
                                     order: LimitOrder,
                                     assetPair: AssetPair?,
-                                    baseAsset: Asset?,
-                                    quotingAsset: Asset?) {
+                                    assetPairId: String,
+                                    baseAsset: Asset?) {
         if (!isTrustedClient) {
             validateFee(order)
         }
 
-        validateAssets(assetPair, baseAsset, quotingAsset)
+        validateAsset(assetPair, assetPairId)
         validatePrice(order)
         validateVolume(order, assetPair!!)
         validatePriceAccuracy(order, assetPair)
@@ -44,35 +49,21 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         validateFee(singleLimitContext.limitOrder)
-        validateAssets(singleLimitContext.assetPair, singleLimitContext.baseAsset, singleLimitContext.quotingAsset)
         validateLimitPrices(singleLimitContext.limitOrder)
         validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair!!)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset!!)
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
     }
 
-
-    private fun validateLimitOrder(singleLimitContext: SingleLimitOrderContext) {
-        validateLimitOrder(singleLimitContext.isTrustedClient,
-                singleLimitContext.limitOrder,
-                singleLimitContext.assetPair,
-                singleLimitContext.baseAsset,
-                singleLimitContext.quotingAsset)
+    private fun validateAsset(assetPair: AssetPair?, assetPairId: String) {
+        if (assetPair == null) {
+            throw OrderFatalValidationException("Unable to find asset pair $assetPairId")
+        }
     }
 
     private fun validateFee(order: LimitOrder) {
         if (order.fee != null && order.fees?.size ?: 0 > 1 || !checkFee(null, order.fees)) {
             throw OrderValidationException(OrderStatus.InvalidFee, "has invalid fee")
-        }
-    }
-
-    private fun validateAssets(assetPair: AssetPair?, baseAsset: Asset?, quotingAsset: Asset?) {
-        if (assetPair == null || baseAsset == null || quotingAsset == null) {
-            throw OrderValidationException(OrderStatus.UnknownAsset, "Unknown asset")
-        }
-
-        if (applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId) || applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId)) {
-            throw OrderValidationException(OrderStatus.DisabledAsset, "disabled asset")
         }
     }
 

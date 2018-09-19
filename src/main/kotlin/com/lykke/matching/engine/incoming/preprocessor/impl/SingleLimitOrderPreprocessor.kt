@@ -9,6 +9,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -39,7 +40,16 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
-        singleLimitContext.validationResult = getValidationResult(singleLimitOrderParsedData)
+        val validationResult = getValidationResult(singleLimitOrderParsedData)
+
+        //currently if order is not valid at all - can not be passed to the business thread - ignore it
+        if (validationResult.isFatalInvalid) {
+            logger.error("Fatal validation error occurred, ${validationResult.message} " +
+                    "Error details: $singleLimitContext")
+            return
+        }
+
+        singleLimitContext.validationResult = validationResult
         preProcessedMessageQueue.put(singleLimitOrderParsedData.messageWrapper)
     }
 
@@ -52,7 +62,9 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
                 LimitOrderType.STOP_LIMIT -> limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
             }
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, e.message, e.orderStatus)
+            return OrderValidationResult(false, false, e.message, e.orderStatus)
+        } catch (e: OrderFatalValidationException) {
+             return OrderValidationResult(false, true, e.message)
         }
 
         return OrderValidationResult(true)

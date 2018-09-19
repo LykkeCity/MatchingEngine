@@ -22,6 +22,7 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
+import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -192,7 +193,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
 
         val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
-                assetPair, baseAsset, quotingAsset, availableBalance, limitVolume)
+                assetPair, baseAsset, availableBalance, limitVolume)
 
         if (!orderValidationResult.isValid) {
             processInvalidOrder(orderValidationResult, order)
@@ -396,15 +397,14 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    orderBook: AssetOrderBook,
                                    assetPair: AssetPair,
                                    baseAsset: Asset,
-                                   quotingAsset: Asset,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
         try {
             //input validator will be moved from the business thread after multilimit order context release
-            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, baseAsset, quotingAsset)
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, assetPair.assetPairId, baseAsset)
             businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, e.message, e.orderStatus)
+            return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
 
         return OrderValidationResult(true)
