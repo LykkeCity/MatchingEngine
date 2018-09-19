@@ -133,13 +133,22 @@ class CashTransferPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashTransferInputQueue.take()
             try {
-                preProcess(message)
-            } catch (exception: Exception) {
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
-                METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
-                writeResponse(message, RUNTIME)
+                val message = cashTransferInputQueue.take()
+                try {
+                    preProcess(message)
+                } catch (exception: Exception) {
+                    val context = message.context
+                    LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                            if (context != null) "Error details: $context" else "", exception)
+
+                    METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
+                    writeResponse(message, RUNTIME)
+                }
+            } catch (e: Exception) {
+                val message = "Get error during message preprocessing"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
     }

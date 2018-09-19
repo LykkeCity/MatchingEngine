@@ -1,13 +1,7 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.daos.order.OrderTimeInForce
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -30,6 +24,7 @@ import com.lykke.matching.engine.services.CancelledOrdersOperationsResult
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
+import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -48,6 +43,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val limitOrderInputValidator: LimitOrderInputValidator,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
+                           private val applicationSettingsCache: ApplicationSettingsCache,
                            ordersToCancel: Collection<LimitOrder>,
                            private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
@@ -58,9 +54,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val date: Date,
                            private val clientId: String,
                            private val assetPair: AssetPair,
-                           private val baseAssetDisabled: Boolean,
-                           private val quotingAssetDisabled: Boolean,
-                           private val applicationSettingsCache: ApplicationSettingsCache,
                            private val orderBook: AssetOrderBook,
                            payBackBaseReserved: BigDecimal,
                            payBackQuotingReserved: BigDecimal,
@@ -225,12 +218,11 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
 
-        val orderValidationResult = validateLimitOrder(isTrustedClient, order,
-                orderBook, assetPair, baseAssetDisabled,
-                quotingAssetDisabled, availableBalance, limitVolume)
+
+        val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
+                assetPair, baseAsset, availableBalance, limitVolume)
 
         if (!orderValidationResult.isValid) {
-            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
             processInvalidOrder(orderValidationResult, order)
             return
         }
@@ -298,6 +290,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
+        LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
         order.updateStatus(orderValidationResult.status!!, date)
         addToReportIfNotTrusted(order)
         processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
@@ -481,24 +474,15 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                    order: LimitOrder,
                                    orderBook: AssetOrderBook,
                                    assetPair: AssetPair,
-                                   baseAssetDisabled: Boolean,
-                                   quotingAssetDisabled: Boolean,
+                                   baseAsset: Asset,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal): OrderValidationResult {
-
-        if (order.clientId != clientId) {
-            return OrderValidationResult(false, "${orderInfo(order)} has invalid clientId: ${order.clientId}", OrderStatus.Cancelled)
-         }
-        if (order.assetPairId != assetPair.assetPairId) {
-            return OrderValidationResult(false, "${orderInfo(order)} has invalid assetPairId: ${order.assetPairId}", OrderStatus.Cancelled)
-        }
-
         try {
-            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair,
-                    baseAssetDisabled, quotingAssetDisabled , baseAsset)
-            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook, date)
+            //input validator will be moved from the business thread after multilimit order context release
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, assetPair.assetPairId, baseAsset)
+            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, e.message, e.orderStatus)
+            return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
 
         return OrderValidationResult(true)

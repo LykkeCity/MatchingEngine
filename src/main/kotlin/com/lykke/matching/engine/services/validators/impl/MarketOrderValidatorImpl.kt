@@ -10,11 +10,13 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.util.concurrent.PriorityBlockingQueue
 
 @Component
@@ -56,12 +58,18 @@ class MarketOrderValidatorImpl
     }
 
     private fun isVolumeValid(order: MarketOrder) {
-        if (!limitOrderInputValidator.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
+        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, order.volume)) {
+            val message = "volume can not be equal to zero"
+            LOGGER.info(message)
+            throw OrderValidationException(OrderStatus.InvalidVolume, message)
+        }
+
+        if (!OrderValidationUtils.checkMinVolume(order, assetsPairsHolder.getAssetPair(order.assetPairId))) {
             LOGGER.info("Too small volume for $order")
             throw OrderValidationException(OrderStatus.TooSmallVolume)
         }
-        val assetPair = getAssetPair(order)
 
+        val assetPair = getAssetPair(order)
         if (order.isStraight() && assetPair.maxVolume != null && order.getAbsVolume() > assetPair.maxVolume) {
             LOGGER.info("Too large volume for $order")
             throw OrderValidationException(OrderStatus.InvalidVolume)

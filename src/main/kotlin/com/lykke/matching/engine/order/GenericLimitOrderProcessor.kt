@@ -61,7 +61,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
 
     private fun processLimitOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) {
         limitOrderProcessor.processLimitOrder(singleLimitContext, messageWrapper =  messageWrapper, now = now)
-        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, now)
+        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair!!, now)
     }
 
     fun processOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) {
@@ -73,7 +73,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
 
     fun processLimitOrder(singleLimitContext: SingleLimitOrderContext, now: Date,  payBackReserved: BigDecimal) {
         limitOrderProcessor.processLimitOrder(singleLimitContext, now, payBackReserved)
-        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair, now)
+        checkAndProcessStopOrder(singleLimitContext.messageId, singleLimitContext.assetPair!!, now)
     }
 
     private fun processStopOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext, now: Date) =

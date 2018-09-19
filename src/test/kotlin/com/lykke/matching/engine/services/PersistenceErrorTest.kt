@@ -61,9 +61,6 @@ class PersistenceErrorTest : AbstractTest() {
         }
     }
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
 
     @Before

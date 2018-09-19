@@ -9,6 +9,7 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -24,7 +25,7 @@ import javax.annotation.PostConstruct
 class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                                    private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                   private val logger: ThrottlingLogger): MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
+                                   private val LOGGER: ThrottlingLogger) : MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
@@ -39,7 +40,16 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitOrderParsedData = singleLimitOrderContextParser.parse(messageWrapper)
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
-        singleLimitContext.validationResult = getValidationResult(singleLimitOrderParsedData)
+        val validationResult = getValidationResult(singleLimitOrderParsedData)
+
+        //currently if order is not valid at all - can not be passed to the business thread - ignore it
+        if (validationResult.isFatalInvalid) {
+            LOGGER.error("Fatal validation error occurred, ${validationResult.message} " +
+                    "Error details: $singleLimitContext")
+            return
+        }
+
+        singleLimitContext.validationResult = validationResult
         preProcessedMessageQueue.put(singleLimitOrderParsedData.messageWrapper)
     }
 
@@ -47,13 +57,14 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
         try {
-            if (singleLimitContext.limitOrder.type == LimitOrderType.LIMIT) {
-                limitOrderInputValidator.validateLimitOrder(singleLimitOrderParsedData)
-            } else {
-                limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
+            when (singleLimitContext.limitOrder.type) {
+                LimitOrderType.LIMIT -> limitOrderInputValidator.validateLimitOrder(singleLimitOrderParsedData)
+                LimitOrderType.STOP_LIMIT -> limitOrderInputValidator.validateStopOrder(singleLimitOrderParsedData)
             }
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, e.message, e.orderStatus)
+            return OrderValidationResult(false, false, e.message, e.orderStatus)
+        } catch (e: OrderFatalValidationException) {
+             return OrderValidationResult(false, true, e.message)
         }
 
         return OrderValidationResult(true)
@@ -61,19 +72,22 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
 
     override fun run() {
         while (true) {
-            val message = limitOrderInputQueue.take()
             try {
-                preProcess(message)
-            } catch (exception: Exception) {
-                logger.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message}", exception)
-                val singleLimitOrderContext = message.context
+                val message = limitOrderInputQueue.take()
+                try {
+                    preProcess(message)
+                } catch (exception: Exception) {
+                    val context = message.context
+                    LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                            if (context != null) "Error details: $context" else "", exception)
 
-                if (singleLimitOrderContext != null) {
-                    logger.error("Context: $singleLimitOrderContext")
+                    METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+                    writeResponse(message, MessageStatus.RUNTIME)
                 }
-
-                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-                writeResponse(message, MessageStatus.RUNTIME)
+            } catch (e: Exception) {
+                val message = "Get error during message preprocessing"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
     }
