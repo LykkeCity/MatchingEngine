@@ -2,7 +2,7 @@ package com.lykke.matching.engine.web.controllers
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.web.dto.BalanceDto
+import com.lykke.matching.engine.web.dto.BalancesDto
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.apache.commons.lang3.StringUtils
@@ -33,16 +33,16 @@ class BalancesController {
 
         if (StringUtils.isNoneBlank(assetId)) {
             val clientBalance = balances[assetId] ?: return ResponseEntity("No balance found for client, for supplied asset", HttpStatus.NOT_FOUND)
-            return ResponseEntity.ok(listOf(toBalanceDto(assetId, clientBalance)))
+            return ResponseEntity.ok(listOf(toBalancesDto(assetId, clientBalance)))
         }
 
         return ResponseEntity.ok(balances
-                .mapValues { entry -> toBalanceDto(entry.value.asset, entry.value) }
+                .mapValues { entry -> toBalancesDto(entry.value.asset, entry.value) }
                 .values
                 .toList())
     }
 
-    private fun toBalanceDto(assetId: String, assetBalance: AssetBalance): BalanceDto? {
-        return BalanceDto(assetId, assetBalance.balance, assetBalance.reserved)
+    private fun toBalancesDto(assetId: String, assetBalance: AssetBalance): BalancesDto? {
+        return BalancesDto(assetId, assetBalance.balance, assetBalance.reserved)
     }
 }
