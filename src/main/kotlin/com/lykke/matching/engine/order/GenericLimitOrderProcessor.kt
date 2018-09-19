@@ -13,7 +13,7 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
-import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.*
@@ -25,7 +25,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
                                  clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                  limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
                                  balancesHolder: BalancesHolder,
-                                 limitOrderBusinessValidator: LimitOrderBusinessValidator,
+                                 stopOrderBusinessValidator: StopOrderBusinessValidator,
                                  matchingEngine: MatchingEngine,
                                  messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                  messageSender: MessageSender,
@@ -41,7 +41,7 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
             this,
             clientLimitOrdersQueue,
             balancesHolder,
-            limitOrderBusinessValidator,
+            stopOrderBusinessValidator,
             messageSequenceNumberHolder,
             messageSender,
             LOGGER)

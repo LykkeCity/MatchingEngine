@@ -13,6 +13,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -22,7 +23,7 @@ import java.util.concurrent.BlockingQueue
 class GenericLimitOrderProcessorFactory @Autowired constructor(private val genericLimitOrderService: GenericLimitOrderService,
                                                                private val genericStopLimitOrderService: GenericStopLimitOrderService,
                                                                private val limitOrdersProcessorFactory: LimitOrdersProcessorFactory,
-                                                               private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
+                                                               private val stopOrderBusinessValidator: StopOrderBusinessValidator,
                                                                private val assetsHolder: AssetsHolder,
                                                                private val assetsPairsHolder: AssetsPairsHolder,
                                                                private val balancesHolder: BalancesHolder,
@@ -38,7 +39,7 @@ class GenericLimitOrderProcessorFactory @Autowired constructor(private val gener
                 clientLimitOrdersQueue,
                 limitOrdersProcessorFactory,
                 balancesHolder,
-                limitOrderBusinessValidator,
+                stopOrderBusinessValidator,
                 MatchingEngine(logger, genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor),
                 messageSequenceNumberHolder,
                 messageSender,

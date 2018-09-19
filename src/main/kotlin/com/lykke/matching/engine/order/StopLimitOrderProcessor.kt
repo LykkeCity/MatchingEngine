@@ -16,8 +16,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
-import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
-import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.business.StopOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
@@ -32,7 +31,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
                               private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                               private val balancesHolder: BalancesHolder,
-                              private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
+                              private val stopOrderBusinessValidator: StopOrderBusinessValidator,
                               private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                               private val messageSender: MessageSender,
                               private val LOGGER: Logger) {
@@ -212,7 +211,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         if (limitVolume != null) {
             try {
-                OrderValidationUtils.validateBalance(availableBalance, limitVolume)
+                stopOrderBusinessValidator.performValidation(availableBalance, limitVolume)
             } catch (e: OrderValidationException) {
                 return OrderValidationResult(false, false, e.message, e.orderStatus)
             }
