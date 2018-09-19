@@ -146,7 +146,7 @@ class CashInOutPreprocessor(
                     writeResponse(message, RUNTIME)
                 }
             } catch (e: Exception) {
-                val message = "Get error during message preprocessing"
+                val message = "Got error during message preprocessing"
                 LOGGER.error(message, e)
                 METRICS_LOGGER.logError(message, e)
             }
