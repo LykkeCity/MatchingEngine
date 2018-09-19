@@ -33,7 +33,7 @@ class SingleLimitOrderContext(val messageId: String,
         val order = this.limitOrder
 
         return  "id: ${limitOrder.externalId}" +
-                "messageId: $messageId" +
+                ", messageId: $messageId" +
                 ", type: ${order.type}" +
                 ", client: ${order.clientId}" +
                 ", isTrustedClient: $isTrustedClient" +
