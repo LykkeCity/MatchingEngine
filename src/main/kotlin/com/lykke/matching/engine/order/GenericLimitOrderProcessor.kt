@@ -41,7 +41,6 @@ class GenericLimitOrderProcessor(private val limitOrderService: GenericLimitOrde
             this,
             clientLimitOrdersQueue,
             balancesHolder,
-            limitOrderBusinessValidator,
             messageSequenceNumberHolder,
             messageSender,
             LOGGER)

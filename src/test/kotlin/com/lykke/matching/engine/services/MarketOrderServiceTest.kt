@@ -79,9 +79,6 @@ class MarketOrderServiceTest: AbstractTest() {
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
 
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @Before
     fun setUp() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))

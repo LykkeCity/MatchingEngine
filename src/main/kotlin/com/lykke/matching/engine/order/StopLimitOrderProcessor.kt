@@ -17,7 +17,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
-import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
@@ -32,7 +32,6 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                               private val genericLimitOrderProcessor: GenericLimitOrderProcessor,
                               private val clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                               private val balancesHolder: BalancesHolder,
-                              private val limitOrderBusinessValidator: LimitOrderBusinessValidator,
                               private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                               private val messageSender: MessageSender,
                               private val LOGGER: Logger) {
@@ -44,7 +43,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val limitVolume = if (order.isBuySide()) {
             val limitPrice = order.upperPrice ?: order.lowerPrice
             if (limitPrice != null)
-                NumberUtils.setScaleRoundUp(order.volume * limitPrice, limitAsset.accuracy)
+                NumberUtils.setScaleRoundUp(order.volume * limitPrice, limitAsset!!.accuracy)
             else null
         } else order.getAbsVolume()
 
@@ -61,7 +60,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
+        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset!!.assetId, cancelVolume), limitAsset.accuracy)
 
         val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext, now)
 
@@ -155,7 +154,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         if (cancelVolume > BigDecimal.ZERO) {
             walletOperationsProcessor.preProcess(listOf(WalletOperation(UUID.randomUUID().toString(),
-                    order.externalId, order.clientId, singleLimitContext.limitAsset.assetId,
+                    order.externalId, order.clientId, singleLimitContext.limitAsset!!.assetId,
                     now, BigDecimal.ZERO, -cancelVolume)), true)
         }
         val orderBooksPersistenceData = if (ordersToCancel.isNotEmpty())
@@ -202,11 +201,11 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         try {
             if (limitVolume != null) {
-                limitOrderBusinessValidator.validateBalance(availableBalance, limitVolume)
+                OrderValidationUtils.validateBalance(availableBalance, limitVolume)
             }
-            limitOrderBusinessValidator.checkExpiration(singleLimitContext.limitOrder, date)
+            OrderValidationUtils.validateExpiration(singleLimitContext.limitOrder, date)
         } catch (e: OrderValidationException) {
-            return OrderValidationResult(false, e.message, e.orderStatus)
+            return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
 
         return OrderValidationResult(true)

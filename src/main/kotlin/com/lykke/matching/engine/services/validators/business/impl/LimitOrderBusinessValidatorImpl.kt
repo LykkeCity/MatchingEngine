@@ -25,7 +25,7 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
         validateLeadToNegativeSpread(order, orderBook)
         validatePreviousOrderNotFound(order)
         validateEnoughFunds(order)
-        checkExpiration(order, date)
+        OrderValidationUtils.validateExpiration(order, date)
     }
 
 
@@ -45,12 +45,6 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
     private fun validateEnoughFunds(order: LimitOrder) {
         if (order.status == OrderStatus.NotEnoughFunds.name) {
             throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
-        }
-    }
-
-    override fun checkExpiration(order: LimitOrder, date: Date) {
-        if (order.isExpired(date)) {
-            throw OrderValidationException(OrderStatus.Cancelled, "expired")
         }
     }
 

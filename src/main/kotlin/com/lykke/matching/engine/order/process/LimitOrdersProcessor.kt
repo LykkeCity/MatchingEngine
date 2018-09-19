@@ -2,6 +2,7 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -24,7 +25,6 @@ import com.lykke.matching.engine.services.CancelledOrdersOperationsResult
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
-import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -480,7 +480,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         try {
             //input validator will be moved from the business thread after multilimit order context release
             limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, assetPair.assetPairId, baseAsset)
-            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
+            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook, date)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }

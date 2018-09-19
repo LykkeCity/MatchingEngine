@@ -19,6 +19,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -72,23 +73,6 @@ class LimitOrderInputValidatorTest {
         testDictionariesDatabaseAccessor.addAssetPair(BTC_USD_ASSET_PAIR)
         testDictionariesDatabaseAccessor.addAssetPair(DISABLED_ASSET_PAIR)
     }
-
-    fun testEmptyPrice() {
-        //given
-        val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getStopOrder(null, null, null, null))
-        singleLimitContextBuilder.assetPair(MIN_VOLUME_ASSET_PAIR)
-        //when
-        try {
-            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build()), MIN_VOLUME_ASSET_PAIR.assetPairId))
-        } catch (e: OrderValidationException) {
-            //then
-            assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
-            throw e
-        }
-    }
-
-
 
     @Test(expected = OrderValidationException::class)
     fun testInvalidFee() {
@@ -179,12 +163,12 @@ class LimitOrderInputValidatorTest {
     fun testEmptyPrice() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidStopOrder(null, null, null, null))
+        singleLimitContextBuilder.limitOrder(getStopOrder(null, null, null, null))
         singleLimitContextBuilder.assetPair(MIN_VOLUME_ASSET_PAIR)
 
         //when
         try {
-            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build()), MIN_VOLUME_ASSET_PAIR.assetPairId))
         } catch (e: OrderValidationException) {
             //then
             assertEquals(OrderStatus.InvalidPrice, e.orderStatus)
@@ -264,11 +248,11 @@ class LimitOrderInputValidatorTest {
     fun testInvalidMaxValue() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
-        singleLimitContextBuilder.limitOrder(getValidLimitOrder(price = BigDecimal.valueOf(10000.0), volume = BigDecimal.valueOf(-1.1), fee = getFee()))
+        singleLimitContextBuilder.limitOrder(getLimitOrder(price = BigDecimal.valueOf(10000.0), volume = BigDecimal.valueOf(-1.1), fee = getFee()))
 
         //when
         try {
-            limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build())))
+            limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build()), BTC_USD_ASSET_PAIR.assetPairId))
         } catch (e: OrderValidationException) {
             //then
             assertEquals(OrderStatus.InvalidValue, e.orderStatus)
@@ -305,7 +289,7 @@ class LimitOrderInputValidatorTest {
 
         builder.messageId("test")
                 .limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee())))
-                .assetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
+                .assetPair(BTC_USD_ASSET_PAIR)
                 .baseAsset(Asset("BTC", 5))
                 .quotingAsset(Asset("USD", 2))
                 .trustedClient(false)

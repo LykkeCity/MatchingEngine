@@ -1,10 +1,12 @@
 package com.lykke.matching.engine.services.validators.common
 
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import java.math.BigDecimal
+import java.util.*
 
 class OrderValidationUtils {
     companion object {
@@ -17,6 +19,12 @@ class OrderValidationUtils {
         fun validateBalance(availableBalance: BigDecimal, limitVolume: BigDecimal) {
             if (availableBalance < limitVolume) {
                 throw OrderValidationException(OrderStatus.NotEnoughFunds, "not enough funds to reserve")
+            }
+        }
+
+        fun validateExpiration(order: LimitOrder, date: Date) {
+            if (order.isExpired(date)) {
+                throw OrderValidationException(OrderStatus.Cancelled, "expired")
             }
         }
     }
