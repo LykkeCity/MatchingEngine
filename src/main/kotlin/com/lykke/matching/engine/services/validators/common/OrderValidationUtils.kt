@@ -22,8 +22,8 @@ class OrderValidationUtils {
             }
         }
 
-        fun validateExpiration(order: LimitOrder, date: Date) {
-            if (order.isExpired(date)) {
+        fun validateExpiration(order: LimitOrder, orderProcessingTime: Date) {
+            if (order.isExpired(orderProcessingTime)) {
                 throw OrderValidationException(OrderStatus.Cancelled, "expired")
             }
         }

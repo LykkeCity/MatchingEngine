@@ -202,7 +202,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         if (limitVolume != null) {
             try {
-                stopOrderBusinessValidator.performValidation(availableBalance, limitVolume)
+                stopOrderBusinessValidator.performValidation(availableBalance,
+                        limitVolume,
+                        singleLimitContext.limitOrder,
+                        date)
             } catch (e: OrderValidationException) {
                 return OrderValidationResult(false, false, e.message, e.orderStatus)
             }
