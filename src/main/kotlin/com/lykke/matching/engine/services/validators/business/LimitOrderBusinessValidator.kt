@@ -10,5 +10,4 @@ interface LimitOrderBusinessValidator {
                           availableBalance: BigDecimal,
                           limitVolume: BigDecimal,
                           orderBook: AssetOrderBook)
-    fun validateBalance(availableBalance: BigDecimal, limitVolume: BigDecimal)
 }

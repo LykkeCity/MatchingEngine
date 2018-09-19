@@ -3,12 +3,12 @@ package com.lykke.matching.engine.services.validators.input.impl
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
@@ -30,9 +30,9 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
                                     quotingAsset: Asset?) {
         if (!isTrustedClient) {
             validateFee(order)
-            validateAssets(assetPair, baseAsset, quotingAsset)
         }
 
+        validateAssets(assetPair, baseAsset, quotingAsset)
         validatePrice(order)
         validateVolume(order, assetPair!!)
         validatePriceAccuracy(order, assetPair)
@@ -51,11 +51,6 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
     }
 
-    override fun checkMinVolume(order: Order, assetPair: AssetPair): Boolean {
-        val volume = order.getAbsVolume()
-        val minVolume = if (order.isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
-    }
 
     private fun validateLimitOrder(singleLimitContext: SingleLimitOrderContext) {
         validateLimitOrder(singleLimitContext.isTrustedClient,
@@ -110,7 +105,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
             throw OrderValidationException(OrderStatus.InvalidVolume, "volume can not be equal to zero")
         }
 
-        if (!checkMinVolume(limitOrder, assetPair)) {
+        if (!OrderValidationUtils.checkMinVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
         }
 

@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -16,18 +17,14 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
                                    orderBook: AssetOrderBook) {
 
         if (!isTrustedClient) {
-            validateBalance(availableBalance, limitVolume)
+            OrderValidationUtils.validateBalance(availableBalance, limitVolume)
         }
 
         validateLeadToNegativeSpread(order, orderBook)
         validatePreviousOrderNotFound(order)
     }
 
-    override fun validateBalance(availableBalance: BigDecimal, limitVolume: BigDecimal) {
-        if (availableBalance < limitVolume) {
-            throw OrderValidationException(OrderStatus.NotEnoughFunds, "not enough funds to reserve")
-        }
-    }
+
 
     private fun validatePreviousOrderNotFound(order: LimitOrder) {
         if (order.status == OrderStatus.NotFoundPrevious.name) {

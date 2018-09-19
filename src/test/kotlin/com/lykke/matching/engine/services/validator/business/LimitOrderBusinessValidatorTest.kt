@@ -20,29 +20,6 @@ class LimitOrderBusinessValidatorTest {
         val ASSET_PAIR_ID = "BTCUSD"
     }
 
-    @Test(expected = OrderValidationException::class)
-    fun testInvalidBalance() {
-        //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl()
-
-        try {
-            //when
-            limitOrderBusinessValidatorImpl.validateBalance(BigDecimal.valueOf(10.0), BigDecimal.valueOf(11.0))
-        } catch (e: OrderValidationException) {
-            //then
-            assertEquals(OrderStatus.NotEnoughFunds, e.orderStatus)
-            throw e
-        }
-    }
-
-    @Test
-    fun testValidBalance() {
-        //given
-        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl()
-
-        //when
-        limitOrderBusinessValidatorImpl.validateBalance(BigDecimal.valueOf(10.0), BigDecimal.valueOf(9.0))
-    }
 
     @Test(expected = OrderValidationException::class)
     fun testLeadToNegativeSpread() {

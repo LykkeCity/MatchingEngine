@@ -17,6 +17,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.utils.NumberUtils
@@ -155,7 +156,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val limitOrder = singleLimitContext.limitOrder
         val limitAsset = singleLimitContext.limitAsset
 
-        LOGGER.info("${orderInfo(limitOrder)} $orderValidationResult.message")
+        LOGGER.info("Rejected order: ${orderInfo(limitOrder)}, rejection reason: ${orderValidationResult.message}")
         limitOrder.updateStatus(orderValidationResult.status!!, now)
         val messageStatus = MessageStatusUtils.toMessageStatus(orderValidationResult.status)
         var updated = true
@@ -211,7 +212,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         if (limitVolume != null) {
             try {
-                limitOrderBusinessValidator.validateBalance(availableBalance, limitVolume)
+                OrderValidationUtils.validateBalance(availableBalance, limitVolume)
             } catch (e: OrderValidationException) {
                 return OrderValidationResult(false, e.message, e.orderStatus)
             }
