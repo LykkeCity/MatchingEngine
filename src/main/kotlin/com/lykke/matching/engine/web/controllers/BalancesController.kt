@@ -33,16 +33,16 @@ class BalancesController {
 
         if (StringUtils.isNoneBlank(assetId)) {
             val clientBalance = balances[assetId] ?: return ResponseEntity("No balance found for client, for supplied asset", HttpStatus.NOT_FOUND)
-            return ResponseEntity.ok(listOf(toBalancesDto(assetId, clientBalance)))
+            return ResponseEntity.ok(listOf(toBalanceDto(assetId, clientBalance)))
         }
 
         return ResponseEntity.ok(balances
-                .mapValues { entry -> toBalancesDto(entry.value.asset, entry.value) }
+                .mapValues { entry -> toBalanceDto(entry.value.asset, entry.value) }
                 .values
                 .toList())
     }
 
-    private fun toBalancesDto(assetId: String, assetBalance: AssetBalance): BalancesDto? {
+    private fun toBalanceDto(assetId: String, assetBalance: AssetBalance): BalancesDto? {
         return BalancesDto(assetId, assetBalance.balance, assetBalance.reserved)
     }
 }
