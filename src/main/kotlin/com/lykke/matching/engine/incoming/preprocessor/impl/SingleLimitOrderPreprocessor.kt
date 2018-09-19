@@ -25,7 +25,7 @@ import javax.annotation.PostConstruct
 class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQueue<MessageWrapper>,
                                    private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
                                    @Qualifier("singleLimitOrderContextPreprocessorLogger")
-                                   private val logger: ThrottlingLogger) : MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
+                                   private val LOGGER: ThrottlingLogger) : MessagePreprocessor, Thread(SingleLimitOrderPreprocessor::class.java.name) {
     companion object {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
@@ -44,7 +44,7 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
 
         //currently if order is not valid at all - can not be passed to the business thread - ignore it
         if (validationResult.isFatalInvalid) {
-            logger.error("Fatal validation error occurred, ${validationResult.message} " +
+            LOGGER.error("Fatal validation error occurred, ${validationResult.message} " +
                     "Error details: $singleLimitContext")
             return
         }
@@ -72,16 +72,22 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
 
     override fun run() {
         while (true) {
-            val message = limitOrderInputQueue.take()
             try {
-                preProcess(message)
-            } catch (exception: Exception) {
-                val context = message.context
-                logger.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                        if (context != null) "Error details: $context" else "", exception)
+                val message = limitOrderInputQueue.take()
+                try {
+                    preProcess(message)
+                } catch (exception: Exception) {
+                    val context = message.context
+                    LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                            if (context != null) "Error details: $context" else "", exception)
 
-                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-                writeResponse(message, MessageStatus.RUNTIME)
+                    METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+                    writeResponse(message, MessageStatus.RUNTIME)
+                }
+            } catch (e: Exception) {
+                val message = "Get error during message preprocessing"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
     }
