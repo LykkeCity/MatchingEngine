@@ -48,6 +48,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
     override fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
 
+        validateAsset(singleLimitContext.assetPair, singleLimitOrderParsedData.inputAssetPairId)
         validateFee(singleLimitContext.limitOrder)
         validateLimitPrices(singleLimitContext.limitOrder)
         validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair!!)
