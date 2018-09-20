@@ -60,14 +60,6 @@ open class AppConfiguration: SchedulingConfigurer {
     }
 
     @Bean
-    open fun messageRouter(): MessageRouter {
-        return MessageRouter(LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>())
-    }
-
-    @Bean
     open fun monitoringStatsCollector(): MonitoringStatsCollector {
         return MonitoringStatsCollector()
     }

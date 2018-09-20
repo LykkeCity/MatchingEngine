@@ -6,13 +6,11 @@ import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
@@ -20,50 +18,25 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.notification.BalanceUpdateHandler
 import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.messages.CashOperation
-import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
+import com.lykke.matching.engine.outgoing.http.RequestHandler
+import com.lykke.matching.engine.outgoing.http.StopOrderBooksRequestHandler
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
-import com.lykke.matching.engine.services.AbstractService
-import com.lykke.matching.engine.services.BalanceUpdateService
-import com.lykke.matching.engine.services.CashInOutOperationService
-import com.lykke.matching.engine.services.CashOperationService
-import com.lykke.matching.engine.services.CashSwapOperationService
-import com.lykke.matching.engine.services.CashTransferOperationService
-import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.services.HistoryTicksService
-import com.lykke.matching.engine.services.LimitOrderCancelService
-import com.lykke.matching.engine.services.LimitOrderMassCancelService
-import com.lykke.matching.engine.services.MarketOrderService
-import com.lykke.matching.engine.services.MultiLimitOrderCancelService
-import com.lykke.matching.engine.services.MultiLimitOrderService
-import com.lykke.matching.engine.services.MessageSender
-import com.lykke.matching.engine.services.ReservedBalanceUpdateService
-import com.lykke.matching.engine.services.ReservedCashInOutOperationService
-import com.lykke.matching.engine.services.SingleLimitOrderService
-import com.lykke.matching.engine.services.TradesInfoService
-import com.lykke.matching.engine.services.validators.CashInOutOperationValidator
+import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
-import com.lykke.matching.engine.utils.config.RabbitConfig
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
-import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.context.ApplicationContext
 import java.time.LocalDateTime
-import java.util.HashMap
-import java.util.Timer
+import java.util.*
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.fixedRateTimer
 
 class MessageProcessor(config: Config, messageRouter: MessageRouter, applicationContext: ApplicationContext)
@@ -80,7 +53,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
-    private val rabbitCashInOutQueue: BlockingQueue<CashOperation> = LinkedBlockingQueue<CashOperation>()
     private val balanceUpdateHandler: BalanceUpdateHandler
 
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
@@ -133,11 +105,10 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         healthMonitor = applicationContext.getBean(GeneralHealthMonitor::class.java)
         performanceStatsHolder = applicationContext.getBean(PerformanceStatsHolder::class.java)
 
-        val messageSender = applicationContext.getBean(MessageSender::class.java)
         messageSequenceNumberHolder = applicationContext.getBean(MessageSequenceNumberHolder::class.java)
 
         this.marketStateCache = applicationContext.getBean(MarketStateCache::class.java)
-        persistenceManager = applicationContext.getBean(PersistenceManager::class.java)
+        persistenceManager = applicationContext.getBean("persistenceManager") as PersistenceManager
 
         cashOperationsDatabaseAccessor = applicationContext.getBean(AzureCashOperationsDatabaseAccessor::class.java)
 
@@ -156,22 +127,13 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
-        val feeProcessor =  applicationContext.getBean(FeeProcessor::class.java)
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
-
 
         val genericLimitOrderProcessorFactory = applicationContext.getBean(GenericLimitOrderProcessorFactory::class.java)
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
         this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
-        val cashInOutOperationValidator = applicationContext.getBean(CashInOutOperationValidator::class.java)
-        this.cashInOutOperationService = CashInOutOperationService(assetsHolder,
-                balanceHolder,
-                rabbitCashInOutQueue,
-                feeProcessor,
-                cashInOutOperationValidator,
-                messageSequenceNumberHolder,
-                messageSender)
+        this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
         this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
@@ -191,10 +153,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.transferOperationSaveService = applicationContext.getBean(TransferOperationSaveService::class.java)
 
-        val cashOperationsDatabaseAccessor = applicationContext.getBean(CashOperationIdDatabaseAccessor::class.java)
-        this.cashInOutPreprocessor = CashInOutPreprocessor(messageRouter.cashInOutQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashInOutPreprocessor = applicationContext.getBean(CashInOutPreprocessor::class.java)
         cashInOutPreprocessor.start()
-        this.cashTransferPreprocessor = CashTransferPreprocessor(messageRouter.cashTransferQueue, messageRouter.preProcessedMessageQueue, cashOperationsDatabaseAccessor)
+        this.cashTransferPreprocessor = applicationContext.getBean(CashTransferPreprocessor::class.java)
         cashTransferPreprocessor.start()
 
         this.historyTicksService = HistoryTicksService(marketStateCache,
@@ -216,17 +177,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
         }
 
-        val rabbitMqService = applicationContext.getBean("rabbitMqOldService") as  RabbitMqService<Any>
-
-        val tablePrefix = applicationContext.environment.getProperty("azure.table.prefix", "")
-        val logContainer = applicationContext.environment.getProperty("azure.logs.blob.container", "")
-        startRabbitMqPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
-                DatabaseLogger(AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString, "${tablePrefix}MatchingEngineCashOperations", logContainer)),
-                rabbitMqService,
-                config.me.name,
-                AppVersion.VERSION,
-                BuiltinExchangeType.FANOUT)
-
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
                 limitOrderDatabaseAccessor.updateBestPrices(genericLimitOrderService.buildMarketProfile())
@@ -243,16 +193,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         }
 
         appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
-    }
-
-    private fun startRabbitMqPublisher(config: RabbitConfig,
-                                       queue: BlockingQueue<*>,
-                                       messageDatabaseLogger: DatabaseLogger<Any>? = null,
-                                       rabbitMqService: RabbitMqService<Any>,
-                                       appName: String,
-                                       appVersion: String,
-                                       exchangeType: BuiltinExchangeType) {
-        rabbitMqService.startPublisher (config, queue, appName, appVersion, exchangeType, messageDatabaseLogger)
     }
 
     override fun run() {
