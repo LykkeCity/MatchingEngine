@@ -25,6 +25,7 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
     companion object {
         private const val LOG_COUNT = 1000
         private const val CONNECTION_NAME_FORMAT = "[Pub] %s %s to %s"
+        private const val RECONNECTION_INTERVAL = 1000L
     }
 
     private var connection: Connection? = null
@@ -78,9 +79,7 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
             } catch (exception: Exception) {
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 METRICS_LOGGER.logError("Exception during RabbitMQ publishing: ${exception.message}", exception)
-                while (!connect()) {
-                    Thread.sleep(1000)
-                }
+                tryConnectUntilSuccess()
             }
         }
     }
@@ -93,11 +92,16 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
     }
 
     override fun run() {
-        while (!connect()) {
-        }
+        tryConnectUntilSuccess()
         while (true) {
             val item = queue.take()
             publish(item)
+        }
+    }
+
+    private fun tryConnectUntilSuccess() {
+        while (!connect()) {
+            Thread.sleep(RECONNECTION_INTERVAL)
         }
     }
 
