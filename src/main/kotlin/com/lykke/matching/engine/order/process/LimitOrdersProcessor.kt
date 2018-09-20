@@ -22,7 +22,6 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
-import com.lykke.matching.engine.services.validators.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator

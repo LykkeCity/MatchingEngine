@@ -106,7 +106,6 @@ class LimitOrderInputValidatorTest {
     }
 
     @Test(expected = Exception::class)
-    @Ignore
     fun testAssetDoesNotExist() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
@@ -121,8 +120,7 @@ class LimitOrderInputValidatorTest {
 
 
     @Test(expected = OrderValidationException::class)
-    @Ignore
-    fun testInvalidAssets() {
+    fun testInvalidDisabledAssets() {
         //given
         val singleLimitContextBuilder = getSingleLimitContextBuilder()
         singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), "JPYUSD"))
