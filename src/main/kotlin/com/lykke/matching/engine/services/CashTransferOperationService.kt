@@ -31,7 +31,6 @@ import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
 import java.util.Date
 import java.util.LinkedList
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -112,10 +111,8 @@ class CashTransferOperationService(private val balancesHolder: BalancesHolder,
         val operations = LinkedList<WalletOperation>()
 
         val assetId = operation.asset!!.assetId
-        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.fromClientId, assetId,
-                operation.dateTime, -operation.volume))
-        val receiptOperation = WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.toClientId, assetId,
-                operation.dateTime, operation.volume)
+        operations.add(WalletOperation(operation.fromClientId, assetId, -operation.volume))
+        val receiptOperation = WalletOperation(operation.toClientId, assetId, operation.volume)
         operations.add(receiptOperation)
 
         val fees = feeProcessor.processFee(operation.fees, receiptOperation, operations, balancesGetter = balancesHolder)
