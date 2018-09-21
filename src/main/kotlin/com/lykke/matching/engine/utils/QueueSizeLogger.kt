@@ -2,14 +2,14 @@ package com.lykke.matching.engine.utils
 
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.outgoing.rabbit.impl.listeners.RabbitOrderBookListener
+import com.lykke.matching.engine.outgoing.rabbit.impl.listeners.OrderBookListener
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import org.springframework.context.annotation.Profile
+import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 import kotlin.concurrent.fixedRateTimer
 
@@ -18,7 +18,7 @@ import kotlin.concurrent.fixedRateTimer
 class QueueSizeLogger @Autowired constructor(
         val messageRouter: MessageRouter,
         val connectionHandler: ConnectionsHolder,
-        val rabbitOrderBookListener: RabbitOrderBookListener,
+        val rabbitOrderBookListener: OrderBookListener,
         val persistenceManager: PersistenceManager,
         val config: Config) {
 
