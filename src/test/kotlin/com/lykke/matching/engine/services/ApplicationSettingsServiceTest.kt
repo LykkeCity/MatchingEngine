@@ -23,7 +23,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import kotlin.test.assertNotNull
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (BalanceUpdateServiceTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ApplicationSettingsServiceTest : AbstractTest() {
 
