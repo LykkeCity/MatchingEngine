@@ -1,11 +1,7 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -24,21 +20,7 @@ import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
-import com.lykke.matching.engine.services.AbstractService
-import com.lykke.matching.engine.services.CashInOutOperationService
-import com.lykke.matching.engine.services.CashTransferOperationService
-import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.services.HistoryTicksService
-import com.lykke.matching.engine.services.LimitOrderCancelService
-import com.lykke.matching.engine.services.LimitOrderMassCancelService
-import com.lykke.matching.engine.services.MarketOrderService
-import com.lykke.matching.engine.services.MultiLimitOrderCancelService
-import com.lykke.matching.engine.services.MultiLimitOrderService
-import com.lykke.matching.engine.services.ReservedBalanceUpdateService
-import com.lykke.matching.engine.services.ReservedCashInOutOperationService
-import com.lykke.matching.engine.services.SingleLimitOrderService
-import com.lykke.matching.engine.services.TradesInfoService
+import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -141,7 +123,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
