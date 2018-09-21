@@ -31,11 +31,6 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun cashSwapQueue(): BlockingQueue<CashSwapOperation> {
-        return LinkedBlockingQueue<CashSwapOperation>()
-    }
-
-    @Bean
     open fun clientLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
         return LinkedBlockingQueue<LimitOrdersReport>()
     }
@@ -61,7 +56,7 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun rabbitSwapQueue(): BlockingQueue<MarketOrderWithTrades> {
+    open fun rabbitMarketOrderWithTradesQueue(): BlockingQueue<MarketOrderWithTrades> {
         return LinkedBlockingQueue<MarketOrderWithTrades>()
     }
 
