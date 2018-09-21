@@ -3,7 +3,6 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
@@ -19,6 +18,7 @@ import com.lykke.matching.engine.notification.TestOrderBookListener
 import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
 import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
 import com.lykke.matching.engine.notification.TradeInfoListener
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
@@ -79,7 +79,7 @@ abstract class AbstractTest {
     protected lateinit var persistenceManager: TestPersistenceManager
 
     @Autowired
-    protected lateinit var testOrderDatabaseAccessor: OrderBookDatabaseAccessor
+    protected lateinit var testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor
 
     @Autowired
     private lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
@@ -145,9 +145,6 @@ abstract class AbstractTest {
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
     @Autowired
-    private lateinit var feeProcessor: FeeProcessor
-
-    @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
     @Autowired
@@ -161,7 +158,6 @@ abstract class AbstractTest {
     protected open fun initServices() {
         initialized = true
         testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
-        testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestOrderBookDatabaseAccessor
         stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
         clearMessageQueues()
         assetsCache.update()
