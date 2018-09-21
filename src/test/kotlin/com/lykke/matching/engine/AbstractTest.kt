@@ -6,11 +6,9 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
@@ -68,9 +66,6 @@ abstract class AbstractTest {
     private lateinit var assetsCache: AssetsCache
 
     @Autowired
-    protected lateinit var assetsHolder: AssetsHolder
-
-    @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Autowired
@@ -78,12 +73,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-    @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
-
-    @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
@@ -154,17 +143,17 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
+    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
+
     @Autowired
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
-
-    @Autowired
-    private lateinit var feeProcessor: FeeProcessor
 
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService

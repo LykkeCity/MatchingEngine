@@ -20,7 +20,7 @@ class CashInOutListener {
     private lateinit var rabbitCashInOutQueue: BlockingQueue<CashOperation>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService<Any>
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
@@ -33,7 +33,7 @@ class CashInOutListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
