@@ -5,7 +5,10 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import com.rabbitmq.client.*
+import com.rabbitmq.client.BuiltinExchangeType
+import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 
@@ -84,10 +87,10 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         }
     }
 
-    private fun logMessage(item: T, stringRepresentation: String) {
-        messageDatabaseLogger?.let {
+    private fun logMessage(item: T, stringRepresentation: String?) {
+        if (messageDatabaseLogger != null && stringRepresentation != null) {
             MESSAGES_LOGGER.info("$exchangeName : $stringRepresentation")
-            it.log(item, stringRepresentation)
+            messageDatabaseLogger.log(item, stringRepresentation)
         }
     }
 

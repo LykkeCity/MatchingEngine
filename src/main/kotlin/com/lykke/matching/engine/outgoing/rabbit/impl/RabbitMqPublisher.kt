@@ -17,7 +17,7 @@ class RabbitMqPublisher(uri: String,
                         appVersion: String,
                         exchangeType: BuiltinExchangeType,
                         private val gson: Gson,
-                        messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
+                        private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,
         MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger) {
 
@@ -58,7 +58,7 @@ class RabbitMqPublisher(uri: String,
                 .build()
     }
 
-    private fun getLogMessage(item: Event<*>): String {
-        return gson.toJson(item)
+    private fun getLogMessage(item: Event<*>): String? {
+        return messageDatabaseLogger?.let { gson.toJson(item) }
     }
 }
