@@ -28,10 +28,7 @@ import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.AbstractService
-import com.lykke.matching.engine.services.BalanceUpdateService
 import com.lykke.matching.engine.services.CashInOutOperationService
-import com.lykke.matching.engine.services.CashOperationService
-import com.lykke.matching.engine.services.CashSwapOperationService
 import com.lykke.matching.engine.services.CashTransferOperationService
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService

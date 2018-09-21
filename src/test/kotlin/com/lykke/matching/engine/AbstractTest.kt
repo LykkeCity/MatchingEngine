@@ -7,14 +7,11 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.notification.RabbitSwapListener
 import com.lykke.matching.engine.notification.TestClientLimitOrderListener
 import com.lykke.matching.engine.notification.TestLkkTradeListener
@@ -31,12 +28,9 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
-import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import com.lykke.matching.engine.utils.assertEquals
@@ -85,7 +79,7 @@ abstract class AbstractTest {
     protected lateinit var persistenceManager: TestPersistenceManager
 
     @Autowired
-    protected lateinit var testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor
+    protected lateinit var testOrderDatabaseAccessor: OrderBookDatabaseAccessor
 
     @Autowired
     private lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
