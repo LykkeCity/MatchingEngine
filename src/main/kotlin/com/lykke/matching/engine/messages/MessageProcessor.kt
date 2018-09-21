@@ -77,7 +77,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val cashInOutOperationService: CashInOutOperationService
     private val cashTransferOperationService: CashTransferOperationService
-    private val cashSwapOperationService: CashSwapOperationService
+    private val genericLimitOrderService: GenericLimitOrderService
     private val singleLimitOrderService: SingleLimitOrderService
     private val multiLimitOrderService: MultiLimitOrderService
     private val marketOrderService: MarketOrderService
@@ -129,7 +129,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
-        val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
+        this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
@@ -140,7 +140,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
-        this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
@@ -266,7 +265,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val result = HashMap<MessageType, AbstractService>()
         result[MessageType.CASH_IN_OUT_OPERATION] = cashInOutOperationService
         result[MessageType.CASH_TRANSFER_OPERATION] = cashTransferOperationService
-        result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
         result[MessageType.RESERVED_CASH_IN_OUT_OPERATION] = reservedCashInOutOperationService
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
