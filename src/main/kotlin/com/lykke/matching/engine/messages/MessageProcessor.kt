@@ -286,7 +286,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
         result[MessageType.RESERVED_CASH_IN_OUT_OPERATION] = reservedCashInOutOperationService
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
-        result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.MARKET_ORDER] = marketOrderService
         result[MessageType.NEW_MARKET_ORDER] = marketOrderService
         result[MessageType.OLD_MARKET_ORDER] = marketOrderService

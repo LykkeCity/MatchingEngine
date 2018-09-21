@@ -90,14 +90,14 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         if (messageWrapper == null) {
             return
         }
-        if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder().setUid(order.externalId.toLong()))
-        } else {
-            if (reason == null) {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setMatchingEngineId(order.id).setStatus(status.type))
-            } else {
-                messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setMatchingEngineId(order.id).setStatus(status.type).setStatusReason(reason))
-            }
+
+        val messageBuilder = ProtocolMessages.NewResponse.newBuilder()
+                .setMatchingEngineId(order.id)
+                .setStatus(status.type)
+
+        if (reason != null) {
+            messageBuilder.statusReason = reason
         }
+        messageWrapper.writeNewResponse(messageBuilder)
     }
 }
