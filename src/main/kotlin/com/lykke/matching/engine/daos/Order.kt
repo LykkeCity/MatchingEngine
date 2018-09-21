@@ -17,7 +17,7 @@ abstract class Order(
         val volume: BigDecimal,
         status: String,
         val createdAt: Date,
-        val registered: Date?,
+        var registered: Date?,
         var reservedLimitVolume: BigDecimal?,
         val fee: FeeInstruction?,
         val fees: List<NewFeeInstruction>?,
@@ -52,6 +52,11 @@ abstract class Order(
             this.status = status.name
             this.statusDate = date
         }
+    }
+
+    fun register(registrationDate: Date) {
+        registered = registrationDate
+        statusDate = registrationDate
     }
 
     override fun applyToOrigin(origin: Copyable) {

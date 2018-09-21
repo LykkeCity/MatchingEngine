@@ -6,11 +6,12 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.notification.SettingsListener
+import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.web.dto.DeleteSettingRequestDto
 import com.lykke.matching.engine.web.dto.SettingDto
 import com.nhaarman.mockito_kotlin.argumentCaptor
-import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import junit.framework.Assert.*
@@ -36,12 +37,15 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     @Autowired
     private lateinit var settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor
 
+    @Autowired
+    private lateinit var settingsListener: SettingsListener
+
     @Test
     fun getAllSettingGroupsTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("BTC"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting("BTC"))
 
         //when
         val allSettingGroups = applicationSettingsService.getAllSettingGroups()
@@ -63,7 +67,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     fun getSettingsGroupTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient"))
 
         //when
         val settingsGroup = applicationSettingsService.getSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS)
@@ -78,7 +82,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     fun getSettingTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
 
         //when
         val setting = applicationSettingsService.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
@@ -92,20 +96,23 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     fun createOrUpdateSettingTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
+        settingsListener.clear()
 
         //when
         applicationSettingsService.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, SettingDto("settingName", "test", true, "testComment", "testUser"))
 
         //then
-        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
+        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
         assertNotNull(dbSetting)
         assertEquals("test", dbSetting!!.value)
 
         assertTrue(applicationSettingsCache.isTrustedClient("test"))
+        assertEquals(1, settingsListener.getSettingChangeSize())
 
         argumentCaptor<SettingHistoryRecord>().apply {
-            verify(settingsHistoryDatabaseAccessor).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            verify(settingsHistoryDatabaseAccessor).save(capture())
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
             assertEquals("settingName", firstValue.name)
             assertEquals("test", firstValue.value)
             assertEquals("testUser", firstValue.user)
@@ -117,25 +124,28 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     fun deleteSettingsGroupTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient1", "settingName1"))
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient2", "settingName2"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient1", "settingName1"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient2", "settingName2"))
 
         //when
         applicationSettingsService.deleteSettingsGroup(AvailableSettingGroup.TRUSTED_CLIENTS, DeleteSettingRequestDto("delete", "testUser"))
 
         //then
-        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
+        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
         assertNull(dbSetting)
+        assertEquals(1, settingsListener.getDeleteGroupSize())
 
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
-            verify(settingsHistoryDatabaseAccessor, times(2)).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            verify(settingsHistoryDatabaseAccessor, times(2)).save(capture())
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
             assertEquals("settingName1", firstValue.name)
             assertEquals("testClient1", firstValue.value)
             assertEquals("testUser", firstValue.user)
             assertEquals("[DELETE] delete", firstValue.comment)
 
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, secondValue.settingGroup)
             assertEquals("settingName2", secondValue.name)
             assertEquals("testClient2", secondValue.value)
             assertEquals("testUser", secondValue.user)
@@ -147,23 +157,62 @@ class ApplicationSettingsServiceTest : AbstractTest() {
     fun deleteSettingTest() {
         //given
         testSettingsDatabaseAccessor.clear()
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("testClient", "settingName"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("testClient", "settingName"))
 
         //when
         applicationSettingsService.deleteSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName", DeleteSettingRequestDto("delete", "testUser"))
 
         //then
-        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, "settingName")
+        val dbSetting = testSettingsDatabaseAccessor.getSetting(AvailableSettingGroup.TRUSTED_CLIENTS, "settingName")
         assertNull(dbSetting)
+        assertEquals(1, settingsListener.getDeleteSize())
 
         assertFalse(applicationSettingsCache.isTrustedClient("testClient"))
 
         argumentCaptor<SettingHistoryRecord>().apply {
-            verify(settingsHistoryDatabaseAccessor).save(eq(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName), capture())
+            verify(settingsHistoryDatabaseAccessor).save(capture())
+
+            assertEquals(AvailableSettingGroup.TRUSTED_CLIENTS, firstValue.settingGroup)
             assertEquals("settingName", firstValue.name)
             assertEquals("testClient", firstValue.value)
             assertEquals("testUser", firstValue.user)
             assertEquals("[DELETE] delete", firstValue.comment)
+        }
+    }
+
+    @Test(expected = ValidationException::class)
+    fun messageProcessingFlagValidationFailedTest() {
+        //given
+        testSettingsDatabaseAccessor.clear()
+
+        //when
+        applicationSettingsService
+                .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
+                        SettingDto("test", "test", false, "testComment", "testUser"))
+
+    }
+
+    @Test
+    fun messageProcessingFlagValidationPassedTest() {
+        //given
+        testSettingsDatabaseAccessor.clear()
+
+        //when
+        applicationSettingsService
+                .createOrUpdateSetting(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH,
+                        SettingDto("stop", "stop", true, "testComment", "testUser"))
+
+        //then
+        assertFalse(applicationSettingsCache.isMessageProcessingEnabled())
+        assertEquals(1, settingsListener.getSettingChangeSize())
+
+        argumentCaptor<SettingHistoryRecord>().apply {
+            verify(settingsHistoryDatabaseAccessor).save(capture())
+            assertEquals(AvailableSettingGroup.MESSAGE_PROCESSING_SWITCH, firstValue.settingGroup)
+            assertEquals("stop", firstValue.name)
+            assertEquals("stop", firstValue.value)
+            assertEquals("testUser", firstValue.user)
+            assertEquals("[ADD] testComment", firstValue.comment)
         }
     }
 }

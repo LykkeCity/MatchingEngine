@@ -3,7 +3,7 @@ package com.lykke.matching.engine.services.validators.business
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.AssetOrderBook
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 
 interface LimitOrderBusinessValidator {
     fun performValidation(isTrustedClient: Boolean,
@@ -12,6 +12,4 @@ interface LimitOrderBusinessValidator {
                           limitVolume: BigDecimal,
                           orderBook: AssetOrderBook,
                           date: Date)
-    fun validateBalance(availableBalance: BigDecimal, limitVolume: BigDecimal)
-    fun checkExpiration(order: LimitOrder, date: Date)
 }

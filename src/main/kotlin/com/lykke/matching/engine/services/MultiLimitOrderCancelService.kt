@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.services
 
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -9,7 +11,8 @@ import org.apache.log4j.Logger
 import java.util.Date
 
 class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOrderService,
-                                   private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): AbstractService {
+                                   private val genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                   private val settings: ApplicationSettingsCache): AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderCancelService::class.java.name)
@@ -27,7 +30,7 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
             val updated = genericLimitOrdersCancellerFactory.create(LOGGER, now)
                     .preProcessLimitOrders(ordersToCancel)
                     .applyFull(message.uid, messageWrapper.messageId!!,
-                            messageWrapper.processedMessage(),
+                            messageWrapper.processedMessage,
                             MessageType.MULTI_LIMIT_ORDER_CANCEL,
                             false)
             messageWrapper.triedToPersist = true
@@ -59,6 +62,10 @@ class MultiLimitOrderCancelService(private val limitOrderService: GenericLimitOr
         messageWrapper.timestamp = message.timestamp
         messageWrapper.parsedMessage = message
         messageWrapper.id = message.uid
+        messageWrapper.processedMessage = if (settings.isTrustedClient(message.clientId))
+            null
+        else
+            ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {

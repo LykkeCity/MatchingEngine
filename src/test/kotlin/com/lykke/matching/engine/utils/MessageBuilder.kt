@@ -19,6 +19,7 @@ import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -161,6 +162,7 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                         null, straight,
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
+
 
         @Deprecated("Use buildMultiLimitOrderWrapper(5)")
         fun buildMultiLimitOrderWrapper(pair: String,

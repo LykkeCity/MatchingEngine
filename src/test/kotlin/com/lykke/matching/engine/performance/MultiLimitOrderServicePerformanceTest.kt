@@ -2,18 +2,15 @@ package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Ignore
 import org.junit.Test
 import java.math.BigDecimal
-import java.util.*
 
 @Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
@@ -59,18 +56,16 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
-        counter.executeAction { multiLimitOrderService.processMessage(MessageBuilder.buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
-                volumes = listOf(
-                        VolumePrice(BigDecimal.valueOf(0.1), BigDecimal.valueOf(2.0)),
-                        VolumePrice(BigDecimal.valueOf(0.1), BigDecimal.valueOf(1.5)),
-                        VolumePrice(BigDecimal.valueOf(0.09),BigDecimal.valueOf( 1.3)),
-                        VolumePrice(BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.2)),
-                        VolumePrice(BigDecimal.valueOf(-1.0),BigDecimal.valueOf(2.1)),
-                        VolumePrice(BigDecimal.valueOf(-0.09), BigDecimal.valueOf(2.2)),
-                        VolumePrice(BigDecimal.valueOf(-0.1), BigDecimal.valueOf(2.4))
-                ),
-                ordersFee = listOf(),
-                ordersFees = listOf()))
+        counter.executeAction {
+            multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+                    orders = listOf(IncomingLimitOrder(0.1, 2.0),
+                            IncomingLimitOrder(0.1, 1.5),
+                            IncomingLimitOrder(0.09, 1.3),
+                            IncomingLimitOrder(1.0, 1.2),
+                            IncomingLimitOrder(-1.0, 2.1),
+                            IncomingLimitOrder(-0.09, 2.2),
+                            IncomingLimitOrder(-0.1, 2.4)),
+                    cancel = false))
         }
         return counter.getAverageTime()
     }
@@ -80,10 +75,11 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         initServices()
 
         counter.executeAction {  multiLimitOrderService.processMessage(
-                buildOldMultiLimitOrderWrapper(pair = "EURUSD",
+                buildMultiLimitOrderWrapper(pair = "EURUSD",
                         clientId = "Client1",
-                        volumes = listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.2)),
-                                VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.3)))))}
+                        orders = listOf(IncomingLimitOrder(100.0, 1.2),
+                                IncomingLimitOrder(100.0, 1.3)),
+                        cancel = false))}
         return counter.getAverageTime()
     }
 
@@ -91,12 +87,18 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
         initServices()
 
-        counter.executeAction {  multiLimitOrderService
-                .processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.2)),
-                        VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.3)))))}
-        counter.executeAction { multiLimitOrderService
-                .processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.4)),
-                        VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.5))))) }
+        counter.executeAction {
+            multiLimitOrderService
+                    .processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders = listOf(IncomingLimitOrder(100.0, 1.2),
+                            IncomingLimitOrder(100.0, 1.3)),
+                            cancel = false))
+        }
+        counter.executeAction {
+            multiLimitOrderService
+                    .processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders = listOf(IncomingLimitOrder(100.0, 1.4),
+                            IncomingLimitOrder(100.0, 1.5)),
+                            cancel = false))
+        }
 
         return counter.getAverageTime()
     }
@@ -106,14 +108,16 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
         counter.executeAction {  multiLimitOrderService
-                .processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
-                listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.2)), VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.3)))))}
+                .processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders =
+                listOf(IncomingLimitOrder(100.0, 1.2), IncomingLimitOrder(100.0, 1.3)),
+                        cancel = false))}
         counter.executeAction {  multiLimitOrderService
-                .processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
-                listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.4)), VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.5)))))}
+                .processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders =
+                listOf(IncomingLimitOrder(100.0, 1.4), IncomingLimitOrder(100.0, 1.5)),
+                        cancel = false))}
         counter.executeAction {  multiLimitOrderService
-                .processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes =
-                listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(2.0)), VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(2.1))), cancel = true))}
+                .processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders =
+                listOf(IncomingLimitOrder(100.0, 2.0), IncomingLimitOrder(100.0, 2.1)), cancel = true))}
 
         return counter.getAverageTime()
     }
@@ -122,15 +126,16 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
 
         initServices()
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.3)),
-                VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.2))))) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders = listOf(IncomingLimitOrder(100.0, 1.3),
+                IncomingLimitOrder(100.0, 1.2)),
+                cancel = false)) }
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(10.0), BigDecimal.valueOf(1.3)),
-                        VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.26)),
-                        VolumePrice(BigDecimal.valueOf(100.0), BigDecimal.valueOf(1.2))), cancel = true)) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+                orders = listOf(IncomingLimitOrder(10.0, 1.3),
+                        IncomingLimitOrder(100.0, 1.26),
+                        IncomingLimitOrder(100.0, 1.2)), cancel = true)) }
 
         return counter.getAverageTime()
     }
@@ -139,17 +144,18 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         val counter = ActionTimeCounter()
 
         initServices()
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", volumes = listOf(VolumePrice(BigDecimal.valueOf(-100.0), BigDecimal.valueOf(1.2)),
-                VolumePrice(BigDecimal.valueOf(-100.0), BigDecimal.valueOf(1.3))))) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1", orders = listOf(IncomingLimitOrder(-100.0, 1.2),
+                IncomingLimitOrder(-100.0, 1.3)),
+                cancel = false)) }
 
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(-10.0), BigDecimal.valueOf(1.2)),
-                        VolumePrice(BigDecimal.valueOf(-10.0), BigDecimal.valueOf(1.24)),
-                        VolumePrice(BigDecimal.valueOf(-10.0), BigDecimal.valueOf(1.29)),
-                        VolumePrice(BigDecimal.valueOf(-10.0), BigDecimal.valueOf(1.3))), cancel = true)) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+                orders = listOf(IncomingLimitOrder(-10.0, 1.2),
+                        IncomingLimitOrder(-10.0, 1.24),
+                        IncomingLimitOrder(-10.0, 1.29),
+                        IncomingLimitOrder(-10.0, 1.3)), cancel = true)) }
 
 
         return counter.getAverageTime()
@@ -164,14 +170,16 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(-100.0), BigDecimal.valueOf(26.955076))))) }
-        counter.executeAction {multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(0.69031943), BigDecimal.valueOf(26.915076)))))}
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", orders =
+        listOf(IncomingLimitOrder(-100.0, 26.955076)),
+                cancel = false)) }
+        counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", orders =
+        listOf(IncomingLimitOrder(0.69031943, 26.915076)),
+                cancel = false))}
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
-        counter.executeAction {multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(10.0), BigDecimal.valueOf(26.915076)), VolumePrice(BigDecimal.valueOf(10.0), BigDecimal.valueOf(26.875076))), cancel = true))}
+        counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5",
+                orders = listOf(IncomingLimitOrder(10.0, 26.915076), IncomingLimitOrder(10.0, 26.875076)), cancel = true))}
 
         return counter.getAverageTime()
     }
@@ -186,23 +194,23 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(-0.00574996), BigDecimal.valueOf(3628.707))), cancel = true)) }
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(-0.01431186), BigDecimal.valueOf(3624.794)),
-                        VolumePrice(BigDecimal.valueOf(-0.02956591), BigDecimal.valueOf(3626.591))), cancel = true))}
-        counter.executeAction {multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(-0.04996673), BigDecimal.valueOf(3625.855))), cancel = true))}
-        counter.executeAction {multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(-0.00628173), BigDecimal.valueOf(3622.865)),
-                        VolumePrice(BigDecimal.valueOf(-0.01280207), BigDecimal.valueOf(3625.489)),
-                        VolumePrice(BigDecimal.valueOf(-0.02201331), BigDecimal.valueOf(3627.41)),
-                        VolumePrice(BigDecimal.valueOf(-0.02628901), BigDecimal.valueOf(3629.139))), cancel = true))}
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", orders =
+        listOf(IncomingLimitOrder(-0.00574996, 3628.707)), cancel = true)) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5",
+                orders = listOf(IncomingLimitOrder(-0.01431186, 3624.794),
+                        IncomingLimitOrder(-0.02956591, 3626.591)), cancel = true))}
+        counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", orders =
+        listOf(IncomingLimitOrder(-0.04996673, 3625.855)), cancel = true))}
+        counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5",
+                orders = listOf(IncomingLimitOrder(-0.00628173, 3622.865),
+                        IncomingLimitOrder(-0.01280207, 3625.489),
+                        IncomingLimitOrder(-0.02201331, 3627.41),
+                        IncomingLimitOrder(-0.02628901, 3629.139)), cancel = true))}
 
-        counter.executeAction {multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(-0.01708411), BigDecimal.valueOf(3626.11))), cancel = true))}
-        counter.executeAction {multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(-0.00959341), BigDecimal.valueOf(3625.302))), cancel = true))}
+        counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", orders =
+        listOf(IncomingLimitOrder(-0.01708411, 3626.11)), cancel = true))}
+        counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", orders =
+        listOf(IncomingLimitOrder(-0.00959341, 3625.302)), cancel = true))}
 
         return counter.getAverageTime()
     }
@@ -210,7 +218,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchAndCancel(): Double {
         val counter = ActionTimeCounter()
 
-        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
 
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
@@ -221,13 +229,13 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(0.00643271), BigDecimal.valueOf(4390.84)),
-                VolumePrice(BigDecimal.valueOf(0.01359005), BigDecimal.valueOf(4387.87)),
-                VolumePrice(BigDecimal.valueOf(0.02033985), BigDecimal.valueOf(4384.811))), cancel = true)) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", orders =
+        listOf(IncomingLimitOrder(0.00643271, 4390.84),
+                IncomingLimitOrder(0.01359005, 4387.87),
+                IncomingLimitOrder(0.02033985, 4384.811)), cancel = true)) }
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(0.01691068), BigDecimal.valueOf(4387.21))), cancel = true))}
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3",
+                orders = listOf(IncomingLimitOrder(0.01691068, 4387.21)), cancel = true))}
 
         return counter.getAverageTime()
     }
@@ -245,8 +253,8 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
         initServices()
 
-        counter.executeAction { multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, volumes =
-        listOf(VolumePrice(BigDecimal.valueOf(-0.4435), BigDecimal.valueOf(4721.403))), cancel = true)) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, orders =
+        listOf(IncomingLimitOrder(-0.4435, 4721.403)), cancel = true)) }
 
         return counter.getAverageTime()
     }
@@ -266,8 +274,8 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
-        counter.executeAction { multiLimitOrderService.processMessage(MessageBuilder.buildMultiLimitOrderWrapper(clientId = marketMaker, pair = "EURUSD",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(-2.0), BigDecimal.valueOf(1.1))), cancel = false, ordersFee = listOf(), ordersFees = listOf())) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(clientId = marketMaker, pair = "EURUSD",
+                orders = listOf(IncomingLimitOrder(-2.0, 1.1)), cancel = false)) }
 
         return counter.getAverageTime()
     }
@@ -275,34 +283,13 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testCancelPreviousOrderWithSameUid(): Double {
         val counter = ActionTimeCounter()
 
-        counter.executeAction { multiLimitOrderService.processMessage(MessageBuilder.buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(-9.0), BigDecimal.valueOf(0.4875))), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList())) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+                orders = listOf(IncomingLimitOrder(-9.0, 0.4875, uid = "order1")), cancel = true)) }
 
-        counter.executeAction { multiLimitOrderService.processMessage(MessageBuilder.buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
-                volumes = listOf(VolumePrice(BigDecimal.valueOf(-10.0), BigDecimal.valueOf(0.4880))), ordersUid = listOf("order1"), cancel = true, ordersFee = emptyList(), ordersFees = emptyList())) }
+        counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
+                orders = listOf(IncomingLimitOrder(-10.0, 0.4880, uid = "order1")), cancel = true)) }
 
         return counter.getAverageTime()
     }
 
-
-    private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
-    }
-
-    private fun buildOldMultiLimitOrder(assetPairId: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean): ProtocolMessages.OldMultiLimitOrder {
-        val uid = Date().time
-        val orderBuilder = ProtocolMessages.OldMultiLimitOrder.newBuilder()
-                .setUid(uid)
-                .setTimestamp(uid)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEach{ volume ->
-            orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume.toDouble())
-                    .setPrice(volume.price.toDouble())
-                    .build())
-        }
-        return orderBuilder.build()
-    }
 }

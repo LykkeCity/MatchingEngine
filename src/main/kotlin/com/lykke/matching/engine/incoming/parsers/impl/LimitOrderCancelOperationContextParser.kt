@@ -31,9 +31,12 @@ class LimitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOper
         messageWrapper.timestamp = Date().time
         messageWrapper.id = message.uid
 
+        val processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
+        messageWrapper.processedMessage = processedMessage
+
         return LimitOrderCancelOperationContext(message.uid,
                 messageWrapper.messageId!!,
-                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!),
+                processedMessage,
                 message.limitOrderIdList.toSet(), getMessageType(messageWrapper.type))
     }
 

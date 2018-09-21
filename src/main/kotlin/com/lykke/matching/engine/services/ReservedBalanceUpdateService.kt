@@ -37,7 +37,7 @@ class ReservedBalanceUpdateService(private val balancesHolder: BalancesHolder) :
 
         val currentReservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage(),
+        val updated = balancesHolder.updateReservedBalance(messageWrapper.processedMessage,
                 null,
                 message.clientId,
                 message.assetId,
