@@ -7,7 +7,7 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOpera
 import org.springframework.stereotype.Component
 
 @Component
-class LimitOrderInputCancelOperationValidatorImpl: LimitOrderCancelOperationInputValidator {
+class LimitOrderCancelOperationInputValidatorImpl: LimitOrderCancelOperationInputValidator {
     override fun performValidation(limitOrderCancelOperationParsedData: LimitOrderCancelOperationParsedData) {
         val context = limitOrderCancelOperationParsedData.messageWrapper.context as LimitOrderCancelOperationContext
         validateOrderIds(context)

@@ -7,7 +7,6 @@ import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
-import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.services.validators.business.LimitOrderCancelOperationBusinessValidator
 import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
@@ -21,8 +20,6 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
-
-
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
@@ -33,11 +30,11 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
 
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER_CANCEL.type) {
             processOldLimitOrderCancelMessage(messageWrapper, context, now)
+            return
         }
 
-        val orderIds = context.limitOrderIds
-        LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: $orderIds)")
-        val typeToOrder = getLimitOrderTypeToLimitOrders(orderIds)
+        LOGGER.debug("Got limit order cancel request (id: ${context.uid}, orders: ${context.limitOrderIds})")
+        val typeToOrder = getLimitOrderTypeToLimitOrders(context.limitOrderIds)
 
         try {
             validator.performValidation(typeToOrder, context)
@@ -70,7 +67,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                 .map(::getOrder)
                 .filter { limitOrder -> limitOrder != null }
                 .map { t -> t!! }
-                .collect(Collectors.groupingBy({ limitOrder: LimitOrder -> limitOrder.type!! }))
+                .collect(Collectors.groupingBy { limitOrder: LimitOrder -> limitOrder.type!! })
     }
 
     private fun getOrder(orderId: String): LimitOrder? {
