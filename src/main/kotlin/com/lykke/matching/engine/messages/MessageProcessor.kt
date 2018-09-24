@@ -88,7 +88,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     val appInitialData: AppInitialData
 
-    private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
     private val healthMonitor: GeneralHealthMonitor
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
@@ -135,7 +134,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
 
@@ -267,7 +265,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
-        result[MessageType.RESERVED_BALANCE_UPDATE] = reservedBalanceUpdateService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
         result[MessageType.OLD_MULTI_LIMIT_ORDER] = multiLimitOrderService
         return result

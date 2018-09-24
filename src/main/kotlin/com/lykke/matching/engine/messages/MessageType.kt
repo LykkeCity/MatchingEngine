@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.messages
 
-import java.util.HashMap
+import java.util.*
 
 enum class MessageType (val type: Byte){
     RESPONSE(0)
@@ -21,7 +21,6 @@ enum class MessageType (val type: Byte){
     ,NEW_RESPONSE(99)
     ,MARKER_ORDER_RESPONSE(100)
     ,MULTI_LIMIT_ORDER_RESPONSE(98)
-    ,RESERVED_BALANCE_UPDATE(110)
     ,RESERVED_CASH_IN_OUT_OPERATION(120)
     ,LIMIT_ORDER_MASS_CANCEL(121)
     ;
