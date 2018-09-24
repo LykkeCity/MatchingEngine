@@ -16,6 +16,8 @@ class GeneralHealthMonitor: HealthMonitor {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
+    private var previousMaintenanceModeStatus = false
+
     private val brokenComponents = ConcurrentHashMap.newKeySet<MonitoredComponent>()
 
     override fun ok() = brokenComponents.isEmpty()
@@ -32,9 +34,24 @@ class GeneralHealthMonitor: HealthMonitor {
     @Scheduled(fixedRateString = "\${health.check.update.interval}")
     fun checkBrokenComponents() {
         if (!CollectionUtils.isEmpty(brokenComponents)) {
-            val message = "Maintenance mode is on, broken component are: $brokenComponents"
-            LOGGER.error(message)
-            METRICS_LOGGER.logError(message)
+            processMaintenanceModeOn()
+        } else if (previousMaintenanceModeStatus) {
+            processMaintenanceModeOff()
         }
+    }
+
+    fun processMaintenanceModeOn() {
+        previousMaintenanceModeStatus = true
+        val message = "Maintenance mode is on, broken component are: $brokenComponents"
+        LOGGER.error(message)
+        METRICS_LOGGER.logError(message)
+    }
+
+
+    fun processMaintenanceModeOff() {
+        previousMaintenanceModeStatus = false
+        val message = "Maintenance mode is off"
+        LOGGER.info(message)
+        METRICS_LOGGER.logWarning(message)
     }
 }
