@@ -1,14 +1,12 @@
 package com.lykke.matching.engine
 
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
-import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.outgoing.messages.JsonSerializable
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -19,16 +17,14 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
-import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
-import org.springframework.beans.factory.annotation.Autowired
-import java.math.BigDecimal
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertEquals
 
 abstract class AbstractTest {
     @Autowired
@@ -46,9 +42,6 @@ abstract class AbstractTest {
     private lateinit var assetsCache: AssetsCache
 
     @Autowired
-    protected lateinit var assetsHolder: AssetsHolder
-
-    @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
 
     @Autowired
@@ -56,12 +49,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
-
-    @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
-
-    @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
 
     @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
@@ -77,12 +64,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var persistenceManager: TestPersistenceManager
-
-    @Autowired
-    protected lateinit var messageSequenceNumberHolder: MessageSequenceNumberHolder
-
-    @Autowired
-    protected lateinit var messageSender: MessageSender
 
     @Autowired
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
