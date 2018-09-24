@@ -74,6 +74,16 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
         }
     }
 
+    fun validateStopPricesAccuracy(order: LimitOrder) {
+        val priceAccuracy = assetsPairsHolder.getAssetPair(order.assetPairId).accuracy
+        if (order.lowerLimitPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.lowerLimitPrice, priceAccuracy)
+        || order.lowerPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.lowerPrice, priceAccuracy)
+        || order.upperLimitPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.upperLimitPrice, priceAccuracy)
+        || order.upperPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.upperPrice, priceAccuracy)) {
+            throw OrderValidationException(OrderStatus.InvalidPriceAccuracy, "stop order price accuracy is invalid")
+        }
+    }
+
     fun checkBalance(availableBalance: BigDecimal, limitVolume: BigDecimal) {
         if (availableBalance < limitVolume) {
             throw OrderValidationException(OrderStatus.NotEnoughFunds, "not enough funds to reserve")
