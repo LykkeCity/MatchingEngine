@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
@@ -135,9 +136,12 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
+    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
+
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
+
     @Autowired
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 

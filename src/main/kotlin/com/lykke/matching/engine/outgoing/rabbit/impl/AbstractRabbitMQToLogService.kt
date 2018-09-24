@@ -17,11 +17,11 @@ abstract class AbstractRabbitMQToLogService<T>(private val gson: Gson, private v
                                 exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<T>?) {
         val executor = Executors.newSingleThreadExecutor()
-        executor.submit({
+        executor.submit {
             while (true) {
                 logMessage(config.exchange, queue.take())
             }
-        })
+        }
     }
 
     private fun logMessage(exchange: String, item: T) {
