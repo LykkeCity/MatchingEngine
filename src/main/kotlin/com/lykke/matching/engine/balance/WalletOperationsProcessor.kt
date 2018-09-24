@@ -11,24 +11,22 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
 import com.lykke.matching.engine.updaters.CurrentTransactionBalancesHolder
 import com.lykke.matching.engine.updaters.WalletAssetBalance
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
-import java.util.concurrent.BlockingQueue
+import kotlin.collections.HashMap
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
                                 private val applicationSettings: ApplicationSettingsCache,
                                 private val persistenceManager: PersistenceManager,
-                                private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                 private val assetsHolder: AssetsHolder,
                                 private val validate: Boolean,
                                 private val logger: Logger?): BalancesGetter {
@@ -38,7 +36,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val clientIds = HashSet<String>()
     private val updates = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: List<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
@@ -81,7 +78,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                 return@forEach
             }
             changedAssetBalance.apply()
-            clientIds.add(changedAssetBalance.clientId)
             val key = generateKey(changedAssetBalance)
             val update = updates.getOrPut(key) {
                 ClientBalanceUpdate(changedAssetBalance.clientId,
@@ -95,7 +91,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             update.newReserved = changedAssetBalance.reserved
             if (NumberUtils.equalsIgnoreScale(update.oldBalance, update.newBalance) &&
                     NumberUtils.equalsIgnoreScale(update.oldReserved, update.newReserved)) {
-                clientIds.remove(changedAssetBalance.clientId)
                 updates.remove(key)
             }
         }
@@ -123,7 +118,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {
-        clientIds.forEach { balanceUpdateNotificationQueue.put(BalanceUpdateNotification(it)) }
         if (updates.isNotEmpty()) {
             balancesHolder.sendBalanceUpdate(BalanceUpdate(id, type, Date(), updates.values.toList(), messageId))
         }

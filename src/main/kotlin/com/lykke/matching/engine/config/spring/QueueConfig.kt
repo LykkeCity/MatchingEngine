@@ -4,8 +4,6 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
@@ -30,16 +28,6 @@ open class QueueConfig {
     @Bean
     open fun balanceUpdateQueue(): BlockingQueue<BalanceUpdate> {
         return LinkedBlockingQueue<BalanceUpdate>()
-    }
-
-    @Bean
-    open fun balanceUpdateNotificationQueue(): BlockingQueue<BalanceUpdateNotification> {
-        return  LinkedBlockingQueue<BalanceUpdateNotification>()
-    }
-
-    @Bean
-    open fun cashSwapQueue(): BlockingQueue<CashSwapOperation> {
-        return LinkedBlockingQueue<CashSwapOperation>()
     }
 
     @Bean
@@ -68,7 +56,7 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun rabbitSwapQueue(): BlockingQueue<MarketOrderWithTrades> {
+    open fun rabbitMarketOrderWithTradesQueue(): BlockingQueue<MarketOrderWithTrades> {
         return LinkedBlockingQueue<MarketOrderWithTrades>()
     }
 
@@ -85,11 +73,6 @@ open class QueueConfig {
     @Bean
     open fun trustedClientsLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
         return LinkedBlockingQueue<LimitOrdersReport>()
-    }
-
-    @Bean
-    open fun quotesUpdateQueue(): BlockingQueue<QuotesUpdate> {
-        return LinkedBlockingQueue<QuotesUpdate>()
     }
 
     @Bean

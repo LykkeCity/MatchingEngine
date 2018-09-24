@@ -25,8 +25,6 @@ import com.lykke.matching.engine.incoming.parsers.ContextParser
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -99,8 +97,6 @@ abstract class AbstractPerformanceTest {
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
-    val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
-
     val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
     val lkkTradesQueue = LinkedBlockingQueue<List<LkkTrade>>()
@@ -112,8 +108,6 @@ abstract class AbstractPerformanceTest {
     val rabbitSwapQueue  = LinkedBlockingQueue<MarketOrderWithTrades>()
 
     val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
-
-    val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
@@ -129,12 +123,10 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrderDatabaseAccessor)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                persistenceManager,
-                assetsHolder,
-                balanceUpdateNotificationQueue, balanceUpdateQueue,
-                applicationSettingsCache)
+                persistenceManager, assetsHolder,
+                balanceUpdateQueue, applicationSettingsCache)
 
-        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
@@ -144,7 +136,7 @@ abstract class AbstractPerformanceTest {
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue, tradeInfoQueue,
+                tradeInfoQueue,
                 applicationSettingsCache,
                 expiryOrdersQueue)
 

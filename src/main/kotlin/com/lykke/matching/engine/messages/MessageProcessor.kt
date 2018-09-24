@@ -1,11 +1,7 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -18,32 +14,13 @@ import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
-import com.lykke.matching.engine.notification.BalanceUpdateHandler
-import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
-import com.lykke.matching.engine.services.AbstractService
-import com.lykke.matching.engine.services.BalanceUpdateService
-import com.lykke.matching.engine.services.CashInOutOperationService
-import com.lykke.matching.engine.services.CashOperationService
-import com.lykke.matching.engine.services.CashSwapOperationService
-import com.lykke.matching.engine.services.CashTransferOperationService
-import com.lykke.matching.engine.services.GenericLimitOrderService
-import com.lykke.matching.engine.services.GenericStopLimitOrderService
-import com.lykke.matching.engine.services.HistoryTicksService
-import com.lykke.matching.engine.services.LimitOrderCancelService
-import com.lykke.matching.engine.services.LimitOrderMassCancelService
-import com.lykke.matching.engine.services.MarketOrderService
-import com.lykke.matching.engine.services.MultiLimitOrderCancelService
-import com.lykke.matching.engine.services.MultiLimitOrderService
-import com.lykke.matching.engine.services.ReservedBalanceUpdateService
-import com.lykke.matching.engine.services.ReservedCashInOutOperationService
-import com.lykke.matching.engine.services.SingleLimitOrderService
-import com.lykke.matching.engine.services.TradesInfoService
+import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
@@ -67,33 +44,27 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val messagesQueue: BlockingQueue<MessageWrapper> = messageRouter.preProcessedMessageQueue
 
-    private val balanceUpdateHandler: BalanceUpdateHandler
-
     private val limitOrderDatabaseAccessor: LimitOrderDatabaseAccessor
     private val marketOrderDatabaseAccessor: MarketOrderDatabaseAccessor
     private val backOfficeDatabaseAccessor: BackOfficeDatabaseAccessor
     private val cashOperationsDatabaseAccessor: CashOperationsDatabaseAccessor
     private val persistenceManager: PersistenceManager
 
-    private val cashOperationService: CashOperationService
     private val cashInOutOperationService: CashInOutOperationService
     private val cashTransferOperationService: CashTransferOperationService
-    private val cashSwapOperationService: CashSwapOperationService
+    private val genericLimitOrderService: GenericLimitOrderService
     private val singleLimitOrderService: SingleLimitOrderService
     private val multiLimitOrderService: MultiLimitOrderService
     private val marketOrderService: MarketOrderService
     private val limitOrderCancelService: LimitOrderCancelService
     private val limitOrderMassCancelService: LimitOrderMassCancelService
     private val multiLimitOrderCancelService: MultiLimitOrderCancelService
-    private val balanceUpdateService: BalanceUpdateService
     private val tradesInfoService: TradesInfoService
     private val historyTicksService: HistoryTicksService
     private val transferOperationSaveService: TransferOperationSaveService
 
     private val marketStateCache: MarketStateCache
     private val applicationSettingsCache: ApplicationSettingsCache
-
-    private val quotesUpdateHandler: QuotesUpdateHandler
 
     private val servicesMap: Map<MessageType, AbstractService>
     private val processedMessagesCache: ProcessedMessagesCache
@@ -107,7 +78,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     val appInitialData: AppInitialData
 
-    private val reservedBalanceUpdateService: ReservedBalanceUpdateService
     private val reservedCashInOutOperationService: ReservedCashInOutOperationService
     private val messageProcessingStatusHolder: MessageProcessingStatusHolder
     private val messageSequenceNumberHolder: MessageSequenceNumberHolder
@@ -128,14 +98,12 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
 
-        balanceUpdateHandler = applicationContext.getBean(BalanceUpdateHandler::class.java)
-
         val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
         val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
-        val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
+        this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
@@ -143,11 +111,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val genericLimitOrderProcessorFactory = applicationContext.getBean(GenericLimitOrderProcessorFactory::class.java)
         val genericLimitOrdersCancellerFactory = applicationContext.getBean(GenericLimitOrdersCancellerFactory::class.java)
 
-        this.cashOperationService = applicationContext.getBean(CashOperationService::class.java)
         this.cashInOutOperationService = applicationContext.getBean(CashInOutOperationService::class.java)
         this.reservedCashInOutOperationService = applicationContext.getBean(ReservedCashInOutOperationService::class.java)
         this.cashTransferOperationService = applicationContext.getBean(CashTransferOperationService::class.java)
-        this.cashSwapOperationService = applicationContext.getBean(CashSwapOperationService::class.java)
         this.singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
@@ -157,8 +123,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
-        this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
-        this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
 
@@ -178,7 +142,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             this.historyTicksBuilder = historyTicksService.start()
         }
 
-        this.quotesUpdateHandler = applicationContext.getBean(QuotesUpdateHandler::class.java)
         val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
@@ -227,18 +190,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             val service = servicesMap[messageType]
 
             if (service == null) {
-                when (messageType) {
-                    MessageType.BALANCE_UPDATE_SUBSCRIBE -> {
-                        balanceUpdateHandler.subscribe(message.clientHandler!!)
-                    }
-                    MessageType.QUOTES_UPDATE_SUBSCRIBE -> {
-                        quotesUpdateHandler.subscribe(message.clientHandler!!)
-                    }
-                    else -> {
-                        LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
-                        METRICS_LOGGER.logError("Unknown message type: ${message.type}")
-                    }
-                }
+                LOGGER.error("[${message.sourceIp}]: Unknown message type: ${message.type}")
+                METRICS_LOGGER.logError("Unknown message type: ${message.type}")
                 return
             }
 
@@ -290,10 +243,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private fun initServicesMap(): Map<MessageType, AbstractService> {
         val result = HashMap<MessageType, AbstractService>()
-        result[MessageType.CASH_OPERATION] = cashOperationService
         result[MessageType.CASH_IN_OUT_OPERATION] = cashInOutOperationService
         result[MessageType.CASH_TRANSFER_OPERATION] = cashTransferOperationService
-        result[MessageType.CASH_SWAP_OPERATION] = cashSwapOperationService
         result[MessageType.RESERVED_CASH_IN_OUT_OPERATION] = reservedCashInOutOperationService
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
@@ -302,9 +253,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
         result[MessageType.MULTI_LIMIT_ORDER_CANCEL] = multiLimitOrderCancelService
-        result[MessageType.OLD_BALANCE_UPDATE] = balanceUpdateService
-        result[MessageType.BALANCE_UPDATE] = balanceUpdateService
-        result[MessageType.RESERVED_BALANCE_UPDATE] = reservedBalanceUpdateService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
         return result
     }

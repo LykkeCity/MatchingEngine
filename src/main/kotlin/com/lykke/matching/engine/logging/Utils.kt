@@ -10,7 +10,6 @@ fun toLogMessage(message: Any, stringRepresentation: String): Message {
         return when (message) {
             is BalanceUpdate -> Message(null, message.messageId, message.id, type, message.timestamp, stringRepresentation)
             is CashOperation -> Message(null, message.messageId, message.id, type, message.dateTime, stringRepresentation)
-            is CashSwapOperation -> Message(null, message.messageId, message.id, type, message.dateTime, stringRepresentation)
             is CashTransferOperation -> Message(null, message.messageId, message.id, type, message.dateTime, stringRepresentation)
             is LimitOrdersReport -> Message(null, message.messageId, UUID.randomUUID().toString(), type, Date(), stringRepresentation)
             is MarketOrderWithTrades ->
