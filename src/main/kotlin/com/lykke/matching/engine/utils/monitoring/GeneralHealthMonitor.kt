@@ -30,9 +30,9 @@ class GeneralHealthMonitor: HealthMonitor {
     }
 
     @Scheduled(fixedRateString = "\${health.check.update.interval}")
-    open fun checkBrokenComponents() {
+    fun checkBrokenComponents() {
         if (!CollectionUtils.isEmpty(brokenComponents)) {
-            val message = "Maintenance mode is on"
+            val message = "Maintenance mode is on, broken component are: $brokenComponents"
             LOGGER.error(message)
             METRICS_LOGGER.logError(message)
         }
