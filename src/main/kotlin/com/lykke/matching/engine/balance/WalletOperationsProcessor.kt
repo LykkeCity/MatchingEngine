@@ -21,6 +21,14 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
+import kotlin.collections.HashMap
+import kotlin.collections.List
+import kotlin.collections.forEach
+import kotlin.collections.getOrPut
+import kotlin.collections.isNotEmpty
+import kotlin.collections.mapValues
+import kotlin.collections.toList
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val currentTransactionBalancesHolder: CurrentTransactionBalancesHolder,
@@ -35,7 +43,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val clientIds = HashSet<String>()
     private val updates = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: List<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
@@ -78,7 +85,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                 return@forEach
             }
             changedAssetBalance.apply()
-            clientIds.add(changedAssetBalance.clientId)
             val key = generateKey(changedAssetBalance)
             val update = updates.getOrPut(key) {
                 ClientBalanceUpdate(changedAssetBalance.clientId,
@@ -92,7 +98,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             update.newReserved = changedAssetBalance.reserved
             if (NumberUtils.equalsIgnoreScale(update.oldBalance, update.newBalance) &&
                     NumberUtils.equalsIgnoreScale(update.oldReserved, update.newReserved)) {
-                clientIds.remove(changedAssetBalance.clientId)
                 updates.remove(key)
             }
         }

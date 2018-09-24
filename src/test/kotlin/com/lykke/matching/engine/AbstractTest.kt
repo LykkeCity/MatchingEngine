@@ -3,23 +3,13 @@ package com.lykke.matching.engine
 import com.lykke.matching.engine.balance.util.TestBalanceHolderWrapper
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.RabbitSwapListener
-import com.lykke.matching.engine.notification.TestClientLimitOrderListener
-import com.lykke.matching.engine.notification.TestLkkTradeListener
-import com.lykke.matching.engine.notification.TestOrderBookListener
-import com.lykke.matching.engine.notification.TestRabbitOrderBookListener
-import com.lykke.matching.engine.notification.TestTrustedClientsLimitOrderListener
-import com.lykke.matching.engine.notification.TradeInfoListener
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
@@ -29,15 +19,14 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import org.junit.After
-import org.springframework.beans.factory.annotation.Autowired
-import java.math.BigDecimal
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertEquals
 
 abstract class AbstractTest {
     @Autowired
@@ -155,7 +144,6 @@ abstract class AbstractTest {
     protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
 
     private var initialized = false
@@ -168,7 +156,6 @@ abstract class AbstractTest {
         assetPairsCache.update()
         applicationSettingsCache.update()
 
-        reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
         multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
