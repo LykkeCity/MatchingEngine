@@ -53,7 +53,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         validateLimitPrices(singleLimitContext.limitOrder)
         validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair!!)
         validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset!!)
-        validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
+        validateStopPricesAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
     }
 
     private fun validateAsset(assetPair: AssetPair?, assetPairId: String) {
@@ -119,6 +119,16 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         val priceAccuracyValid = NumberUtils.isScaleSmallerOrEqual(limitOrder.price, assetPair.accuracy)
         if (!priceAccuracyValid) {
             throw OrderValidationException(OrderStatus.InvalidPriceAccuracy, "price accuracy is invalid")
+        }
+    }
+
+    private fun validateStopPricesAccuracy(order: LimitOrder, assetPair: AssetPair) {
+        val priceAccuracy = assetPair.accuracy
+        if (order.lowerLimitPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.lowerLimitPrice, priceAccuracy)
+                || order.lowerPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.lowerPrice, priceAccuracy)
+                || order.upperLimitPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.upperLimitPrice, priceAccuracy)
+                || order.upperPrice != null && !NumberUtils.isScaleSmallerOrEqual(order.upperPrice, priceAccuracy)) {
+            throw OrderValidationException(OrderStatus.InvalidPriceAccuracy, "stop order price accuracy is invalid")
         }
     }
 }
