@@ -12,12 +12,19 @@ import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
+import kotlin.collections.HashMap
+import kotlin.collections.List
+import kotlin.collections.forEach
+import kotlin.collections.getOrPut
+import kotlin.collections.isNotEmpty
+import kotlin.collections.mapValues
+import kotlin.collections.toList
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val applicationSettings: ApplicationSettingsCache,
@@ -33,7 +40,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
     private val balancesUpdater = balancesHolder.createUpdater()
     private val changedAssetBalances = HashMap<String, ChangedAssetBalance>()
-    private val clientIds = HashSet<String>()
     private val updates = HashMap<String, ClientBalanceUpdate>()
 
     fun preProcess(operations: List<WalletOperation>, forceApply: Boolean = false): WalletOperationsProcessor {
@@ -70,7 +76,6 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
 
         changedAssetBalances.putAll(transactionChangedAssetBalances.mapValues {
             val transactionChangedAssetBalance = it.value
-            clientIds.add(transactionChangedAssetBalance.clientId)
             val update = updates.getOrPut(key(transactionChangedAssetBalance)) {
                 ClientBalanceUpdate(transactionChangedAssetBalance.clientId,
                         transactionChangedAssetBalance.assetId,
