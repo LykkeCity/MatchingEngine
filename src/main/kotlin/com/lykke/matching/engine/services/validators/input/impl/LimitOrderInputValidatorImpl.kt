@@ -8,8 +8,8 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
@@ -40,6 +40,7 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         validateAsset(assetPair, assetPairId)
         validatePrice(order)
         validateVolume(order, assetPair!!)
+        validateMaxValue(order, assetPair)
         validatePriceAccuracy(order, assetPair)
         validateVolumeAccuracy(order, baseAsset!!)
         validateValue(order, assetPair)
@@ -47,13 +48,16 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
 
     override fun validateStopOrder(singleLimitOrderParsedData: SingleLimitOrderParsedData) {
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
+        val limitOrder = singleLimitContext.limitOrder
+        val assetPair = singleLimitContext.assetPair
 
-        validateAsset(singleLimitContext.assetPair, singleLimitOrderParsedData.inputAssetPairId)
-        validateFee(singleLimitContext.limitOrder)
-        validateLimitPrices(singleLimitContext.limitOrder)
-        validateVolume(singleLimitContext.limitOrder, singleLimitContext.assetPair!!)
-        validateVolumeAccuracy(singleLimitContext.limitOrder, singleLimitContext.baseAsset!!)
-        validatePriceAccuracy(singleLimitContext.limitOrder, singleLimitContext.assetPair)
+        validateAsset(assetPair, singleLimitOrderParsedData.inputAssetPairId)
+        validateFee(limitOrder)
+        validateLimitPrices(limitOrder)
+        validateVolume(limitOrder, assetPair!!)
+        validateStopOrderMaxValue(limitOrder, assetPair)
+        validateVolumeAccuracy(limitOrder, singleLimitContext.baseAsset!!)
+        validatePriceAccuracy(limitOrder, assetPair)
     }
 
     private fun validateAsset(assetPair: AssetPair?, assetPairId: String) {
@@ -95,6 +99,21 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         }
     }
 
+    private fun validateMaxValue(limitOrder: LimitOrder, assetPair: AssetPair) {
+        if (assetPair.maxVolume != null && limitOrder.getAbsVolume() > assetPair.maxVolume) {
+            throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
+        }
+    }
+
+    private fun validateStopOrderMaxValue(limitOrder: LimitOrder, assetPair: AssetPair) {
+        validateMaxValue(limitOrder, assetPair)
+
+        if (assetPair.maxValue != null && (limitOrder.lowerLimitPrice != null && limitOrder.getAbsVolume() * limitOrder.lowerPrice!! > assetPair.maxValue
+                        || limitOrder.upperLimitPrice != null && limitOrder.getAbsVolume() * limitOrder.upperPrice!! > assetPair.maxValue)) {
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
+        }
+    }
+
     private fun validateVolume(limitOrder: LimitOrder, assetPair: AssetPair) {
 
         if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, limitOrder.volume)) {
@@ -103,10 +122,6 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
 
         if (!OrderValidationUtils.checkMinVolume(limitOrder, assetPair)) {
             throw OrderValidationException(OrderStatus.TooSmallVolume, "volume is too small")
-        }
-
-        if (assetPair.maxVolume != null && limitOrder.getAbsVolume() > assetPair.maxVolume) {
-            throw OrderValidationException(OrderStatus.InvalidVolume, "volume is too large")
         }
     }
 
