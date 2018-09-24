@@ -122,7 +122,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
 
         this.tradesInfoService = applicationContext.getBean(TradesInfoService::class.java)
 

@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
@@ -21,12 +22,13 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdat
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
+import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 abstract class AbstractTest {
     @Autowired
@@ -124,8 +126,6 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
-
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
 
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
