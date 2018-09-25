@@ -77,9 +77,11 @@ class RedisPersistenceManager(
             transaction.exec()
             val commitTime = System.nanoTime()
 
+            val messageId = data.processedMessage?.messageId
             REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
-                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
+                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
+                    (if (messageId != null) " ($messageId)" else ""))
 
             if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
                 updatedWalletsQueue.put(data.balancesData!!.wallets)
