@@ -5,8 +5,9 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
@@ -16,6 +17,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,10 +41,9 @@ class MinRemainingVolumeTest : AbstractTest() {
     open class Config {
         @Bean
         @Primary
-        open fun testConfig(): TestConfigDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-            testSettingsDatabaseAccessor.addTrustedClient("Client3")
-
+        open fun testConfig(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client3"))
             return testSettingsDatabaseAccessor
         }
 

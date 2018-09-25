@@ -6,24 +6,19 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -36,7 +31,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.Date
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -59,9 +53,9 @@ class PersistenceErrorTest : AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): TestConfigDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-            testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+        open fun testConfig(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -115,12 +109,6 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     @Test
-    fun testBalanceUpdate() {
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "EUR", 5.0))
-        assertData()
-    }
-
-    @Test
     fun testCashInOutOperation() {
         cashInOutOperationService.processMessage( messageBuilder.buildCashInOutWrapper("Client1", "EUR", 5.0))
         assertData()
@@ -142,13 +130,13 @@ class PersistenceErrorTest : AbstractTest() {
     @Test
     fun testLimitOrderCancel() {
         // Limit Order
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("order1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("order1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
 
         // Stop Limit Order
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("stopOrder1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("stopOrder1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
@@ -156,7 +144,7 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testLimitOrderMassCancel() {
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
@@ -286,41 +274,6 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     @Test
-    fun testOldMultiLimitOrder() {
-        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(
-                "EURUSD", "TrustedClient",
-                listOf(VolumePrice(BigDecimal.valueOf(-1.0), BigDecimal.valueOf(3.1)),
-                        VolumePrice(BigDecimal.valueOf(-2.0), BigDecimal.valueOf(3.19)),
-                        VolumePrice(BigDecimal.valueOf(-3.0), BigDecimal.valueOf(3.29))), cancel = true))
-
-        assertData()
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-    }
-
-    private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
-    }
-
-    private fun buildOldMultiLimitOrder(assetPairId: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean): ProtocolMessages.OldMultiLimitOrder {
-        val uid = Date().time
-        val orderBuilder = ProtocolMessages.OldMultiLimitOrder.newBuilder()
-                .setUid(uid)
-                .setTimestamp(uid)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEach{ volume ->
-            orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume.toDouble())
-                    .setPrice(volume.price.toDouble())
-                    .build())
-        }
-        return orderBuilder.build()
-    }
-
-
-    @Test
     fun testTrustedClientMultiLimitOrder() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
                 "EURUSD", "TrustedClient",
@@ -382,7 +335,6 @@ class PersistenceErrorTest : AbstractTest() {
 
     private fun assertNotifications() {
         assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
-        assertEquals(0, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
     }
 
     private fun assertBalances() {

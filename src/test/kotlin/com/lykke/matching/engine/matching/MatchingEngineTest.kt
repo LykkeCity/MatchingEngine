@@ -191,7 +191,7 @@ abstract class MatchingEngineTest {
     }
 
     private fun walletOperationTransform(operation: WalletOperation): WalletOperation =
-            WalletOperation("", operation.externalId, operation.clientId, operation.assetId, now, operation.amount.stripTrailingZeros(), operation.reservedAmount.stripTrailingZeros(), operation.isFee)
+            WalletOperation(operation.clientId, operation.assetId, operation.amount.stripTrailingZeros(), operation.reservedAmount.stripTrailingZeros())
 
     protected fun assertCashMovementsEquals(expectedMovements: List<WalletOperation>, actualMovements: List<WalletOperation>) {
         assertEquals(expectedMovements.size, actualMovements.size)
@@ -213,7 +213,8 @@ abstract class MatchingEngineTest {
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
 
     protected fun initService() {
-        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
+        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, feeProcessor)
+        matchingEngine.initTransaction(balancesHolder)
     }
 
 }

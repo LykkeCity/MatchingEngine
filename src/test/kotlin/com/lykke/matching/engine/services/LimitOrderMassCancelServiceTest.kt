@@ -7,9 +7,10 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -18,7 +19,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
@@ -33,6 +33,7 @@ import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import org.springframework.beans.factory.annotation.Autowired
+import com.lykke.matching.engine.utils.getSetting
 
 
 @RunWith(SpringRunner::class)
@@ -55,9 +56,9 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
 
         @Bean
         @Primary
-        open fun testConfig(): TestConfigDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-            testSettingsDatabaseAccessor.addTrustedClient("TrustedClient")
+        open fun testConfig(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("TrustedClient"))
             return testSettingsDatabaseAccessor
         }
     }
@@ -116,7 +117,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelOrdersOneSide() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 1)
@@ -159,7 +160,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun cancelAllClientOrders() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1"))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)
@@ -216,7 +217,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelTrustedClientOrders() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("TrustedClient", "EURUSD"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("TrustedClient", "EURUSD"))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 1)

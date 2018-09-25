@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -35,57 +36,55 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         val context = parseMessage(messageWrapper)
 
         messageWrapper.context = context
-        messageWrapper.id = context.uid
+        messageWrapper.id = context.limitOrder.externalId
         messageWrapper.messageId = context.messageId
         messageWrapper.timestamp = context.processedMessage?.timestamp
+        messageWrapper.processedMessage = context.processedMessage
 
-        return SingleLimitOrderParsedData(messageWrapper)
+        return SingleLimitOrderParsedData(messageWrapper, context.limitOrder.assetPairId)
     }
 
     fun getStopOrderContext(messageId: String, order: LimitOrder): SingleLimitOrderContext {
-        return getContext(messageId, null, order, false,  null)
+        return getContext(messageId, order, false, null)
     }
 
-    private fun getContext(messageId: String, uid: String?,
+    private fun getContext(messageId: String,
                            order: LimitOrder, cancelOrders: Boolean,
                            processedMessage: ProcessedMessage?): SingleLimitOrderContext {
         val builder = SingleLimitOrderContext.Builder()
         val assetPair = getAssetPair(order.assetPairId)
 
-        builder.uid(uid)
-                .messageId(messageId)
+        builder.messageId(messageId)
                 .limitOrder(order)
                 .assetPair(assetPair)
-                .baseAsset(getBaseAsset(assetPair))
-                .baseAssetDisabled(applicationSettingsCache.isAssetDisabled(assetPair.baseAssetId))
-                .quotingAssetDisabled(applicationSettingsCache.isAssetDisabled(assetPair.quotingAssetId))
-                .quotingAsset(getQuotingAsset(assetPair))
+                .baseAsset(assetPair?.let { getBaseAsset(it) })
+                .quotingAsset(assetPair?.let { getQuotingAsset(it) })
                 .trustedClient(getTrustedClient(builder.limitOrder.clientId))
-                .limitAsset(getLimitAsset(order, assetPair))
+                .limitAsset(assetPair?.let { getLimitAsset(order, assetPair) })
                 .cancelOrders(cancelOrders)
                 .processedMessage(processedMessage)
 
         return builder.build()
     }
 
-    private fun getLimitAsset(order: LimitOrder, assetPair: AssetPair): Asset {
-        return assetsHolder.getAsset(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
+    private fun getLimitAsset(order: LimitOrder, assetPair: AssetPair): Asset? {
+        return assetsHolder.getAssetAllowNulls(if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId)
     }
 
     private fun getTrustedClient(clientId: String): Boolean {
         return applicationSettingsCache.isTrustedClient(clientId)
     }
 
-    fun getAssetPair(assetPairId: String): AssetPair {
-        return assetsPairsHolder.getAssetPair(assetPairId)
+    fun getAssetPair(assetPairId: String): AssetPair? {
+        return assetsPairsHolder.getAssetPairAllowNulls(assetPairId)
     }
 
-    private fun getBaseAsset(assetPair: AssetPair): Asset {
-        return assetsHolder.getAsset(assetPair.baseAssetId)
+    private fun getBaseAsset(assetPair: AssetPair): Asset? {
+        return assetsHolder.getAssetAllowNulls(assetPair.baseAssetId)
     }
 
-    private fun getQuotingAsset(assetPair: AssetPair): Asset {
-        return assetsHolder.getAsset(assetPair.quotingAssetId)
+    private fun getQuotingAsset(assetPair: AssetPair): Asset? {
+        return assetsHolder.getAssetAllowNulls(assetPair.quotingAssetId)
     }
 
     private fun parseMessage(messageWrapper: MessageWrapper): SingleLimitOrderContext {
@@ -103,12 +102,12 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         val limitOrder = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
                 BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, null, Date(oldMessage.timestamp), null, BigDecimal.valueOf(oldMessage.volume), null,
-                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                timeInForce = null, expiryTime = null)
 
         logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
 
-        return getContext(messageId, oldMessage.uid.toString(),
-                limitOrder, oldMessage.cancelAllPreviousLimitOrders,
+        return getContext(messageId, limitOrder, oldMessage.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, oldMessage.timestamp, messageId))
     }
 
@@ -118,8 +117,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         val limitOrder = createOrder(message)
 
-        val singleLimitOrderContext = getContext(messageId, message.uid,
-                limitOrder, message.cancelAllPreviousLimitOrders,
+        val singleLimitOrderContext = getContext(messageId, limitOrder, message.cancelAllPreviousLimitOrders,
                 ProcessedMessage(messageWrapper.type, message.timestamp, messageId))
 
         logger.info("Got limit order  messageId: $messageId, id: ${message.uid}, client ${message.clientId}")
@@ -162,6 +160,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
-                previousExternalId = null)
+                previousExternalId = null,
+                timeInForce = if (message.hasTimeInForce()) OrderTimeInForce.getByExternalId(message.timeInForce) else null,
+                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null)
     }
 }

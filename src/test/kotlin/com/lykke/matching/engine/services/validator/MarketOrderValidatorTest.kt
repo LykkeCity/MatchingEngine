@@ -3,15 +3,17 @@ package com.lykke.matching.engine.services.validator
 import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -61,10 +63,10 @@ class MarketOrderValidatorTest {
 
         @Bean
         @Primary
-        open fun test(): TestConfigDatabaseAccessor {
-            val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-            testConfigDatabaseAccessor.addDisabledAsset("BTC")
-            return testConfigDatabaseAccessor
+        open fun test(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.DISABLED_ASSETS, getSetting("BTC"))
+            return testSettingsDatabaseAccessor
         }
     }
 
@@ -210,7 +212,8 @@ class MarketOrderValidatorTest {
         assetOrderBook.addOrder(LimitOrder("test", "test",
                 ASSET_PAIR_ID, CLIENT_NAME, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0),
                 OrderStatus.InOrderBook.name, now, now, now, BigDecimal.valueOf(1.0), now, BigDecimal.valueOf(1.0),
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null,
+                null, null))
 
         return assetOrderBook.getOrderBook(isBuy)
      }

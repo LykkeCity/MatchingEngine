@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashTransferContext
@@ -6,6 +5,7 @@ import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
+import com.lykke.matching.engine.holders.MessageProcessingStatusHolder
 import com.lykke.matching.engine.incoming.parsers.data.CashTransferParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.preprocessor.MessagePreprocessor
@@ -27,11 +27,12 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashTransferPreprocessor(
-        private val cashTransferQueue: BlockingQueue<MessageWrapper>,
+        private val cashTransferInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor,
-        private val cashTransferOperationPreprocessorPersistenceManager: PersistenceManager,
-        private val processedMessagesCache: ProcessedMessagesCache
+        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
+        private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
+        private val processedMessagesCache: ProcessedMessagesCache,
+        private val messageProcessingStatusHolder: MessageProcessingStatusHolder
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
     companion object {
@@ -47,6 +48,19 @@ class CashTransferPreprocessor(
 
     override fun preProcess(messageWrapper: MessageWrapper) {
         val cashTransferParsedData = contextParser.parse(messageWrapper)
+
+        if (!messageProcessingStatusHolder.isMessageSwitchEnabled()) {
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.MESSAGE_PROCESSING_DISABLED)
+            return
+        }
+
+        if (!messageProcessingStatusHolder.isHealthStatusOk()) {
+            writeResponse(cashTransferParsedData.messageWrapper, MessageStatus.RUNTIME)
+            val errorMessage = "Message processing is disabled"
+            CashInOutPreprocessor.LOGGER.error(errorMessage)
+            CashInOutPreprocessor.METRICS_LOGGER.logError(errorMessage)
+            return
+        }
 
         if (!validateData(cashTransferParsedData)) {
             return
@@ -71,8 +85,9 @@ class CashTransferPreprocessor(
                                    message: String) {
         val messageWrapper = cashTransferParsedData.messageWrapper
         val context = messageWrapper.context as CashTransferContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
-        val persistSuccess = cashTransferOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
+        val persistSuccess = cashTransferPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
             throw Exception("Persistence error")
         }
@@ -90,7 +105,7 @@ class CashTransferPreprocessor(
         val parsedMessageWrapper = cashTransferParsedData.messageWrapper
         val context = parsedMessageWrapper.context as CashTransferContext
 
-        if (databaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
+        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
@@ -99,7 +114,7 @@ class CashTransferPreprocessor(
         }
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
@@ -118,16 +133,22 @@ class CashTransferPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashTransferQueue.take()
             try {
-                preProcess(message)
-            } catch (exception: Exception) {
-                val context = message.context
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                        if (context != null) "Error details: $context" else "", exception)
+                val message = cashTransferInputQueue.take()
+                try {
+                    preProcess(message)
+                } catch (exception: Exception) {
+                    val context = message.context
+                    LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                            if (context != null) "Error details: $context" else "", exception)
 
-                METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
-                writeResponse(message, RUNTIME)
+                    METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
+                    writeResponse(message, RUNTIME)
+                }
+            } catch (e: Exception) {
+                val message = "Got error during message preprocessing"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
     }

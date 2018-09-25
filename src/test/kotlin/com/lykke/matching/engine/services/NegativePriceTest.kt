@@ -5,12 +5,14 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,6 +31,9 @@ import kotlin.test.assertEquals
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class NegativePriceTest : AbstractTest() {
 
+    @Autowired
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+
     @TestConfiguration
     open class Config {
         @Bean
@@ -42,9 +47,6 @@ class NegativePriceTest : AbstractTest() {
             return testBackOfficeDatabaseAccessor
         }
     }
-
-    @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
@@ -72,7 +74,7 @@ class NegativePriceTest : AbstractTest() {
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
-        testConfigDatabaseAccessor.addTrustedClient("Client")
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("Client"))
 
         initServices()
 

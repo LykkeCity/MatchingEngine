@@ -11,7 +11,12 @@ import com.lykke.matching.engine.daos.VolumePrice
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
@@ -27,7 +32,9 @@ import java.util.UUID
 
 class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                      private val cashTransferContextParser: CashTransferContextParser,
-                     private var singleLimitOrderContextParser: SingleLimitOrderContextParser) {
+                     private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
+                     private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>,
+                     private var singleLimitOrderContextParser: ContextParser<SingleLimitOrderParsedData>) {
     companion object {
         fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                             assetId: String = "EURUSD",
@@ -44,12 +51,16 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
-                            previousExternalId: String? = null): LimitOrder =
+                            previousExternalId: String? = null,
+                            timeInForce: OrderTimeInForce? = null,
+                            expiryTime: Date? = null): LimitOrder =
                 LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf(volume), BigDecimal.valueOf(price), status, registered, registered, registered, BigDecimal.valueOf(volume), null,
                         reservedVolume?.toBigDecimal(), fee, fees,
                         type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
                         upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
-                        previousExternalId)
+                        previousExternalId,
+                        timeInForce,
+                        expiryTime)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -153,7 +164,6 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                         fee = fee, fees = fees)
 
 
-
         @Deprecated("Use buildMultiLimitOrderWrapper(5)")
         fun buildMultiLimitOrderWrapper(pair: String,
                                         clientId: String,
@@ -207,30 +217,15 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                 order.feeInstructions.forEach { orderBuilder.addFees(buildNewLimitOrderFee(it)) }
                 orderBuilder.uid = order.uid
                 order.oldUid?.let { orderBuilder.oldUid = order.oldUid }
+                order.timeInForce?.let { orderBuilder.timeInForce = it.externalId }
+                order.expiryTime?.let { orderBuilder.expiryTime = it.time }
                 multiOrderBuilder.addOrders(orderBuilder.build())
             }
             return multiOrderBuilder.build()
         }
 
-        fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
 
-        fun buildLimitOrderCancelWrapper(uids: List<String>): MessageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
-                .setUid(UUID.randomUUID().toString()).addAllLimitOrderId(uids).build().toByteArray(), null)
 
-        fun buildLimitOrderMassCancelWrapper(clientId: String,
-                                             assetPairId: String? = null,
-                                             isBuy: Boolean? = null): MessageWrapper {
-            val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
-                    .setUid(UUID.randomUUID().toString())
-                    .setClientId(clientId)
-            assetPairId?.let {
-                builder.setAssetPairId(it)
-            }
-            isBuy?.let {
-                builder.setIsBuy(it)
-            }
-            return MessageWrapper("Test", MessageType.LIMIT_ORDER_MASS_CANCEL.type, builder.build().toByteArray(), null)
-        }
 
         fun buildMultiLimitOrderCancelWrapper(clientId: String, assetPairId: String, isBuy: Boolean): MessageWrapper = MessageWrapper("Test", MessageType.MULTI_LIMIT_ORDER_CANCEL.type, ProtocolMessages.MultiLimitOrderCancel.newBuilder()
                 .setUid(UUID.randomUUID().toString())
@@ -296,14 +291,6 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                     sourceClientId, targetClientId, assetIds,
                     if (makerFeeModificator != null) BigDecimal.valueOf(makerFeeModificator) else null))
         }
-
-        fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double, uid: String = "123"): MessageWrapper {
-            return MessageWrapper("Test", MessageType.BALANCE_UPDATE.type, ProtocolMessages.BalanceUpdate.newBuilder()
-                    .setUid(uid)
-                    .setClientId(clientId)
-                    .setAssetId(assetId)
-                    .setAmount(amount).build().toByteArray(), null)
-        }
     }
 
     fun buildTransferWrapper(fromClientId: String,
@@ -362,6 +349,8 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
         order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
+        order.expiryTime?.let { builder.setExpiryTime(it.time) }
+        order.timeInForce?.let { builder.setTimeInForce(it.externalId) }
         val messageWrapper = singleLimitOrderContextParser
                 .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
                 .messageWrapper
@@ -370,5 +359,31 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
         singleLimitContext.validationResult = OrderValidationResult(true)
 
         return messageWrapper
+    }
+
+
+    fun buildLimitOrderCancelWrapper(uid: String) = buildLimitOrderCancelWrapper(listOf(uid))
+
+    fun buildLimitOrderCancelWrapper(uids: List<String>): MessageWrapper {
+        val parsedData = limitOrderCancelOperationContextParser.parse(MessageWrapper("Test", MessageType.LIMIT_ORDER_CANCEL.type, ProtocolMessages.LimitOrderCancel.newBuilder()
+                .setUid(UUID.randomUUID().toString()).addAllLimitOrderId(uids).build().toByteArray(), null))
+        return parsedData.messageWrapper
+    }
+
+    fun buildLimitOrderMassCancelWrapper(clientId: String,
+                                         assetPairId: String? = null,
+                                         isBuy: Boolean? = null): MessageWrapper {
+        val builder = ProtocolMessages.LimitOrderMassCancel.newBuilder()
+                .setUid(UUID.randomUUID().toString())
+                .setClientId(clientId)
+        assetPairId?.let {
+            builder.setAssetPairId(it)
+        }
+        isBuy?.let {
+            builder.setIsBuy(it)
+        }
+
+        val messageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_MASS_CANCEL.type, builder.build().toByteArray(), null)
+        return limitOrderMassCancelOperationContextParser.parse(messageWrapper).messageWrapper
     }
 }

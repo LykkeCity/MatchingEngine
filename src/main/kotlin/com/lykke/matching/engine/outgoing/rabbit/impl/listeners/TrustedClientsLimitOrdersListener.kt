@@ -17,14 +17,14 @@ class TrustedClientsLimitOrdersListener {
     private lateinit var trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.limitOrders, trustedClientsLimitOrdersQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.limitOrders, trustedClientsLimitOrdersQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT, null)

@@ -4,8 +4,8 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import org.springframework.context.annotation.Profile
+import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 import javax.annotation.PostConstruct

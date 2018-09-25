@@ -8,6 +8,10 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -15,12 +19,13 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
+import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
+import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
+import com.lykke.matching.engine.incoming.parsers.ContextParser
+import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
+import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
-import com.lykke.matching.engine.notification.BalanceUpdateNotification
-import com.lykke.matching.engine.notification.QuotesUpdate
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -32,8 +37,8 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
+import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
-import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
 import com.lykke.utils.logging.ThrottlingLogger
 import com.lykke.matching.engine.utils.MessageBuilder
@@ -47,8 +52,7 @@ abstract class AbstractPerformanceTest {
 
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
-    protected lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    protected lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
@@ -78,18 +82,20 @@ abstract class AbstractPerformanceTest {
     protected lateinit var rabbitEventsQueue: LinkedBlockingQueue<Event<*>>
     protected lateinit var rabbitTrustedClientsEventsQueue: LinkedBlockingQueue<ExecutionEvent>
     protected val messageBuilder = MessageBuilder(CashInOutContextParser(assetsHolder),
-            CashTransferContextParser(assetsHolder), singleLimitOrderContextParser)
+            CashTransferContextParser(assetsHolder), limitOrderCancelOperationContextParser,
+            limitOrderCancelMassOperationContextParser, singleLimitOrderContextParser)
 
 
-    protected lateinit var singleLimitOrderContextParser: SingleLimitOrderContextParser
+    protected lateinit var singleLimitOrderContextParser: ContextParser<SingleLimitOrderParsedData>
+    protected lateinit var limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>
+    protected lateinit var limitOrderCancelMassOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>
 
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
-
-    val balanceUpdateNotificationQueue = LinkedBlockingQueue<BalanceUpdateNotification>()
 
     val clientLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
@@ -103,18 +109,12 @@ abstract class AbstractPerformanceTest {
 
     val trustedClientsLimitOrdersQueue  = LinkedBlockingQueue<LimitOrdersReport>()
 
-    val quotesUpdateQueue = LinkedBlockingQueue<QuotesUpdate>()
-
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
 
     open fun initServices() {
-        testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-        testSettingsDatabaseAccessor.addTrustedClient("Client3")
-
-        testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-        applicationSettingsCache = ApplicationSettingsCache(testConfigDatabaseAccessor, 60000)
-
+        testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
@@ -123,41 +123,41 @@ abstract class AbstractPerformanceTest {
                 ordersDatabaseAccessorsHolder,
                 stopOrderDatabaseAccessor)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
-                persistenceManager,
-                assetsHolder,
-                balanceUpdateNotificationQueue, balanceUpdateQueue,
-                applicationSettingsCache)
+                persistenceManager, assetsHolder,
+                balanceUpdateQueue, applicationSettingsCache)
 
-        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue, balanceUpdateNotificationQueue), balancesHolder)
+        testBalanceHolderWrapper = TestBalanceHolderWrapper(BalanceUpdateHandlerTest(balanceUpdateQueue), balancesHolder)
         assetPairsCache = AssetPairsCache(testDictionariesDatabaseAccessor)
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
-        feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        feeProcessor = FeeProcessor(assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        expiryOrdersQueue = ExpiryOrdersQueue()
 
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
-                assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue, tradeInfoQueue,
-                applicationSettingsCache)
+                tradeInfoQueue,
+                applicationSettingsCache,
+                expiryOrdersQueue)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
-        val limitOrderInputValidator = LimitOrderInputValidatorImpl()
+        val limitOrderInputValidator = LimitOrderInputValidatorImpl(applicationSettingsCache)
         val singleLimitOrderPreprocessorLogger = ThrottlingLogger.getLogger(SingleLimitOrderContextParser::class.java.name)
         singleLimitOrderContextParser = SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger)
-
+        limitOrderCancelOperationContextParser = LimitOrderCancelOperationContextParser()
+        limitOrderCancelMassOperationContextParser = LimitOrderMassCancelOperationContextParser()
         genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService,
-                persistenceManager)
+                persistenceManager, expiryOrdersQueue)
 
-        limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator, applicationSettingsCache,
+        limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender)
+                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache)
 
         genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
                 genericStopLimitOrderService,
                 limitOrdersProcessorFactory,
-                LimitOrderBusinessValidatorImpl(), assetsHolder, assetsPairsHolder,
+                StopOrderBusinessValidatorImpl(), assetsHolder, assetsPairsHolder,
                 balancesHolder, clientLimitOrdersQueue, feeProcessor, SingleLimitOrderContextParser(assetsPairsHolder, assetsHolder, applicationSettingsCache, singleLimitOrderPreprocessorLogger),
                 messageSequenceNumberHolder, notificationSender)
 
@@ -167,24 +167,20 @@ abstract class AbstractPerformanceTest {
                 balancesHolder, genericLimitOrderService, genericStopLimitOrderService,
                 genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender)
 
-        val multiLimitOrderValidatorImpl = MultiLimitOrderValidatorImpl(assetsHolder, assetsPairsHolder, limitOrderInputValidator)
         multiLimitOrderService = MultiLimitOrderService(genericLimitOrderService,
                 genericLimitOrdersCancellerFactory,
                 limitOrdersProcessorFactory,
-                clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 genericLimitOrderProcessorFactory,
-                multiLimitOrderValidatorImpl,
                 feeProcessor,
-                applicationSettingsCache,
-                messageSequenceNumberHolder,
-                notificationSender)
+                applicationSettingsCache)
 
         val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(
                 genericLimitOrderService,
+                genericLimitOrdersCancellerFactory,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,

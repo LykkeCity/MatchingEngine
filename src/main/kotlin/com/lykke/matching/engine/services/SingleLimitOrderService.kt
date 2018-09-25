@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -29,7 +28,7 @@ class SingleLimitOrderService(genericLimitOrderProcessorFactory: GenericLimitOrd
         val now = Date()
         LOGGER.info("Got limit order: $context")
 
-        context.limitOrder = LimitOrder(context.limitOrder, now, now)
+        context.limitOrder.register(now)
 
         val startTime = System.nanoTime()
         genericLimitOrderProcessor.processOrder(messageWrapper, context, now)

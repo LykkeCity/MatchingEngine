@@ -3,6 +3,7 @@ package com.lykke.matching.engine.utils.order
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.ValidationException
+import com.lykke.matching.engine.services.validators.impl.ValidationException.Validation.*
 
 class MessageStatusUtils {
     companion object {
@@ -32,13 +33,14 @@ class MessageStatusUtils {
                 OrderStatus.InvalidPriceAccuracy -> MessageStatus.INVALID_PRICE_ACCURACY
                 OrderStatus.InvalidVolumeAccuracy -> MessageStatus.INVALID_VOLUME_ACCURACY
                 OrderStatus.InvalidVolume -> MessageStatus.INVALID_VOLUME
-                OrderStatus.TooHighPriceDeviation -> MessageStatus.TOO_HIGH_PRICE_DEVIATION
                 OrderStatus.InvalidValue -> MessageStatus.INVALID_ORDER_VALUE
+                OrderStatus.TooHighPriceDeviation -> MessageStatus.TOO_HIGH_PRICE_DEVIATION
             }
         }
 
         fun toMessageStatus(validationErrorType: ValidationException.Validation): MessageStatus {
             return when (validationErrorType) {
+                ValidationException.Validation.GENERIC_VALIDATION_FAILURE -> MessageStatus.BAD_REQUEST
                 ValidationException.Validation.DISABLED_ASSET -> MessageStatus.DISABLED_ASSET
                 ValidationException.Validation.INVALID_VOLUME_ACCURACY -> MessageStatus.INVALID_VOLUME_ACCURACY
                 ValidationException.Validation.INVALID_PRICE_ACCURACY -> MessageStatus.INVALID_PRICE_ACCURACY
@@ -50,6 +52,7 @@ class MessageStatusUtils {
                 ValidationException.Validation.UNKNOWN_ASSET -> MessageStatus.UNKNOWN_ASSET
                 ValidationException.Validation.BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
                 ValidationException.Validation.NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
+                ValidationException.Validation.LIMIT_ORDER_NOT_FOUND -> MessageStatus.LIMIT_ORDER_NOT_FOUND
             }
         }
     }

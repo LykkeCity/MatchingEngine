@@ -5,6 +5,7 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
@@ -22,7 +23,6 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -30,6 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import java.util.concurrent.BlockingQueue
 
 @RunWith(SpringRunner::class)
@@ -62,13 +63,12 @@ class ReservedVolumesRecalculatorTest {
 
         @Bean
         @Primary
-        open fun testConfig(): TestConfigDatabaseAccessor {
-            val testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-            testSettingsDatabaseAccessor.addTrustedClient("trustedClient")
-            testSettingsDatabaseAccessor.addTrustedClient("trustedClient2")
+        open fun testConfig(): TestSettingsDatabaseAccessor {
+            val testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("trustedClient"))
+            testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS, getSetting("trustedClient2"))
             return testSettingsDatabaseAccessor
         }
-
     }
 
     @Autowired
@@ -165,8 +165,6 @@ class ReservedVolumesRecalculatorTest {
         assertBalanceUpdateNotification("Client1", "USD", 10.0, 1.0, 0.0, balanceUpdate.balances)
         assertBalanceUpdateNotification("Client1", "EUR", 10.0, 3.0, 0.7, balanceUpdate.balances)
         assertBalanceUpdateNotification("Client2", "USD", 990.0, 1.0, 2080.0, balanceUpdate.balances)
-
-        assertEquals(5, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
 
         assertEquals(7, clientsEventsQueue.size)
         assertEvent(false, "trustedClient", "BTC", "10", "2", "0", clientsEventsQueue)

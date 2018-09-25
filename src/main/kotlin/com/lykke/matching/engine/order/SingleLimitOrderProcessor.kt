@@ -26,7 +26,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                           messageWrapper: MessageWrapper? = null) {
         val order = singleLimitContext.limitOrder
         val assetPair = singleLimitContext.assetPair
-        val limitAsset = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
+        val limitAsset = singleLimitContext.limitAsset!!.assetId
         val orderBook = limitOrderService.getOrderBook(order.assetPairId).copy()
         val clientsLimitOrdersWithTrades = mutableListOf<LimitOrderWithTrades>()
         var buySideOrderBookChanged = false
@@ -51,9 +51,9 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 now,
                 singleLimitContext.isTrustedClient,
                 order.clientId,
-                assetPair,
-                singleLimitContext.baseAsset,
-                singleLimitContext.quotingAsset,
+                assetPair!!,
+                singleLimitContext.baseAsset!!,
+                singleLimitContext.quotingAsset!!,
                 orderBook,
                 if (limitAsset == assetPair.baseAssetId) totalPayBackReserved else BigDecimal.ZERO,
                 if (limitAsset == assetPair.quotingAssetId) totalPayBackReserved else BigDecimal.ZERO,
@@ -62,7 +62,7 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
                 emptyList(),
                 LOGGER)
 
-        matchingEngine.initTransaction()
+        matchingEngine.initTransaction(processor.walletOperationsProcessor)
         val result = processor.preProcess(singleLimitContext.messageId, listOf(order))
                 .apply(singleLimitContext.messageId, singleLimitContext.processedMessage, order.externalId, MessageType.LIMIT_ORDER, buySideOrderBookChanged, sellSideOrderBookChanged)
         messageWrapper?.triedToPersist = true

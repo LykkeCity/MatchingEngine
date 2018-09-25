@@ -7,9 +7,7 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import java.math.BigDecimal
-import java.util.Date
 import java.util.LinkedList
-import java.util.UUID
 
 data class CancelledOrdersOperationsResult(
         val walletOperations: List<WalletOperation> = LinkedList(),
@@ -24,7 +22,6 @@ class WalletOperationsCalculator(
 ) {
 
     fun calculateForCancelledOrders(orders: List<LimitOrder>): CancelledOrdersOperationsResult {
-        val now = Date()
         val walletOperation = LinkedList<WalletOperation>()
         val trustedLimitOrderWithTrades = LinkedList<LimitOrderWithTrades>()
         val limitOrderWithTrades = LinkedList<LimitOrderWithTrades>()
@@ -40,8 +37,7 @@ class WalletOperationsCalculator(
 
                 if (reservedBalance > BigDecimal.ZERO) {
                     walletOperation.add(
-                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAsset, now, BigDecimal.ZERO,
-                                    if (limitVolume > reservedBalance) -reservedBalance else -limitVolume)
+                            WalletOperation(order.clientId, limitAsset, BigDecimal.ZERO, if (limitVolume > reservedBalance) -reservedBalance else -limitVolume)
                     )
                 }
             }

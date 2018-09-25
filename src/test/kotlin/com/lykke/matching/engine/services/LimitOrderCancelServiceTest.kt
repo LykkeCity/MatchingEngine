@@ -34,7 +34,6 @@ import kotlin.test.assertNull
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderCancelServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderCancelServiceTest : AbstractTest() {
-
     @TestConfiguration
     open class Config {
         @Bean
@@ -70,15 +69,13 @@ class LimitOrderCancelServiceTest : AbstractTest() {
 
     @Test
     fun testCancel() {
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("3"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("3"))
 
         assertEquals(1, testOrderBookListener.getCount())
         assertEquals(1, testRabbitOrderBookListener.getCount())
 
         assertEquals(1, testClientLimitOrderListener.getCount())
         assertEquals(OrderStatus.Cancelled.name, (testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport).orders.first().order.status)
-        assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.poll().clientId)
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
 
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
@@ -126,7 +123,7 @@ class LimitOrderCancelServiceTest : AbstractTest() {
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "13", clientId = "Client2", assetId = "BTCUSD", price = 8000.0, volume = 0.1)))
         clearMessageQueues()
 
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper(listOf("10", "11", "13")))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper(listOf("10", "11", "13")))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)
