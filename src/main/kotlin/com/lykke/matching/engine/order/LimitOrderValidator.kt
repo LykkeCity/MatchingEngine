@@ -58,6 +58,13 @@ class LimitOrderValidator(private val assetsPairsHolder: AssetsPairsHolder,
         }
     }
 
+    fun validateStopOrderMaxValue(order: LimitOrder, assetPair: AssetPair) {
+        if (assetPair.maxValue != null && (order.lowerLimitPrice != null && order.getAbsVolume() * order.lowerPrice!! > assetPair.maxValue
+                        || order.upperLimitPrice != null && order.getAbsVolume() * order.upperPrice!! > assetPair.maxValue)) {
+            throw OrderValidationException(OrderStatus.InvalidValue, "value is too large")
+        }
+    }
+
     fun validateVolumeAccuracy(order: LimitOrder) {
         val baseAssetAccuracy = assetsHolder.getAsset(assetsPairsHolder.getAssetPair(order.assetPairId).baseAssetId).accuracy
 

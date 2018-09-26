@@ -12,10 +12,8 @@ import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
-import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as OutgoingMessageType
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
@@ -23,6 +21,7 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,9 +34,10 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as OutgoingMessageType
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (StopLimitOrderTest.Config::class)])
@@ -70,6 +70,7 @@ class StopLimitOrderTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 0.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 6))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "USD", 6, maxValue = BigDecimal.valueOf(8000)))
         initServices()
     }
 
@@ -133,7 +134,7 @@ class StopLimitOrderTest : AbstractTest() {
                 volume = 1.0,
                 type = LimitOrderType.STOP_LIMIT)))
 
-        assertStopOrderBookSize("BTCUSD", false, 0)
+        assertStopOrderBookSize("BTCUSD", true, 0)
 
         assertEquals(1, clientsEventsQueue.size)
         val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
@@ -142,6 +143,24 @@ class StopLimitOrderTest : AbstractTest() {
         assertEquals(1, executionEvent.orders.size)
         assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.first().status)
         assertEquals(OrderRejectReason.INVALID_PRICE, executionEvent.orders.first().rejectReason)
+        assertEquals(0, executionEvent.balanceUpdates!!.size)
+    }
+
+    @Test
+    fun testMaxValue() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
+                assetId = "BTCEUR",
+                volume = 1.0,
+                type = LimitOrderType.STOP_LIMIT,
+                lowerLimitPrice = 9500.0, lowerPrice = 9000.0)))
+
+        assertStopOrderBookSize("BTCUSD", true, 0)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(executionEvent.header.eventType, MessageType.LIMIT_ORDER.name)
+        assertEquals(executionEvent.header.messageType, OutgoingMessageType.ORDER)
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.first().status)
+        assertEquals(OrderRejectReason.INVALID_VALUE, executionEvent.orders.first().rejectReason)
         assertEquals(0, executionEvent.balanceUpdates!!.size)
     }
 
