@@ -4,12 +4,10 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import org.apache.log4j.Logger
-import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
-@Component
 class WalletOperationsPersistListener (private val updatedWalletsQueue :BlockingQueue<Collection<Wallet>>,
                                        private val secondaryBalancesAccessor: WalletDatabaseAccessor?) {
     companion object{
