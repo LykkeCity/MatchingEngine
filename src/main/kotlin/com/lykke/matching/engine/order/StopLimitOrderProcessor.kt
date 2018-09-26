@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.AssetPair
@@ -205,7 +204,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             validator.checkBalance(availableBalance, limitVolume)
         }
         validator.validateVolumeAccuracy(order)
-        validator.validatePriceAccuracy(order)
+        validator.validateStopPricesAccuracy(order)
     }
 
     private fun orderInfo(order: LimitOrder): String {

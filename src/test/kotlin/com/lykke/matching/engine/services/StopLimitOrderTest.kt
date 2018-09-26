@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
@@ -72,6 +71,23 @@ class StopLimitOrderTest : AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 6))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "USD", 6, maxValue = BigDecimal.valueOf(8000)))
         initServices()
+    }
+
+    @Test
+    fun testInvalidPriceAccuracy() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+                clientId = "Client1", assetId = "BTCUSD", volume = -1.0,
+                type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.0000001, lowerPrice = 9000.0
+        )))
+
+        assertStopOrderBookSize("BTCUSD", false, 0)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(1, event.orders.size)
+        val order = event.orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, order.status)
+        assertEquals(OrderRejectReason.INVALID_PRICE_ACCURACY, order.rejectReason)
     }
 
     @Test
