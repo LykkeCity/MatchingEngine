@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.common.Listener
+import com.lykke.matching.engine.common.impl.EventsRouter
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
@@ -98,7 +100,13 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun  updatedWalletsQueue(): BlockingQueue<Collection<Wallet>>? {
+    open fun  updatedWalletsQueue(): BlockingQueue<Collection<Wallet>> {
         return LinkedBlockingQueue<Collection<Wallet>>()
+    }
+
+    @Bean
+    open fun eventsRouter(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                          listeners: List<Listener<Collection<Wallet>>>): EventsRouter<Collection<Wallet>> {
+        return EventsRouter(updatedWalletsQueue, listeners)
     }
 }

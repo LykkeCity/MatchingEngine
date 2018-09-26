@@ -27,12 +27,23 @@ import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.Executor
 
 @Configuration
 @Import(QueueConfig::class)
 open class TestApplicationContext {
 
+    @Bean
+    open fun threadPoolTaskExecutor(): Executor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "executor-task"
+        threadPoolTaskExecutor.corePoolSize = 2
+        threadPoolTaskExecutor.maxPoolSize = 2
+
+        return threadPoolTaskExecutor
+    }
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                            persistenceManager: PersistenceManager,
