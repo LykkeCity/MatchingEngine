@@ -39,10 +39,6 @@ class RedisPersistenceManager(
 
     private var jedis: Jedis? = null
 
-    init {
-        initPersistingIntoSecondaryDb()
-    }
-
     override fun persist(data: PersistenceData): Boolean {
         if (isDataEmpty(data)) {
             return true
@@ -155,10 +151,6 @@ class RedisPersistenceManager(
             return
         }
         redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
-    }
-
-    private fun initPersistingIntoSecondaryDb() {
-        updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
     }
 
     private fun isDataEmpty(data: PersistenceData): Boolean {

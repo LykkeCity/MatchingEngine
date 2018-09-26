@@ -9,7 +9,7 @@ import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
 class WalletOperationsPersistListener (private val updatedWalletsQueue :BlockingQueue<Collection<Wallet>>,
-                                       private val secondaryBalancesAccessor: WalletDatabaseAccessor?) {
+                                       private val secondaryBalancesAccessor: WalletDatabaseAccessor) {
     companion object{
         private val LOGGER = Logger.getLogger(WalletOperationsPersistListener::class.java.name)
     }
@@ -20,7 +20,7 @@ class WalletOperationsPersistListener (private val updatedWalletsQueue :Blocking
             while (true) {
                 try {
                     val wallets = updatedWalletsQueue.take()
-                    secondaryBalancesAccessor?.insertOrUpdateWallets(wallets.toList())
+                    secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
                 } catch (e: Exception) {
                     LOGGER.error("Unable to save wallets", e)
                 }

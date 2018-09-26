@@ -98,7 +98,7 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun  updatedWalletsQueue(): BlockingQueue<Collection<Wallet>> {
+    open fun  updatedWalletsQueue(): BlockingQueue<Collection<Wallet>>? {
         return LinkedBlockingQueue<Collection<Wallet>>()
     }
 }
