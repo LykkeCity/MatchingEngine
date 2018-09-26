@@ -1,7 +1,6 @@
 
 package com.lykke.matching.engine.database.redis
 
-import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
@@ -21,7 +20,7 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.BlockingQueue
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
@@ -33,6 +32,9 @@ class RedisPersistenceManager(
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
         private val secondaryStopOrdersAccessor: StopOrderBookDatabaseAccessor?,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
+        private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+        private val updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+        private val updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
         private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
 
@@ -40,34 +42,7 @@ class RedisPersistenceManager(
         private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
         private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-
-        private fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>): List<OrderBookPersistenceData> {
-            val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()
-            orders.forEach { order ->
-                orderBooks.getOrPut(order.assetPairId) { mutableMapOf() }
-                        .getOrPut(order.isBuySide()) { mutableListOf() }
-                        .add(order)
-            }
-
-            val mutableOrderBooksSides = orderBooksSides.toMutableList()
-            val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-            orderBooks.forEach {assetPairId, sideOrders ->
-                sideOrders.forEach { isBuy, orders ->
-                    mutableOrderBooksSides.remove(OrderBookSide(assetPairId, isBuy))
-                    orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, isBuy, orders))
-                }
-            }
-            mutableOrderBooksSides.forEach { orderBooksSide ->
-                LOGGER.info("Orders $orderBooksSide are absent in primary db and will be removed from secondary db")
-                orderBookPersistenceDataList.add(OrderBookPersistenceData(orderBooksSide.assetPairId, orderBooksSide.isBuySide, emptyList()))
-            }
-            return orderBookPersistenceDataList
-        }
     }
-
-    private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
-    private val updatedOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
-    private val updatedStopOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
 
     override fun persist(data: PersistenceData): Boolean {
         if (data.isEmpty()) {
@@ -174,6 +149,3 @@ class RedisPersistenceManager(
         redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
     }
 }
-
-private data class OrderBookSide(val assetPairId: String,
-                                 val isBuySide: Boolean)
