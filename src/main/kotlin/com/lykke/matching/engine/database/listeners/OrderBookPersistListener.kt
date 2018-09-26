@@ -21,7 +21,6 @@ class OrderBookPersistListener(private val updatedOrderBooksQueue: BlockingQueue
 
     @PostConstruct
     private fun init() {
-
         val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
             secondaryOrdersAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
 

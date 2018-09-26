@@ -22,7 +22,6 @@ import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
 import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
@@ -41,8 +40,6 @@ class RedisPersistenceManager(
         private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
         private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-
-        fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>) = mapOrdersToOrderBookPersistenceDataList(orders, emptyList())
 
         private fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>): List<OrderBookPersistenceData> {
             val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()
@@ -71,12 +68,6 @@ class RedisPersistenceManager(
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
     private val updatedOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     private val updatedStopOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
-
-    init {
-        startSecondaryBalancesUpdater()
-        startSecondaryOrdersUpdater()
-        startSecondaryStopOrdersUpdater()
-    }
 
     override fun persist(data: PersistenceData): Boolean {
         if (data.isEmpty()) {
@@ -182,77 +173,6 @@ class RedisPersistenceManager(
         }
         redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
     }
-
-    private fun startSecondaryBalancesUpdater() {
-        if (secondaryBalancesAccessor == null) {
-            return
-        }
-
-        if (!config.me.walletsMigration) {
-            updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
-        }
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.balancesAsyncWriter") {
-            while (true) {
-                try {
-                    val wallets = updatedWalletsQueue.take()
-                    secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save wallets async", e)
-                }
-            }
-        }
-    }
-
-    private fun startSecondaryOrdersUpdater() {
-        if (secondaryOrdersAccessor == null) {
-            return
-        }
-
-
-        val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
-            secondaryOrdersAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
-        updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryOrdersAccessor.loadLimitOrders(), currentOrderBookSides))
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.ordersAsyncWriter") {
-            while (true) {
-                try {
-                    val orderBooks = updatedOrderBooksQueue.take()
-                    orderBooks.forEach {
-                        secondaryOrdersAccessor.updateOrderBook(it.assetPairId, it.isBuy, it.orders)
-                    }
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save orders async", e)
-                }
-            }
-        }
-    }
-
-    private fun startSecondaryStopOrdersUpdater() {
-        if (secondaryStopOrdersAccessor == null) {
-            return
-        }
-
-        val currentStopOrderBookSides = if (config.me.ordersMigration) emptySet() else
-            secondaryStopOrdersAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
-        updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders(), currentStopOrderBookSides))
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.stopOrdersAsyncWriter") {
-            while (true) {
-                try {
-                    val orderBooks = updatedStopOrderBooksQueue.take()
-                    orderBooks.forEach {
-                        secondaryStopOrdersAccessor.updateStopOrderBook(it.assetPairId, it.isBuy, it.orders)
-                    }
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save stop orders async", e)
-                }
-            }
-        }
-    }
-
 }
 
 private data class OrderBookSide(val assetPairId: String,

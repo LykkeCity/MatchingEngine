@@ -1,20 +1,29 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.PersistenceManagerFactory
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
+import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
+import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import java.util.Optional
+import java.util.*
+import java.util.concurrent.BlockingQueue
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -48,6 +57,40 @@ open class DatabaseAccessorConfig {
         return persistenceManagerFactory.get(cashTransferOperationsPreprocessorRedisConnection)
     }
     //</editor-fold>
+
+    //<editor-fold desc="Persist listeners">
+
+    @Bean
+    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): WalletOperationsPersistListener {
+        return WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
+    }
+
+    @Bean
+    open fun orderBookPersistListener(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                      ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
+                                      config: Config): OrderBookPersistListener? {
+        return ordersDatabaseAccessorsHolder.secondaryAccessor?.let {
+            OrderBookPersistListener(updatedOrderBooksQueue,
+                    ordersDatabaseAccessorsHolder.primaryAccessor,
+                    ordersDatabaseAccessorsHolder.secondaryAccessor,
+                    config)
+        }
+    }
+
+    @Bean
+    open fun stopOrderBookPersistListener(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
+                                          config: Config): StopOrderBookPersistListener? {
+        return stopOrdersDatabaseAccessorsHolder.secondaryAccessor?.let {
+            StopOrderBookPersistListener(updatedStopOrderBooksQueue,
+                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                    stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
+                    config)
+        }
+    }
+    //</editor-fold>
+
 
     //<editor-fold desc="Multisource database accessors">
     @Bean
