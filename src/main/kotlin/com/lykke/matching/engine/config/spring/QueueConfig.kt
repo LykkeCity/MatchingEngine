@@ -1,13 +1,13 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.common.Listener
-import com.lykke.matching.engine.common.impl.EventsRouter
+import com.lykke.matching.engine.common.QueueConsumer
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
@@ -128,8 +128,8 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun eventsRouter(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                          listeners: Optional<List<Listener<Collection<Wallet>>?>>): EventsRouter<Collection<Wallet>> {
-        return EventsRouter(updatedWalletsQueue, listeners)
+    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                          listeners: Optional<List<QueueConsumer<Collection<Wallet>>?>>): SimpleApplicationEventPublisher<Collection<Wallet>> {
+        return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
     }
 }

@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.redis
 
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
@@ -17,7 +18,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
-import java.util.concurrent.BlockingQueue
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
@@ -25,7 +25,7 @@ class RedisPersistenceManager(
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val redisConnection: RedisConnection,
-        private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+        private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
         private val config: Config): PersistenceManager {
 
     companion object {
@@ -74,7 +74,7 @@ class RedisPersistenceManager(
                     (if (messageId != null) " ($messageId)" else ""))
 
             if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                updatedWalletsQueue.put(data.balancesData!!.wallets)
+                persistedWalletsApplicationEventPublisher.publishEvent(data.balancesData!!.wallets)
             }
         }
     }

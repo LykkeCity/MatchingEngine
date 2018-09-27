@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.common.Listener
+import com.lykke.matching.engine.common.QueueConsumer
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
@@ -43,7 +44,7 @@ open class DatabaseAccessorConfig {
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
-                                updatedWalletsQueue: BlockingQueue<Collection<Wallet>>): PersistenceManager {
+                                persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
@@ -53,7 +54,7 @@ open class DatabaseAccessorConfig {
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         persistenceRedisConnection()!!,
-                        updatedWalletsQueue,
+                        persistedWalletsApplicationEventPublisher,
                         config
                 )
             }
@@ -65,7 +66,7 @@ open class DatabaseAccessorConfig {
                                                               redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                                               cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                                               messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
-                                                              updatedWalletsQueue: BlockingQueue<Collection<Wallet>>): PersistenceManager {
+                                                              persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>): PersistenceManager {
 
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
@@ -76,7 +77,7 @@ open class DatabaseAccessorConfig {
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         cashInOutOperationsPreprocessorRedisConnection()!!,
-                        updatedWalletsQueue,
+                        persistedWalletsApplicationEventPublisher,
                         config
                 )
             }
@@ -89,7 +90,7 @@ open class DatabaseAccessorConfig {
                                                         redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                                         cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                                         messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
-                                                        updatedWalletsQueue: BlockingQueue<Collection<Wallet>>): PersistenceManager {
+                                                        persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>): PersistenceManager {
         return when (config.me.storage) {
             Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
             Storage.Redis -> {
@@ -99,7 +100,7 @@ open class DatabaseAccessorConfig {
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         cashTransferOperationsPreprocessorRedisConnection()!!,
-                        updatedWalletsQueue,
+                        persistedWalletsApplicationEventPublisher,
                         config
                 )
             }
@@ -108,9 +109,9 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): Listener<Collection<Wallet>>? {
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<Collection<Wallet>>? {
         return balancesDatabaseAccessorsHolder.secondaryAccessor?.let {
-            WalletOperationsPersistListener(balancesDatabaseAccessorsHolder.secondaryAccessor)
+            WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
         }
     }
 

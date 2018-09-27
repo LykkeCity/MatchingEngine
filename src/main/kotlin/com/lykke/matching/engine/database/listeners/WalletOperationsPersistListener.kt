@@ -1,24 +1,18 @@
 package com.lykke.matching.engine.database.listeners
 
-import com.lykke.matching.engine.common.Listener
+import com.lykke.matching.engine.common.QueueConsumer
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
-class WalletOperationsPersistListener(private val secondaryBalancesAccessor: WalletDatabaseAccessor) : Listener<Collection<Wallet>> {
+class WalletOperationsPersistListener(private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                                      private val secondaryBalancesAccessor: WalletDatabaseAccessor) : QueueConsumer<Collection<Wallet>> {
     companion object {
         private val LOGGER = Logger.getLogger(WalletOperationsPersistListener::class.java.name)
-    }
-
-    private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>> = LinkedBlockingQueue<Collection<Wallet>>()
-
-    override fun onEvent(wallets: Collection<Wallet>) {
-        updatedWalletsQueue.put(wallets)
     }
 
     @PostConstruct
