@@ -4,12 +4,11 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
+import org.springframework.context.annotation.Profile
+import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
-import javax.annotation.PostConstruct
-import kotlin.concurrent.fixedRateTimer
 
 @Component
 @Profile("default", "!local_config")
@@ -19,19 +18,16 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
         val LOGGER = Logger.getLogger(QueueSizeLogger::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
 
-        val ENTRY_SIZE_FORMAT = "%s: %d;"
+        val ENTRY_FORMAT = "%s: %d;"
         val ENTRY_SIZE_LIMIT_FORMAT = "%s queue is higher than limit"
         val ENTRY_DELIMITER = ". "
+
+        val LOG_THREAD_NAME = "QueueSizeLogger"
     }
 
-    @PostConstruct
-    fun start() {
-        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
-            log()
-        }
-    }
-
+    @Scheduled(fixedRateString = "#{Config.me.queueSizeLoggerInterval}",  initialDelayString = "#{Config.me.queueSizeLoggerInterval}")
     private fun log() {
+        Thread.currentThread().name = LOG_THREAD_NAME
         val queueNameToQueueSize = getQueueNameToQueueSize(queues)
 
         logQueueSizes(queueNameToQueueSize)
@@ -42,7 +38,7 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
         val logString = nameToQueueSize
                 .entries
                 .stream()
-                .map({ entry -> ENTRY_SIZE_FORMAT.format(entry.key, entry.value) })
+                .map({ entry -> ENTRY_FORMAT.format(entry.key, entry.value) })
                 .collect(Collectors.joining(ENTRY_DELIMITER))
 
         LOGGER.info(logString)
