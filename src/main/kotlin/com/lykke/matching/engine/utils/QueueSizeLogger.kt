@@ -4,14 +4,13 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 
 @Component
-@Profile("default", "!local_config")
+//@Profile("default", "!local_config")
 class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>>,
                                              private val config: Config) {
     companion object {
@@ -25,7 +24,7 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
         val LOG_THREAD_NAME = "QueueSizeLogger"
     }
 
-    @Scheduled(fixedRateString = "\${config.me.queueSizeLoggerInterval}",  initialDelayString = "\${config.me.queueSizeLoggerInterval}")
+    @Scheduled(fixedRateString = "#{Config.me.queueSizeLoggerInterval}",  initialDelayString = "#{Config.me.queueSizeLoggerInterval}")
     private fun log() {
         Thread.currentThread().name = LOG_THREAD_NAME
         val queueNameToQueueSize = getQueueNameToQueueSize(queues)
