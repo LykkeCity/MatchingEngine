@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.common.Listener
+import com.lykke.matching.engine.common.QueueConsumer
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
@@ -63,9 +65,9 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): Listener<Collection<Wallet>>? {
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<Collection<Wallet>>? {
         return balancesDatabaseAccessorsHolder.secondaryAccessor?.let {
-            WalletOperationsPersistListener(balancesDatabaseAccessorsHolder.secondaryAccessor)
+            WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
         }
     }
 
@@ -191,6 +193,15 @@ open class DatabaseAccessorConfig {
     open fun fileProcessedMessagesDatabaseAccessor()
             : FileProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
+    }
+    //</editor-fold>
+
+
+    //<editor-fold desc="Persist listeners>
+    @Bean
+    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                                                       listeners: Optional<List<QueueConsumer<Collection<Wallet>>?>>): SimpleApplicationEventPublisher<Collection<Wallet>> {
+        return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
     }
     //</editor-fold>
 }

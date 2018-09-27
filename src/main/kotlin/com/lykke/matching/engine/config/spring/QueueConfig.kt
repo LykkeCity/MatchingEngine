@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.common.Listener
-import com.lykke.matching.engine.common.impl.EventsRouter
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
@@ -15,7 +13,6 @@ import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -140,21 +137,4 @@ open class QueueConfig {
         return LinkedBlockingQueue<Collection<Wallet>>()
     }
 
-    @Bean
-    open fun eventsRouter(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                          listeners: Optional<List<Listener<Collection<Wallet>>?>>): EventsRouter<Collection<Wallet>> {
-        return EventsRouter(updatedWalletsQueue, listeners)
-    }
-
-    @Bean
-    open fun updatedStopOrderBooksEventRouter(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                              stopOrderBookPersistListener: Optional<List<Listener<Collection<OrderBookPersistenceData>>?>>): EventsRouter<Collection<OrderBookPersistenceData>> {
-        return EventsRouter(updatedOrderBooksQueue, stopOrderBookPersistListener)
-    }
-
-    @Bean
-    open fun updatedOrderBooksQueueEventRouter(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                               orderBookPersistListener: Optional<List<Listener<Collection<OrderBookPersistenceData>>?>>): EventsRouter<Collection<OrderBookPersistenceData>> {
-        return EventsRouter(updatedStopOrderBooksQueue, orderBookPersistListener)
-    }
 }

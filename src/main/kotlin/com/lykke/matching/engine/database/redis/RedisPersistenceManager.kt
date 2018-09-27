@@ -1,6 +1,7 @@
 
 package com.lykke.matching.engine.database.redis
 
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
@@ -20,7 +21,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
-import java.util.concurrent.BlockingQueue
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
@@ -32,9 +32,7 @@ class RedisPersistenceManager(
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
         private val secondaryStopOrdersAccessor: StopOrderBookDatabaseAccessor?,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-        private val updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-        private val updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+        private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
         private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
 
@@ -86,8 +84,8 @@ class RedisPersistenceManager(
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                     (if (messageId != null) " ($messageId)" else ""))
 
-            if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                updatedWalletsQueue.put(data.balancesData!!.wallets)
+            if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+                persistedWalletsApplicationEventPublisher.publishEvent(data.balancesData!!.wallets)
             }
 
             if (secondaryOrdersAccessor != null && !CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
