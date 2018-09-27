@@ -7,7 +7,6 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -24,7 +23,6 @@ import redis.clients.jedis.Transaction
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
-        private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
@@ -32,6 +30,8 @@ class RedisPersistenceManager(
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
         private val secondaryStopOrdersAccessor: StopOrderBookDatabaseAccessor?,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
+        private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
+        private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
         private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
@@ -89,11 +89,11 @@ class RedisPersistenceManager(
             }
 
             if (secondaryOrdersAccessor != null && !CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
-                updatedOrderBooksQueue.put(data.orderBooksData!!.orderBooks)
+                persistedOrdersApplicationEventPublisher.publishEvent(data.orderBooksData!!.orderBooks)
             }
 
             if (secondaryStopOrdersAccessor != null && !CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
-                updatedStopOrderBooksQueue.put(data.stopOrderBooksData!!.orderBooks)
+                persistedStopApplicationEventPublisher.publishEvent(data.stopOrderBooksData!!.orderBooks)
             }
         }
     }

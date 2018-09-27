@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.database.common
 
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
@@ -16,7 +17,6 @@ import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.stereotype.Component
 import java.util.*
-import java.util.concurrent.BlockingQueue
 
 @Component
 class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
@@ -26,9 +26,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
                                     private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor,
-                                    private val updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                                    private val updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                    private val updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                    private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
+                                    private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
+                                    private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
                                     private val config: Config) : PersistenceManagerFactory {
 
     override fun get(redisConnection: Optional<RedisConnection>): PersistenceManager {
@@ -40,7 +40,6 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
             Storage.Redis -> {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
@@ -48,9 +47,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
                         stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        updatedWalletsQueue,
-                        updatedOrderBooksQueue,
-                        updatedStopOrderBooksQueue,
+                        persistedOrdersApplicationEventPublisher,
+                        persistedStopApplicationEventPublisher,
+                        persistedWalletsApplicationEventPublisher,
                         redisConnection.get(),
                         config
                 )

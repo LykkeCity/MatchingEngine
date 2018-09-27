@@ -73,25 +73,18 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun orderBookPersistListener(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                      ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
-                                      config: Config): OrderBookPersistListener? {
+                                      ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder): OrderBookPersistListener? {
         return ordersDatabaseAccessorsHolder.secondaryAccessor?.let {
             OrderBookPersistListener(updatedOrderBooksQueue,
-                    ordersDatabaseAccessorsHolder.primaryAccessor,
-                    ordersDatabaseAccessorsHolder.secondaryAccessor,
-                    config)
+                    ordersDatabaseAccessorsHolder.secondaryAccessor)
         }
     }
 
     @Bean
     open fun stopOrderBookPersistListener(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                          config: Config): StopOrderBookPersistListener? {
+                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): StopOrderBookPersistListener? {
         return stopOrdersDatabaseAccessorsHolder.secondaryAccessor?.let {
-            StopOrderBookPersistListener(updatedStopOrderBooksQueue,
-                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                    stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                    config)
+            StopOrderBookPersistListener(updatedStopOrderBooksQueue, stopOrdersDatabaseAccessorsHolder.secondaryAccessor)
         }
     }
     //</editor-fold>
@@ -202,6 +195,18 @@ open class DatabaseAccessorConfig {
     open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
                                                        listeners: Optional<List<QueueConsumer<Collection<Wallet>>?>>): SimpleApplicationEventPublisher<Collection<Wallet>> {
         return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
+    }
+
+    @Bean
+    open fun persistedOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                                      listeners: Optional<List<QueueConsumer<Collection<OrderBookPersistenceData>>?>>): SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>> {
+        return ApplicationEventPublisherImpl(updatedStopOrderBooksQueue, listeners)
+    }
+
+    @Bean
+    open fun persistedStopApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                                    listeners: Optional<List<QueueConsumer<Collection<OrderBookPersistenceData>>?>>): SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>> {
+        return ApplicationEventPublisherImpl(updatedOrderBooksQueue, listeners)
     }
     //</editor-fold>
 }
