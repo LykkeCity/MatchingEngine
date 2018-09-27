@@ -227,7 +227,6 @@ class LimitOrderInputValidatorTest {
 
     }
 
-
     @Test(expected = OrderValidationException::class)
     fun testInvalidPriceAccuracy() {
         //given
@@ -237,6 +236,25 @@ class LimitOrderInputValidatorTest {
         //when
         try {
             limitOrderInputValidator.validateLimitOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build()), "EURUSD"))
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
+            throw e
+        }
+    }
+
+    @Test(expected = OrderValidationException::class)
+    fun testInvalidStopOrderPricesAccuracy() {
+        //given
+        val singleLimitContextBuilder = getSingleLimitContextBuilder()
+        singleLimitContextBuilder.limitOrder(getLimitOrder(getFee(), listOf(getNewLimitFee()), assetPair = "EURUSD",
+                type = LimitOrderType.STOP_LIMIT,
+                lowerLimitPrice = BigDecimal.valueOf(0.000000001),
+                lowerPrice = BigDecimal.valueOf(0.000000001)))
+
+        //when
+        try {
+            limitOrderInputValidator.validateStopOrder(SingleLimitOrderParsedData(getMessageWrapper(singleLimitContextBuilder.build()), "EURUSD"))
         } catch (e: OrderValidationException) {
             //then
             assertEquals(OrderStatus.InvalidPriceAccuracy, e.orderStatus)
@@ -329,10 +347,15 @@ class LimitOrderInputValidatorTest {
                       fees: List<NewLimitOrderFeeInstruction>? = null,
                       assetPair: String = "BTCUSD",
                       price: BigDecimal = BigDecimal.valueOf(1.0),
-                      volume: BigDecimal = BigDecimal.valueOf(1.0)): LimitOrder {
+                      volume: BigDecimal = BigDecimal.valueOf(1.0),
+                      type: LimitOrderType = LimitOrderType.LIMIT,
+                      lowerLimitPrice: BigDecimal? = null,
+                      lowerPrice: BigDecimal? = null,
+                      upperLimitPrice: BigDecimal? = null,
+                      upperPrice: BigDecimal? = null): LimitOrder {
         return LimitOrder("test", "test", assetPair, "test", volume,
                 price, OrderStatus.InOrderBook.name, Date(), Date(), Date(), BigDecimal.valueOf(1.0), null,
-                type = LimitOrderType.LIMIT, fee = fee, fees = fees, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = type, fee = fee, fees = fees, lowerLimitPrice = lowerLimitPrice, lowerPrice = lowerPrice, upperLimitPrice = upperLimitPrice, upperPrice = upperPrice, previousExternalId = null)
     }
 
     fun getNewLimitFee(): NewLimitOrderFeeInstruction {
