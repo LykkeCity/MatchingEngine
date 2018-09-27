@@ -127,26 +127,16 @@ open class QueueConfig {
 
     @Bean
     open fun updatedOrderBooksQueue(): BlockingQueue<Collection<OrderBookPersistenceData>>? {
-        if (!config.me.writeOrdersToSecondaryDb) {
-            return null
-        }
         return LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     }
 
     @Bean
     open fun updatedStopOrderBooksQueue(): BlockingQueue<Collection<OrderBookPersistenceData>>? {
-        if (!config.me.writeOrdersToSecondaryDb) {
-            return null
-        }
         return LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     }
 
     @Bean
     open fun updatedWalletsQueue(): BlockingQueue<Collection<Wallet>>? {
-        if (!config.me.writeBalancesToSecondaryDb) {
-            return null
-        }
-
         return LinkedBlockingQueue<Collection<Wallet>>()
     }
 

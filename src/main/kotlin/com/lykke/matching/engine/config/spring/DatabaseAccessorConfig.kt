@@ -5,6 +5,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.PersistenceManagerFactory
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
 import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
