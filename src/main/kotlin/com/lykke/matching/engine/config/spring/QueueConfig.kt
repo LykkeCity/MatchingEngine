@@ -145,4 +145,16 @@ open class QueueConfig {
                           listeners: Optional<List<Listener<Collection<Wallet>>?>>): EventsRouter<Collection<Wallet>> {
         return EventsRouter(updatedWalletsQueue, listeners)
     }
+
+    @Bean
+    open fun updatedStopOrderBooksEventRouter(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                              stopOrderBookPersistListener: Optional<List<Listener<Collection<OrderBookPersistenceData>>?>>): EventsRouter<Collection<OrderBookPersistenceData>> {
+        return EventsRouter(updatedOrderBooksQueue, stopOrderBookPersistListener)
+    }
+
+    @Bean
+    open fun updatedOrderBooksQueueEventRouter(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+                                               orderBookPersistListener: Optional<List<Listener<Collection<OrderBookPersistenceData>>?>>): EventsRouter<Collection<OrderBookPersistenceData>> {
+        return EventsRouter(updatedStopOrderBooksQueue, orderBookPersistListener)
+    }
 }
