@@ -7,7 +7,6 @@ import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import redis.clients.jedis.JedisPool
 import java.util.*
 
 @Component
@@ -17,7 +16,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
     private lateinit var config: Config
 
     @Autowired
-    private lateinit var jedisPool: Optional<JedisPool>
+    private lateinit var redisWalletDatabaseAccessor: Optional<RedisWalletDatabaseAccessor>
 
     override fun getObjectType(): Class<*> {
         return BalancesDatabaseAccessorsHolder::class.java
@@ -36,7 +35,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
             }
 
             Storage.Redis -> {
-                primaryAccessor = RedisWalletDatabaseAccessor(jedisPool.get(), config.me.redis.balanceDatabase)
+                primaryAccessor = redisWalletDatabaseAccessor.get()
 
                 secondaryAccessor = if (config.me.writeBalancesToSecondaryDb)
                     AzureWalletDatabaseAccessor(config.me.db.balancesInfoConnString, config.me.db.newAccountsTableName!!)

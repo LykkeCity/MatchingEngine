@@ -12,8 +12,7 @@ data class WalletOperation(
         val dateTime: Date,
         val amount: BigDecimal,
         val reservedAmount: BigDecimal = BigDecimal.ZERO,
-        val isFee: Boolean = false
-) {
+        val isFee: Boolean = false) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

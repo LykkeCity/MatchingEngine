@@ -8,7 +8,6 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableOperation
 import com.microsoft.azure.storage.table.TableQuery
-import java.math.BigDecimal
 import java.util.HashMap
 
 class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDatabaseAccessor {
@@ -34,7 +33,9 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
                         asset.quotingAssetId,
                         asset.accuracy,
                         asset.minVolume?.toBigDecimal(),
-                        asset.minInvertedVolume?.toBigDecimal())
+                        asset.minInvertedVolume?.toBigDecimal(),
+                        asset.maxVolume?.toBigDecimal(),
+                        asset.maxValue?.toBigDecimal())
             }
         } catch(e: Exception) {
             LOGGER.error("Unable to load asset pairs", e)
@@ -51,7 +52,8 @@ class AzureDictionariesDatabaseAccessor(dictsConfig: String): DictionariesDataba
             if (assetPair != null) {
                 return AssetPair(assetPair.assetPairId, assetPair.baseAssetId,
                         assetPair.quotingAssetId, assetPair.accuracy,
-                        assetPair.minVolume?.toBigDecimal(), assetPair.minInvertedVolume?.toBigDecimal())
+                        assetPair.minVolume?.toBigDecimal(), assetPair.minInvertedVolume?.toBigDecimal(),
+                        assetPair.maxVolume?.toBigDecimal(), assetPair.maxValue?.toBigDecimal())
             }
         } catch(e: Exception) {
             if (throwException) {
