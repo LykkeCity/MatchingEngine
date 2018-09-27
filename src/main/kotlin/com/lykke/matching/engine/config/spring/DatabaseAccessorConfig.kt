@@ -1,10 +1,10 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.common.Listener
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.PersistenceManagerFactory
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
 import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
@@ -62,8 +62,10 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): WalletOperationsPersistListener {
-        return WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): Listener<Collection<Wallet>>? {
+        return balancesDatabaseAccessorsHolder.secondaryAccessor?.let {
+            WalletOperationsPersistListener(balancesDatabaseAccessorsHolder.secondaryAccessor)
+        }
     }
 
     @Bean

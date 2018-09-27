@@ -13,17 +13,18 @@ import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as OutgoingMessageType
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,6 +42,8 @@ import com.lykke.matching.engine.utils.getSetting
 import java.util.Date
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType as OutgoingMessageType
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (StopLimitOrderTest.Config::class)])
@@ -78,7 +81,25 @@ class StopLimitOrderTest : AbstractTest() {
         testBalanceHolderWrapper.updateReservedBalance("Client1", "USD", 0.0)
 
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 6))
+        testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCEUR", "BTC", "USD", 6, maxValue = BigDecimal.valueOf(8000)))
         initServices()
+    }
+
+    @Test
+    fun testInvalidPriceAccuracy() {
+        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+                clientId = "Client1", assetId = "BTCUSD", volume = -1.0,
+                type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 9500.0000001, lowerPrice = 9000.0
+        )))
+
+        assertStopOrderBookSize("BTCUSD", false, 0)
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(0, event.balanceUpdates?.size)
+        assertEquals(1, event.orders.size)
+        val order = event.orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, order.status)
+        assertEquals(OrderRejectReason.INVALID_PRICE_ACCURACY, order.rejectReason)
     }
 
     @Test
