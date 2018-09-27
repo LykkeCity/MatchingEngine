@@ -13,6 +13,7 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -106,7 +107,7 @@ open class QueueConfig {
 
     @Bean
     open fun eventsRouter(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                          listeners: List<Listener<Collection<Wallet>>>): EventsRouter<Collection<Wallet>> {
+                          listeners: Optional<List<Listener<Collection<Wallet>>?>>): EventsRouter<Collection<Wallet>> {
         return EventsRouter(updatedWalletsQueue, listeners)
     }
 }
