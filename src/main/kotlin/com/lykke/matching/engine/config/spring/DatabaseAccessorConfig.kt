@@ -2,6 +2,7 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.common.QueueConsumer
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
@@ -293,5 +294,12 @@ open class DatabaseAccessorConfig {
     @Bean
     open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
         return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+    }
+
+
+    @Bean
+    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
+                                                       listeners: Optional<List<QueueConsumer<Collection<Wallet>>?>>): SimpleApplicationEventPublisher<Collection<Wallet>> {
+        return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
     }
 }

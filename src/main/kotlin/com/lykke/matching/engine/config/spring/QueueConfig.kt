@@ -1,8 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.common.QueueConsumer
-import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
-import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
@@ -15,7 +12,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -127,9 +123,4 @@ open class QueueConfig {
         return LinkedBlockingQueue<Collection<Wallet>>()
     }
 
-    @Bean
-    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                          listeners: Optional<List<QueueConsumer<Collection<Wallet>>?>>): SimpleApplicationEventPublisher<Collection<Wallet>> {
-        return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
-    }
 }
