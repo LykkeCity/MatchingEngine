@@ -28,6 +28,8 @@ data class MatchingEngineConfig(
         val orderBookPath: String,
         val stopOrderBookPath: String,
         val queueSizeLimit: Int,
+        val maxQueueSizeLimit: Int,
+        val recoverQueueSizeLimit: Int,
         val name: String,
         val trustedClients: Set<String>,
         val aliveStatus: AliveStatusConfig,
