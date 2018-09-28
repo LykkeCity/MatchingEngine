@@ -34,7 +34,7 @@ class InputQueueSizeHealthChecker {
     @Autowired
     private lateinit var config: Config
 
-    @Scheduled(fixedRateString = "#{Config.me.queueSizeCheckerInterval}", initialDelayString = "#{Config.me.queueSizeCheckerInterval}")
+    @Scheduled(fixedRateString = "#{Config.me.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueSizeHealthCheckInterval}")
     fun checkQueueSize() {
         nameToInputQueue.forEach {
             checkQueueReachedMaxLimit(it)
