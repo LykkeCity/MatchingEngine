@@ -9,8 +9,11 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
+import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -18,14 +21,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import kotlin.test.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.getSetting
-import org.springframework.beans.factory.annotation.Autowired
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (WalletOperationsProcessorTest.Config::class)])
@@ -82,9 +78,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertBalance("Client1", "BTC", 0.5, 0.0)
         assertBalance("Client2", "ETH", 3.0, 0.3)
         assertBalance("Client3", "BTC", 0.0, 0.0)
-
-        assertEquals(2, balanceUpdateHandlerTest.getCountOfBalanceUpdateNotifications())
-        assertTrue(setOf("Client1", "Client2").containsAll(balanceUpdateHandlerTest.balanceUpdateNotificationQueue.map { it.clientId }))
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
         val balanceUpdate = balanceUpdateHandlerTest.balanceUpdateQueue.poll() as BalanceUpdate
@@ -170,9 +163,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.ZERO, clientBalanceUpdates.single().newReserved)
 
         walletOperationsProcessor.sendNotification("id", "type", "messageId")
-
-        assertEquals(1, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
-        assertEquals("TrustedClient2", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.single().clientId)
     }
 
     @Test
@@ -201,9 +191,6 @@ class WalletOperationsProcessorTest : AbstractTest() {
         assertEquals(BigDecimal.valueOf(0.2), clientBalanceUpdates.single().newReserved)
 
         walletOperationsProcessor.sendNotification("id", "type", "messageId")
-
-        assertEquals(1, balanceUpdateHandlerTest.balanceUpdateNotificationQueue.size)
-        assertEquals("Client1", balanceUpdateHandlerTest.balanceUpdateNotificationQueue.single().clientId)
     }
 
     private fun validate(clientId: String, assetId: String, oldBalance: Double, oldReserved: Double, newBalance: Double, newReserved: Double): Boolean {

@@ -11,7 +11,7 @@ import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
-class RabbitOrderBookListener {
+class OrderBookListener {
     @Autowired
     private lateinit var rabbitOrderBookQueue: BlockingQueue<OrderBook>
 

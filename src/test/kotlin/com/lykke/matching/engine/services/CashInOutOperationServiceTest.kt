@@ -5,7 +5,10 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.daos.wallet.AssetBalance
+import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
@@ -16,8 +19,8 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.CashOutEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
-import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
@@ -30,19 +33,21 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
+import java.util.*
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [(TestApplicationContext::class), (CashOperationServiceTest.Config::class)])
+@SpringBootTest(classes = [(TestApplicationContext::class), (CashInOutOperationServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class CashOperationServiceTest : AbstractTest() {
+class CashInOutOperationServiceTest : AbstractTest() {
 
     @Autowired
     private lateinit var testReservedCashOperationListener: TestReservedCashOperationListener
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
+    protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     @TestConfiguration
     open class Config {
@@ -238,18 +243,8 @@ class CashOperationServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testUpdateBalance() {
-        val messageWrapper = buildBalanceUpdateWrapper("Client1", "Asset1", 999.0)
-        balanceUpdateService.processMessage(messageWrapper)
-        val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
-        assertNotNull(balance)
-        assertEquals(BigDecimal.valueOf(999.0), balance)
-
-    }
-
-    @Test
     fun testRounding() {
-        balanceUpdateService.processMessage(buildBalanceUpdateWrapper("Client1", "Asset1", 29.99))
+        balancesHolder.insertOrUpdateWallets(listOf(Wallet("Client1", listOf(AssetBalance("Client1","Asset1", BigDecimal.valueOf(29.99))))), null)
         cashInOutOperationService.processMessage(messageBuilder.buildCashInOutWrapper("Client1", "Asset1", -0.01))
         val balance = testWalletDatabaseAccessor.getBalance("Client1", "Asset1")
 
@@ -314,14 +309,6 @@ class CashOperationServiceTest : AbstractTest() {
 
         assertEquals(BigDecimal.valueOf(3.0), balancesHolder.getBalance("Client1", "Asset5"))
         assertEquals(BigDecimal.ZERO, balancesHolder.getBalance("Client3", "Asset5"))
-    }
-
-    private fun buildBalanceUpdateWrapper(clientId: String, assetId: String, amount: Double): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_BALANCE_UPDATE.type, ProtocolMessages.OldBalanceUpdate.newBuilder()
-                .setUid(123)
-                .setClientId(clientId)
-                .setAssetId(assetId)
-                .setAmount(amount).build().toByteArray(), null)
     }
 
     private fun buildReservedCashInOutWrapper(clientId: String, assetId: String, amount: Double, bussinesId: String = UUID.randomUUID().toString()): MessageWrapper {

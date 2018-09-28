@@ -14,7 +14,7 @@ import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
-class RabbitTransferEventListener {
+class CashTransferEventListener {
 
     @Autowired
     private lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
