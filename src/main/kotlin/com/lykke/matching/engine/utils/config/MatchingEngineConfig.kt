@@ -20,6 +20,7 @@ data class MatchingEngineConfig(
         val candleSaverInterval: Long,
         val hoursCandleSaverInterval: Long,
         val queueSizeLoggerInterval: Long,
+        val queueSizeCheckerInterval: Long,
         val whiteList: String?,
         val migrate: Boolean,
         val correctReservedVolumes: Boolean,

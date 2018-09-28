@@ -31,11 +31,10 @@ class InputQueueSizeHealthChecker {
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
-
     @Autowired
     private lateinit var config: Config
 
-    @Scheduled(fixedRateString = "#{Config.me.maxQueueSizeLimit}", initialDelayString = "#{Config.me.maxQueueSizeLimit}")
+    @Scheduled(fixedRateString = "#{Config.me.queueSizeCheckerInterval}", initialDelayString = "#{Config.me.queueSizeCheckerInterval}")
     fun checkQueueSize() {
         nameToInputQueue.forEach {
             checkQueueReachedMaxLimit(it)
@@ -58,18 +57,18 @@ class InputQueueSizeHealthChecker {
         }
     }
 
-    fun checkQueueRecovered(it: Map.Entry<String, BlockingQueue<*>>) {
-        if (it.value.size <= config.me.recoverQueueSizeLimit && longQueues.remove(it.key)) {
-            val logMessage = QUEUE_RECOVERED_MESSAGE.format(it.key, it.value.size)
+    fun checkQueueRecovered(nameToQueue: Map.Entry<String, BlockingQueue<*>>) {
+        if (nameToQueue.value.size <= config.me.recoverQueueSizeLimit && longQueues.remove(nameToQueue.key)) {
+            val logMessage = QUEUE_RECOVERED_MESSAGE.format(nameToQueue.key, nameToQueue.value.size)
             METRICS_LOGGER.logWarning(logMessage)
             LOGGER.info(logMessage)
         }
     }
 
-    fun checkQueueReachedMaxLimit(it: Map.Entry<String, BlockingQueue<*>>) {
-        if (it.value.size >= config.me.maxQueueSizeLimit && !longQueues.contains(it.key)) {
-            longQueues.add(it.key)
-            val logMessage = QUEUE_REACHED_THRESHOLD_MESSAGE.format(it.key, it.value.size)
+    fun checkQueueReachedMaxLimit(nameToQueue: Map.Entry<String, BlockingQueue<*>>) {
+        if (nameToQueue.value.size >= config.me.maxQueueSizeLimit && !longQueues.contains(nameToQueue.key)) {
+            longQueues.add(nameToQueue.key)
+            val logMessage = QUEUE_REACHED_THRESHOLD_MESSAGE.format(nameToQueue.key, nameToQueue.value.size)
             METRICS_LOGGER.logError(logMessage)
             LOGGER.error(logMessage)
         }
