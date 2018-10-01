@@ -16,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArraySet
 import java.util.regex.Pattern
 
 @Component
-class ClientRequestSocketServer(private val clientRequestThreadPool: AsyncTaskExecutor): Runnable {
+class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTaskExecutor): Runnable {
 
     @Autowired
     private lateinit var config: Config
@@ -28,7 +28,7 @@ class ClientRequestSocketServer(private val clientRequestThreadPool: AsyncTaskEx
     private lateinit var messageRouter: MessageRouter
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(ClientRequestSocketServer::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(ClientsRequestsSocketServer::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
