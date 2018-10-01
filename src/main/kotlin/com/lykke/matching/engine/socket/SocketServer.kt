@@ -9,14 +9,15 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.Executors
 import java.util.regex.Pattern
 
 @Component
-class SocketServer(private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+class SocketServer(private val clientRequestThreadPool: ThreadPoolTaskExecutor,
+                   private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
 
     @Autowired
     private lateinit var config: Config
@@ -35,9 +36,6 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
     private val connections = CopyOnWriteArraySet<ClientHandler>()
 
     override fun run() {
-        val maxConnections = config.me.socket.maxConnections
-        val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections)
-
         val messageProcessor = MessageProcessor(config, messageRouter, applicationContext)
 
         messageProcessor.start()
@@ -52,7 +50,7 @@ class SocketServer(private val initializationCompleteCallback: (AppInitialData) 
                 val clientConnection = socket.accept()
                 if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
                     val handler = ClientHandlerImpl(messageRouter, clientConnection, this)
-                    clientHandlerThreadPool.submit(handler)
+                    clientRequestThreadPool.submit(handler)
                     connect(handler)
                 } else {
                     clientConnection.close()

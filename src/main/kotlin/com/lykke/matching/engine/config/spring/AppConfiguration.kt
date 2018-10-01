@@ -41,18 +41,19 @@ open class AppConfiguration: SchedulingConfigurer {
     }
 
     @Bean
-    open fun clientRequestThreadPool(@Value("concurrent.client.request.pool.core.pool.size") corePoolSize: Int,
+    open fun clientRequestThreadPool(@Value("\${concurrent.client.request.pool.core.pool.size}") corePoolSize: Int,
                                      @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.threadNamePrefix = "client-request-"
+        threadPoolTaskExecutor.setQueueCapacity(0)
         threadPoolTaskExecutor.corePoolSize = corePoolSize
         threadPoolTaskExecutor.maxPoolSize = maxPoolSize
         return threadPoolTaskExecutor
     }
 
     @Bean
-    open fun socketServer(): Runnable {
-        return SocketServer { appInitialData ->
+    open fun socketServer(clientRequestThreadPool: ThreadPoolTaskExecutor): Runnable {
+        return SocketServer (clientRequestThreadPool) { appInitialData ->
             MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : " +
                     "Started : ${appInitialData.ordersCount} orders, ${appInitialData.stopOrdersCount} " +
                     "stop orders,${appInitialData.balancesCount} " +
