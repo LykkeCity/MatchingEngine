@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -9,6 +7,7 @@ import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
 import com.lykke.utils.logging.MetricsLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
@@ -16,9 +15,9 @@ import org.springframework.core.env.get
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
-import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 @EnableScheduling
@@ -36,9 +35,19 @@ open class AppConfiguration: SchedulingConfigurer {
     @Bean
     open fun taskScheduler(): TaskScheduler {
         val threadPoolTaskScheduler = ThreadPoolTaskScheduler()
-        threadPoolTaskScheduler.threadNamePrefix = "scheduled-task"
+        threadPoolTaskScheduler.threadNamePrefix = "scheduled-task-"
         threadPoolTaskScheduler.poolSize = environment["concurent.pool.size"].toInt()
         return threadPoolTaskScheduler
+    }
+
+    @Bean
+    open fun clientRequestThreadPool(@Value("concurrent.client.request.pool.core.pool.size") corePoolSize: Int,
+                                     @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "client-request-"
+        threadPoolTaskExecutor.corePoolSize = corePoolSize
+        threadPoolTaskExecutor.maxPoolSize = maxPoolSize
+        return threadPoolTaskExecutor
     }
 
     @Bean
