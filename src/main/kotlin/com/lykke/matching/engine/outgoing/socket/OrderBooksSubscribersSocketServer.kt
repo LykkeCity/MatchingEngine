@@ -6,24 +6,34 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.ThrottlingLogger
+import org.springframework.core.task.AsyncTaskExecutor
+import org.springframework.stereotype.Component
 import java.net.ServerSocket
-import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
+import javax.annotation.PostConstruct
 
-class SocketServer(val config: Config,
-                   val connectionsHolder: ConnectionsHolder,
-                   val genericLimitOrderService: GenericLimitOrderService,
-                   val assetsHolder: AssetsHolder,
-                   val assetsPairsHolder: AssetsPairsHolder): Thread(SocketServer::class.java.name) {
+@Component
+class OrderBooksSubscribersSocketServer(val config: Config,
+                                        private val connectionsHolder: ConnectionsHolder,
+                                        val genericLimitOrderService: GenericLimitOrderService,
+                                        val assetsHolder: AssetsHolder,
+                                        val assetsPairsHolder: AssetsPairsHolder,
+                                        private val orderBookSubscribersThreadPool: AsyncTaskExecutor): Thread(OrderBooksSubscribersSocketServer::class.java.name) {
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(OrderBooksSubscribersSocketServer::class.java.name)
+    }
+
+    @PostConstruct
+    private fun init() {
+        if (config.me.serverOrderBookPort == null) {
+            return
+        }
+
+        this.start()
     }
 
     override fun run() {
-        val maxConnections = config.me.serverOrderBookMaxConnections
-        val clientHandlerThreadPool = Executors.newFixedThreadPool(maxConnections!!)
-
         val port = config.me.serverOrderBookPort
         val socket = ServerSocket(port!!)
         LOGGER.info("Waiting connection on port: $port.")
@@ -33,7 +43,7 @@ class SocketServer(val config: Config,
                 val clientConnection = socket.accept()
                 val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>(),
                         genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder)
-                clientHandlerThreadPool.submit(connection)
+                orderBookSubscribersThreadPool.submit(connection)
                 connectionsHolder.addConnection(connection)
             }
         } catch (exception: Exception) {

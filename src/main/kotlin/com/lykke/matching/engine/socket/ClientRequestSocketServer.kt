@@ -1,23 +1,22 @@
 package com.lykke.matching.engine.socket
 
-import com.lykke.matching.engine.AppInitialData
 import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.messages.MessageProcessor
 import com.lykke.matching.engine.socket.impl.ClientHandlerImpl
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.AppVersion
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.regex.Pattern
 
 @Component
-class SocketServer(private val clientRequestThreadPool: ThreadPoolTaskExecutor,
-                   private val initializationCompleteCallback: (AppInitialData) -> Unit): Runnable {
+class ClientRequestSocketServer(private val clientRequestThreadPool: AsyncTaskExecutor): Runnable {
 
     @Autowired
     private lateinit var config: Config
@@ -29,7 +28,7 @@ class SocketServer(private val clientRequestThreadPool: ThreadPoolTaskExecutor,
     private lateinit var messageRouter: MessageRouter
 
     companion object {
-        val LOGGER = ThrottlingLogger.getLogger(SocketServer::class.java.name)
+        val LOGGER = ThrottlingLogger.getLogger(ClientRequestSocketServer::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
@@ -40,7 +39,12 @@ class SocketServer(private val clientRequestThreadPool: ThreadPoolTaskExecutor,
 
         messageProcessor.start()
 
-        initializationCompleteCallback(messageProcessor.appInitialData)
+        val appInitialData = messageProcessor.appInitialData
+
+        MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : " +
+                "Started : ${appInitialData.ordersCount} orders, ${appInitialData.stopOrdersCount} " +
+                "stop orders,${appInitialData.balancesCount} " +
+                "balances for ${appInitialData.clientsCount} clients")
 
         val port = config.me.socket.port
         val socket = ServerSocket(port)

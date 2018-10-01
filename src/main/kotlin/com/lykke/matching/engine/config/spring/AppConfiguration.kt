@@ -1,11 +1,8 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
-import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
-import com.lykke.utils.logging.MetricsLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -52,13 +49,14 @@ open class AppConfiguration: SchedulingConfigurer {
     }
 
     @Bean
-    open fun socketServer(clientRequestThreadPool: ThreadPoolTaskExecutor): Runnable {
-        return SocketServer (clientRequestThreadPool) { appInitialData ->
-            MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : " +
-                    "Started : ${appInitialData.ordersCount} orders, ${appInitialData.stopOrdersCount} " +
-                    "stop orders,${appInitialData.balancesCount} " +
-                    "balances for ${appInitialData.clientsCount} clients")
-        }
+    open fun orderBookSubscribersThreadPool(@Value("\${concurrent.orderbook.subscribers.pool.core.pool.size}") corePoolSize: Int,
+                                            @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "orderbook-subscriber-"
+        threadPoolTaskExecutor.setQueueCapacity(0)
+        threadPoolTaskExecutor.corePoolSize = corePoolSize
+        threadPoolTaskExecutor.maxPoolSize = maxPoolSize
+        return threadPoolTaskExecutor
     }
 
     @Bean
