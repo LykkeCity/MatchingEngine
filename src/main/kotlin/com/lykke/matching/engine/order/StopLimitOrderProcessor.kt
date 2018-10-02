@@ -198,11 +198,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         validator.validateAssets(assetPair)
         validator.validateLimitPrices(order)
         validator.validateVolume(order, assetPair)
+        validator.validateStopOrderMaxValue(order, assetPair)
         if (limitVolume != null) {
             validator.checkBalance(availableBalance, limitVolume)
         }
         validator.validateVolumeAccuracy(order)
-        validator.validatePriceAccuracy(order)
+        validator.validateStopPricesAccuracy(order)
     }
 
     private fun orderInfo(order: LimitOrder): String {
