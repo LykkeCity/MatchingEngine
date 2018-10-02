@@ -1,6 +1,8 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl
 
 import com.lykke.matching.engine.logging.DatabaseLogger
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
+import com.lykke.matching.engine.outgoing.rabbit.events.RabbitRecoverEvent
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.utils.logging.MetricsLogger
@@ -10,6 +12,7 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
@@ -22,6 +25,8 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
                                                private val MESSAGES_LOGGER: Logger,
                                                private val METRICS_LOGGER: MetricsLogger,
                                                private val STATS_LOGGER: Logger,
+                                               private val applicationEventPublisher: ApplicationEventPublisher,
+
                                                /** null if do not need to log */
                                                private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
@@ -36,6 +41,8 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
     private var messagesCount: Long = 0
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
+
+    private var isOk: Boolean = true
 
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
@@ -78,13 +85,29 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
+                publishRecoverEvent()
+
                 return
             } catch (exception: Exception) {
+                publishFailureEvent()
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 METRICS_LOGGER.logError("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 tryConnectUntilSuccess()
             }
         }
+    }
+
+    private fun publishFailureEvent() {
+        isOk = false
+        applicationEventPublisher.publishEvent(RabbitFailureEvent(exchangeName))
+    }
+
+    private fun publishRecoverEvent() {
+        if (!isOk) {
+            applicationEventPublisher.publishEvent(RabbitRecoverEvent(exchangeName))
+        }
+
+        isOk = true
     }
 
     private fun logMessage(item: T, stringRepresentation: String?) {

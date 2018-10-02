@@ -8,6 +8,7 @@ import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.MessageProperties
 import org.apache.commons.lang3.StringUtils
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 class RabbitMqOldFormatPublisher(uri: String,
@@ -17,9 +18,10 @@ class RabbitMqOldFormatPublisher(uri: String,
                                  appVersion: String,
                                  exchangeType: BuiltinExchangeType,
                                  private val gson: Gson,
+                                 applicationEventPublisher: ApplicationEventPublisher,
                                  messageDatabaseLogger: DatabaseLogger<Any>? = null) : AbstractRabbitMqPublisher<Any>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,
-        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger){
+        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, messageDatabaseLogger) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqOldFormatPublisher::class.java.name)
