@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.utils.migration
 
+import com.lykke.matching.engine.database.OrdersStorage
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -44,7 +45,7 @@ class OrdersMigrationService(private val config: Config,
         if (!config.me.ordersMigration) {
             return
         }
-        if (config.me.storage == Storage.Azure) {
+        if (config.me.storage == Storage.Azure || config.me.ordersStorage == OrdersStorage.Files) {
             teeLog("Do not perform migration to files")
             return
         }

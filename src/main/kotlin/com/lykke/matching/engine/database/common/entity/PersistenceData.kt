@@ -24,16 +24,20 @@ class PersistenceData(val balancesData: BalancesData?,
     }
 
     fun isEmpty(): Boolean {
+        return isEmptyWithoutOrders() &&
+                isOrdersEmpty()
+    }
+
+    fun isOrdersEmpty(): Boolean {
+        return (orderBooksData == null || orderBooksData.isEmpty()) &&
+                (stopOrderBooksData == null || stopOrderBooksData.isEmpty())
+    }
+
+    fun isEmptyWithoutOrders(): Boolean {
         return CollectionUtils.isEmpty(balancesData?.balances) &&
                 CollectionUtils.isEmpty(balancesData?.wallets) &&
                 processedMessage == null &&
-                messageSequenceNumber == null &&
-                CollectionUtils.isEmpty(orderBooksData?.orderBooks) &&
-                CollectionUtils.isEmpty(orderBooksData?.ordersToSave) &&
-                CollectionUtils.isEmpty(orderBooksData?.ordersToRemove) &&
-                CollectionUtils.isEmpty(stopOrderBooksData?.orderBooks) &&
-                CollectionUtils.isEmpty(stopOrderBooksData?.ordersToSave) &&
-                CollectionUtils.isEmpty(stopOrderBooksData?.ordersToRemove)
+                messageSequenceNumber == null
     }
 
     private fun append(builder: StringBuilder, prefix: String, obj: Any?) {

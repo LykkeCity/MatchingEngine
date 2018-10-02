@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.holders
 
+import com.lykke.matching.engine.database.OrdersStorage
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
@@ -28,10 +29,14 @@ class OrdersDatabaseAccessorsHolderFactory : FactoryBean<OrdersDatabaseAccessors
             Storage.Azure ->
                 OrdersDatabaseAccessorsHolder(FileOrderBookDatabaseAccessor(config.me.orderBookPath), null)
             Storage.Redis ->
-                OrdersDatabaseAccessorsHolder(RedisOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase),
-                        if (config.me.writeOrdersToSecondaryDb)
-                            FileOrderBookDatabaseAccessor(config.me.secondaryOrderBookPath)
-                        else null)
+                if (config.me.ordersStorage == OrdersStorage.Redis) {
+                    OrdersDatabaseAccessorsHolder(RedisOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase),
+                            if (config.me.writeOrdersToSecondaryDb)
+                                FileOrderBookDatabaseAccessor(config.me.secondaryOrderBookPath)
+                            else null)
+                } else {
+                    OrdersDatabaseAccessorsHolder(FileOrderBookDatabaseAccessor(config.me.orderBookPath), null)
+                }
         }
     }
 }

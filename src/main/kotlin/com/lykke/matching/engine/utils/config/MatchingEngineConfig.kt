@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.utils.config
 
 import com.google.gson.annotations.SerializedName
+import com.lykke.matching.engine.database.OrdersStorage
 import com.lykke.matching.engine.database.Storage
 import com.lykke.utils.alivestatus.config.AliveStatusConfig
 import com.lykke.utils.files.clean.config.LogFilesCleanerConfig
@@ -38,6 +39,7 @@ data class MatchingEngineConfig(
         val keepAlive: KeepAliveConfig,
         val logFilesCleaner: LogFilesCleanerConfig,
         val storage: Storage,
+        val ordersStorage: OrdersStorage,
         val walletsMigration: Boolean,
         val writeBalancesToSecondaryDb: Boolean,
         val ordersMigration: Boolean,
