@@ -27,6 +27,7 @@ data class MatchingEngineConfig(
         val cancelMinVolumeOrders: Boolean,
         val cancelAllOrders: Boolean,
         val orderBookPath: String,
+        val secondaryStopOrderBookPath: String,
         val secondaryOrderBookPath: String,
         val stopOrderBookPath: String,
         val queueSizeLimit: Int,

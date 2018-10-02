@@ -32,7 +32,7 @@ class StopOrdersDatabaseAccessorsHolderFactory : FactoryBean<StopOrdersDatabaseA
                 if (config.me.ordersStorage == OrdersStorage.Redis) {
                     StopOrdersDatabaseAccessorsHolder(RedisStopOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase),
                             if (config.me.writeOrdersToSecondaryDb)
-                                FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+                                FileStopOrderBookDatabaseAccessor(config.me.secondaryStopOrderBookPath)
                             else null)
                 } else {
                     StopOrdersDatabaseAccessorsHolder(FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath), null)
