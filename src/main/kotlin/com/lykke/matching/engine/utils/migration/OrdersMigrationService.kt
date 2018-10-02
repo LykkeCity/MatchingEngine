@@ -72,7 +72,7 @@ class OrdersMigrationService(private val config: Config,
                 OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(orders),
                         orders,
                         emptyList()),
-                OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(orders),
+                OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(stopOrders),
                         stopOrders,
                         emptyList()),
                 null))
