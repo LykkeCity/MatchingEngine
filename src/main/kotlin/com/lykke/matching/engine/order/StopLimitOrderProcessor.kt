@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.AssetPair
@@ -24,7 +23,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
@@ -200,11 +199,12 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         validator.validateAssets(assetPair)
         validator.validateLimitPrices(order)
         validator.validateVolume(order, assetPair)
+        validator.validateStopOrderMaxValue(order, assetPair)
         if (limitVolume != null) {
             validator.checkBalance(availableBalance, limitVolume)
         }
         validator.validateVolumeAccuracy(order)
-        validator.validatePriceAccuracy(order)
+        validator.validateStopPricesAccuracy(order)
     }
 
     private fun orderInfo(order: LimitOrder): String {
