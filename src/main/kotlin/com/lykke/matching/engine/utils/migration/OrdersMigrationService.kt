@@ -60,7 +60,8 @@ class OrdersMigrationService(private val config: Config,
             throw Exception("Stop orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
         }
         val startTime = Date().time
-        teeLog("Starting orders migration from files to redis; files dir: ${config.me.orderBookPath}, redis: ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
+        teeLog("Starting orders migration from files to redis; files dirs: ${config.me.orderBookPath}, ${config.me.stopOrderBookPath}" +
+                ", redis: ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
         val orders = fileOrderBookDatabaseAccessor.loadLimitOrders()
         val stopOrders = fileStopOrderBookDatabaseAccessor.loadLimitOrders()
         val loadTime = Date().time
