@@ -62,7 +62,7 @@ class OrdersMigrationService(private val config: Config,
         }
         val startTime = Date().time
         teeLog("Starting orders migration from files to redis; files dirs: ${config.me.orderBookPath}, ${config.me.stopOrderBookPath}" +
-                ", redis: ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
+                ", redis: ${config.me.redis.host}.${config.me.redis.port}/${config.me.redis.ordersDatabase}")
         val orders = fileOrderBookDatabaseAccessor.loadLimitOrders()
         val stopOrders = fileStopOrderBookDatabaseAccessor.loadStopLimitOrders()
         val loadTime = Date().time
