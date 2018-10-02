@@ -17,7 +17,7 @@ import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
-class GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
+class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                    private val genericLimitOrderService: GenericLimitOrderService,
                                    private val persistenceManager: PersistenceManager) : AbstractGenericLimitOrderService<AssetStopOrderBook> {
 
@@ -25,12 +25,19 @@ class GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder: StopOrders
         private val LOGGER = ThrottlingLogger.getLogger(GenericLimitOrderService::class.java.name)
     }
 
-    final val initialStopOrdersCount: Int
+    var initialStopOrdersCount = 0
     private val stopLimitOrdersQueues = ConcurrentHashMap<String, AssetStopOrderBook>()
     private val stopLimitOrdersMap = HashMap<String, LimitOrder>()
     private val clientStopLimitOrdersMap = HashMap<String, MutableList<LimitOrder>>()
 
     init {
+        update()
+    }
+
+    fun update() {
+        stopLimitOrdersQueues.clear()
+        stopLimitOrdersMap.clear()
+        clientStopLimitOrdersMap.clear()
         val stopOrders = stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders()
         stopOrders.forEach { order ->
             getOrderBook(order.assetPairId).addOrder(order)

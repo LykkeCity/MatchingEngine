@@ -7,8 +7,10 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
 import org.apache.log4j.Logger
 import org.springframework.boot.ApplicationArguments
@@ -23,14 +25,19 @@ import java.util.Optional
 class OrdersMigrationService(private val config: Config,
                              initialLoadingRedisConnection: Optional<RedisConnection>,
                              private val persistenceManager: PersistenceManager,
-                             private val genericLimitOrderService: GenericLimitOrderService): ApplicationRunner {
+                             private val genericLimitOrderService: GenericLimitOrderService,
+                             private val genericStopLimitOrderService: GenericStopLimitOrderService): ApplicationRunner {
     companion object {
         private val LOGGER = Logger.getLogger(OrdersMigrationService::class.java.name)
     }
 
-    private val fileDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    private val redisDatabaseAccessor = if (initialLoadingRedisConnection.isPresent)
+    private val fileOrderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
+    private val fileStopOrderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+    private val redisOrderBookDatabaseAccessor = if (initialLoadingRedisConnection.isPresent)
         RedisOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase)
+    else null
+    private val redisStopOrderBookDatabaseAccessor = if (initialLoadingRedisConnection.isPresent)
+        RedisStopOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase)
     else null
 
     override fun run(args: ApplicationArguments?) {
@@ -45,12 +52,16 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private fun fromFilesToRedis() {
-        if (redisDatabaseAccessor!!.loadLimitOrders().isNotEmpty()) {
+        if (redisOrderBookDatabaseAccessor!!.loadLimitOrders().isNotEmpty()) {
             throw Exception("Orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
+        }
+        if (redisStopOrderBookDatabaseAccessor!!.loadStopLimitOrders().isNotEmpty()) {
+            throw Exception("Stop orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
         }
         val startTime = Date().time
         teeLog("Starting orders migration from files to redis; files dir: ${config.me.orderBookPath}, redis: ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
-        val orders = fileDatabaseAccessor.loadLimitOrders()
+        val orders = fileOrderBookDatabaseAccessor.loadLimitOrders()
+        val stopOrders = fileStopOrderBookDatabaseAccessor.loadLimitOrders()
         val loadTime = Date().time
         teeLog("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
         persistenceManager.persist(PersistenceData(null,
@@ -58,11 +69,14 @@ class OrdersMigrationService(private val config: Config,
                 OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(orders),
                         orders,
                         emptyList()),
-                null,
+                OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(orders),
+                        stopOrders,
+                        emptyList()),
                 null))
         genericLimitOrderService.update()
+        genericStopLimitOrderService.update()
         val saveTime = Date().time
-        teeLog("Saved ${orders.size} orders to redis (ms: ${saveTime - loadTime})")
+        teeLog("Saved ${orders.size} orders and ${stopOrders.size} stop orders to redis (ms: ${saveTime - loadTime})")
     }
 
     private fun teeLog(message: String) {
