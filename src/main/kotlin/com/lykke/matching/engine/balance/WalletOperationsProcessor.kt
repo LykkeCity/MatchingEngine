@@ -45,20 +45,22 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
             return this
         }
         val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
-        operations.filter { !(it.amount.compareTo(BigDecimal.ZERO) == 0 && applicationSettings.isTrustedClient(it.clientId)) }
-                .forEach { operation ->
-                    val key = key(operation)
-                    val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
-                        TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
-                    }
+        operations.forEach { operation ->
+            if (isTrustedClientReservedBalanceOperation(operation)) {
+                return@forEach
+            }
+            val key = key(operation)
+            val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
+                TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
+            }
 
-                    val asset = assetsHolder.getAsset(operation.assetId)
-                    changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
-                    changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
-                        NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
-                    else
-                        changedAssetBalance.reserved
-                }
+            val asset = assetsHolder.getAsset(operation.assetId)
+            changedAssetBalance.balance = NumberUtils.setScaleRoundHalfUp(changedAssetBalance.balance + operation.amount, asset.accuracy)
+            changedAssetBalance.reserved = if (!applicationSettings.isTrustedClient(operation.clientId))
+                NumberUtils.setScaleRoundHalfUp(changedAssetBalance.reserved + operation.reservedAmount, asset.accuracy)
+            else
+                changedAssetBalance.reserved
+        }
 
         if (validate) {
             try {
@@ -126,6 +128,10 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
         val walletAssetBalance = balancesUpdater.getWalletAssetBalance(operation.clientId, operation.assetId)
         return ChangedAssetBalance(walletAssetBalance.wallet, walletAssetBalance.assetBalance)
+    }
+
+    private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
+        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
     }
 }
 

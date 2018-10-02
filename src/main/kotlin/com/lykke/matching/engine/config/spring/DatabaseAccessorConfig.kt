@@ -10,7 +10,6 @@ import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.OrdersStorage
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
@@ -69,35 +68,33 @@ open class DatabaseAccessorConfig {
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
-                    ordersDatabaseAccessorsHolder.primaryAccessor,
-                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                    fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                if (config.me.ordersStorage == OrdersStorage.Redis) {
-                    RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                            balancesDatabaseAccessorsHolder.secondaryAccessor,
-                            redisProcessedMessagesDatabaseAccessor.get(),
-                            cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.secondaryAccessor,
-                            stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                            stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                            messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                            persistenceRedisConnection()!!,
-                            config)
-                } else {
-                    RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                            balancesDatabaseAccessorsHolder.secondaryAccessor,
-                            redisProcessedMessagesDatabaseAccessor.get(),
-                            cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.primaryAccessor,
-                            stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                            messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                            persistenceRedisConnection()!!,
-                            config)
-                }
-            }
+            Storage.Azure ->
+                DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        fileProcessedMessagesDatabaseAccessor())
+            Storage.Redis ->
+                RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistenceRedisConnection()!!,
+                        config)
+            Storage.RedisWithoutOrders ->
+                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistenceRedisConnection()!!,
+                        config)
         }
     }
 
@@ -109,35 +106,33 @@ open class DatabaseAccessorConfig {
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
-                    ordersDatabaseAccessorsHolder.primaryAccessor,
-                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                    fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                if (config.me.ordersStorage == OrdersStorage.Redis) {
-                    RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                            balancesDatabaseAccessorsHolder.secondaryAccessor,
-                            redisProcessedMessagesDatabaseAccessor.get(),
-                            cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.secondaryAccessor,
-                            stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                            stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                            messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                            cashInOutOperationsPreprocessorRedisConnection()!!,
-                            config)
-                } else {
-                    RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                            balancesDatabaseAccessorsHolder.secondaryAccessor,
-                            redisProcessedMessagesDatabaseAccessor.get(),
-                            cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.primaryAccessor,
-                            stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                            messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                            cashInOutOperationsPreprocessorRedisConnection()!!,
-                            config)
-                }
-            }
+            Storage.Azure ->
+                DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        fileProcessedMessagesDatabaseAccessor())
+            Storage.Redis ->
+                RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        cashInOutOperationsPreprocessorRedisConnection()!!,
+                        config)
+            Storage.RedisWithoutOrders ->
+                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        cashInOutOperationsPreprocessorRedisConnection()!!,
+                        config)
         }
     }
 
@@ -153,33 +148,28 @@ open class DatabaseAccessorConfig {
                     ordersDatabaseAccessorsHolder.primaryAccessor,
                     stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                     fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                if (config.me.ordersStorage == OrdersStorage.Redis) {
-                    RedisPersistenceManager(
-                            balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                            balancesDatabaseAccessorsHolder.secondaryAccessor,
-                            redisProcessedMessagesDatabaseAccessor.get(),
-                            cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.secondaryAccessor,
-                            stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                            stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
-                            messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                            cashTransferOperationsPreprocessorRedisConnection()!!,
-                            config
-                    )
-                } else {
-                    RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                            balancesDatabaseAccessorsHolder.secondaryAccessor,
-                            redisProcessedMessagesDatabaseAccessor.get(),
-                            cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                            ordersDatabaseAccessorsHolder.primaryAccessor,
-                            stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                            messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                            cashTransferOperationsPreprocessorRedisConnection()!!,
-                            config)
-                }
-            }
+            Storage.Redis ->
+                RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        cashTransferOperationsPreprocessorRedisConnection()!!,
+                        config)
+            Storage.RedisWithoutOrders ->
+                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        cashTransferOperationsPreprocessorRedisConnection()!!,
+                        config)
         }
     }
 
@@ -187,6 +177,7 @@ open class DatabaseAccessorConfig {
     open fun readOnlyProcessedMessagesDatabaseAccessor(): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(initialLoadingRedisConnection()!!,
                     config.me.redis.processedMessageDatabase,
                     getProcessedMessageTTL())
@@ -229,6 +220,7 @@ open class DatabaseAccessorConfig {
     open fun cashOperationIdDatabaseAccessor(): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> {
                 return RedisCashOperationIdDatabaseAccessor(cashInOutOperationIdRedisConnection()!!,
                         cashTransferOperationIdRedisConnection()!!,
@@ -241,6 +233,7 @@ open class DatabaseAccessorConfig {
     open fun messageSequenceNumberDatabaseAccessor(): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> {
                 RedisMessageSequenceNumberDatabaseAccessor(initialLoadingRedisConnection()!!,
                         config.me.redis.sequenceNumberDatabase)
