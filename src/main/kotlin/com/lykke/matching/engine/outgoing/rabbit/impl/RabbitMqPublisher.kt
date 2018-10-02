@@ -8,6 +8,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
 import org.apache.log4j.Logger
+import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 class RabbitMqPublisher(uri: String,
@@ -17,9 +18,10 @@ class RabbitMqPublisher(uri: String,
                         appVersion: String,
                         exchangeType: BuiltinExchangeType,
                         private val gson: Gson,
+                        applicationEventPublisher: ApplicationEventPublisher,
                         private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
         queue, appName, appVersion, exchangeType, LOGGER,
-        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, messageDatabaseLogger) {
+        MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, messageDatabaseLogger) {
 
 
     companion object {
