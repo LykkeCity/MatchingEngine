@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
@@ -33,7 +34,7 @@ class OrdersMigrationService(private val config: Config,
     }
 
     private val fileOrderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    private val fileStopOrderBookDatabaseAccessor = FileOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+    private val fileStopOrderBookDatabaseAccessor = FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
     private val redisOrderBookDatabaseAccessor = if (initialLoadingRedisConnection.isPresent)
         RedisOrderBookDatabaseAccessor(initialLoadingRedisConnection.get(), config.me.redis.ordersDatabase)
     else null
@@ -45,7 +46,7 @@ class OrdersMigrationService(private val config: Config,
         if (!config.me.ordersMigration) {
             return
         }
-        if (config.me.storage == Storage.Azure || config.me.ordersStorage == OrdersStorage.Files) {
+        if (!(config.me.storage == Storage.Redis && config.me.ordersStorage == OrdersStorage.Redis)) {
             teeLog("Do not perform migration to files")
             return
         }
@@ -54,16 +55,16 @@ class OrdersMigrationService(private val config: Config,
 
     private fun fromFilesToRedis() {
         if (redisOrderBookDatabaseAccessor!!.loadLimitOrders().isNotEmpty()) {
-            throw Exception("Orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
+            throw Exception("Orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}/${config.me.redis.ordersDatabase}")
         }
         if (redisStopOrderBookDatabaseAccessor!!.loadStopLimitOrders().isNotEmpty()) {
-            throw Exception("Stop orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
+            throw Exception("Stop orders already exist in redis ${config.me.redis.host}.${config.me.redis.port}/${config.me.redis.ordersDatabase}")
         }
         val startTime = Date().time
         teeLog("Starting orders migration from files to redis; files dirs: ${config.me.orderBookPath}, ${config.me.stopOrderBookPath}" +
                 ", redis: ${config.me.redis.host}.${config.me.redis.port}.${config.me.redis.ordersDatabase}")
         val orders = fileOrderBookDatabaseAccessor.loadLimitOrders()
-        val stopOrders = fileStopOrderBookDatabaseAccessor.loadLimitOrders()
+        val stopOrders = fileStopOrderBookDatabaseAccessor.loadStopLimitOrders()
         val loadTime = Date().time
         teeLog("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
         persistenceManager.persist(PersistenceData(null,
