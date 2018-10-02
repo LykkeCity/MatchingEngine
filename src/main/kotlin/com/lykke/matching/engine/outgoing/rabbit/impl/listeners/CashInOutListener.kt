@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.matching.engine.database.azure.AzureMessageLogDatabaseAccessor
-import com.lykke.matching.engine.logging.MessageDatabaseLogger
+import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
 import com.lykke.matching.engine.utils.config.Config
@@ -20,7 +20,7 @@ class CashInOutListener {
     private lateinit var rabbitCashInOutQueue: BlockingQueue<CashOperation>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
@@ -33,11 +33,11 @@ class CashInOutListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
-                MessageDatabaseLogger(
+                DatabaseLogger(
                         AzureMessageLogDatabaseAccessor(config.me.db.messageLogConnString,
                                 logTable, logBlobName)))
     }

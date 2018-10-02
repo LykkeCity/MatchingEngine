@@ -7,4 +7,4 @@ class MarketOrderWithTrades (
     val messageId: String,
     val order: MarketOrder,
     val trades: MutableList<TradeInfo> = LinkedList()
-): JsonSerializable()
+)
