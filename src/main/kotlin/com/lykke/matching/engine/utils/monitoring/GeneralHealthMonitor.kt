@@ -5,7 +5,8 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.*
+import org.springframework.util.CollectionUtils
+import java.util.concurrent.ConcurrentHashMap
 
 @Component("GeneralHealthMonitor")
 class GeneralHealthMonitor: HealthMonitor {
@@ -15,25 +16,22 @@ class GeneralHealthMonitor: HealthMonitor {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var ok = false
+    private val brokenComponents = ConcurrentHashMap.newKeySet<MonitoredComponent>()
 
-    private val brokenComponents = EnumSet.noneOf(MonitoredComponent::class.java)
-
-    override fun ok() = ok
+    override fun ok() = brokenComponents.isEmpty()
 
     @EventListener
     fun processHealthMonitorEvent(event: HealthMonitorEvent) {
-        if (!event.ok) {
-            brokenComponents.add(event.componentName)
+        if (event.ok) {
+            brokenComponents.remove(event.component)
         } else {
-            brokenComponents.remove(event.componentName)
+            brokenComponents.add(event.component)
         }
     }
 
     @Scheduled(fixedRateString = "\${health.check.update.interval}")
     open fun checkBrokenComponents() {
-        ok = brokenComponents.isEmpty()
-        if (!ok) {
+        if (!CollectionUtils.isEmpty(brokenComponents)) {
             val message = "Maintenance mode is on"
             LOGGER.error(message)
             METRICS_LOGGER.logError(message)

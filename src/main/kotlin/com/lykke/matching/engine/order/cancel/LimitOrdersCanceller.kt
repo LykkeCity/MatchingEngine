@@ -11,7 +11,6 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
-import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
@@ -29,8 +28,6 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                            genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
                            private val orderBookQueue: BlockingQueue<OrderBook>,
                            private val rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                           clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                           trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                            private val date: Date,
                            LOGGER: Logger) :
         AbstractLimitOrdersCanceller<AssetOrderBook, LimitOrdersCancelResult>(dictionariesDatabaseAccessor,
@@ -38,8 +35,6 @@ class LimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAcc
                 assetsPairsHolder,
                 balancesHolder,
                 genericLimitOrderService,
-                clientLimitOrdersQueue,
-                trustedClientsLimitOrdersQueue,
                 date) {
 
     private val genericLimitOrderProcessor = genericLimitOrderProcessorFactory.create(LOGGER)

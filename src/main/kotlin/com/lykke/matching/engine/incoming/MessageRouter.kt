@@ -2,12 +2,13 @@ package com.lykke.matching.engine.incoming
 
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
+import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 
+@Component
 class MessageRouter(
         val cashInOutQueue: BlockingQueue<MessageWrapper>,
         val cashTransferQueue: BlockingQueue<MessageWrapper>,
-        val defaultInputQueue: BlockingQueue<MessageWrapper>,
         val preProcessedMessageQueue: BlockingQueue<MessageWrapper>
 ) {
     fun process(wrapper: MessageWrapper) {

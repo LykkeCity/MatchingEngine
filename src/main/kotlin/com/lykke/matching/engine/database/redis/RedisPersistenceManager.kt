@@ -9,7 +9,7 @@ import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperation
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
-import com.lykke.matching.engine.database.redis.monitoring.RedisHealthStatusHolder
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.utils.PrintUtils
@@ -17,8 +17,6 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Transaction
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -28,9 +26,8 @@ class RedisPersistenceManager(
         private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
-        private val redisHealthStatusHolder: RedisHealthStatusHolder,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val jedisPool: JedisPool,
+        private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
 
     companion object {
@@ -39,7 +36,6 @@ class RedisPersistenceManager(
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var jedis: Jedis? = null
     private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
 
     init {
@@ -53,50 +49,19 @@ class RedisPersistenceManager(
             return true
         }
         return try {
-            persistData(getJedis(), data)
+            persistData(redisConnection, data)
             true
         } catch (e: Exception) {
-            val retryMessage = "Unable to save data (${data.details()}), retrying"
-            LOGGER.error(retryMessage, e)
-            METRICS_LOGGER.logError(retryMessage, e)
-            try {
-                persistData(getJedis(true), data)
-                true
-            } catch (e: Exception) {
-                redisHealthStatusHolder.fail()
-                closeJedis()
-                val message = "Unable to save data (${data.details()})"
-                LOGGER.error(message, e)
-                METRICS_LOGGER.logError(message, e)
-                false
-            }
+            val message = "Unable to save data (${data.details()})"
+            LOGGER.error(message, e)
+            METRICS_LOGGER.logError(message, e)
+            false
         }
     }
 
-    private fun getJedis(newResource: Boolean = false): Jedis {
-        if (jedis == null) {
-            jedis = jedisPool.resource
-        } else if (newResource) {
-            closeJedis()
-            jedis = jedisPool.resource
-        }
-        return jedis!!
-    }
-
-    private fun closeJedis() {
-        try {
-            jedis?.close()
-        } catch (e: Exception) {
-            // ignored
-        }
-        jedis = null
-    }
-
-    private fun persistData(jedis: Jedis, data: PersistenceData) {
+    private fun persistData(redisConnection: RedisConnection, data: PersistenceData) {
         val startTime = System.nanoTime()
-
-        val transaction = jedis.multi()
-        try {
+        redisConnection.transactionalResource { transaction ->
             persistBalances(transaction, data.balancesData?.balances)
             persistProcessedMessages(transaction, data.processedMessage)
 
@@ -112,20 +77,15 @@ class RedisPersistenceManager(
             transaction.exec()
             val commitTime = System.nanoTime()
 
+            val messageId = data.processedMessage?.messageId
             REDIS_PERFORMANCE_LOGGER.debug("Total: ${PrintUtils.convertToString2((commitTime - startTime).toDouble())}" +
                     ", persist: ${PrintUtils.convertToString2((persistTime - startTime).toDouble())}" +
-                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}")
+                    ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
+                    (if (messageId != null) " ($messageId)" else ""))
 
             if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
                 updatedWalletsQueue.put(data.balancesData!!.wallets)
             }
-        } catch (e: Exception) {
-            try {
-                transaction.clear()
-            } catch (clearTxException: Exception) {
-                e.addSuppressed(clearTxException)
-            }
-            throw e
         }
     }
 

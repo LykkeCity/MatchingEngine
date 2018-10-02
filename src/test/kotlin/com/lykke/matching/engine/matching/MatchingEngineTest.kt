@@ -146,7 +146,8 @@ abstract class MatchingEngineTest {
             marketOrderTradesSize: Int = 0,
             completedLimitOrdersSize: Int = 0,
             limitOrdersReportSize: Int = 0,
-            orderBookSize: Int = 0
+            orderBookSize: Int = 0,
+            matchedWithZeroLatestTrade: Boolean = false
     ) {
         matchingResult.apply()
         matchingEngine.apply()
@@ -154,7 +155,7 @@ abstract class MatchingEngineTest {
         val matchedOrder = matchingResult.order as LimitOrder
         assertEquals(remainingVolume, matchedOrder.remainingVolume)
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize, lkkTradesSize,
-                cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize)
+                cashMovementsSize, marketOrderTradesSize, completedLimitOrdersSize, limitOrdersReportSize, orderBookSize, matchedWithZeroLatestTrade)
     }
 
     private fun assertMatchingResult(
@@ -168,7 +169,8 @@ abstract class MatchingEngineTest {
             marketOrderTradesSize: Int = 0,
             completedLimitOrdersSize: Int = 0,
             limitOrdersReportSize: Int = 0,
-            orderBookSize: Int = 0
+            orderBookSize: Int = 0,
+            matchedWithZeroLatestTrade: Boolean = false
     ) {
         assertEquals(status.name, matchingResult.order.status)
         if (marketBalance == null) {
@@ -185,6 +187,7 @@ abstract class MatchingEngineTest {
         assertEquals(skipSize, matchingResult.skipLimitOrders.size)
         assertEquals(limitOrdersReportSize, matchingResult.limitOrdersReport?.orders?.size ?: 0)
         assertEquals(orderBookSize, matchingResult.orderBook.size)
+        assertEquals(matchedWithZeroLatestTrade, matchingResult.matchedWithZeroLatestTrade)
     }
 
     private fun walletOperationTransform(operation: WalletOperation): WalletOperation =

@@ -66,7 +66,8 @@ class SingleLimitOrderProcessor(private val limitOrderService: GenericLimitOrder
         matchingEngine.initTransaction()
         val result = processor.preProcess(messageId, listOf(order))
                 .apply(messageId, processedMessage, order.externalId, MessageType.LIMIT_ORDER, buySideOrderBookChanged, sellSideOrderBookChanged)
-        messageWrapper?.processedMessagePersisted = true
+        messageWrapper?.triedToPersist = true
+        messageWrapper?.persisted = result.success
         if (!result.success) {
             val message = "Unable to save result data"
             LOGGER.error("$message (order external id: ${order.externalId})")

@@ -7,14 +7,20 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import com.microsoft.azure.storage.table.CloudTable
 import com.microsoft.azure.storage.table.TableQuery
+import java.math.BigDecimal
 
 class AzureConfigDatabaseAccessor(connectionString: String, configTableName: String) : ConfigDatabaseAccessor  {
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureConfigDatabaseAccessor::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
         private const val SETTING_STATE_COLUMN_NAME = "Enabled"
-        private val DISABLED_ASSETS = "DisabledAssets"
-        private val TRUSTED_CLIENTS = "TrustedClients"
+        private const val DISABLED_ASSETS = "DisabledAssets"
+        private const val TRUSTED_CLIENTS = "TrustedClients"
+        private const val MO_PRICE_DEVIATION_THRESHOLD = "MarketOrderPriceDeviationThreshold"
+        private const val LO_PRICE_DEVIATION_THRESHOLD = "LimitOrderPriceDeviationThreshold"
+
+        private class Value(val rowKey: String,
+                            val value: String)
     }
 
     private val configTable: CloudTable = getOrCreateTable(connectionString, configTableName)
@@ -24,9 +30,9 @@ class AzureConfigDatabaseAccessor(connectionString: String, configTableName: Str
             val partitionFilter = TableQuery.generateFilterCondition(SETTING_STATE_COLUMN_NAME, TableQuery.QueryComparisons.EQUAL, true)
             val partitionQuery = TableQuery.from(AzureAppProperty::class.java).where(partitionFilter)
 
-            val settings : Map<String, Set<String>> = configTable.execute(partitionQuery)
-                    .groupBy { it.name }
-                    .mapValues { HashSet(it.value.map { it.value }) }
+            val settings: Map<String, Set<Value>> = configTable.execute(partitionQuery)
+                    .groupBy { it.partitionKey }
+                    .mapValues { HashSet(it.value.map { Value(it.rowKey, it.value) }) }
 
             toSettings(settings)
         } catch (e: Exception) {
@@ -37,14 +43,24 @@ class AzureConfigDatabaseAccessor(connectionString: String, configTableName: Str
         }
     }
 
-    private fun toSettings(settings : Map<String, Set<String>>?): Settings? {
-        if (settings == null) {
-            return null
-        }
+    private fun toSettings(settings: Map<String, Set<Value>>): Settings {
+        val trustedClients = settings[TRUSTED_CLIENTS]?.map { it.value }?.toSet() ?: emptySet()
 
-        val trustedClients = settings[TRUSTED_CLIENTS]?.toMutableSet() ?: HashSet()
-        val disabledAssets = settings[DISABLED_ASSETS]?.toMutableSet() ?: HashSet()
+        val disabledAssets = settings[DISABLED_ASSETS]?.map { it.value }?.toSet() ?: emptySet()
 
-        return Settings(trustedClients = trustedClients, disabledAssets = disabledAssets)
+        val moPriceDeviationThresholds = settings[MO_PRICE_DEVIATION_THRESHOLD]
+                ?.groupBy { it.rowKey }
+                ?.mapValues { BigDecimal(it.value.single().value) }
+                ?: emptyMap()
+
+        val loPriceDeviationThresholds = settings[LO_PRICE_DEVIATION_THRESHOLD]
+                ?.groupBy { it.rowKey }
+                ?.mapValues { BigDecimal(it.value.single().value) }
+                ?: emptyMap()
+
+        return Settings(trustedClients,
+                disabledAssets,
+                moPriceDeviationThresholds,
+                loPriceDeviationThresholds)
     }
 }
