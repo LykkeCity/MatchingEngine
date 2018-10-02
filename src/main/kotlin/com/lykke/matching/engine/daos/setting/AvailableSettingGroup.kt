@@ -13,5 +13,3 @@ enum class AvailableSettingGroup(val settingGroupName: String) {
         }
     }
 }
-
-class InvalidSettingGroupException(message: String): Exception(message)

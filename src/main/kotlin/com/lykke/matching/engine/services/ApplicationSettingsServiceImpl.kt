@@ -1,9 +1,6 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
-import com.lykke.matching.engine.daos.setting.Setting
-import com.lykke.matching.engine.daos.setting.SettingHistoryRecord
-import com.lykke.matching.engine.daos.setting.SettingsGroup
+import com.lykke.matching.engine.daos.setting.*
 import com.lykke.matching.engine.database.SettingsDatabaseAccessor
 import com.lykke.matching.engine.database.SettingsHistoryDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
@@ -73,7 +70,8 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?: return
+        val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?:
+        throw SettingNotFoundException("Setting with name '$settingName' not found" )
 
         settingsDatabaseAccessor.deleteSetting(settingsGroup.settingGroupName, settingName)
         addHistoryRecord(settingsGroup,
