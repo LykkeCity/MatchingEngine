@@ -19,7 +19,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
     }
 
     private enum class SettingOperation {
-        ADD, UPDATE, ENABLE, DISABLE, DELETE
+        CREATE, UPDATE, ENABLE, DISABLE, DELETE
     }
 
     @Synchronized
@@ -60,23 +60,23 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     @Synchronized
     override fun deleteSettingsGroup(settingsGroup: AvailableSettingGroup, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val settingsGroupToRemove = settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName) ?: return
+        val settingsGroupToBeDeleted = settingsDatabaseAccessor.getSettingsGroup(settingsGroup.settingGroupName) ?: return
 
         settingsDatabaseAccessor.deleteSettingsGroup(settingsGroup.settingGroupName)
         val commentWithPrefix = getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment)
-        settingsGroupToRemove.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
+        settingsGroupToBeDeleted.settings.forEach { addHistoryRecord(settingsGroup, commentWithPrefix, deleteSettingRequestDto.user, it) }
         applicationSettingsCache.deleteSettingGroup(settingsGroup)
     }
 
     @Synchronized
     override fun deleteSetting(settingsGroup: AvailableSettingGroup, settingName: String, deleteSettingRequestDto: DeleteSettingRequestDto) {
-        val deletedSetting = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?:
+        val settingToBeDeleted = settingsDatabaseAccessor.getSetting(settingsGroup.settingGroupName, settingName) ?:
         throw SettingNotFoundException("Setting with name '$settingName' not found" )
 
         settingsDatabaseAccessor.deleteSetting(settingsGroup.settingGroupName, settingName)
         addHistoryRecord(settingsGroup,
                 getCommentWithOperationPrefix(SettingOperation.DELETE, deleteSettingRequestDto.comment),
-                deleteSettingRequestDto.user, deletedSetting)
+                deleteSettingRequestDto.user, settingToBeDeleted)
         applicationSettingsCache.deleteSetting(settingsGroup, settingName)
     }
 
@@ -129,7 +129,7 @@ class ApplicationSettingsServiceImpl(private val settingsDatabaseAccessor: Setti
 
     private fun getSettingOperation(previousSettingState: SettingDto?, nextSettingState: SettingDto): SettingOperation {
         if (previousSettingState == null) {
-            return SettingOperation.ADD
+            return SettingOperation.CREATE
         }
 
         if (previousSettingState.enabled != nextSettingState.enabled) {
