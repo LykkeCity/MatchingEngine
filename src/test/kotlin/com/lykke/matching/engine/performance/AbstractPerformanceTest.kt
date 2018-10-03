@@ -148,7 +148,7 @@ abstract class AbstractPerformanceTest {
 
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder,
+        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder,
                 balancesHolder, genericLimitOrderService, genericStopLimitOrderService,
                 genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender)
 

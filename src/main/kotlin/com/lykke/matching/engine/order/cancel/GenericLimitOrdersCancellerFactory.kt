@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
@@ -18,6 +19,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class GenericLimitOrdersCancellerFactory @Autowired constructor(private val dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
+                                                                private val assetsHolder: AssetsHolder,
                                                                 private val assetsPairsHolder: AssetsPairsHolder,
                                                                 private val balancesHolder: BalancesHolder,
                                                                 private val genericLimitOrderService: GenericLimitOrderService,
@@ -33,6 +35,7 @@ class GenericLimitOrdersCancellerFactory @Autowired constructor(private val dict
 
     fun create(logger: Logger, date: Date): GenericLimitOrdersCanceller {
         return GenericLimitOrdersCanceller(dictionariesDatabaseAccessor,
+                assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 orderBookQueue,

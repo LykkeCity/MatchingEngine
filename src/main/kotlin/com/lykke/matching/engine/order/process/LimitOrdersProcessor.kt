@@ -421,6 +421,9 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (order.status == OrderStatus.NotFoundPrevious.name) {
             throw OrderValidationException(OrderStatus.NotFoundPrevious, "${orderInfo(order)} has not found previous order (${order.previousExternalId})")
         }
+        if (order.status == OrderStatus.NotEnoughFunds.name) {
+            throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
+        }
 
         if (!isTrustedClient) {
             validator.validateFee(order)
