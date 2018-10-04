@@ -5,6 +5,8 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -191,12 +193,30 @@ class MarketOrderService @Autowired constructor(
                 val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
+                    matchingResult.apply()
+                    val completedOrders = matchingResult.completedLimitOrders.map { it.origin!! }
+                    val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
+                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
+                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
+
+                    val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
+                    val ordersToSave = mutableListOf<LimitOrder>()
+                    val ordersToRemove = mutableListOf<LimitOrder>()
+                    ordersToRemove.addAll(completedOrders)
+                    ordersToRemove.addAll(ordersToCancel)
+                    val updatedOrders = matchingEngine.updatedOrders(matchingResult.orderBook, emptyList())
+                    orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, !order.isBuySide(), updatedOrders.fullOrderBook))
+                    ordersToSave.addAll(updatedOrders.updatedOrders)
+
                     trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
 
                     val sequenceNumber = messageSequenceNumberHolder.getNewValue()
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
-                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(), trustedClientsSequenceNumber ?: sequenceNumber)
+                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+                            OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
+                            null,
+                            trustedClientsSequenceNumber ?: sequenceNumber)
                     messageWrapper.triedToPersist = true
                     messageWrapper.persisted = updated
                     if (!updated) {
@@ -207,19 +227,13 @@ class MarketOrderService @Autowired constructor(
                     }
                     walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
 
-                    matchingResult.apply()
+
                     matchingEngine.apply()
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders.map { it.origin!! })
-                    val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
-                    orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
                     genericLimitOrderService.cancelLimitOrders(ordersToCancel, matchingResult.timestamp)
+                    genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
 
                     clientLimitOrdersReport.orders.addAll(cancelledOrdersWithTrades)
-
-                    matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-
-                    genericLimitOrderService.setOrderBook(order.assetPairId, !order.isBuySide(), matchingResult.orderBook)
-                    genericLimitOrderService.updateOrderBook(order.assetPairId, !order.isBuySide())
 
                     lkkTradesQueue.put(matchingResult.lkkTrades)
 
