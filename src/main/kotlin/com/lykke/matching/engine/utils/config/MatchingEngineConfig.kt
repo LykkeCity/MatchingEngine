@@ -38,7 +38,5 @@ data class MatchingEngineConfig(
         val logFilesCleaner: LogFilesCleanerConfig,
         val storage: Storage,
         val walletsMigration: Boolean,
-        val writeBalancesToSecondaryDb: Boolean,
-        val minLimitRabbitMqPublishersCount: Int,
-        val recoverRabbitMqPublishersCount: Int
+        val writeBalancesToSecondaryDb: Boolean
 )

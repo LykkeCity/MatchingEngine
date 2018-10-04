@@ -17,6 +17,8 @@ class RabbitMqHealthChecker(private val applicationEventPublisher: ApplicationEv
     private companion object {
         val METRICS_LOGGER = MetricsLogger.getLogger()
         val LOGGER = Logger.getLogger(RabbitMqHealthChecker::class.java)
+        const val MIN_LIMIT_RABBIT_MQ_PUBLISHERS_COUNT = 0
+        const val RECOVER_RABBIT_MQ_PUBLISHERS_COUNT = 1
     }
 
     private var exchangeNameToCountOfCrashedRmqPublishers = HashMap<String, Int>()
@@ -33,7 +35,7 @@ class RabbitMqHealthChecker(private val applicationEventPublisher: ApplicationEv
         METRICS_LOGGER.logError(logMessage)
         LOGGER.error(logMessage)
 
-        if (countOfFailedRabbitPublishers <= config.me.minLimitRabbitMqPublishersCount) {
+        if (countOfFailedRabbitPublishers <= MIN_LIMIT_RABBIT_MQ_PUBLISHERS_COUNT) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }
     }
@@ -47,7 +49,7 @@ class RabbitMqHealthChecker(private val applicationEventPublisher: ApplicationEv
                 "number of functional MQ publishers for exchange is: ${config.me.rabbitMqConfigs.events.size - countOfFailedRabbitPublishers!!}, " +
                 "of ${config.me.rabbitMqConfigs.events.size} possible")
 
-        if (countOfFailedRabbitPublishers <= config.me.recoverRabbitMqPublishersCount) {
+        if (countOfFailedRabbitPublishers <= RECOVER_RABBIT_MQ_PUBLISHERS_COUNT) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT))
         }
     }
