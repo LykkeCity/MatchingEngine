@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.publishers
 
 import com.lykke.matching.engine.logging.DatabaseLogger
 import com.lykke.matching.engine.outgoing.rabbit.events.RabbitFailureEvent
@@ -137,7 +137,7 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         totalTime += (endTime - startTime).toDouble() / LOG_COUNT
 
         if (messagesCount % LOG_COUNT == 0L) {
-            STATS_LOGGER.info("Exchange: $exchangeName. Messages: ${LOG_COUNT}. Total: ${PrintUtils.convertToString(totalTime)}. " +
+            STATS_LOGGER.info("Exchange: $exchangeName. Messages: $LOG_COUNT. Total: ${PrintUtils.convertToString(totalTime)}. " +
                     " Persist: ${PrintUtils.convertToString(totalPersistTime)}, ${NumberUtils.roundForPrint2(100 * totalPersistTime / totalTime)} %")
             totalPersistTime = 0.0
             totalTime = 0.0

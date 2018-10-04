@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.publishers
 
 import com.google.gson.Gson
 import com.lykke.matching.engine.logging.DatabaseLogger
