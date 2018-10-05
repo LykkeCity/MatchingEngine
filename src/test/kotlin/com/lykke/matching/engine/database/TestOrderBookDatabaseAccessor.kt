@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.database
 
 import com.lykke.matching.engine.daos.LimitOrder
+import java.lang.Exception
 
 class TestOrderBookDatabaseAccessor(private val secondaryDbAccessor: TestFileOrderDatabaseAccessor): OrderBookDatabaseAccessor {
 
@@ -15,8 +16,17 @@ class TestOrderBookDatabaseAccessor(private val secondaryDbAccessor: TestFileOrd
     }
 
     fun updateOrders(ordersToSave: Collection<LimitOrder>, ordersToRemove: Collection<LimitOrder>) {
+        checkDuplicates(ordersToRemove)
+        checkDuplicates(ordersToSave)
         ordersToRemove.forEach { orders.remove(it.id) }
         ordersToSave.forEach { orders[it.id] = it.copy() }
+    }
+
+    private fun checkDuplicates(orders: Collection<LimitOrder>) {
+        val orderIds = orders.map { it.externalId }
+        if (orderIds.size != orderIds.toSet().size) {
+            throw Exception("One of the orders is passed twice")
+        }
     }
 
     fun getOrders(assetPairId: String, isBuySide: Boolean): List<LimitOrder> {

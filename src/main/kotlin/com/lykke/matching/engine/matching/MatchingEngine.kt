@@ -58,19 +58,18 @@ class MatchingEngine(private val LOGGER: Logger,
         copyWrappers.forEach { it.applyToOrigin() }
     }
 
-    fun updatedOrders(orderBook: Collection<LimitOrder>, newOrders: Collection<LimitOrder>): UpdatedOrders {
-        val updatedOrderBook = ArrayList<LimitOrder>(orderBook.size)
-        val updatedOrders = newOrders.toMutableSet()
-        orderBook.forEach { order ->
-            val updatedOrder = changedOrders[order]?.copy
-            if (updatedOrder != null) {
-                updatedOrders.add(updatedOrder)
-                updatedOrderBook.add(updatedOrder)
-            } else {
-                updatedOrderBook.add(order)
-            }
-        }
-        return UpdatedOrders(updatedOrderBook, updatedOrders)
+    fun updatedOrders(orderBook: PriorityBlockingQueue<LimitOrder>): UpdatedOrders {
+        val updatedOrderBook = ArrayList<LimitOrder>(orderBook)
+
+        val bestOrder = orderBook.peek()
+                ?: return UpdatedOrders(updatedOrderBook, null)
+
+        val updatedBestOrder = changedOrders[bestOrder]?.copy
+                ?: return UpdatedOrders(updatedOrderBook, null)
+
+        updatedOrderBook.remove(bestOrder)
+        updatedOrderBook.add(0, updatedBestOrder)
+        return UpdatedOrders(updatedOrderBook, updatedBestOrder)
     }
 
     fun match(originOrder: Order,
