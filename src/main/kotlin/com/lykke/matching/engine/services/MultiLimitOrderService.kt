@@ -330,19 +330,19 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val startPersistTime = System.nanoTime()
 
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-        val ordersToSave = mutableListOf<LimitOrder>()
+        val ordersToSave = ordersToAdd.toMutableList()
         val ordersToRemove = mutableListOf<LimitOrder>()
         ordersToRemove.addAll(completedOrders)
         ordersToRemove.addAll(ordersToCancel)
         if (buySide || cancelBuySide) {
-            val updatedOrders = matchingEngine.updatedOrders(orderBook.getCopyOfOrderBook(true), ordersToAdd)
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(true))
             orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, true, updatedOrders.fullOrderBook))
-            ordersToSave.addAll(updatedOrders.updatedOrders)
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
         }
         if (sellSide || cancelSellSide) {
-            val updatedOrders = matchingEngine.updatedOrders(orderBook.getCopyOfOrderBook(false), ordersToAdd)
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(false))
             orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, updatedOrders.fullOrderBook))
-            ordersToSave.addAll(updatedOrders.updatedOrders)
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
         }
 
         var sequenceNumber: Long? = null

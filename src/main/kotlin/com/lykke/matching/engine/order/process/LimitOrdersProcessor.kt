@@ -122,19 +122,19 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
         val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-        val ordersToSave = mutableListOf<LimitOrder>()
+        val ordersToSave = ordersToAdd.toMutableList()
         val ordersToRemove = mutableListOf<LimitOrder>()
         ordersToRemove.addAll(completedOrders)
         ordersToRemove.addAll(ordersToCancel)
         if (buySideOrderBookChanged) {
-            val updatedOrders = matchingEngine.updatedOrders(orderBook.getCopyOfOrderBook(true), ordersToAdd)
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(true))
             orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, true, updatedOrders.fullOrderBook))
-            ordersToSave.addAll(updatedOrders.updatedOrders)
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
         }
         if (sellSideOrderBookChanged) {
-            val updatedOrders = matchingEngine.updatedOrders(orderBook.getCopyOfOrderBook(false), ordersToAdd)
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(false))
             orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, false, updatedOrders.fullOrderBook))
-            ordersToSave.addAll(updatedOrders.updatedOrders)
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
         }
 
         var sequenceNumber: Long? = null

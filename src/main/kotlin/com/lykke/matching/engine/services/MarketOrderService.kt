@@ -204,9 +204,9 @@ class MarketOrderService @Autowired constructor(
                     val ordersToRemove = mutableListOf<LimitOrder>()
                     ordersToRemove.addAll(completedOrders)
                     ordersToRemove.addAll(ordersToCancel)
-                    val updatedOrders = matchingEngine.updatedOrders(matchingResult.orderBook, emptyList())
+                    val updatedOrders = matchingEngine.updatedOrders(matchingResult.orderBook)
                     orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, !order.isBuySide(), updatedOrders.fullOrderBook))
-                    ordersToSave.addAll(updatedOrders.updatedOrders)
+                    updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
 
                     trustedClientLimitOrdersReport.orders.addAll(cancelledTrustedOrdersWithTrades)
 
