@@ -11,6 +11,7 @@ import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
+@Deprecated("Deprecated rabbit publisher, please consider to use new format")
 class RabbitMqOldFormatPublisher(uri: String,
                                  exchangeName: String,
                                  publisherName: String,
