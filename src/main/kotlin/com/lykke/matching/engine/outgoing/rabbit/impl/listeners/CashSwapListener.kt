@@ -33,7 +33,9 @@ class CashSwapListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.swapOperations, cashSwapQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.swapOperations,
+                CashSwapListener::class.java.name,
+                cashSwapQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

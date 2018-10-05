@@ -23,7 +23,9 @@ class RabbitOrderBookListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBookQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.orderBooks,
+                RabbitOrderBookListener::class.java.simpleName,
+                rabbitOrderBookQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT)

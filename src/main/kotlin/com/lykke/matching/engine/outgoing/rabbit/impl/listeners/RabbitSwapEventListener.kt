@@ -32,7 +32,9 @@ class RabbitSwapEventListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.marketOrders, rabbitSwapQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.marketOrders,
+                RabbitSwapEventListener::class.java.simpleName,
+                rabbitSwapQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

@@ -32,7 +32,9 @@ class ReservedCashOperationListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.reservedCashOperations, reservedCashOperationQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.reservedCashOperations,
+                ReservedCashOperationListener::class.java.simpleName,
+                reservedCashOperationQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

@@ -16,9 +16,11 @@ import java.util.concurrent.BlockingQueue
 @Profile("default")
 class RabbitMqServiceImpl(private val gson: Gson,
                           private val applicationEventPublisher: ApplicationEventPublisher) : RabbitMqService<Event<*>> {
-    override fun startPublisher(config: RabbitConfig, queue: BlockingQueue<out Event<*>>,
-                                appName: String, appVersion: String, exchangeType: BuiltinExchangeType,
+    override fun startPublisher(config: RabbitConfig, publisherName: String,
+                                queue: BlockingQueue<out Event<*>>, appName: String,
+                                appVersion: String, exchangeType: BuiltinExchangeType,
                                 messageDatabaseLogger: DatabaseLogger<Event<*>>?) {
-        RabbitMqPublisher(config.uri, config.exchange, queue, appName, appVersion, exchangeType, gson, applicationEventPublisher, messageDatabaseLogger).start()
+        RabbitMqPublisher(config.uri, config.exchange, publisherName, queue, appName, appVersion, exchangeType,
+                gson, applicationEventPublisher, messageDatabaseLogger).start()
     }
 }

@@ -15,9 +15,10 @@ import org.apache.log4j.Logger
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
-abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
+abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                                                private val exchangeName: String,
-                                               private val queue: BlockingQueue<out T>,
+                                               val publisherName: String,
+                                               val queue: BlockingQueue<out T>,
                                                private val appName: String,
                                                private val appVersion: String,
                                                private val exchangeType: BuiltinExchangeType,
@@ -41,8 +42,6 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
     private var messagesCount: Long = 0
     private var totalPersistTime: Double = 0.0
     private var totalTime: Double = 0.0
-
-    private var isOk: Boolean = true
 
     private fun connect(): Boolean {
         val factory = ConnectionFactory()
@@ -97,17 +96,12 @@ abstract class AbstractRabbitMqPublisher<in T>(private val uri: String,
         }
     }
 
-    private fun publishFailureEvent() {
-        isOk = false
-        applicationEventPublisher.publishEvent(RabbitFailureEvent(exchangeName))
+    private fun publishRecoverEvent() {
+        applicationEventPublisher.publishEvent(RabbitRecoverEvent(publisherName))
     }
 
-    private fun publishRecoverEvent() {
-        if (!isOk) {
-            applicationEventPublisher.publishEvent(RabbitRecoverEvent(exchangeName))
-        }
-
-        isOk = true
+    private fun publishFailureEvent() {
+        applicationEventPublisher.publishEvent(RabbitFailureEvent(publisherName))
     }
 
     private fun logMessage(item: T, stringRepresentation: String?) {

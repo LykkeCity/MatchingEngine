@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 class RabbitMqPublisher(uri: String,
+                        publisherName: String,
                         exchangeName: String,
                         queue: BlockingQueue<out Event<*>>,
                         appName: String,
@@ -19,11 +20,9 @@ class RabbitMqPublisher(uri: String,
                         exchangeType: BuiltinExchangeType,
                         private val gson: Gson,
                         applicationEventPublisher: ApplicationEventPublisher,
-                        private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName,
+                        private val messageDatabaseLogger: DatabaseLogger<Event<*>>? = null) : AbstractRabbitMqPublisher<Event<*>>(uri, exchangeName, publisherName,
         queue, appName, appVersion, exchangeType, LOGGER,
         MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, messageDatabaseLogger) {
-
-
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(RabbitMqPublisher::class.java.name)
         private val MESSAGES_LOGGER = Logger.getLogger("${RabbitMqPublisher::class.java.name}.message")

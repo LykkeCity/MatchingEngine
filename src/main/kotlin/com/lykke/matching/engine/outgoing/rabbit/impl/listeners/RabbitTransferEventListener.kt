@@ -33,7 +33,9 @@ class RabbitTransferEventListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.transfers, rabbitTransferQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.transfers,
+                RabbitTransferEventListener::class.java.simpleName,
+                rabbitTransferQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

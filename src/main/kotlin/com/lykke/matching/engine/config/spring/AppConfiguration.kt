@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -11,6 +9,7 @@ import com.lykke.utils.logging.MetricsLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.DependsOn
 import org.springframework.core.env.Environment
 import org.springframework.core.env.get
 import org.springframework.scheduling.TaskScheduler
@@ -18,10 +17,10 @@ import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
-import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 @EnableScheduling
+@DependsOn("queueConfig")
 open class AppConfiguration: SchedulingConfigurer {
     @Autowired
     private lateinit var config: Config

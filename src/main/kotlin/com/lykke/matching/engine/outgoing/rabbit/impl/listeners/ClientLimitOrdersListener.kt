@@ -32,7 +32,9 @@ class ClientLimitOrdersListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.trustedLimitOrders, clientLimitOrdersQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.trustedLimitOrders,
+                ClientLimitOrdersListener::class.java.name,
+                clientLimitOrdersQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

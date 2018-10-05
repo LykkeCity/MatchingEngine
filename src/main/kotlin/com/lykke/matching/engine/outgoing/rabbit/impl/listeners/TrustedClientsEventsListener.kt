@@ -1,23 +1,25 @@
 package com.lykke.matching.engine.outgoing.rabbit.impl.listeners
 
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.rabbit.RabbitMqService
+import com.lykke.matching.engine.outgoing.rabbit.impl.dispatchers.RabbitEventDispatcher
+import com.lykke.matching.engine.outgoing.rabbit.utils.RabbitEventUtils
 import com.lykke.matching.engine.utils.config.Config
-import com.lykke.matching.engine.utils.queue.QueueSplitter
 import com.lykke.utils.AppVersion
 import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
 class TrustedClientsEventsListener {
 
     @Autowired
-    private lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
+    private lateinit var trustedClientsEventsDeque: BlockingDeque<Event<*>>
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService<Event<*>>
@@ -25,18 +27,30 @@ class TrustedClientsEventsListener {
     @Autowired
     private lateinit var config: Config
 
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
+
+    @Autowired
+    private lateinit var applicationEventPublisher: ApplicationEventPublisher
+
     @PostConstruct
     fun initRabbitMqPublisher() {
-        val rabbitMqQueues = HashSet<BlockingQueue<ExecutionEvent>>()
-        config.me.rabbitMqConfigs.trustedClientsEvents.forEach { rabbitConfig ->
-            val queue = LinkedBlockingQueue<ExecutionEvent>()
-            rabbitMqQueues.add(queue)
-            rabbitMqService.startPublisher(rabbitConfig, queue,
+        val consumerNameToQueue = HashMap<String, BlockingQueue<Event<*>>>()
+        config.me.rabbitMqConfigs.trustedClientsEvents.forEachIndexed { index, rabbitConfig ->
+            val trustedClientsEventConsumerQueue = RabbitEventUtils.getTrustedClientsEventConsumerQueue(rabbitConfig.exchange, index)
+            val queue = applicationContext.getBean(trustedClientsEventConsumerQueue) as BlockingQueue<Event<*>>
+
+            consumerNameToQueue.put(trustedClientsEventConsumerQueue, queue)
+
+            rabbitMqService.startPublisher(rabbitConfig,
+                    trustedClientsEventConsumerQueue,
+                    queue,
                     config.me.name,
                     AppVersion.VERSION,
                     BuiltinExchangeType.DIRECT,
                     null)
         }
-        QueueSplitter("TrustedClientEventsSplitter", trustedClientsEventsQueue, rabbitMqQueues).start()
+
+        RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsDeque, consumerNameToQueue, applicationEventPublisher).start()
     }
 }

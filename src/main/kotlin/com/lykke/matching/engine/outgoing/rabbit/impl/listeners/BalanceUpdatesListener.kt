@@ -33,7 +33,10 @@ class BalanceUpdatesListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.balanceUpdates, balanceUpdateQueue, config.me.name,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.balanceUpdates,
+                BalanceUpdatesListener::class.java.name,
+                balanceUpdateQueue,
+                config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,
                 DatabaseLogger(

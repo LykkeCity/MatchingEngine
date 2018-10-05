@@ -3,7 +3,6 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -14,6 +13,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import javax.annotation.PostConstruct
 
 @Configuration
 open class QueueConfig {
@@ -116,5 +116,10 @@ open class QueueConfig {
     @Bean
     open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @PostConstruct
+    fun defineRabbiEventQueues() {
+
     }
 }

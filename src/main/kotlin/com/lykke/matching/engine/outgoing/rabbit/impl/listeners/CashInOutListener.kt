@@ -33,7 +33,9 @@ class CashInOutListener {
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.cashOperations, rabbitCashInOutQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.cashOperations,
+                CashInOutListener::class.java.name,
+                rabbitCashInOutQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT,

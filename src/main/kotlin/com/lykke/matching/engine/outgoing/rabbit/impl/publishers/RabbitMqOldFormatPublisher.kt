@@ -13,13 +13,14 @@ import java.util.concurrent.BlockingQueue
 
 class RabbitMqOldFormatPublisher(uri: String,
                                  exchangeName: String,
+                                 publisherName: String,
                                  queue: BlockingQueue<out Any>,
                                  appName: String,
                                  appVersion: String,
                                  exchangeType: BuiltinExchangeType,
                                  private val gson: Gson,
                                  applicationEventPublisher: ApplicationEventPublisher,
-                                 messageDatabaseLogger: DatabaseLogger<Any>? = null) : AbstractRabbitMqPublisher<Any>(uri, exchangeName,
+                                 messageDatabaseLogger: DatabaseLogger<Any>? = null) : AbstractRabbitMqPublisher<Any>(uri, exchangeName, publisherName,
         queue, appName, appVersion, exchangeType, LOGGER,
         MESSAGES_LOGGER, METRICS_LOGGER, STATS_LOGGER, applicationEventPublisher, messageDatabaseLogger) {
 
