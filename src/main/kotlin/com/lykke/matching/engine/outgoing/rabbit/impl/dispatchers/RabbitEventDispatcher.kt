@@ -6,16 +6,17 @@ import com.lykke.matching.engine.utils.monitoring.HealthMonitorEvent
 import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.locks.ReentrantLock
+import javax.annotation.PostConstruct
 
 class RabbitEventDispatcher<E>(private val dispatcherName: String,
                                private val inputDeque: BlockingDeque<E>,
-                               private val consumerNameToQueue: Map<String, BlockingQueue<E>>,
-                               private val applicationEventPublisher: ApplicationEventPublisher) : Thread(dispatcherName) {
+                               private val consumerNameToQueue: Map<String, BlockingQueue<E>>) : Thread(dispatcherName) {
 
     companion object {
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -27,6 +28,9 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
     private var maintenanceModeLock = ReentrantLock()
     private var maintenanceModeCondition = maintenanceModeLock.newCondition()
 
+    @Autowired
+    private lateinit var applicationEventPublisher: ApplicationEventPublisher
+
     override fun run() {
         try {
             while (true) {
@@ -36,6 +40,11 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
         } catch (e: Exception) {
             logException("Error occurred in events dispatcher thread for exchange: $dispatcherName", e)
         }
+    }
+
+    @PostConstruct
+    private fun init() {
+        this.start()
     }
 
     private fun dispatchEventToEventListeners(event: E) {
@@ -73,16 +82,18 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
             failedEventConsumers.add(rabbitFailureEvent.publisherName)
 
             logError("Rabbit MQ publisher ${rabbitFailureEvent.publisherName} crashed, count of functional publishers is ${consumerNameToQueue.size - failedEventConsumers.size}")
-            val blockingQueue = consumerNameToQueue[rabbitFailureEvent.publisherName]
+
+            val failedConsumerQueue = consumerNameToQueue[rabbitFailureEvent.publisherName]
+
+            failedConsumerQueue?.forEach {
+                inputDeque.putFirst(it)
+            }
 
             if (consumerNameToQueue.size == failedEventConsumers.size) {
                 logError("All Rabbit MQ publishers crashed for exchange: $dispatcherName")
-                blockingQueue?.forEach {
-                    inputDeque.putFirst(it)
-                }
             }
 
-            blockingQueue?.clear()
+            failedConsumerQueue?.clear()
         } catch (e: Exception) {
             logException("Error occurred on dispatcher failure recording for exchange: $dispatcherName", e)
         } finally {
