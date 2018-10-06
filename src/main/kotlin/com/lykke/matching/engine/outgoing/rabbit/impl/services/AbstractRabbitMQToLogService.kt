@@ -26,6 +26,6 @@ abstract class AbstractRabbitMQToLogService<T>(private val gson: Gson, private v
     }
 
     private fun logMessage(exchange: String, publisherName: String, item: T) {
-        LOGGER.info("New rmq message (exchange: $exchange), publisher: $publisherName): ${gson.toJson(item)}")
+        LOGGER.info("New rmq message (exchange: $exchange, publisher: $publisherName): ${gson.toJson(item)}")
     }
 }

@@ -9,7 +9,6 @@ import com.lykke.utils.logging.MetricsLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.DependsOn
 import org.springframework.core.env.Environment
 import org.springframework.core.env.get
 import org.springframework.scheduling.TaskScheduler
@@ -20,7 +19,6 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
 
 @Configuration
 @EnableScheduling
-@DependsOn("queueConfig")
 open class AppConfiguration: SchedulingConfigurer {
     @Autowired
     private lateinit var config: Config

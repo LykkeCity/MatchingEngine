@@ -8,24 +8,24 @@ import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.LinkedBlockingQueue
-import javax.annotation.PostConstruct
 
 @Configuration
 open class QueueConfig {
 
     @Bean
-    open fun clientsEventsQueue(): BlockingQueue<Event<*>> {
-        return LinkedBlockingQueue()
+    open fun clientsEventsQueue(): BlockingDeque<Event<*>> {
+        return LinkedBlockingDeque()
     }
 
     @Bean
-    open fun trustedClientsEventsQueue(): BlockingQueue<ExecutionEvent> {
-        return LinkedBlockingQueue()
+    open fun trustedClientsEventsQueue(): BlockingDeque<Event<*>> {
+        return LinkedBlockingDeque()
     }
 
     @Bean
@@ -116,10 +116,5 @@ open class QueueConfig {
     @Bean
     open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
-    }
-
-    @PostConstruct
-    fun defineRabbiEventQueues() {
-
     }
 }

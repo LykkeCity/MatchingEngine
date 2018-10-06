@@ -42,7 +42,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
         try {
             maintenanceModeLock.lock()
 
-            while (failedEventConsumers.size != consumerNameToQueue.size) {
+            while (failedEventConsumers.size == consumerNameToQueue.size) {
                 maintenanceModeCondition.await()
             }
 

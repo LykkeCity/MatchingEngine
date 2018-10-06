@@ -10,16 +10,18 @@ import com.rabbitmq.client.BuiltinExchangeType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.DependsOn
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 
 @Component
+@DependsOn("dynamicRabbitMqQueueConfig")
 class TrustedClientsEventsListener {
 
     @Autowired
-    private lateinit var trustedClientsEventsDeque: BlockingDeque<Event<*>>
+    private lateinit var trustedClientsEventsQueue: BlockingDeque<Event<*>>
 
     @Autowired
     private lateinit var rabbitMqService: RabbitMqService<Event<*>>
@@ -51,6 +53,6 @@ class TrustedClientsEventsListener {
                     null)
         }
 
-        RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsDeque, consumerNameToQueue, applicationEventPublisher).start()
+        RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsQueue, consumerNameToQueue, applicationEventPublisher).start()
     }
 }
