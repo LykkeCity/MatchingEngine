@@ -53,7 +53,7 @@ class ReservedCashOperationListener {
     }
 
     @EventListener
-    fun onFailure(rabbitFailureEvent: RabbitFailureEvent) {
+    fun onFailure(rabbitFailureEvent: RabbitFailureEvent<ReservedCashOperation>) {
         if(rabbitFailureEvent.publisherName == ReservedCashOperationListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }

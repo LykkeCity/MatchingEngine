@@ -45,7 +45,7 @@ class RabbitOrderBookListener {
     }
 
     @EventListener
-    fun onFailure(rabbitFailureEvent: RabbitFailureEvent) {
+    fun onFailure(rabbitFailureEvent: RabbitFailureEvent<OrderBook>) {
         if(rabbitFailureEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }

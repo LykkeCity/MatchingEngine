@@ -54,7 +54,7 @@ class BalanceUpdatesListener {
     }
 
     @EventListener
-    fun onFailure(rabbitFailureEvent: RabbitFailureEvent) {
+    fun onFailure(rabbitFailureEvent: RabbitFailureEvent<BalanceUpdate>) {
         if(rabbitFailureEvent.publisherName == BalanceUpdatesListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }

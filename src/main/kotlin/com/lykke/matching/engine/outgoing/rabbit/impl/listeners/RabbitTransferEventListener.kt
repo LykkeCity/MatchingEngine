@@ -54,7 +54,7 @@ class RabbitTransferEventListener {
     }
 
     @EventListener
-    fun onFailure(rabbitFailureEvent: RabbitFailureEvent) {
+    fun onFailure(rabbitFailureEvent: RabbitFailureEvent<CashTransferOperation>) {
         if(rabbitFailureEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }

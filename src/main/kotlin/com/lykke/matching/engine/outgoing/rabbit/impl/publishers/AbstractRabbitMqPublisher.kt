@@ -55,9 +55,10 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
             channel!!.exchangeDeclare(exchangeName, exchangeType, true)
 
             LOGGER.info("Connected to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName")
-
+            publishRecoverEvent()
             return true
         } catch (e: Exception) {
+            publishFailureEvent(null)
             LOGGER.error("Unable to connect to RabbitMQ: ${factory.host}:${factory.port}, exchange: $exchangeName: ${e.message}", e)
             return false
         }
@@ -84,11 +85,10 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
                 val endPersistTime = System.nanoTime()
                 val endTime = System.nanoTime()
                 fixTime(startTime, endTime, startPersistTime, endPersistTime)
-                publishRecoverEvent()
 
                 return
             } catch (exception: Exception) {
-                publishFailureEvent()
+                publishFailureEvent(item)
                 LOGGER.error("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 METRICS_LOGGER.logError("Exception during RabbitMQ publishing: ${exception.message}", exception)
                 tryConnectUntilSuccess()
@@ -100,8 +100,8 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
         applicationEventPublisher.publishEvent(RabbitRecoverEvent(publisherName))
     }
 
-    private fun publishFailureEvent() {
-        applicationEventPublisher.publishEvent(RabbitFailureEvent(publisherName))
+    private fun publishFailureEvent(event: T?) {
+        applicationEventPublisher.publishEvent(RabbitFailureEvent(publisherName, event))
     }
 
     private fun logMessage(item: T, stringRepresentation: String?) {

@@ -12,8 +12,8 @@ import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 class RabbitMqPublisher(uri: String,
-                        publisherName: String,
                         exchangeName: String,
+                        publisherName: String,
                         queue: BlockingQueue<out Event<*>>,
                         appName: String,
                         appVersion: String,

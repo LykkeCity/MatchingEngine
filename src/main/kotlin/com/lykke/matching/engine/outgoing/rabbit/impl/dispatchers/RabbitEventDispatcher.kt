@@ -76,7 +76,11 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
     }
 
     @EventListener
-    private fun onRabbitFailure(rabbitFailureEvent: RabbitFailureEvent) {
+    private fun onRabbitFailure(rabbitFailureEvent: RabbitFailureEvent<E>) {
+        if (!consumerNameToQueue.keys.contains(rabbitFailureEvent.publisherName)) {
+            return
+        }
+
         try {
             maintenanceModeLock.lock()
             failedEventConsumers.add(rabbitFailureEvent.publisherName)
@@ -89,8 +93,11 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
                 inputDeque.putFirst(it)
             }
 
+            rabbitFailureEvent.failedEvent?.let { inputDeque.putFirst(it) }
+
             if (consumerNameToQueue.size == failedEventConsumers.size) {
                 logError("All Rabbit MQ publishers crashed for exchange: $dispatcherName")
+                applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
             }
 
             failedConsumerQueue?.clear()
@@ -104,6 +111,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
     @EventListener
     private fun onRabbitRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         try {
+            log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${consumerNameToQueue.size - failedEventConsumers.size}")
             maintenanceModeLock.lock()
             failedEventConsumers.remove(rabbitRecoverEvent.publisherName)
             maintenanceModeCondition.signal()
@@ -125,5 +133,10 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
     private fun logError(message: String) {
         METRICS_LOGGER.logError(message)
         LOGGER.error(message)
+    }
+
+    private fun log(message: String){
+        METRICS_LOGGER.logWarning(message)
+        LOGGER.info(message)
     }
 }

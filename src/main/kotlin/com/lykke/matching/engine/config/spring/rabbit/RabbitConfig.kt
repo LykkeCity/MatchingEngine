@@ -23,15 +23,13 @@ open class RabbitConfig {
     private lateinit var applicationContext: ApplicationContext
 
     @Bean
-    open fun trustedClientsDispatcher(trustedClientsEventsQueue: BlockingDeque<Event<*>>,
-                                      trustedConsumerNameToQueue: Map<String, BlockingQueue<Event<*>>>): RabbitEventDispatcher<Event<*>> {
-        return RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsQueue, trustedConsumerNameToQueue)
+    open fun trustedClientsDispatcher(trustedClientsEventsQueue: BlockingDeque<Event<*>>): RabbitEventDispatcher<Event<*>> {
+        return RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsQueue, trustedConsumerNameToQueue())
     }
 
     @Bean
-    open fun clientEventsDispatcher(clientsEventsQueue: BlockingDeque<Event<*>>,
-                                    consumerNameToQueue: Map<String, BlockingQueue<Event<*>>>): RabbitEventDispatcher<Event<*>> {
-        return RabbitEventDispatcher("ClientEventsDispatcher", clientsEventsQueue, consumerNameToQueue)
+    open fun clientEventsDispatcher(clientsEventsQueue: BlockingDeque<Event<*>>): RabbitEventDispatcher<Event<*>> {
+        return RabbitEventDispatcher("ClientEventsDispatcher", clientsEventsQueue, clientNameToQueue())
     }
 
     @Bean
@@ -48,7 +46,7 @@ open class RabbitConfig {
     }
 
     @Bean
-    open fun consumerNameToQueue(): Map<String, BlockingQueue<Event<*>>> {
+    open fun clientNameToQueue(): Map<String, BlockingQueue<Event<*>>> {
         val consumerNameToQueue = HashMap<String, BlockingQueue<Event<*>>>()
         config.me.rabbitMqConfigs.events.forEachIndexed { index, rabbitConfig ->
             val clientsEventConsumerQueue = RabbitEventUtils.getClientEventConsumerQueueName(rabbitConfig.exchange, index)
