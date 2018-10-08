@@ -16,7 +16,7 @@ import javax.annotation.PostConstruct
 
 class RabbitEventDispatcher<E>(private val dispatcherName: String,
                                private val inputDeque: BlockingDeque<E>,
-                               private val consumerNameToQueue: Map<String, BlockingQueue<E>>) : Thread(dispatcherName) {
+                               private val queueNameToQueue: Map<String, BlockingQueue<E>>) : Thread(dispatcherName) {
 
     companion object {
         val METRICS_LOGGER = MetricsLogger.getLogger()
@@ -38,7 +38,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
                 dispatchEventToEventListeners(event)
             }
         } catch (e: Exception) {
-            logException("Error occurred in events dispatcher thread for exchange: $dispatcherName", e)
+            logException("Error occurred in events dispatcher thread for dispatcher: $dispatcherName", e)
         }
     }
 
@@ -51,11 +51,11 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
         try {
             maintenanceModeLock.lock()
 
-            while (failedEventConsumers.size == consumerNameToQueue.size) {
+            while (failedEventConsumers.size == queueNameToQueue.size) {
                 maintenanceModeCondition.await()
             }
 
-            consumerNameToQueue.keys.forEach {
+            queueNameToQueue.keys.forEach {
                 dispatchEventToEventListener(event, it)
             }
         } finally {
@@ -68,16 +68,16 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
             if (failedEventConsumers.contains(listenerName)) {
                 return
             }
-            consumerNameToQueue[listenerName]?.put(event)
+            queueNameToQueue[listenerName]?.put(event)
         } catch (e: Exception) {
             //normally never occur, exist to be sure event is dispatched to the rest of listeners
-            logException("Failed to dispatch event, for exchange: $dispatcherName, for listener: $listenerName", e)
+            logException("Failed to dispatch event, in dispatcher: $dispatcherName, for listener: $listenerName", e)
         }
     }
 
     @EventListener
     private fun onRabbitFailure(rabbitFailureEvent: RabbitFailureEvent<E>) {
-        if (!consumerNameToQueue.keys.contains(rabbitFailureEvent.publisherName)) {
+        if (!queueNameToQueue.keys.contains(rabbitFailureEvent.publisherName)) {
             return
         }
 
@@ -85,9 +85,9 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
             maintenanceModeLock.lock()
             failedEventConsumers.add(rabbitFailureEvent.publisherName)
 
-            logError("Rabbit MQ publisher ${rabbitFailureEvent.publisherName} crashed, count of functional publishers is ${consumerNameToQueue.size - failedEventConsumers.size}")
+            logError("Rabbit MQ publisher ${rabbitFailureEvent.publisherName} crashed, count of functional publishers is ${queueNameToQueue.size - failedEventConsumers.size}")
 
-            val failedConsumerQueue = consumerNameToQueue[rabbitFailureEvent.publisherName]
+            val failedConsumerQueue = queueNameToQueue[rabbitFailureEvent.publisherName]
 
             failedConsumerQueue?.forEach {
                 inputDeque.putFirst(it)
@@ -95,14 +95,14 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
             rabbitFailureEvent.failedEvent?.let { inputDeque.putFirst(it) }
 
-            if (consumerNameToQueue.size == failedEventConsumers.size) {
-                logError("All Rabbit MQ publishers crashed for exchange: $dispatcherName")
+            if (queueNameToQueue.size == failedEventConsumers.size) {
+                logError("All Rabbit MQ publishers crashed, dispatcher: $dispatcherName")
                 applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
             }
 
             failedConsumerQueue?.clear()
         } catch (e: Exception) {
-            logException("Error occurred on dispatcher failure recording for exchange: $dispatcherName", e)
+            logException("Error occurred on dispatcher failure recording in dispatcher: $dispatcherName", e)
         } finally {
             maintenanceModeLock.unlock()
         }
@@ -110,13 +110,13 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
     @EventListener
     private fun onRabbitRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (!consumerNameToQueue.keys.contains(rabbitRecoverEvent.publisherName)) {
+        if (!queueNameToQueue.keys.contains(rabbitRecoverEvent.publisherName)) {
             return
         }
 
         try {
-            log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${consumerNameToQueue.size - failedEventConsumers.size}")
             maintenanceModeLock.lock()
+            log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${queueNameToQueue.size - failedEventConsumers.size}")
             failedEventConsumers.remove(rabbitRecoverEvent.publisherName)
             maintenanceModeCondition.signal()
 
@@ -127,7 +127,6 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
             maintenanceModeLock.unlock()
         }
     }
-
 
     private fun logException(message: String, e: Exception) {
         METRICS_LOGGER.logError(message, e)
