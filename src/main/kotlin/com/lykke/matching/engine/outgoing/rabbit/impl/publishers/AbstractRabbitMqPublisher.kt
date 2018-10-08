@@ -97,10 +97,16 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     }
 
     private fun publishRecoverEvent() {
+        val message = "Rabbit MQ publisher: $publisherName recovered"
+        LOGGER.info(message)
+        METRICS_LOGGER.logWarning(message)
         applicationEventPublisher.publishEvent(RabbitRecoverEvent(publisherName))
     }
 
     private fun publishFailureEvent(event: T?) {
+        val message = "Rabbit MQ publisher: $publisherName failed"
+        LOGGER.error(message)
+        METRICS_LOGGER.logError(message)
         applicationEventPublisher.publishEvent(RabbitFailureEvent(publisherName, event))
     }
 

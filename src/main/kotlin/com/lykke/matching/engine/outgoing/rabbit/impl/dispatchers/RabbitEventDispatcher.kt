@@ -110,6 +110,10 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
     @EventListener
     private fun onRabbitRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
+        if (!consumerNameToQueue.keys.contains(rabbitRecoverEvent.publisherName)) {
+            return
+        }
+
         try {
             log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${consumerNameToQueue.size - failedEventConsumers.size}")
             maintenanceModeLock.lock()

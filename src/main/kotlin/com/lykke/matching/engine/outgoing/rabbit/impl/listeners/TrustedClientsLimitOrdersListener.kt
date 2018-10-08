@@ -43,7 +43,7 @@ class TrustedClientsLimitOrdersListener {
 
 
     @EventListener
-    fun onFailure(rabbitFailureEvent: RabbitFailureEvent<LimitOrdersReport>) {
+    fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }
