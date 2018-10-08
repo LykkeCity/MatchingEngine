@@ -43,7 +43,7 @@ class CashTransferEventListener {
     @PostConstruct
     fun initRabbitMqPublisher() {
         rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.transfers,
-                RabbitTransferEventListener::class.java.simpleName,
+                CashTransferEventListener::class.java.simpleName,
                 rabbitTransferQueue,
                 config.me.name,
                 AppVersion.VERSION,
@@ -55,14 +55,14 @@ class CashTransferEventListener {
 
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
-        if(rabbitFailureEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
+        if(rabbitFailureEvent.publisherName == CashTransferEventListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
-        if (rabbitRecoverEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
+        if (rabbitRecoverEvent.publisherName == CashTransferEventListener::class.java.simpleName) {
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT))
         }
     }
