@@ -16,19 +16,19 @@ import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.BlockingQueue
 
 abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
-                                               private val exchangeName: String,
-                                               val publisherName: String,
-                                               val queue: BlockingQueue<out T>,
-                                               private val appName: String,
-                                               private val appVersion: String,
-                                               private val exchangeType: BuiltinExchangeType,
-                                               private val LOGGER: ThrottlingLogger,
-                                               private val MESSAGES_LOGGER: Logger,
-                                               private val METRICS_LOGGER: MetricsLogger,
-                                               private val STATS_LOGGER: Logger,
-                                               private val applicationEventPublisher: ApplicationEventPublisher,
+                                            private val exchangeName: String,
+                                            private val queueName: String,
+                                            val queue: BlockingQueue<out T>,
+                                            private val appName: String,
+                                            private val appVersion: String,
+                                            private val exchangeType: BuiltinExchangeType,
+                                            private val LOGGER: ThrottlingLogger,
+                                            private val MESSAGES_LOGGER: Logger,
+                                            private val METRICS_LOGGER: MetricsLogger,
+                                            private val STATS_LOGGER: Logger,
+                                            private val applicationEventPublisher: ApplicationEventPublisher,
 
-                                               /** null if do not need to log */
+                                            /** null if do not need to log */
                                                private val messageDatabaseLogger: DatabaseLogger<T>? = null) : Thread() {
 
     companion object {
@@ -97,17 +97,17 @@ abstract class AbstractRabbitMqPublisher<T>(private val uri: String,
     }
 
     private fun publishRecoverEvent() {
-        val message = "Rabbit MQ publisher: $publisherName recovered"
+        val message = "Rabbit MQ publisher: $queueName recovered"
         LOGGER.info(message)
         METRICS_LOGGER.logWarning(message)
-        applicationEventPublisher.publishEvent(RabbitRecoverEvent(publisherName))
+        applicationEventPublisher.publishEvent(RabbitRecoverEvent(queueName))
     }
 
     private fun publishFailureEvent(event: T?) {
-        val message = "Rabbit MQ publisher: $publisherName failed"
+        val message = "Rabbit MQ publisher: $queueName failed"
         LOGGER.error(message)
         METRICS_LOGGER.logError(message)
-        applicationEventPublisher.publishEvent(RabbitFailureEvent(publisherName, event))
+        applicationEventPublisher.publishEvent(RabbitFailureEvent(queueName, event))
     }
 
     private fun logMessage(item: T, stringRepresentation: String?) {

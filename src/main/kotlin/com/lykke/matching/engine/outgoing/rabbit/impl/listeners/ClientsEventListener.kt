@@ -36,10 +36,10 @@ class ClientsEventListener {
     @PostConstruct
     fun initRabbitMqPublisher() {
         config.me.rabbitMqConfigs.events.forEachIndexed { index, rabbitConfig ->
-            val clientsEventConsumerQueue = RabbitEventUtils.getClientEventConsumerQueueName(rabbitConfig.exchange, index)
-            val queue = applicationContext.getBean(clientsEventConsumerQueue) as BlockingQueue<Event<*>>
+            val clientsEventConsumerQueueName = RabbitEventUtils.getClientEventConsumerQueueName(rabbitConfig.exchange, index)
+            val queue = applicationContext.getBean(clientsEventConsumerQueueName) as BlockingQueue<Event<*>>
 
-            rabbitMqService.startPublisher(rabbitConfig, clientsEventConsumerQueue, queue,
+            rabbitMqService.startPublisher(rabbitConfig, clientsEventConsumerQueueName, queue,
                     config.me.name,
                     AppVersion.VERSION,
                     BuiltinExchangeType.DIRECT,
