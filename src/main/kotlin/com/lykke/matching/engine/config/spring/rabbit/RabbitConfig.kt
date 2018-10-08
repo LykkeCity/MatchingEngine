@@ -36,10 +36,10 @@ open class RabbitConfig {
     open fun trustedConsumerNameToQueue(): Map<String, BlockingQueue<Event<*>>> {
         val consumerNameToQueue = HashMap<String, BlockingQueue<Event<*>>>()
         config.me.rabbitMqConfigs.trustedClientsEvents.forEachIndexed { index, rabbitConfig ->
-            val trustedClientsEventConsumerQueue = RabbitEventUtils.getTrustedClientsEventConsumerQueue(rabbitConfig.exchange, index)
-            val queue = applicationContext.getBean(trustedClientsEventConsumerQueue) as BlockingQueue<Event<*>>
+            val trustedClientsEventConsumerQueueName = RabbitEventUtils.getTrustedClientsEventConsumerQueue(rabbitConfig.exchange, index)
+            val queue = applicationContext.getBean(trustedClientsEventConsumerQueueName) as BlockingQueue<Event<*>>
 
-            consumerNameToQueue.put(trustedClientsEventConsumerQueue, queue)
+            consumerNameToQueue.put(trustedClientsEventConsumerQueueName, queue)
         }
 
         return consumerNameToQueue
@@ -49,10 +49,10 @@ open class RabbitConfig {
     open fun clientNameToQueue(): Map<String, BlockingQueue<Event<*>>> {
         val consumerNameToQueue = HashMap<String, BlockingQueue<Event<*>>>()
         config.me.rabbitMqConfigs.events.forEachIndexed { index, rabbitConfig ->
-            val clientsEventConsumerQueue = RabbitEventUtils.getClientEventConsumerQueueName(rabbitConfig.exchange, index)
+            val clientsEventConsumerQueueName = RabbitEventUtils.getClientEventConsumerQueueName(rabbitConfig.exchange, index)
 
-            val queue = applicationContext.getBean(clientsEventConsumerQueue) as BlockingQueue<Event<*>>
-            consumerNameToQueue.put(clientsEventConsumerQueue, queue)
+            val queue = applicationContext.getBean(clientsEventConsumerQueueName) as BlockingQueue<Event<*>>
+            consumerNameToQueue.put(clientsEventConsumerQueueName, queue)
         }
 
         return consumerNameToQueue
