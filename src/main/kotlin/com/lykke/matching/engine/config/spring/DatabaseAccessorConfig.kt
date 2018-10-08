@@ -186,7 +186,7 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun redisWalletDatabaseAccessor(): RedisWalletDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -199,7 +199,7 @@ open class DatabaseAccessorConfig {
                          allRedisConnections: List<RedisConnection>,
                          @Value("\${redis.health.check.interval}") updateInterval: Long,
                          @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisReconnectionManager? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
