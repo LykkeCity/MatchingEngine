@@ -20,7 +20,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MultiLimitOrderValidatorImpl
@@ -61,7 +60,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var persistenceManager: PersistenceManager
 
     protected lateinit var rabbitEventsQueue: LinkedBlockingQueue<Event<*>>
-    protected lateinit var rabbitTrustedClientsEventsQueue: LinkedBlockingQueue<ExecutionEvent>
+    protected lateinit var rabbitTrustedClientsEventsQueue: LinkedBlockingQueue<Event<*>>
 
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
