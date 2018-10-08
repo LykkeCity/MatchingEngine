@@ -7,7 +7,7 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class MessageSender(private val clientsEventsQueue: BlockingQueue<Event<*>>,
-                    private val trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>) {
+                    private val trustedClientsEventsQueue: BlockingQueue<Event<*>>) {
 
     fun sendTrustedClientsMessage(message: ExecutionEvent) {
         trustedClientsEventsQueue.put(message)
@@ -16,5 +16,4 @@ class MessageSender(private val clientsEventsQueue: BlockingQueue<Event<*>>,
     fun sendMessage(message: Event<*>) {
         clientsEventsQueue.put(message)
     }
-
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.BlockingQueue
 
 interface RabbitMqService<T> {
     fun startPublisher(config: RabbitConfig,
+                       publisherName: String,
                        queue: BlockingQueue<out T>,
                        appName: String,
                        appVersion: String,
