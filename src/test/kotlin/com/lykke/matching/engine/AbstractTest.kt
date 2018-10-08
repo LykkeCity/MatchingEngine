@@ -6,6 +6,7 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
@@ -17,7 +18,6 @@ import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.outgoing.messages.CashOperation
 import com.lykke.matching.engine.outgoing.messages.CashTransferOperation
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
-import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.assertEquals
@@ -135,7 +135,7 @@ abstract class AbstractTest {
     protected lateinit var clientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
-    protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
+    protected lateinit var trustedClientsEventsQueue: BlockingQueue<Event<*>>
 
     @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
