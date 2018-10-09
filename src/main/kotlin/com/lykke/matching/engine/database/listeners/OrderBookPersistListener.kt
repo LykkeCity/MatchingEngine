@@ -2,14 +2,14 @@ package com.lykke.matching.engine.database.listeners
 
 import com.lykke.matching.engine.common.QueueConsumer
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import org.apache.log4j.Logger
 import java.util.concurrent.BlockingQueue
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
-class OrderBookPersistListener(private val updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                               private val secondaryOrdersAccessor: OrderBookDatabaseAccessor) : QueueConsumer<Collection<OrderBookPersistenceData>> {
+class OrderBookPersistListener(private val updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
+                               private val secondaryOrdersAccessor: OrderBookDatabaseAccessor) : QueueConsumer<OrderBookPersistEvent> {
     companion object {
         private val LOGGER = Logger.getLogger(OrderBookPersistListener::class.java.name)
     }
@@ -20,7 +20,7 @@ class OrderBookPersistListener(private val updatedOrderBooksQueue: BlockingQueue
             while (true) {
                 try {
                     val orderBooks = updatedOrderBooksQueue.take()
-                    orderBooks.forEach {
+                    orderBooks.persistenceData.forEach {
                         secondaryOrdersAccessor.updateOrderBook(it.assetPairId, it.isBuy, it.orders)
                     }
                 } catch (e: Exception) {

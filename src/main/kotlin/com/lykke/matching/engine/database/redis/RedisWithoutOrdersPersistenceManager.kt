@@ -2,12 +2,12 @@ package com.lykke.matching.engine.database.redis
 
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.AssetBalance
-import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -29,7 +29,7 @@ class RedisWithoutOrdersPersistenceManager(
         private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
         private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
+        private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val redisConnection: RedisConnection,
         private val config: Config) : PersistenceManager {
 
@@ -85,7 +85,7 @@ class RedisWithoutOrdersPersistenceManager(
                     (if (messageId != null) " ($messageId)" else ""))
 
             if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                persistedWalletsApplicationEventPublisher.publishEvent(data.balancesData!!.wallets)
+                persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
             }
         }
     }

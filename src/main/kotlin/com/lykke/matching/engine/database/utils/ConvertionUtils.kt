@@ -5,7 +5,7 @@ import com.lykke.matching.engine.database.common.OrderBookSide
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import org.apache.log4j.Logger
 
-private fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>, log: Logger): List<OrderBookPersistenceData> {
+fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>, log: Logger): List<OrderBookPersistenceData> {
     val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()
     orders.forEach { order ->
         orderBooks.getOrPut(order.assetPairId) { mutableMapOf() }
