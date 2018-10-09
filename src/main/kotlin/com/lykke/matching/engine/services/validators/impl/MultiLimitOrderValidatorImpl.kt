@@ -25,6 +25,9 @@ class MultiLimitOrderValidatorImpl @Autowired constructor(private val assetsHold
         isSpreadValid(orderBook, order)
         isVolumeAccuracyValid(order, assetPair)
         isPriceAccuracyValid(order, assetPair)
+        if (order.status != OrderStatus.InOrderBook.name) {
+            throw OrderValidationException(OrderStatus.InOrderBook)
+        }
     }
 
     private fun isSpreadValid(orderBook: AssetOrderBook, order: LimitOrder) {

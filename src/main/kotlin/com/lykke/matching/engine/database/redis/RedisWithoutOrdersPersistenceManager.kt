@@ -1,17 +1,16 @@
 package com.lykke.matching.engine.database.redis
 
-import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.WalletDatabaseAccessor
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -22,32 +21,48 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 
-class RedisPersistenceManager(
+class RedisWithoutOrdersPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
+        private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
-        private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
-        private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
+        private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
+        private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
-        private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
-        private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
-        private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
         private val redisConnection: RedisConnection,
-        private val config: Config): PersistenceManager {
+        private val config: Config) : PersistenceManager {
 
     companion object {
-        private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
-        private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
+        private val LOGGER = Logger.getLogger(RedisWithoutOrdersPersistenceManager::class.java.name)
+        private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisWithoutOrdersPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
+
+    private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
+
+    init {
+        startSecondaryBalancesUpdater()
+    }
+
+    override fun balancesQueueSize() = updatedWalletsQueue.size
+
+    override fun ordersQueueSize() = 0
 
     override fun persist(data: PersistenceData): Boolean {
         if (data.isEmpty()) {
             return true
         }
         return try {
-            persistData(redisConnection, data)
+            if (!data.isEmptyWithoutOrders()) {
+                persistRedisData(redisConnection, data)
+            }
+            if (!data.isOrdersEmpty()) {
+                persistOrders(data.orderBooksData)
+                persistStopOrders(data.stopOrderBooksData)
+            }
             true
         } catch (e: Exception) {
             val message = "Unable to save data (${data.details()})"
@@ -57,7 +72,7 @@ class RedisPersistenceManager(
         }
     }
 
-    private fun persistData(redisConnection: RedisConnection, data: PersistenceData) {
+    private fun persistRedisData(redisConnection: RedisConnection, data: PersistenceData) {
         val startTime = System.nanoTime()
         redisConnection.transactionalResource { transaction ->
             persistBalances(transaction, data.balancesData?.balances)
@@ -67,9 +82,6 @@ class RedisPersistenceManager(
                     data.processedMessage?.type == MessageType.CASH_TRANSFER_OPERATION.type) {
                 persistProcessedCashMessage(transaction, data.processedMessage)
             }
-
-            data.orderBooksData?.let { persistOrders(transaction, it) }
-            data.stopOrderBooksData?.let { persistStopOrders(transaction, it) }
 
             persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
 
@@ -84,16 +96,8 @@ class RedisPersistenceManager(
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                     (if (messageId != null) " ($messageId)" else ""))
 
-            if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                persistedWalletsApplicationEventPublisher.publishEvent(data.balancesData!!.wallets)
-            }
-
-            if (!CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
-                persistedOrdersApplicationEventPublisher.publishEvent(data.orderBooksData!!.orderBooks)
-            }
-
-            if (!CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
-                persistedStopApplicationEventPublisher.publishEvent(data.stopOrderBooksData!!.orderBooks)
+            if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+                updatedWalletsQueue.put(data.balancesData!!.wallets)
             }
         }
     }
@@ -124,26 +128,49 @@ class RedisPersistenceManager(
         primaryBalancesAccessor.insertOrUpdateBalances(transaction, assetBalances!!)
     }
 
-    private fun persistOrders(transaction: Transaction, data: OrderBooksPersistenceData) {
-        if (data.ordersToSave.isEmpty() && data.ordersToRemove.isEmpty()) {
-            return
-        }
-        transaction.select(config.me.redis.ordersDatabase)
-        primaryOrdersAccessor.updateOrders(transaction, data.ordersToSave, data.ordersToRemove)
-    }
-
-    private fun persistStopOrders(transaction: Transaction, data: OrderBooksPersistenceData) {
-        if (data.ordersToSave.isEmpty() && data.ordersToRemove.isEmpty()) {
-            return
-        }
-        transaction.select(config.me.redis.ordersDatabase)
-        primaryStopOrdersAccessor.updateOrders(transaction, data.ordersToSave, data.ordersToRemove)
-    }
-
     private fun persistMessageSequenceNumber(transaction: Transaction, sequenceNumber: Long?) {
         if (sequenceNumber == null) {
             return
         }
         redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
+    }
+
+    private fun persistOrders(data: OrderBooksPersistenceData?) {
+        if (data?.isEmpty() != false) {
+            return
+        }
+        data.orderBooks.forEach {
+            orderBookDatabaseAccessor.updateOrderBook(it.assetPairId, it.isBuy, it.orders)
+        }
+    }
+
+    private fun persistStopOrders(data: OrderBooksPersistenceData?) {
+        if (data?.isEmpty() != false) {
+            return
+        }
+        data.orderBooks.forEach {
+            stopOrderBookDatabaseAccessor.updateStopOrderBook(it.assetPairId, it.isBuy, it.orders)
+        }
+    }
+
+    private fun startSecondaryBalancesUpdater() {
+        if (secondaryBalancesAccessor == null) {
+            return
+        }
+
+        if (!config.me.walletsMigration) {
+            updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
+        }
+
+        thread(name = "${RedisWithoutOrdersPersistenceManager::class.java.name}.balancesAsyncWriter") {
+            while (true) {
+                try {
+                    val wallets = updatedWalletsQueue.take()
+                    secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
+                } catch (e: Exception) {
+                    LOGGER.error("Unable to save wallets async", e)
+                }
+            }
+        }
     }
 }
