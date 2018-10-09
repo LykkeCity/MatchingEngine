@@ -28,7 +28,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
                                     private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor,
                                     private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
-                                    private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
+                                    private val persistedStopOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
                                     private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
                                     private val config: Config) : PersistenceManagerFactory {
 
@@ -47,7 +47,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         persistedOrdersApplicationEventPublisher,
-                        persistedStopApplicationEventPublisher,
+                        persistedStopOrdersApplicationEventPublisher,
                         persistedWalletsApplicationEventPublisher,
                         redisConnection.get(),
                         config

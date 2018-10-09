@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -119,8 +120,17 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun  updatedWalletsQueue(): BlockingQueue<Collection<Wallet>> {
-        return LinkedBlockingQueue<Collection<Wallet>>()
+    open fun updatedOrderBooksQueue(): BlockingQueue<Collection<OrderBookPersistenceData>>? {
+        return LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
     }
 
+    @Bean
+    open fun updatedStopOrderBooksQueue(): BlockingQueue<Collection<OrderBookPersistenceData>>? {
+        return LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
+    }
+
+    @Bean
+    open fun updatedWalletsQueue(): BlockingQueue<Collection<Wallet>>? {
+        return LinkedBlockingQueue<Collection<Wallet>>()
+    }
 }
