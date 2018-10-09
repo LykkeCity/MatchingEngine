@@ -9,6 +9,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
+import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 import javax.annotation.PostConstruct
 
@@ -18,7 +19,7 @@ class OrderBooksSubscribersSocketServer(val config: Config,
                                         val genericLimitOrderService: GenericLimitOrderService,
                                         val assetsHolder: AssetsHolder,
                                         val assetsPairsHolder: AssetsPairsHolder,
-                                        private val orderBookSubscribersThreadPool: AsyncTaskExecutor): Thread(OrderBooksSubscribersSocketServer::class.java.name) {
+                                        private val orderBookSubscribersThreadPool: Optional<AsyncTaskExecutor>): Thread(OrderBooksSubscribersSocketServer::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(OrderBooksSubscribersSocketServer::class.java.name)
@@ -43,7 +44,7 @@ class OrderBooksSubscribersSocketServer(val config: Config,
                 val clientConnection = socket.accept()
                 val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>(),
                         genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder)
-                orderBookSubscribersThreadPool.submit(connection)
+                orderBookSubscribersThreadPool.get().submit(connection)
                 connectionsHolder.addConnection(connection)
             }
         } catch (exception: Exception) {
