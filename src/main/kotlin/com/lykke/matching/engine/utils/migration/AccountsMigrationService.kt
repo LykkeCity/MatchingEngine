@@ -44,6 +44,7 @@ class AccountsMigrationService @Autowired constructor (private val balancesHolde
 
         when (config.me.storage) {
             Storage.Azure -> fromRedisToDb()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> fromDbToRedis()
         }
     }

@@ -105,7 +105,8 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     @After
-    fun tearDown() {
+    override fun tearDown() {
+        super.tearDown()
         persistenceManager.persistenceErrorMode = false
     }
 
@@ -157,8 +158,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
 
-    /*
-    todo: enable this test then orders redis persistence will be done
     @Test
     fun testMultiLimitOrderCancel() {
         val messageWrapper = buildMultiLimitOrderCancelWrapper("TrustedClient", "EURUSD", false)
@@ -168,7 +167,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
-    */
 
     @Test
     fun testClientMultiLimitOrderCancel() {
@@ -283,43 +281,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertLimitOrderResult()
     }
 
-    /*
-    todo: enable this test then orders redis persistence will be done
-    @Test
-    fun testOldMultiLimitOrder() {
-        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(
-                "EURUSD", "TrustedClient",
-                listOf(VolumePrice(-1.0, 3.1),
-                        VolumePrice(-2.0, 3.19),
-                        VolumePrice(-3.0, 3.29)), cancel = true))
-
-        assertData()
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-    }
-
-    private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
-    }
-
-    private fun buildOldMultiLimitOrder(assetPairId: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean): ProtocolMessages.OldMultiLimitOrder {
-        val uid = Date().time
-        val orderBuilder = ProtocolMessages.OldMultiLimitOrder.newBuilder()
-                .setUid(uid)
-                .setTimestamp(uid)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEach{ volume ->
-            orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume)
-                    .setPrice(volume.price)
-                    .build())
-        }
-        return orderBuilder.build()
-    }
-
-
     @Test
     fun testTrustedClientMultiLimitOrder() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(
@@ -331,7 +292,7 @@ class PersistenceErrorTest : AbstractTest() {
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-    }*/
+    }
 
     @Test
     fun testClientMultiLimitOrder() {

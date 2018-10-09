@@ -5,6 +5,8 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -201,9 +203,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         var cancelSellSide = cancelMode == OrderCancelMode.SELL_SIDE || cancelMode == OrderCancelMode.BOTH_SIDES
 
         val buyReplacements = mutableMapOf<String, LimitOrder>()
-        val rejectedBuyReplacements = mutableSetOf<String>()
         val sellReplacements = mutableMapOf<String, LimitOrder>()
-        val rejectedSellReplacements = mutableSetOf<String>()
 
         val baseAssetAvailableBalance = balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId)
         val quotingAssetAvailableBalance = balancesHolder.getAvailableBalance(clientId, assetPair.quotingAssetId)
@@ -212,6 +212,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 baseAssetAvailableBalance,
                 quotingAssetAvailableBalance,
                 assetsHolder.getAsset(assetPair.quotingAssetId).accuracy,
+                now,
                 message.ordersList.size,
                 LOGGER)
 
@@ -242,13 +243,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     lowerLimitPrice = null,
                     previousExternalId = previousExternalId)
 
-            val added = filter.checkAndAdd(order)
-            if (previousExternalId != null) {
-                if (added) {
-                    (if (order.isBuySide()) buyReplacements else sellReplacements)[previousExternalId] = order
-                } else {
-                    (if (order.isBuySide()) rejectedBuyReplacements else rejectedSellReplacements).add(previousExternalId)
-                }
+            filter.checkAndAdd(order)
+            previousExternalId?.let {
+                (if (order.isBuySide()) buyReplacements else sellReplacements)[it] = order
             }
 
             if (cancelAllPreviousLimitOrders && cancelMode == OrderCancelMode.NOT_EMPTY_SIDE) {
@@ -257,14 +254,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 } else {
                     cancelSellSide = true
                 }
-            }
-        }
-
-        val rejectedOrders = filter.filterOutIfNotSorted()
-        rejectedOrders.forEach { order ->
-            order.previousExternalId?.let {
-                (if (order.isBuySide()) buyReplacements else sellReplacements).remove(it)
-                (if (order.isBuySide()) rejectedBuyReplacements else rejectedSellReplacements).add(it)
             }
         }
 
@@ -277,9 +266,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 cancelSellSide,
                 cancelMode,
                 buyReplacements,
-                rejectedBuyReplacements,
-                sellReplacements,
-                rejectedSellReplacements)
+                sellReplacements)
     }
 
     private fun processReplacements(multiLimitOrder: MultiLimitOrder,
@@ -290,8 +277,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                                     ordersToReplace: MutableCollection<LimitOrder>): Boolean {
         var addedToCancel = false
         val replacements = if (isBuy) multiLimitOrder.buyReplacements else multiLimitOrder.sellReplacements
-        val rejectedReplacements = if (isBuy) multiLimitOrder.rejectedBuyReplacements else multiLimitOrder.rejectedSellReplacements
-        if (replacements.isEmpty() && rejectedReplacements.isEmpty()) {
+        if (replacements.isEmpty()) {
             return addedToCancel
         }
         val mutableReplacements = replacements.toMutableMap()
@@ -299,16 +285,13 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         val ordersToCheck = previousOrders ?: limitOrderService.searchOrders(multiLimitOrder.clientId, multiLimitOrder.assetPairId, isBuy)
         ordersToCheck.forEach {
             if (mutableReplacements.containsKey(it.externalId)) {
-                mutableReplacements.remove(it.externalId)
+                val newOrder = mutableReplacements.remove(it.externalId)
                 if (!isAlreadyCancelled) {
                     ordersToCancel.add(it)
                     addedToCancel = true
                 }
-                ordersToReplace.add(it)
-            } else if (rejectedReplacements.contains(it.externalId)) {
-                if (!isAlreadyCancelled) {
-                    ordersToCancel.add(it)
-                    addedToCancel = true
+                if (newOrder?.status == OrderStatus.InOrderBook.name) {
+                    ordersToReplace.add(it)
                 }
             }
         }
