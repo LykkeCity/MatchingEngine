@@ -6,12 +6,11 @@ import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.PersistenceManagerFactory
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
 import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
@@ -98,7 +97,6 @@ open class DatabaseAccessorConfig {
     open fun readOnlyProcessedMessagesDatabaseAccessor(redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
-            Storage.RedisWithoutOrders,
             Storage.Redis -> redisProcessedMessagesDatabaseAccessor.get()
         }
     }
@@ -107,7 +105,6 @@ open class DatabaseAccessorConfig {
     open fun cashOperationIdDatabaseAccessor(redisCashOperationIdDatabaseAccessor: Optional<RedisCashOperationIdDatabaseAccessor>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
-            Storage.RedisWithoutOrders,
             Storage.Redis -> redisCashOperationIdDatabaseAccessor.get()
         }
     }
@@ -116,7 +113,6 @@ open class DatabaseAccessorConfig {
     open fun messageSequenceNumberDatabaseAccessor(redisMessageSequenceNumberDatabaseAccessor: Optional<RedisMessageSequenceNumberDatabaseAccessor>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
-            Storage.RedisWithoutOrders,
             Storage.Redis -> redisMessageSequenceNumberDatabaseAccessor.get()
         }
     }

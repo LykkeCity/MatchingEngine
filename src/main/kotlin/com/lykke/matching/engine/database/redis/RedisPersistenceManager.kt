@@ -4,6 +4,7 @@ package com.lykke.matching.engine.database.redis
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
@@ -27,7 +28,7 @@ class RedisPersistenceManager(
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
         private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
-        private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
+        private val persistedStopOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
         private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
@@ -89,15 +90,7 @@ class RedisPersistenceManager(
             }
 
             if (!CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
-                persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(data.stopOrderBooksData!!.orderBooks))
-            }
-
-            if (secondaryOrdersAccessor != null && !CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
-                persistedOrdersApplicationEventPublisher.publishEvent(data.orderBooksData!!.orderBooks)
-            }
-
-            if (secondaryStopOrdersAccessor != null && !CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
-                persistedStopApplicationEventPublisher.publishEvent(data.stopOrderBooksData!!.orderBooks)
+                persistedStopOrdersApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(data.stopOrderBooksData!!.orderBooks))
             }
         }
     }

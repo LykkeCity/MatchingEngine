@@ -10,7 +10,6 @@ import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEv
 import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.redis.RedisWithoutOrdersPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -54,16 +53,6 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         config
                 )
             }
-            Storage.RedisWithoutOrders ->
-                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.primaryAccessor,
-                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
-                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        persistedWalletsApplicationEventPublisher,
-                        redisConnection.get(),
-                        config)
         }
     }
 }

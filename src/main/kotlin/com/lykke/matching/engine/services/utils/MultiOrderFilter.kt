@@ -6,6 +6,14 @@ import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
+import kotlin.Boolean
+import kotlin.Comparator
+import kotlin.Int
+import kotlin.collections.ArrayList
+import kotlin.collections.forEach
+import kotlin.collections.sortWith
+import kotlin.plus
+import kotlin.times
 
 class MultiOrderFilter(private val isTrustedClient: Boolean,
                        private val baseAssetAvailableBalance: BigDecimal,
@@ -22,7 +30,6 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
     private var usedBaseAssetVolume = BigDecimal.ZERO
     private var usedQuotingAssetVolume = BigDecimal.ZERO
     private val orders = ArrayList<LimitOrder>(initialCapacity)
-    private var done = false
 
     fun checkAndAdd(order: LimitOrder) {
         orders.add(order)
@@ -100,4 +107,6 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
             }
         }
     }
+
+    fun getResult() = orders
 }
