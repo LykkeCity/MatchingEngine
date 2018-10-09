@@ -1,9 +1,15 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
+import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -81,8 +87,8 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
     private val trustedClientsLimitOrdersWithTrades = trustedClientsLimitOrdersWithTrades.toMutableList()
 
     init {
-        if (orderBook.assetId != assetPair.assetPairId) {
-            throw IllegalArgumentException("Invalid order book asset pair: ${orderBook.assetId}")
+        if (orderBook.assetPairId != assetPair.assetPairId) {
+            throw IllegalArgumentException("Invalid order book asset pair: ${orderBook.assetPairId}")
         }
 
         availableBalances[assetPair.baseAssetId] = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(clientId, assetPair.baseAssetId, payBackBaseReserved), baseAsset.accuracy)
@@ -114,6 +120,22 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         buySideOrderBookChanged = buySideOrderBookChanged || pBuySideOrderBookChanged
         sellSideOrderBookChanged = sellSideOrderBookChanged || pSellSideOrderBookChanged
 
+        val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
+        val ordersToSave = ordersToAdd.toMutableList()
+        val ordersToRemove = mutableListOf<LimitOrder>()
+        ordersToRemove.addAll(completedOrders)
+        ordersToRemove.addAll(ordersToCancel)
+        if (buySideOrderBookChanged) {
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(true))
+            orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, true, updatedOrders.fullOrderBook))
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
+        }
+        if (sellSideOrderBookChanged) {
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(false))
+            orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPair.assetPairId, false, updatedOrders.fullOrderBook))
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
+        }
+
         var sequenceNumber: Long? = null
         var clientsSequenceNumber: Long? = null
         var trustedClientsSequenceNumber: Long? = null
@@ -126,7 +148,10 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletOperationsProcessor.persistBalances(processedMessage, sequenceNumber)
+        val updated = walletOperationsProcessor.persistBalances(processedMessage,
+                OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
+                null,
+                sequenceNumber)
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }
@@ -145,14 +170,12 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
 
         val orderBookCopy = orderBook.copy()
         if (buySideOrderBookChanged) {
-            genericLimitOrderService.updateOrderBook(assetPair.assetPairId, true)
             genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, true, orderBook.getBidPrice(), date))
             val newOrderBook = OrderBook(assetPair.assetPairId, true, date, orderBookCopy.getOrderBook(true))
             orderBookQueue.put(newOrderBook)
             rabbitOrderBookQueue.put(newOrderBook)
         }
         if (sellSideOrderBookChanged) {
-            genericLimitOrderService.updateOrderBook(assetPair.assetPairId, false)
             genericLimitOrderService.putTradeInfo(TradeInfo(assetPair.assetPairId, false, orderBook.getAskPrice(), date))
             val newOrderBook = OrderBook(assetPair.assetPairId, false, date, orderBookCopy.getOrderBook(false))
             orderBookQueue.put(newOrderBook)
@@ -396,6 +419,9 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         }
         if (order.status == OrderStatus.NotFoundPrevious.name) {
             throw OrderValidationException(OrderStatus.NotFoundPrevious, "${orderInfo(order)} has not found previous order (${order.previousExternalId})")
+        }
+        if (order.status == OrderStatus.NotEnoughFunds.name) {
+            throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
         }
 
         if (!isTrustedClient) {
