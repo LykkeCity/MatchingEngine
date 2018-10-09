@@ -1,14 +1,17 @@
 package com.lykke.matching.engine.services.utils
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
+import java.util.Date
 
 class MultiOrderFilter(private val isTrustedClient: Boolean,
                        private val baseAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAvailableBalance: BigDecimal,
                        private val quotingAssetAccuracy: Int,
+                       private val date: Date,
                        initialCapacity: Int,
                        private val LOGGER: Logger) {
 
@@ -19,55 +22,83 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
     private var usedBaseAssetVolume = BigDecimal.ZERO
     private var usedQuotingAssetVolume = BigDecimal.ZERO
     private val orders = ArrayList<LimitOrder>(initialCapacity)
+    private var done = false
 
-    fun checkAndAdd(order: LimitOrder): Boolean {
+    fun checkAndAdd(order: LimitOrder) {
+        if (done) {
+            throw IllegalStateException("Result is already returned")
+        }
+        orders.add(order)
         if (!isTrustedClient) {
-            return orders.add(order)
+            return
         }
-        var skip = false
         if (order.isBuySide()) {
-            if (!notSortedBuySide) {
-                if (prevBidPrice == null || order.price < prevBidPrice) {
-                    prevBidPrice = order.price
-                    val volume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
-                    if (usedQuotingAssetVolume + volume > quotingAssetAvailableBalance) {
-                        skip = true
-                        LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
-                    } else {
-                        usedQuotingAssetVolume += volume
-                    }
-                } else {
-                    notSortedBuySide = true
-                    LOGGER.debug("[${order.assetPairId}] Buy orders are not sorted by price")
-                }
-            }
+            checkBuyOrder(order)
         } else {
-            if (!notSortedSellSide) {
-                if (prevAskPrice == null || order.price > prevAskPrice) {
-                    prevAskPrice = order.price
-                    val volume = order.getAbsVolume()
-                    if (usedBaseAssetVolume + volume > baseAssetAvailableBalance) {
-                        skip = true
-                        LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $baseAssetAvailableBalance, used: $usedBaseAssetVolume)")
-                    } else {
-                        usedBaseAssetVolume += volume
-                    }
-                } else {
-                    notSortedSellSide = true
-                    LOGGER.debug("[${order.assetPairId}] Sell orders are not sorted by price")
-                }
-            }
+            checkSellOrder(order)
         }
-
-        return if (!skip) orders.add(order) else false
     }
 
-    fun filterOutIfNotSorted(): List<LimitOrder> {
-        if (!isTrustedClient || !notSortedSellSide && !notSortedBuySide) {
-            return emptyList()
+    fun getResult(): List<LimitOrder> {
+        if (!done) {
+            done = true
+            checkIfNotSorted()
         }
-        val buyOrders = ArrayList<LimitOrder>(orders.size)
-        val sellOrders = ArrayList<LimitOrder>(orders.size)
+        return orders
+    }
+
+    private fun checkBuyOrder(order: LimitOrder) {
+        if (notSortedBuySide) {
+            return
+        }
+        if (prevBidPrice == null || order.price < prevBidPrice) {
+            prevBidPrice = order.price
+            checkQuotingAssetVolume(order)
+            return
+        }
+        notSortedBuySide = true
+        LOGGER.debug("[${order.assetPairId}] Buy orders are not sorted by price")
+    }
+
+    private fun checkQuotingAssetVolume(order: LimitOrder) {
+        val quotingAssetVolume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
+        if (usedQuotingAssetVolume + quotingAssetVolume <= quotingAssetAvailableBalance) {
+            usedQuotingAssetVolume += quotingAssetVolume
+            return
+        }
+        order.updateStatus(OrderStatus.NotEnoughFunds, date)
+        LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
+    }
+
+    private fun checkSellOrder(order: LimitOrder) {
+        if (notSortedSellSide) {
+            return
+        }
+        if (prevAskPrice == null || order.price > prevAskPrice) {
+            prevAskPrice = order.price
+            checkBaseAssetVolume(order)
+            return
+        }
+        notSortedSellSide = true
+        LOGGER.debug("[${order.assetPairId}] Sell orders are not sorted by price")
+    }
+
+    private fun checkBaseAssetVolume(order: LimitOrder) {
+        val volume = order.getAbsVolume()
+        if (usedBaseAssetVolume + volume <= baseAssetAvailableBalance) {
+            usedBaseAssetVolume += volume
+            return
+        }
+        order.updateStatus(OrderStatus.NotEnoughFunds, date)
+        LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $baseAssetAvailableBalance, used: $usedBaseAssetVolume)")
+    }
+
+    private fun checkIfNotSorted() {
+        if (!isTrustedClient || !notSortedSellSide && !notSortedBuySide) {
+            return
+        }
+        val buyOrders = ArrayList<LimitOrder>()
+        val sellOrders = ArrayList<LimitOrder>()
         orders.forEach { order ->
             if (order.isBuySide()) {
                 buyOrders.add(order)
@@ -75,34 +106,15 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
                 sellOrders.add(order)
             }
         }
-        buyOrders.sortWith(Comparator { order1, order2 -> -order1.price.compareTo(order2.price) })
-        sellOrders.sortWith(Comparator { order1, order2 -> order1.price.compareTo(order2.price) })
-        val ordersToReject = ArrayList<LimitOrder>(orders.size)
+        buyOrders.sortByDescending { it.price }
+        sellOrders.sortBy { it.price }
         usedQuotingAssetVolume = BigDecimal.ZERO
-        ordersToReject.addAll(buyOrders.filter { order ->
-            val volume = NumberUtils.setScaleRoundUp(order.volume * order.price, quotingAssetAccuracy)
-            if (usedQuotingAssetVolume + volume > quotingAssetAvailableBalance) {
-                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $quotingAssetAvailableBalance, used: $usedQuotingAssetVolume)")
-                true
-            } else {
-                usedQuotingAssetVolume += volume
-                false
-            }
-        })
+        buyOrders.forEach { order ->
+            checkQuotingAssetVolume(order)
+        }
         usedBaseAssetVolume = BigDecimal.ZERO
-        ordersToReject.addAll(sellOrders.filter { order ->
-            val volume = order.getAbsRemainingVolume()
-            if (usedBaseAssetVolume + volume > baseAssetAvailableBalance) {
-                LOGGER.info("[${order.assetPairId}] Unable to add order ${order.volume} @ ${order.price} (${order.externalId}) due to low balance (available: $baseAssetAvailableBalance, used: $usedBaseAssetVolume)")
-                true
-            } else {
-                usedBaseAssetVolume += volume
-                false
-            }
-        })
-        orders.removeAll(ordersToReject)
-        return ordersToReject
+        sellOrders.forEach { order ->
+            checkBaseAssetVolume(order)
+        }
     }
-
-    fun getResult() = orders
 }

@@ -5,14 +5,14 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.balance.ClientOrdersReservedVolume
 import com.lykke.matching.engine.daos.balance.ReservedVolumeCorrection
 import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
@@ -36,15 +36,14 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 
 @Component
-@Order(2)
-class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
-                                                         private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
+@Order(3)
+class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDatabaseAccessorHolder: OrdersDatabaseAccessorsHolder,
+                                                         private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                                          private val reservedVolumesDatabaseAccessor: ReservedVolumesDatabaseAccessor,
                                                          private val assetsHolder: AssetsHolder,
                                                          private val assetsPairsHolder :AssetsPairsHolder,
                                                          private val balancesHolder: BalancesHolder,
                                                          private val applicationSettingsCache: ApplicationSettingsCache,
-                                                         @Value("#{Config.me.orderBookPath}") private val orderBookPath: String,
                                                          @Value("#{Config.me.correctReservedVolumes}") private val correctReservedVolumes: Boolean,
                                                          private val balanceUpdateNotificationQueue: BlockingQueue<BalanceUpdateNotification>,
                                                          private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
@@ -67,20 +66,19 @@ class ReservedVolumesRecalculator @Autowired constructor(private val orderBookDa
             return
         }
 
-        val filePath = orderBookPath
-        teeLog("Starting order books analyze, path: $filePath")
+        teeLog("Starting order books analyze")
         recalculate()
     }
 
     fun recalculate() {
 
-        val orders = orderBookDatabaseAccessor.loadLimitOrders()
-        val stopOrders = stopOrderBookDatabaseAccessor.loadStopLimitOrders()
+        val orders = orderBookDatabaseAccessorHolder.primaryAccessor.loadLimitOrders()
+        val stopOrders = stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders()
 
         val reservedBalances = HashMap<String, MutableMap<String, ClientOrdersReservedVolume>>()
         var count = 1
 
-        val handleOrder: (order: LimitOrder, isStopOrder: Boolean) -> Unit = {order, isStopOrder->
+        val handleOrder: (order: LimitOrder, isStopOrder: Boolean) -> Unit = { order, isStopOrder->
             if (!applicationSettingsCache.isTrustedClient(order.clientId)) {
                 try {
                     if (isStopOrder) {
