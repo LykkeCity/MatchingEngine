@@ -198,13 +198,13 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun persistedOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+    open fun persistedStopOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
                                                       listeners: Optional<List<QueueConsumer<Collection<OrderBookPersistenceData>>?>>): SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>> {
         return ApplicationEventPublisherImpl(updatedStopOrderBooksQueue, listeners)
     }
 
     @Bean
-    open fun persistedStopApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+    open fun persistedOrdersApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
                                                     listeners: Optional<List<QueueConsumer<Collection<OrderBookPersistenceData>>?>>): SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>> {
         return ApplicationEventPublisherImpl(updatedOrderBooksQueue, listeners)
     }
