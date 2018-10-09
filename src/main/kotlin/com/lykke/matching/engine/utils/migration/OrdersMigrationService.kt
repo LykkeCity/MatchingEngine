@@ -6,7 +6,6 @@ import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceDat
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
@@ -18,8 +17,7 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import java.util.Date
-import java.util.Optional
+import java.util.*
 
 @Component
 @Order(2)
@@ -68,10 +66,10 @@ class OrdersMigrationService(private val config: Config,
         teeLog("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
         persistenceManager.persist(PersistenceData(null,
                 null,
-                OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(orders),
+                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(orders),
                         orders,
                         emptyList()),
-                OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(stopOrders),
+                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(stopOrders),
                         stopOrders,
                         emptyList()),
                 null))
