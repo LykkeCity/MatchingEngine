@@ -39,7 +39,7 @@ open class AppConfiguration: SchedulingConfigurer {
 
     @Bean
     open fun clientRequestThreadPool(@Value("\${concurrent.client.request.pool.core.pool.size}") corePoolSize: Int,
-                                     @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
+                                     @Value("#{Config.me.socket.maxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.threadNamePrefix = "client-request-"
         threadPoolTaskExecutor.setQueueCapacity(0)
