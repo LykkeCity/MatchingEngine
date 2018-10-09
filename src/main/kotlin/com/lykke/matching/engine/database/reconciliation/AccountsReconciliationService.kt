@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.database.reconciliation
 
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
-import com.lykke.matching.engine.daos.wallet.Wallet
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @Order(1)
-class AccountsReconciliationService(private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<Wallet>>,
+class AccountsReconciliationService(private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
                                     private val balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder) : ApplicationRunner {
 
     @Autowired
@@ -23,6 +23,6 @@ class AccountsReconciliationService(private val persistedWalletsApplicationEvent
             return
         }
 
-        persistedWalletsApplicationEventPublisher.publishEvent(balancesDatabaseAccessorsHolder.primaryAccessor.loadWallets().values.toList())
+        persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(balancesDatabaseAccessorsHolder.primaryAccessor.loadWallets().values.toList()))
     }
 }
