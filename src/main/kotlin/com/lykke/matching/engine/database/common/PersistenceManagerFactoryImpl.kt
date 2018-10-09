@@ -55,12 +55,12 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
             }
             Storage.RedisWithoutOrders ->
                 RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.primaryAccessor,
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistedWalletsApplicationEventPublisher,
                         redisConnection.get(),
                         config)
         }

@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
+import com.lykke.matching.engine.database.utils.mapOrdersToOrderBookPersistenceDataList
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
@@ -66,10 +67,10 @@ class OrdersMigrationService(private val config: Config,
         teeLog("Loaded ${orders.size} orders from files (ms: ${loadTime - startTime})")
         persistenceManager.persist(PersistenceData(null,
                 null,
-                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(orders),
+                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(orders, LOGGER),
                         orders,
                         emptyList()),
-                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(stopOrders),
+                OrderBooksPersistenceData(mapOrdersToOrderBookPersistenceDataList(stopOrders, LOGGER),
                         stopOrders,
                         emptyList()),
                 null))
