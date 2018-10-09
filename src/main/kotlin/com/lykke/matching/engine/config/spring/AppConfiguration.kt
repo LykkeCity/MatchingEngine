@@ -50,7 +50,11 @@ open class AppConfiguration: SchedulingConfigurer {
 
     @Bean
     open fun orderBookSubscribersThreadPool(@Value("\${concurrent.orderbook.subscribers.pool.core.pool.size}") corePoolSize: Int,
-                                            @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
+                                            @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int?): ThreadPoolTaskExecutor? {
+        if (maxPoolSize == null) {
+            return null
+        }
+
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.threadNamePrefix = "orderbook-subscriber-"
         threadPoolTaskExecutor.setQueueCapacity(0)
