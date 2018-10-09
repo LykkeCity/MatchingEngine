@@ -19,7 +19,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
 import org.junit.Before
@@ -46,6 +45,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
+
+    @Autowired
+    private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator

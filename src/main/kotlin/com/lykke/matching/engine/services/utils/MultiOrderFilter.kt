@@ -22,6 +22,7 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
     private var usedBaseAssetVolume = BigDecimal.ZERO
     private var usedQuotingAssetVolume = BigDecimal.ZERO
     private val orders = ArrayList<LimitOrder>(initialCapacity)
+    private var done = false
 
     fun checkAndAdd(order: LimitOrder) {
         orders.add(order)
@@ -99,6 +100,4 @@ class MultiOrderFilter(private val isTrustedClient: Boolean,
             }
         }
     }
-
-    fun getResult() = orders
 }

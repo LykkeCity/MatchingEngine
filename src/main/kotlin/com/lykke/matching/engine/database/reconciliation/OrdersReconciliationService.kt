@@ -2,7 +2,8 @@ package com.lykke.matching.engine.database.reconciliation
 
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.database.common.OrderBookSide
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.utils.mapOrdersToOrderBookPersistenceDataList
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
@@ -18,8 +19,8 @@ import org.springframework.stereotype.Component
 class OrdersReconciliationService(private val config: Config,
                                   private val ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
                                   private val stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                  private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>,
-                                  private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>>) : ApplicationRunner {
+                                  private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
+                                  private val persistedStopApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>) : ApplicationRunner {
     private companion object {
         val LOGGER = Logger.getLogger(OrdersReconciliationService::class.java.name)
     }
@@ -30,7 +31,7 @@ class OrdersReconciliationService(private val config: Config,
             val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
                 ordersSecondaryAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
 
-            persistedOrdersApplicationEventPublisher.publishEvent(mapOrdersToOrderBookPersistenceDataList(ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders(), currentOrderBookSides, LOGGER))
+            persistedOrdersApplicationEventPublisher.publishEvent(OrderBookPersistEvent(mapOrdersToOrderBookPersistenceDataList(ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders(), currentOrderBookSides, LOGGER)))
         }
 
         val stopOrdersSecondaryAccessor = stopOrdersDatabaseAccessorsHolder.secondaryAccessor
@@ -38,7 +39,7 @@ class OrdersReconciliationService(private val config: Config,
             val currentStopOrderBookSides = if (config.me.ordersMigration) emptySet() else
                 stopOrdersSecondaryAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
 
-            persistedStopApplicationEventPublisher.publishEvent(mapOrdersToOrderBookPersistenceDataList(stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders(), currentStopOrderBookSides, LOGGER))
+            persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(mapOrdersToOrderBookPersistenceDataList(stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders(), currentStopOrderBookSides, LOGGER)))
         }
     }
 }

@@ -36,7 +36,6 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.business.impl.LimitOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.business.impl.StopOrderBusinessValidatorImpl
 import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
 import com.lykke.matching.engine.services.validators.input.impl.LimitOrderInputValidatorImpl
@@ -134,6 +133,7 @@ abstract class AbstractPerformanceTest {
         expiryOrdersQueue = ExpiryOrdersQueue()
 
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
+                assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 tradeInfoQueue,

@@ -3,15 +3,19 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.common.QueueConsumer
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
-import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.database.common.PersistenceManagerFactory
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
 import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
+import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
@@ -64,15 +68,15 @@ open class DatabaseAccessorConfig {
     //<editor-fold desc="Persist listeners">
 
     @Bean
-    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<Collection<Wallet>>? {
+    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<AccountPersistEvent>? {
         return balancesDatabaseAccessorsHolder.secondaryAccessor?.let {
             WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
         }
     }
 
     @Bean
-    open fun orderBookPersistListener(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+    open fun orderBookPersistListener(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
                                       ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder): OrderBookPersistListener? {
         return ordersDatabaseAccessorsHolder.secondaryAccessor?.let {
             OrderBookPersistListener(updatedOrderBooksQueue,
@@ -81,7 +85,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun stopOrderBookPersistListener(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
+    open fun stopOrderBookPersistListener(updatedStopOrderBooksQueue: BlockingQueue<StopOrderBookPersistEvent>,
                                           stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): StopOrderBookPersistListener? {
         return stopOrdersDatabaseAccessorsHolder.secondaryAccessor?.let {
             StopOrderBookPersistListener(updatedStopOrderBooksQueue, stopOrdersDatabaseAccessorsHolder.secondaryAccessor)
@@ -89,12 +93,12 @@ open class DatabaseAccessorConfig {
     }
     //</editor-fold>
 
-
     //<editor-fold desc="Multisource database accessors">
     @Bean
     open fun readOnlyProcessedMessagesDatabaseAccessor(redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> redisProcessedMessagesDatabaseAccessor.get()
         }
     }
@@ -103,6 +107,7 @@ open class DatabaseAccessorConfig {
     open fun cashOperationIdDatabaseAccessor(redisCashOperationIdDatabaseAccessor: Optional<RedisCashOperationIdDatabaseAccessor>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> redisCashOperationIdDatabaseAccessor.get()
         }
     }
@@ -111,6 +116,7 @@ open class DatabaseAccessorConfig {
     open fun messageSequenceNumberDatabaseAccessor(redisMessageSequenceNumberDatabaseAccessor: Optional<RedisMessageSequenceNumberDatabaseAccessor>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> redisMessageSequenceNumberDatabaseAccessor.get()
         }
     }
@@ -123,7 +129,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureCashOperationsDatabaseAccessor(@Value("\${azure.cache.operation.table}") tableName: String)
+    open fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
             : CashOperationsDatabaseAccessor {
         return AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
     }
@@ -135,9 +141,9 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable: String,
-                                             @Value("\${azure.candles.table}") candlesTable: String,
-                                             @Value("\${azure.hour.candles.table}") hourCandlesTable: String)
+    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
+                                             @Value("\${azure.candles.table}")candlesTable: String,
+                                             @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
         return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
                 bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)
@@ -183,29 +189,40 @@ open class DatabaseAccessorConfig {
 
     //<editor-fold desc="File db accessors">
     @Bean
+    open fun fileOrderBookDatabaseAccessor()
+            : OrderBookDatabaseAccessor {
+        return FileOrderBookDatabaseAccessor(config.me.orderBookPath)
+    }
+
+    @Bean
     open fun fileProcessedMessagesDatabaseAccessor()
             : FileProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
     }
     //</editor-fold>
 
+    @Bean
+    open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
+        return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+    }
+    //</editor-fold>
 
     //<editor-fold desc="Persist listeners>
     @Bean
-    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<Collection<Wallet>>,
-                                                       listeners: Optional<List<QueueConsumer<Collection<Wallet>>?>>): SimpleApplicationEventPublisher<Collection<Wallet>> {
+    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
+                                                       listeners: Optional<List<QueueConsumer<AccountPersistEvent>?>>): SimpleApplicationEventPublisher<AccountPersistEvent> {
         return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
     }
 
     @Bean
-    open fun persistedStopOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                                      listeners: Optional<List<QueueConsumer<Collection<OrderBookPersistenceData>>?>>): SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>> {
+    open fun persistedStopOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<StopOrderBookPersistEvent>,
+                                                          listeners: Optional<List<QueueConsumer<StopOrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<StopOrderBookPersistEvent> {
         return ApplicationEventPublisherImpl(updatedStopOrderBooksQueue, listeners)
     }
 
     @Bean
-    open fun persistedOrdersApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<Collection<OrderBookPersistenceData>>,
-                                                    listeners: Optional<List<QueueConsumer<Collection<OrderBookPersistenceData>>?>>): SimpleApplicationEventPublisher<Collection<OrderBookPersistenceData>> {
+    open fun persistedOrdersApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
+                                                      listeners: Optional<List<QueueConsumer<OrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<OrderBookPersistEvent> {
         return ApplicationEventPublisherImpl(updatedOrderBooksQueue, listeners)
     }
     //</editor-fold>
