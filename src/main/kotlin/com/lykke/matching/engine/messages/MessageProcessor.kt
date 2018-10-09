@@ -18,7 +18,6 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
-import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
@@ -146,10 +145,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
-
-        if (config.me.serverOrderBookPort != null) {
-            SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        }
 
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
