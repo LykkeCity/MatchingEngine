@@ -23,7 +23,7 @@ open class RabbitConfiguration {
     private lateinit var applicationContext: ApplicationContext
 
     @Bean
-    open fun trustedClientsDispatcher(trustedClientsEventsQueue: BlockingDeque<Event<*>>): RabbitEventDispatcher<Event<*>> {
+    open fun trustedClientsEventsDispatcher(trustedClientsEventsQueue: BlockingDeque<Event<*>>): RabbitEventDispatcher<Event<*>> {
         return RabbitEventDispatcher("TrustedClientEventsDispatcher", trustedClientsEventsQueue, trustedQueueNameToQueue())
     }
 

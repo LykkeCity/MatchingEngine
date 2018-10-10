@@ -27,13 +27,13 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun balanceUpdateQueue(): BlockingQueue<BalanceUpdate> {
-        return LinkedBlockingQueue<BalanceUpdate>()
+    open fun balanceUpdateQueue(): BlockingDeque<BalanceUpdate> {
+        return LinkedBlockingDeque<BalanceUpdate>()
     }
 
     @Bean
-    open fun clientLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
-        return LinkedBlockingQueue<LimitOrdersReport>()
+    open fun clientLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
+        return LinkedBlockingDeque<LimitOrdersReport>()
     }
 
     @Bean
@@ -47,28 +47,28 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun rabbitOrderBookQueue(): BlockingQueue<OrderBook> {
-        return LinkedBlockingQueue<OrderBook>()
+    open fun rabbitOrderBookQueue(): BlockingDeque<OrderBook> {
+        return LinkedBlockingDeque<OrderBook>()
     }
 
     @Bean
-    open fun rabbitCashInOutQueue(): BlockingQueue<CashOperation> {
-        return LinkedBlockingQueue<CashOperation>()
+    open fun rabbitCashInOutQueue(): BlockingDeque<CashOperation> {
+        return LinkedBlockingDeque<CashOperation>()
     }
 
     @Bean
-    open fun rabbitMarketOrderWithTradesQueue(): BlockingQueue<MarketOrderWithTrades> {
-        return LinkedBlockingQueue<MarketOrderWithTrades>()
+    open fun rabbitMarketOrderWithTradesQueue(): BlockingDeque<MarketOrderWithTrades> {
+        return LinkedBlockingDeque<MarketOrderWithTrades>()
     }
 
     @Bean
-    open fun rabbitTransferQueue(): BlockingQueue<CashTransferOperation> {
-        return LinkedBlockingQueue<CashTransferOperation>()
+    open fun rabbitTransferQueue(): BlockingDeque<CashTransferOperation> {
+        return LinkedBlockingDeque<CashTransferOperation>()
     }
 
     @Bean
-    open fun reservedCashOperationQueue(): BlockingQueue<ReservedCashOperation> {
-        return LinkedBlockingQueue<ReservedCashOperation>()
+    open fun reservedCashOperationQueue(): BlockingDeque<ReservedCashOperation> {
+        return LinkedBlockingDeque<ReservedCashOperation>()
     }
 
     @Bean

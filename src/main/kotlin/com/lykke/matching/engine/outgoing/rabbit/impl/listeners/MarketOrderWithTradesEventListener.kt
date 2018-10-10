@@ -16,13 +16,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class MarketOrderWithTradesEventListener {
     @Autowired
-    private lateinit var marketOrderWithTrades: BlockingQueue<MarketOrderWithTrades>
+    private lateinit var marketOrderWithTrades: BlockingDeque<MarketOrderWithTrades>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -55,14 +55,18 @@ class MarketOrderWithTradesEventListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == MarketOrderWithTradesEventListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
+            rabbitFailureEvent.failedEvent?.let {
+                marketOrderWithTrades.putFirst(it as MarketOrderWithTrades)
+            }
+
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == MarketOrderWithTradesEventListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
 }

@@ -13,14 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class TrustedClientsLimitOrdersListener {
 
     @Autowired
-    private lateinit var trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>
+    private lateinit var trustedClientsLimitOrdersQueue: BlockingDeque<LimitOrdersReport>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -45,14 +45,17 @@ class TrustedClientsLimitOrdersListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
+            rabbitFailureEvent.failedEvent?.let {
+                trustedClientsLimitOrdersQueue.putFirst(it as LimitOrdersReport)
+            }
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == TrustedClientsLimitOrdersListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
 }
