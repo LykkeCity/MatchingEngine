@@ -27,18 +27,14 @@ class OrdersReconciliationService(private val config: Config,
 
     override fun run(args: ApplicationArguments?) {
         val ordersSecondaryAccessor = ordersDatabaseAccessorsHolder.secondaryAccessor
-        if (ordersSecondaryAccessor != null) {
-            val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
-                ordersSecondaryAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
+        if (ordersSecondaryAccessor != null && !config.me.ordersMigration) {
+            val currentOrderBookSides = ordersSecondaryAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
             persistedOrdersApplicationEventPublisher.publishEvent(OrderBookPersistEvent(mapOrdersToOrderBookPersistenceDataList(ordersDatabaseAccessorsHolder.primaryAccessor.loadLimitOrders(), currentOrderBookSides, LOGGER)))
         }
 
         val stopOrdersSecondaryAccessor = stopOrdersDatabaseAccessorsHolder.secondaryAccessor
-        if (stopOrdersSecondaryAccessor != null) {
-            val currentStopOrderBookSides = if (config.me.ordersMigration) emptySet() else
-                stopOrdersSecondaryAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
+        if (stopOrdersSecondaryAccessor != null && !config.me.ordersMigration) {
+            val currentStopOrderBookSides = stopOrdersSecondaryAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
             persistedStopApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(mapOrdersToOrderBookPersistenceDataList(stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders(), currentStopOrderBookSides, LOGGER)))
         }
     }

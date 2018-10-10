@@ -19,10 +19,8 @@ class AccountsReconciliationService(private val persistedWalletsApplicationEvent
     private lateinit var config: Config
 
     override fun run(args: ApplicationArguments?) {
-        if (!config.me.writeBalancesToSecondaryDb) {
-            return
+        if (balancesDatabaseAccessorsHolder.secondaryAccessor != null && !config.me.walletsMigration) {
+            persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(balancesDatabaseAccessorsHolder.primaryAccessor.loadWallets().values.toList()))
         }
-
-        persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(balancesDatabaseAccessorsHolder.primaryAccessor.loadWallets().values.toList()))
     }
 }
