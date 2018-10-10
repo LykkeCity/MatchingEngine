@@ -29,7 +29,7 @@ import java.util.concurrent.BlockingQueue
 class CashTransferPreprocessor(
         private val cashTransferQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor,
+        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache
 ): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
@@ -90,7 +90,7 @@ class CashTransferPreprocessor(
         val parsedMessageWrapper = cashTransferParsedData.messageWrapper
         val context = parsedMessageWrapper.context as CashTransferContext
 
-        if (databaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
+        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")

@@ -1,7 +1,6 @@
 
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
@@ -88,7 +87,7 @@ open class RedisConfig {
     }
 
     @Bean
-    open fun redisCashOperationIdDatabaseAccessor(): CashOperationIdDatabaseAccessor? {
+    open fun redisCashOperationIdDatabaseAccessor(): RedisCashOperationIdDatabaseAccessor? {
         if (config.me.storage != Storage.Redis) {
             return null
         }
