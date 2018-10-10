@@ -3,10 +3,15 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.config.Config
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.BlockingQueue
@@ -14,6 +19,9 @@ import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 open class QueueConfig {
+
+    @Autowired
+    private lateinit var config: Config
 
     @Bean
     open fun clientsEventsQueue(): BlockingQueue<Event<*>> {
@@ -119,5 +127,20 @@ open class QueueConfig {
     @InputQueue
     open fun cashTransferInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
+        return LinkedBlockingQueue<OrderBookPersistEvent>()
+    }
+
+    @Bean
+    open fun updatedStopOrderBooksQueue(): BlockingQueue<StopOrderBookPersistEvent>? {
+        return LinkedBlockingQueue<StopOrderBookPersistEvent>()
+    }
+
+    @Bean
+    open fun updatedWalletsQueue(): BlockingQueue<AccountPersistEvent>? {
+        return LinkedBlockingQueue<AccountPersistEvent>()
     }
 }

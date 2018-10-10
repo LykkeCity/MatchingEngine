@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.utils.migration
+package com.lykke.matching.engine.database.reconciliation
 
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.Storage

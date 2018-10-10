@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.core.env.get
 import org.springframework.scheduling.TaskScheduler
+import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -18,6 +19,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
 
 @Configuration
 @EnableScheduling
+@EnableAsync
 open class AppConfiguration: SchedulingConfigurer {
     @Autowired
     private lateinit var config: Config
@@ -33,7 +35,7 @@ open class AppConfiguration: SchedulingConfigurer {
     open fun taskScheduler(): TaskScheduler {
         val threadPoolTaskScheduler = ThreadPoolTaskScheduler()
         threadPoolTaskScheduler.threadNamePrefix = "scheduled-task-"
-        threadPoolTaskScheduler.poolSize = environment["concurent.pool.size"].toInt()
+        threadPoolTaskScheduler.poolSize = environment["concurrent.scheduler.pool.size"].toInt()
         return threadPoolTaskScheduler
     }
 

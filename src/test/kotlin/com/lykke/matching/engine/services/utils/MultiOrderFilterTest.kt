@@ -107,5 +107,4 @@ class MultiOrderFilterTest {
         assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(-3.0)) == 0 }.status)
         assertEquals(OrderStatus.NotEnoughFunds.name, filter.getResult().single { it.volume.compareTo(BigDecimal.valueOf(7.0)) == 0 }.status)
     }
-
 }
