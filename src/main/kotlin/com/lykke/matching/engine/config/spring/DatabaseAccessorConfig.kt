@@ -125,7 +125,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
+    open fun azureCashOperationsDatabaseAccessor(@Value("\${azure.cache.operation.table}") tableName: String)
             : CashOperationsDatabaseAccessor {
         return AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
     }
@@ -137,9 +137,9 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
-                                             @Value("\${azure.candles.table}")candlesTable: String,
-                                             @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
+    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable: String,
+                                             @Value("\${azure.candles.table}") candlesTable: String,
+                                             @Value("\${azure.hour.candles.table}") hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
         return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
                 bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)
