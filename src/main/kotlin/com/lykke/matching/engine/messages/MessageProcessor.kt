@@ -1,7 +1,12 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -18,7 +23,6 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
-import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
@@ -52,7 +56,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val cashInOutOperationService: CashInOutOperationService
     private val cashTransferOperationService: CashTransferOperationService
-    private val genericLimitOrderService: GenericLimitOrderService
     private val singleLimitOrderService: SingleLimitOrderService
     private val multiLimitOrderService: MultiLimitOrderService
     private val marketOrderService: MarketOrderService
@@ -103,7 +106,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
-        this.genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
+        val genericLimitOrderService = applicationContext.getBean(GenericLimitOrderService::class.java)
         val genericStopLimitOrderService = applicationContext.getBean(GenericStopLimitOrderService::class.java)
 
         this.multiLimitOrderService = applicationContext.getBean(MultiLimitOrderService::class.java)
@@ -146,10 +149,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
-
-        if (config.me.serverOrderBookPort != null) {
-            SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        }
 
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {

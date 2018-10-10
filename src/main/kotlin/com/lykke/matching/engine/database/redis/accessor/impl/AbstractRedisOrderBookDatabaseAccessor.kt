@@ -47,7 +47,7 @@ abstract class AbstractRedisOrderBookDatabaseAccessor(private val redisConnectio
                     METRICS_LOGGER.logError(message, e)
                 }
             }
-            LOGGER.info("Loaded ${result.size} ${logPrefix}limit orders")
+            LOGGER.info("Loaded ${result.size} ${logPrefix}limit orders from redis db $db")
         }
         return result
     }

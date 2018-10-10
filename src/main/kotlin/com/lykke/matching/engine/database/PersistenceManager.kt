@@ -4,6 +4,4 @@ import com.lykke.matching.engine.database.common.entity.PersistenceData
 
 interface PersistenceManager {
     fun persist(data: PersistenceData): Boolean
-    fun balancesQueueSize(): Int
-    fun ordersQueueSize(): Int
 }

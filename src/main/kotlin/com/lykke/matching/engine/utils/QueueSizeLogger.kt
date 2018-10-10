@@ -1,67 +1,61 @@
 package com.lykke.matching.engine.utils
 
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.outgoing.rabbit.impl.listeners.OrderBookListener
-import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Profile
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import javax.annotation.PostConstruct
-import kotlin.concurrent.fixedRateTimer
+import java.util.concurrent.BlockingQueue
+import java.util.stream.Collectors
 
 @Component
 @Profile("default", "!local_config")
-class QueueSizeLogger @Autowired constructor(
-        val messageRouter: MessageRouter,
-        val connectionHandler: ConnectionsHolder,
-        val rabbitOrderBookListener: OrderBookListener,
-        val persistenceManager: PersistenceManager,
-        val config: Config) {
-
+class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>>,
+                                             private val config: Config) {
     companion object {
         val LOGGER = Logger.getLogger(QueueSizeLogger::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
+
+        val ENTRY_FORMAT = "%s: %d;"
+        val ENTRY_SIZE_LIMIT_FORMAT = "%s queue is higher than limit"
+        val ENTRY_DELIMITER = ". "
+
+        val LOG_THREAD_NAME = "QueueSizeLogger"
     }
 
-    @PostConstruct
-    fun start() {
-        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
-            log()
-        }
-    }
-
+    @Scheduled(fixedRateString = "#{Config.me.queueSizeLoggerInterval}",  initialDelayString = "#{Config.me.queueSizeLoggerInterval}")
     private fun log() {
-        val balancesQueueSize = persistenceManager.balancesQueueSize()
-        val ordersQueueSize = persistenceManager.ordersQueueSize()
-        val incomingQueueSize = messageRouter.preProcessedMessageQueue.size
-        LOGGER.info("Incoming queue: $incomingQueueSize. " +
-                "Order Book queue: ${connectionHandler.getOrderBookQueueSize()}. " +
-                "Rabbit Order Book queue ${rabbitOrderBookListener.getOrderBookQueueSize()}. " +
-                "Balances queue $balancesQueueSize. " +
-                "Persistence orders queue $ordersQueueSize.")
+        Thread.currentThread().name = LOG_THREAD_NAME
+        val queueNameToQueueSize = getQueueNameToQueueSize(queues)
 
-        if (incomingQueueSize > config.me.queueSizeLimit) {
-            METRICS_LOGGER.logError("Internal queue size is higher than limit")
-        }
+        logQueueSizes(queueNameToQueueSize)
+        checkQueueSizeLimits(queueNameToQueueSize)
+    }
 
-        if (connectionHandler.getOrderBookQueueSize() > config.me.queueSizeLimit) {
-            METRICS_LOGGER.logError("Order book queue size is higher than limit")
-        }
+    private fun logQueueSizes(nameToQueueSize: Map<String, Int>) {
+        val logString = nameToQueueSize
+                .entries
+                .stream()
+                .map({ entry -> ENTRY_FORMAT.format(entry.key, entry.value) })
+                .collect(Collectors.joining(ENTRY_DELIMITER))
 
-        if (rabbitOrderBookListener.getOrderBookQueueSize() > config.me.queueSizeLimit) {
-            METRICS_LOGGER.logError("Rabbit order book size queue size is higher than limit")
-        }
+        LOGGER.info(logString)
+    }
 
-        if (balancesQueueSize > config.me.queueSizeLimit) {
-            METRICS_LOGGER.logError("Balances queue size is higher than limit")
-        }
+    private fun checkQueueSizeLimits(nameToQueueSize: Map<String, Int>) {
+        nameToQueueSize
+                .forEach { entry ->
+                    if (entry.value > config.me.queueSizeLimit) {
+                        val message = ENTRY_SIZE_LIMIT_FORMAT.format(entry.key)
+                        METRICS_LOGGER.logError(message)
+                        LOGGER.warn(message)
+                    }
+                }
+    }
 
-        if (ordersQueueSize > config.me.queueSizeLimit) {
-            METRICS_LOGGER.logError( "Persistence orders queue size is higher than limit")
-        }
+    private fun getQueueNameToQueueSize(nameToQueue: Map<String, BlockingQueue<*>>): Map<String, Int> {
+       return nameToQueue.mapValues { entry -> entry.value.size }
     }
 }

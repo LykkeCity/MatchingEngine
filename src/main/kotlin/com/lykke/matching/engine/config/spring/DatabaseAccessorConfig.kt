@@ -1,25 +1,35 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.common.QueueConsumer
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
-import com.lykke.matching.engine.database.common.DefaultPersistenceManager
 import com.lykke.matching.engine.database.common.PersistenceManagerFactory
+import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
+import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
+import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
+import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.redis.accessor.impl.*
-import com.lykke.matching.engine.database.redis.connection.impl.RedisReconnectionManager
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import java.util.Optional
+import java.util.*
+import java.util.concurrent.BlockingQueue
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -51,6 +61,34 @@ open class DatabaseAccessorConfig {
     @Bean
     open fun cashTransferPreprocessorPersistenceManager(cashTransferOperationsPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
         return persistenceManagerFactory.get(cashTransferOperationsPreprocessorRedisConnection)
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Persist listeners">
+
+    @Bean
+    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<AccountPersistEvent>? {
+        return balancesDatabaseAccessorsHolder.secondaryAccessor?.let {
+            WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
+        }
+    }
+
+    @Bean
+    open fun orderBookPersistListener(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
+                                      ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder): OrderBookPersistListener? {
+        return ordersDatabaseAccessorsHolder.secondaryAccessor?.let {
+            OrderBookPersistListener(updatedOrderBooksQueue,
+                    ordersDatabaseAccessorsHolder.secondaryAccessor)
+        }
+    }
+
+    @Bean
+    open fun stopOrderBookPersistListener(updatedStopOrderBooksQueue: BlockingQueue<StopOrderBookPersistEvent>,
+                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): StopOrderBookPersistListener? {
+        return stopOrdersDatabaseAccessorsHolder.secondaryAccessor?.let {
+            StopOrderBookPersistListener(updatedStopOrderBooksQueue, stopOrdersDatabaseAccessorsHolder.secondaryAccessor)
+        }
     }
     //</editor-fold>
 
@@ -147,9 +185,40 @@ open class DatabaseAccessorConfig {
 
     //<editor-fold desc="File db accessors">
     @Bean
+    open fun fileOrderBookDatabaseAccessor()
+            : OrderBookDatabaseAccessor {
+        return FileOrderBookDatabaseAccessor(config.me.orderBookPath)
+    }
+
+    @Bean
     open fun fileProcessedMessagesDatabaseAccessor()
             : FileProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
+    }
+
+    @Bean
+    open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
+        return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Persist publishers>
+    @Bean
+    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
+                                                       listeners: Optional<List<QueueConsumer<AccountPersistEvent>?>>): SimpleApplicationEventPublisher<AccountPersistEvent> {
+        return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
+    }
+
+    @Bean
+    open fun persistedStopOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<StopOrderBookPersistEvent>,
+                                                          listeners: Optional<List<QueueConsumer<StopOrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<StopOrderBookPersistEvent> {
+        return ApplicationEventPublisherImpl(updatedStopOrderBooksQueue, listeners)
+    }
+
+    @Bean
+    open fun persistedOrdersApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
+                                                      listeners: Optional<List<QueueConsumer<OrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<OrderBookPersistEvent> {
+        return ApplicationEventPublisherImpl(updatedOrderBooksQueue, listeners)
     }
     //</editor-fold>
 }

@@ -1,21 +1,15 @@
+
 package com.lykke.matching.engine.database.redis
 
-import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.daos.wallet.AssetBalance
-import com.lykke.matching.engine.daos.wallet.Wallet
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.WalletDatabaseAccessor
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
+import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
@@ -25,19 +19,17 @@ import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.util.CollectionUtils
 import redis.clients.jedis.Transaction
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 
 class RedisPersistenceManager(
         private val primaryBalancesAccessor: RedisWalletDatabaseAccessor,
-        private val secondaryBalancesAccessor: WalletDatabaseAccessor?,
         private val redisProcessedMessagesDatabaseAccessor: RedisProcessedMessagesDatabaseAccessor,
         private val redisProcessedCashOperationIdDatabaseAccessor: RedisCashOperationIdDatabaseAccessor,
         private val primaryOrdersAccessor: RedisOrderBookDatabaseAccessor,
-        private val secondaryOrdersAccessor: OrderBookDatabaseAccessor?,
         private val primaryStopOrdersAccessor: RedisStopOrderBookDatabaseAccessor,
-        private val secondaryStopOrdersAccessor: StopOrderBookDatabaseAccessor?,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
+        private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
+        private val persistedStopOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
+        private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
         private val redisConnection: RedisConnection,
         private val config: Config): PersistenceManager {
 
@@ -45,46 +37,7 @@ class RedisPersistenceManager(
         private val LOGGER = Logger.getLogger(RedisPersistenceManager::class.java.name)
         private val REDIS_PERFORMANCE_LOGGER = Logger.getLogger("${RedisPersistenceManager::class.java.name}.redis")
         private val METRICS_LOGGER = MetricsLogger.getLogger()
-
-        fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>) = mapOrdersToOrderBookPersistenceDataList(orders, emptyList())
-
-        private fun mapOrdersToOrderBookPersistenceDataList(orders: Collection<LimitOrder>, orderBooksSides: Collection<OrderBookSide>): List<OrderBookPersistenceData> {
-            val orderBooks = mutableMapOf<String, MutableMap<Boolean, MutableCollection<LimitOrder>>>()
-            orders.forEach { order ->
-                orderBooks.getOrPut(order.assetPairId) { mutableMapOf() }
-                        .getOrPut(order.isBuySide()) { mutableListOf() }
-                        .add(order)
-            }
-
-            val mutableOrderBooksSides = orderBooksSides.toMutableList()
-            val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
-            orderBooks.forEach {assetPairId, sideOrders ->
-                sideOrders.forEach { isBuy, orders ->
-                    mutableOrderBooksSides.remove(OrderBookSide(assetPairId, isBuy))
-                    orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, isBuy, orders))
-                }
-            }
-            mutableOrderBooksSides.forEach { orderBooksSide ->
-                LOGGER.info("Orders $orderBooksSide are absent in primary db and will be removed from secondary db")
-                orderBookPersistenceDataList.add(OrderBookPersistenceData(orderBooksSide.assetPairId, orderBooksSide.isBuySide, emptyList()))
-            }
-            return orderBookPersistenceDataList
-        }
     }
-
-    private val updatedWalletsQueue = LinkedBlockingQueue<Collection<Wallet>>()
-    private val updatedOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
-    private val updatedStopOrderBooksQueue = LinkedBlockingQueue<Collection<OrderBookPersistenceData>>()
-
-    init {
-        startSecondaryBalancesUpdater()
-        startSecondaryOrdersUpdater()
-        startSecondaryStopOrdersUpdater()
-    }
-
-    override fun balancesQueueSize() = updatedWalletsQueue.size
-
-    override fun ordersQueueSize() = updatedOrderBooksQueue.size
 
     override fun persist(data: PersistenceData): Boolean {
         if (data.isEmpty()) {
@@ -128,16 +81,16 @@ class RedisPersistenceManager(
                     ", commit: ${PrintUtils.convertToString2((commitTime - persistTime).toDouble())}" +
                     (if (messageId != null) " ($messageId)" else ""))
 
-            if (secondaryBalancesAccessor != null && !CollectionUtils.isEmpty(data.balancesData?.wallets)) {
-                updatedWalletsQueue.put(data.balancesData!!.wallets)
+            if (!CollectionUtils.isEmpty(data.balancesData?.wallets)) {
+                persistedWalletsApplicationEventPublisher.publishEvent(AccountPersistEvent(data.balancesData!!.wallets))
             }
 
-            if (secondaryOrdersAccessor != null && !CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
-                updatedOrderBooksQueue.put(data.orderBooksData!!.orderBooks)
+            if (!CollectionUtils.isEmpty(data.orderBooksData?.orderBooks)) {
+                persistedOrdersApplicationEventPublisher.publishEvent(OrderBookPersistEvent(data.orderBooksData!!.orderBooks))
             }
 
-            if (secondaryStopOrdersAccessor != null && !CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
-                updatedStopOrderBooksQueue.put(data.stopOrderBooksData!!.orderBooks)
+            if (!CollectionUtils.isEmpty(data.stopOrderBooksData?.orderBooks)) {
+                persistedStopOrdersApplicationEventPublisher.publishEvent(StopOrderBookPersistEvent(data.stopOrderBooksData!!.orderBooks))
             }
         }
     }
@@ -190,78 +143,4 @@ class RedisPersistenceManager(
         }
         redisMessageSequenceNumberDatabaseAccessor.save(transaction, sequenceNumber)
     }
-
-    private fun startSecondaryBalancesUpdater() {
-        if (secondaryBalancesAccessor == null) {
-            return
-        }
-
-        if (!config.me.walletsMigration) {
-            updatedWalletsQueue.put(primaryBalancesAccessor.loadWallets().values.toList())
-        }
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.balancesAsyncWriter") {
-            while (true) {
-                try {
-                    val wallets = updatedWalletsQueue.take()
-                    secondaryBalancesAccessor.insertOrUpdateWallets(wallets.toList())
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save wallets async", e)
-                }
-            }
-        }
-    }
-
-    private fun startSecondaryOrdersUpdater() {
-        if (secondaryOrdersAccessor == null) {
-            return
-        }
-
-
-        val currentOrderBookSides = if (config.me.ordersMigration) emptySet() else
-            secondaryOrdersAccessor.loadLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
-        updatedOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryOrdersAccessor.loadLimitOrders(), currentOrderBookSides))
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.ordersAsyncWriter") {
-            while (true) {
-                try {
-                    val orderBooks = updatedOrderBooksQueue.take()
-                    orderBooks.forEach {
-                        secondaryOrdersAccessor.updateOrderBook(it.assetPairId, it.isBuy, it.orders)
-                    }
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save orders async", e)
-                }
-            }
-        }
-    }
-
-    private fun startSecondaryStopOrdersUpdater() {
-        if (secondaryStopOrdersAccessor == null) {
-            return
-        }
-
-        val currentStopOrderBookSides = if (config.me.ordersMigration) emptySet() else
-            secondaryStopOrdersAccessor.loadStopLimitOrders().map { OrderBookSide(it.assetPairId, it.isBuySide()) }.toSet()
-
-        updatedStopOrderBooksQueue.put(mapOrdersToOrderBookPersistenceDataList(primaryStopOrdersAccessor.loadStopLimitOrders(), currentStopOrderBookSides))
-
-        thread(name = "${RedisPersistenceManager::class.java.name}.stopOrdersAsyncWriter") {
-            while (true) {
-                try {
-                    val orderBooks = updatedStopOrderBooksQueue.take()
-                    orderBooks.forEach {
-                        secondaryStopOrdersAccessor.updateStopOrderBook(it.assetPairId, it.isBuy, it.orders)
-                    }
-                } catch (e: Exception) {
-                    LOGGER.error("Unable to save stop orders async", e)
-                }
-            }
-        }
-    }
-
 }
-
-private data class OrderBookSide(val assetPairId: String,
-                                 val isBuySide: Boolean)
