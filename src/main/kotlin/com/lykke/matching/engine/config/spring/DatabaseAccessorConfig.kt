@@ -194,7 +194,7 @@ open class DatabaseAccessorConfig {
     }
     //</editor-fold>
 
-    //<editor-fold desc="Persist listeners>
+    //<editor-fold desc="Persist publishers>
     @Bean
     open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
                                                        listeners: Optional<List<QueueConsumer<AccountPersistEvent>?>>): SimpleApplicationEventPublisher<AccountPersistEvent> {

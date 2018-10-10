@@ -47,7 +47,9 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
         nameToQueueSize
                 .forEach { entry ->
                     if (entry.value > config.me.queueSizeLimit) {
-                        METRICS_LOGGER.logError(ENTRY_SIZE_LIMIT_FORMAT.format(entry.key))
+                        val message = ENTRY_SIZE_LIMIT_FORMAT.format(entry.key)
+                        METRICS_LOGGER.logError(message)
+                        LOGGER.warn(message)
                     }
                 }
     }
