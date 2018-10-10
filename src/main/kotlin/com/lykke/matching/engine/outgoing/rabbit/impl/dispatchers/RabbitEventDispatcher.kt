@@ -89,7 +89,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
             val failedConsumerQueue = queueNameToQueue[rabbitFailureEvent.publisherName]
 
-            failedConsumerQueue?.forEach {
+            failedConsumerQueue?.reversed()?.forEach {
                 inputDeque.putFirst(it)
             }
 
