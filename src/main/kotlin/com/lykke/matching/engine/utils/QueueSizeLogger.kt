@@ -4,9 +4,9 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 
@@ -48,7 +48,9 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
         nameToQueueSize
                 .forEach { entry ->
                     if (entry.value > config.me.queueSizeLimit) {
-                        METRICS_LOGGER.logError(ENTRY_SIZE_LIMIT_FORMAT.format(entry.key))
+                        val message = ENTRY_SIZE_LIMIT_FORMAT.format(entry.key)
+                        METRICS_LOGGER.logError(message)
+                        LOGGER.warn(message)
                     }
                 }
     }
