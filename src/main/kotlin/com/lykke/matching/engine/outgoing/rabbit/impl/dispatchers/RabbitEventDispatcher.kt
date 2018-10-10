@@ -97,7 +97,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
             if (queueNameToQueue.size == failedEventConsumers.size) {
                 logError("All Rabbit MQ publishers crashed, dispatcher: $dispatcherName")
-                applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
+                applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, dispatcherName))
             }
 
             failedConsumerQueue?.clear()
@@ -120,7 +120,7 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
             failedEventConsumers.remove(rabbitRecoverEvent.publisherName)
             maintenanceModeCondition.signal()
 
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, dispatcherName))
         } catch (e: Exception) {
             logException("Error occurred on rabbit dispatcher recovery from maintenance mode for exchange: $dispatcherName", e)
         } finally {

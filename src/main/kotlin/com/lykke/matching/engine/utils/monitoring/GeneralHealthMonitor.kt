@@ -47,6 +47,6 @@ class GeneralHealthMonitor: HealthMonitor {
     }
 
     private fun getQualifier(event: HealthMonitorEvent): String {
-        return "${event.component.name} + ${event.qualifier ?: ""}"
+        return "${event.component.name}  ${if(event.qualifier != null) "_" + event.qualifier else  ""}"
     }
 }
