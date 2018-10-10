@@ -13,13 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class RabbitOrderBookListener {
     @Autowired
-    private lateinit var rabbitOrderBookQueue: BlockingQueue<OrderBook>
+    private lateinit var rabbitOrderBookQueue: BlockingDeque<OrderBook>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -47,14 +47,17 @@ class RabbitOrderBookListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
+            rabbitFailureEvent.failedEvent?.let {
+                rabbitOrderBookQueue.putFirst(it as OrderBook)
+            }
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
 }

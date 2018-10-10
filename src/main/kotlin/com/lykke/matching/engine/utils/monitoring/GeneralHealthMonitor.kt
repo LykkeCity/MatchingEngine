@@ -5,8 +5,6 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.util.CollectionUtils
-import java.util.concurrent.ConcurrentHashMap
 
 @Component("GeneralHealthMonitor")
 class GeneralHealthMonitor: HealthMonitor {
@@ -16,25 +14,39 @@ class GeneralHealthMonitor: HealthMonitor {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val brokenComponents = ConcurrentHashMap.newKeySet<MonitoredComponent>()
+    private val monitoredComponentsToQualifiers = HashMap<MonitoredComponent, MutableSet<String>>()
 
-    override fun ok() = brokenComponents.isEmpty()
+    @Volatile
+    private var ok: Boolean = true
+
+    override fun ok() = ok
 
     @EventListener
+    @Synchronized
     fun processHealthMonitorEvent(event: HealthMonitorEvent) {
         if (event.ok) {
-            brokenComponents.remove(event.component)
+            val qualifiers = monitoredComponentsToQualifiers[event.component] ?: return
+            qualifiers.remove(getQualifier(event))
+            if (qualifiers.isEmpty()) {
+                monitoredComponentsToQualifiers.remove(event.component)
+            }
         } else {
-            brokenComponents.add(event.component)
+            val qualifiers = monitoredComponentsToQualifiers.getOrPut(event.component) { HashSet() }
+            qualifiers.add(getQualifier(event))
         }
+        ok = monitoredComponentsToQualifiers.isEmpty()
     }
 
     @Scheduled(fixedRateString = "\${health.check.update.interval}")
     open fun checkBrokenComponents() {
-        if (!CollectionUtils.isEmpty(brokenComponents)) {
+        if (!ok) {
             val message = "Maintenance mode is on"
             LOGGER.error(message)
             METRICS_LOGGER.logError(message)
         }
+    }
+
+    private fun getQualifier(event: HealthMonitorEvent): String {
+        return "${event.component.name} + ${event.qualifier ?: ""}"
     }
 }

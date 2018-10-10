@@ -16,14 +16,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class RabbitTransferEventListener {
 
     @Autowired
-    private lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
+    private lateinit var rabbitTransferQueue: BlockingDeque<CashTransferOperation>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -56,14 +56,17 @@ class RabbitTransferEventListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
+            rabbitFailureEvent.failedEvent?.let {
+                rabbitTransferQueue.putFirst(it as CashTransferOperation)
+            }
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT, rabbitFailureEvent.publisherName))
         }
     }
 
     @EventListener
     fun onRecover(rabbitRecoverEvent: RabbitRecoverEvent) {
         if (rabbitRecoverEvent.publisherName == RabbitTransferEventListener::class.java.simpleName) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, rabbitRecoverEvent.publisherName))
         }
     }
 }
