@@ -16,13 +16,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class ReservedCashOperationListener {
     @Autowired
-    private lateinit var reservedCashOperationQueue: BlockingQueue<ReservedCashOperation>
+    private lateinit var reservedCashOperationQueue: BlockingDeque<ReservedCashOperation>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -55,6 +55,9 @@ class ReservedCashOperationListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == ReservedCashOperationListener::class.java.simpleName) {
+            rabbitFailureEvent.failedEvent?.let {
+                reservedCashOperationQueue.putFirst(it as ReservedCashOperation)
+            }
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }
     }

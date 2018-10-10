@@ -16,14 +16,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class BalanceUpdatesListener {
 
     @Autowired
-    private lateinit var  balanceUpdateQueue: BlockingQueue<BalanceUpdate>
+    private lateinit var  balanceUpdateQueue: BlockingDeque<BalanceUpdate>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -56,6 +56,9 @@ class BalanceUpdatesListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == BalanceUpdatesListener::class.java.simpleName) {
+            rabbitFailureEvent.failedEvent?.let {
+                balanceUpdateQueue.putFirst(it as BalanceUpdate)
+            }
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }
     }

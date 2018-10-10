@@ -16,14 +16,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.BlockingQueue
+import java.util.concurrent.BlockingDeque
 import javax.annotation.PostConstruct
 
 @Component
 class CashSwapListener {
 
     @Autowired
-    private lateinit var  cashSwapQueue: BlockingQueue<CashSwapOperation>
+    private lateinit var  cashSwapQueue: BlockingDeque<CashSwapOperation>
 
     @Autowired
     private lateinit var rabbitMqOldService: RabbitMqService<Any>
@@ -56,6 +56,9 @@ class CashSwapListener {
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == CashSwapListener::class.java.simpleName) {
+            rabbitFailureEvent.failedEvent?.let {
+                cashSwapQueue.putFirst(it as CashSwapOperation)
+            }
             applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.RABBIT))
         }
     }
