@@ -195,7 +195,6 @@ open class DatabaseAccessorConfig {
             : FileProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
     }
-    //</editor-fold>
 
     @Bean
     open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
