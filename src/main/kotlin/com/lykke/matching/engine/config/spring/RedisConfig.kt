@@ -68,7 +68,7 @@ open class RedisConfig {
     //<editor-fold desc="Redis database accessors">
     @Bean
     open fun redisProcessedMessagesDatabaseAccessor(): RedisProcessedMessagesDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -79,7 +79,7 @@ open class RedisConfig {
 
     @Bean
     open fun redisWalletDatabaseAccessor(): RedisWalletDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -88,7 +88,7 @@ open class RedisConfig {
 
     @Bean
     open fun redisCashOperationIdDatabaseAccessor(): RedisCashOperationIdDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis || config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -99,7 +99,7 @@ open class RedisConfig {
 
     @Bean
     open fun redisMessageSequenceNumberDatabaseAccessor(): RedisMessageSequenceNumberDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -114,7 +114,7 @@ open class RedisConfig {
                                       allRedisConnections: List<RedisConnection>,
                                       @Value("\${redis.health.check.interval}") updateInterval: Long,
                                       @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisReconnectionManager? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
