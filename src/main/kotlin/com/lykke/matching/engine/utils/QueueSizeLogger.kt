@@ -4,23 +4,22 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.BlockingQueue
 import java.util.stream.Collectors
 
 @Component
-//@Profile("default", "!local_config")
+@Profile("default", "!local_config")
 class QueueSizeLogger @Autowired constructor(private val queues: Map<String, BlockingQueue<*>>,
                                              private val config: Config) {
     companion object {
         val LOGGER = Logger.getLogger(QueueSizeLogger::class.java.name)
         val METRICS_LOGGER = MetricsLogger.getLogger()
 
-        val ENTRY_FORMAT = "%s: %d;"
+        val ENTRY_FORMAT = "%s: %d; "
         val ENTRY_SIZE_LIMIT_FORMAT = "%s queue is higher than limit"
-        val ENTRY_DELIMITER = ". "
-
         val LOG_THREAD_NAME = "QueueSizeLogger"
     }
 
@@ -38,7 +37,7 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
                 .entries
                 .stream()
                 .map({ entry -> ENTRY_FORMAT.format(entry.key, entry.value) })
-                .collect(Collectors.joining(ENTRY_DELIMITER))
+                .collect(Collectors.joining(""))
 
         LOGGER.info(logString)
     }
