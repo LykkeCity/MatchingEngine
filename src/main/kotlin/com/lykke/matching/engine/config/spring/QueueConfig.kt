@@ -18,6 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue
 @Configuration
 open class QueueConfig {
 
+    //<editor-fold desc="Rabbit MQ queues">
     @Bean
     open fun clientsEventsQueue(): BlockingDeque<Event<*>> {
         return LinkedBlockingDeque()
@@ -34,11 +35,6 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun balanceUpdateNotificationQueue(): BlockingQueue<BalanceUpdateNotification> {
-        return  LinkedBlockingQueue<BalanceUpdateNotification>()
-    }
-
-    @Bean
     open fun cashSwapQueue(): BlockingDeque<CashSwapOperation> {
         return LinkedBlockingDeque<CashSwapOperation>()
     }
@@ -46,16 +42,6 @@ open class QueueConfig {
     @Bean
     open fun clientLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
         return LinkedBlockingDeque<LimitOrdersReport>()
-    }
-
-    @Bean
-    open fun lkkTradesQueue(): BlockingQueue<List<LkkTrade>> {
-        return LinkedBlockingQueue<List<LkkTrade>>()
-    }
-
-    @Bean
-    open fun orderBookQueue(): BlockingQueue<OrderBook> {
-        return LinkedBlockingQueue<OrderBook>()
     }
 
     @Bean
@@ -84,8 +70,39 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun trustedClientsLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
-        return LinkedBlockingQueue<LimitOrdersReport>()
+    open fun trustedClientsLimitOrdersQueue(): BlockingDeque<LimitOrdersReport> {
+        return LinkedBlockingDeque<LimitOrdersReport>()
+    }
+    //</editor-fold>
+
+
+    //<editor-fold desc="Input queues">
+    @Bean
+    open fun cashTransferQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun cashInOutQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+    //</editor-fold>
+
+
+    //<editor-fold desc="Etc queues">
+    @Bean
+    open fun orderBookQueue(): BlockingQueue<OrderBook> {
+        return LinkedBlockingQueue<OrderBook>()
+    }
+
+    @Bean
+    open fun balanceUpdateNotificationQueue(): BlockingQueue<BalanceUpdateNotification> {
+        return  LinkedBlockingQueue<BalanceUpdateNotification>()
     }
 
     @Bean
@@ -104,17 +121,8 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun cashInOutQueue(): BlockingQueue<MessageWrapper> {
-        return LinkedBlockingQueue<MessageWrapper>()
+    open fun lkkTradesQueue(): BlockingQueue<List<LkkTrade>> {
+        return LinkedBlockingQueue<List<LkkTrade>>()
     }
-
-    @Bean
-    open fun cashTransferQueue(): BlockingQueue<MessageWrapper> {
-        return LinkedBlockingQueue<MessageWrapper>()
-    }
-
-    @Bean
-    open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
-        return LinkedBlockingQueue<MessageWrapper>()
-    }
+    //</editor-fold>
 }
