@@ -116,8 +116,9 @@ class RabbitEventDispatcher<E>(private val dispatcherName: String,
 
         try {
             maintenanceModeLock.lock()
-            log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${queueNameToQueue.size - failedEventConsumers.size}")
-            failedEventConsumers.remove(rabbitRecoverEvent.publisherName)
+            if (failedEventConsumers.remove(rabbitRecoverEvent.publisherName)) {
+                log("Rabbit MQ publisher recovered: ${rabbitRecoverEvent.publisherName}, count of functional publishers is ${queueNameToQueue.size - failedEventConsumers.size}")
+            }
             maintenanceModeCondition.signal()
 
             applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.RABBIT, dispatcherName))
