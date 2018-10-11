@@ -88,7 +88,7 @@ open class RedisConfig {
 
     @Bean
     open fun redisCashOperationIdDatabaseAccessor(): RedisCashOperationIdDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis || config.me.storage != Storage.RedisWithoutOrders) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
