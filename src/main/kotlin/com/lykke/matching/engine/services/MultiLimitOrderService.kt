@@ -450,7 +450,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val assetPair = assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId)
         if (assetPair == null) {
-            LOGGER.info("Unable to process message (${messageWrapper.messageId}: unknown asset pair")
+            LOGGER.info("Unable to process message (${messageWrapper.messageId}): unknown asset pair")
             writeResponse(messageWrapper, MessageStatus.UNKNOWN_ASSET)
             return
         }
