@@ -22,13 +22,13 @@ class ClientOrdersController {
     @Autowired
     private lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
 
-    @GetMapping("client/{clientId}/orders", produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiOperation("Endpoint to access orders from current order book for given client")
-    fun getOrders(@PathVariable("clientId") clientId: String,
+    @GetMapping("client/{walletId}/orders", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiOperation("Endpoint to access orders from current order book for given wallet of the client")
+    fun getOrders(@PathVariable("walletId") walletId: String,
                   @RequestParam(required = false) assetPair: String?,
                   @RequestParam(required = false) isBuy: Boolean?): ClientOrdersDto {
-        val limitOrders = genericLimitOrderService.searchOrders(clientId, assetPair, isBuy)
-        val stopOrders = genericStopLimitOrderService.searchOrders(clientId, assetPair, isBuy)
+        val limitOrders = genericLimitOrderService.searchOrders(walletId, assetPair, isBuy)
+        val stopOrders = genericStopLimitOrderService.searchOrders(walletId, assetPair, isBuy)
 
         return ClientOrdersDto(limitOrders, stopOrders)
     }
