@@ -1,9 +1,9 @@
 package com.lykke.matching.engine.utils
 
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
 import org.junit.Test
 import java.math.BigDecimal
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class NumberUtilsTest {
 
