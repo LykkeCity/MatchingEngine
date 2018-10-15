@@ -10,6 +10,7 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
+import java.net.Socket
 import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
@@ -42,17 +43,8 @@ class OrderBooksSubscribersSocketServer(val config: Config,
         val socket = ServerSocket(port!!)
         LOGGER.info("Waiting connection on port: $port.")
         try {
-
             while (true) {
-                val clientConnection = socket.accept()
-                val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>(),
-                        genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder)
-                try {
-                    orderBookSubscribersThreadPool.get().submit(connection)
-                } catch (e: RejectedExecutionException) {
-                    logPoolRejection(connection)
-                }
-                connectionsHolder.addConnection(connection)
+                submitClientConnection(socket.accept())
             }
         } catch (exception: Exception) {
             LOGGER.error("Got exception: ", exception)
@@ -61,12 +53,33 @@ class OrderBooksSubscribersSocketServer(val config: Config,
         }
     }
 
-    fun logPoolRejection(rejectedConnection: Connection) {
+    private fun submitClientConnection(clientConnection: Socket) {
+        val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>(),
+                genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder)
+        try {
+            orderBookSubscribersThreadPool.get().submit(connection)
+        } catch (e: RejectedExecutionException) {
+            logPoolRejection(connection)
+            closeClientConnection(clientConnection)
+            return
+        }
+        connectionsHolder.addConnection(connection)
+    }
+
+    private fun logPoolRejection(rejectedConnection: Connection) {
         val message = "Task rejected from order book subscribe thread pool, " +
                 "rejected task: [$rejectedConnection.], " +
                 "active threads size ${orderBookSubscribersThreadPool.get().activeCount}, " +
                 "max pool size ${orderBookSubscribersThreadPool.get().maxPoolSize}"
         LOGGER.error(message)
         METRICS_LOGGER.logError(message)
+    }
+
+    private fun closeClientConnection(connection: Socket) {
+        try {
+            connection.close()
+        } catch(e: Exception) {
+            LOGGER.error("Error during connection close for connection: ${connection.inetAddress.canonicalHostName}")
+        }
     }
 }
