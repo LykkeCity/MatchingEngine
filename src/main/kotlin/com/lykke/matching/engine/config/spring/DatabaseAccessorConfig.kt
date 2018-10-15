@@ -2,19 +2,45 @@ package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
+import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
+import com.lykke.matching.engine.database.Storage
+import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureCashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
+import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
 import com.lykke.matching.engine.database.common.DefaultPersistenceManager
-import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
+import com.lykke.matching.engine.database.redis.RedisWithoutOrdersPersistenceManager
 import com.lykke.matching.engine.database.redis.connection.impl.RedisReconnectionManager
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.database.redis.connection.RedisConnectionFactory
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -36,65 +62,114 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
+                                ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
+                                stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+            Storage.Azure ->
+                DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        fileProcessedMessagesDatabaseAccessor())
+            Storage.Redis ->
+                RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         persistenceRedisConnection()!!,
-                        config
-                )
-            }
+                        config)
+            Storage.RedisWithoutOrders ->
+                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistenceRedisConnection()!!,
+                        config)
         }
     }
 
     @Bean
     open fun cashInOutOperationPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                                 redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
+                                ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
+                                stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                 cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                 messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+            Storage.Azure ->
+                DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        fileProcessedMessagesDatabaseAccessor())
+            Storage.Redis ->
+                RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         cashInOutOperationsPreprocessorRedisConnection()!!,
-                        config
-                )
-            }
+                        config)
+            Storage.RedisWithoutOrders ->
+                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        cashInOutOperationsPreprocessorRedisConnection()!!,
+                        config)
         }
     }
-
 
     @Bean
     open fun cashTransferPreprocessorPersistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                                                               redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
+                                                              ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder,
+                                                              stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
                                                               cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                                               messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
         return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                    ordersDatabaseAccessorsHolder.primaryAccessor,
+                    stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                    fileProcessedMessagesDatabaseAccessor())
+            Storage.Redis ->
+                RedisPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
                         balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.secondaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
+                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
                         cashTransferOperationsPreprocessorRedisConnection()!!,
-                        config
-                )
-            }
+                        config)
+            Storage.RedisWithoutOrders ->
+                RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
+                        balancesDatabaseAccessorsHolder.secondaryAccessor,
+                        redisProcessedMessagesDatabaseAccessor.get(),
+                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
+                        ordersDatabaseAccessorsHolder.primaryAccessor,
+                        stopOrdersDatabaseAccessorsHolder.primaryAccessor,
+                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        cashTransferOperationsPreprocessorRedisConnection()!!,
+                        config)
         }
     }
 
@@ -102,6 +177,7 @@ open class DatabaseAccessorConfig {
     open fun readOnlyProcessedMessagesDatabaseAccessor(): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(initialLoadingRedisConnection()!!,
                     config.me.redis.processedMessageDatabase,
                     getProcessedMessageTTL())
@@ -110,7 +186,7 @@ open class DatabaseAccessorConfig {
 
     @Bean
     open fun redisWalletDatabaseAccessor(): RedisWalletDatabaseAccessor? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -123,7 +199,7 @@ open class DatabaseAccessorConfig {
                          allRedisConnections: List<RedisConnection>,
                          @Value("\${redis.health.check.interval}") updateInterval: Long,
                          @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisReconnectionManager? {
-        if (config.me.storage != Storage.Redis) {
+        if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
@@ -144,6 +220,7 @@ open class DatabaseAccessorConfig {
     open fun cashOperationIdDatabaseAccessor(): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> {
                 return RedisCashOperationIdDatabaseAccessor(cashInOutOperationIdRedisConnection()!!,
                         cashTransferOperationIdRedisConnection()!!,
@@ -156,6 +233,7 @@ open class DatabaseAccessorConfig {
     open fun messageSequenceNumberDatabaseAccessor(): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> {
                 RedisMessageSequenceNumberDatabaseAccessor(initialLoadingRedisConnection()!!,
                         config.me.redis.sequenceNumberDatabase)
@@ -263,12 +341,6 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun fileOrderBookDatabaseAccessor()
-            : OrderBookDatabaseAccessor {
-        return FileOrderBookDatabaseAccessor(config.me.orderBookPath)
-    }
-
-    @Bean
     open fun fileProcessedMessagesDatabaseAccessor()
             : FileProcessedMessagesDatabaseAccessor {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
@@ -276,10 +348,5 @@ open class DatabaseAccessorConfig {
 
     private fun getProcessedMessageTTL(): Int {
         return (config.me.processedMessagesInterval / 500).toInt()
-    }
-
-    @Bean
-    open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
-        return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
     }
 }

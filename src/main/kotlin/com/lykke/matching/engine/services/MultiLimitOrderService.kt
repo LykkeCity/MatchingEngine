@@ -9,6 +9,8 @@ import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -106,7 +108,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         messageUid = message.uid.toString()
         clientId = message.clientId
         assetPairId = message.assetPairId
-        LOGGER.debug("Got old multi limit order  messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
+        LOGGER.debug("Got old multi limit order messageId: ${messageWrapper.messageId}, id: $messageUid, client $clientId, assetPair: $assetPairId")
         cancelAllPreviousLimitOrders = message.cancelAllPreviousLimitOrders
 
         val assetPair = assetsPairsHolder.getAssetPair(assetPairId)
@@ -327,6 +329,22 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val startPersistTime = System.nanoTime()
 
+        val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
+        val ordersToSave = ordersToAdd.toMutableList()
+        val ordersToRemove = mutableListOf<LimitOrder>()
+        ordersToRemove.addAll(completedOrders)
+        ordersToRemove.addAll(ordersToCancel)
+        if (buySide || cancelBuySide) {
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(true))
+            orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, true, updatedOrders.fullOrderBook))
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
+        }
+        if (sellSide || cancelSellSide) {
+            val updatedOrders = matchingEngine.updatedOrders(orderBook.getOrderBook(false))
+            orderBookPersistenceDataList.add(OrderBookPersistenceData(assetPairId, false, updatedOrders.fullOrderBook))
+            updatedOrders.updatedOrder?.let { ordersToSave.add(it) }
+        }
+
         var sequenceNumber: Long? = null
         var clientsSequenceNumber: Long? = null
         var trustedClientsSequenceNumber: Long? = null
@@ -339,7 +357,10 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             sequenceNumber = clientsSequenceNumber
         }
 
-        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(), sequenceNumber)
+        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+                OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
+                null,
+                sequenceNumber)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
@@ -356,12 +377,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         limitOrderService.cancelLimitOrders(ordersToCancel, now)
         limitOrderService.addOrders(ordersToAdd)
         limitOrderService.setOrderBook(assetPairId, orderBook)
-        if (buySide || cancelBuySide) {
-            limitOrderService.updateOrderBook(assetPairId, true)
-        }
-        if (sellSide || cancelSellSide) {
-            limitOrderService.updateOrderBook(assetPairId, false)
-        }
         val endPersistTime = System.nanoTime()
 
         val orderBookCopy = orderBook.copy()
