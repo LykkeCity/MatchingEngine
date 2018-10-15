@@ -12,11 +12,13 @@ import org.springframework.context.ApplicationContext
 import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
+import java.net.Socket
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.RejectedExecutionException
 import java.util.regex.Pattern
 
 @Component
-class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTaskExecutor): Runnable {
+class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTaskExecutor) : Runnable {
 
     @Autowired
     private lateinit var config: Config
@@ -51,21 +53,38 @@ class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTask
         LOGGER.info("Waiting connection on port: $port.")
         try {
             while (true) {
-                val clientConnection = socket.accept()
-                if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
-                    val handler = ClientHandlerImpl(messageRouter, clientConnection, this)
-                    clientRequestThreadPool.submit(handler)
-                    connect(handler)
-                } else {
-                    clientConnection.close()
-                    LOGGER.info("Connection from host ${clientConnection.inetAddress.hostAddress} is not allowed.")
-                }
+                submitClientConnection(socket.accept())
             }
         } catch (exception: Exception) {
             LOGGER.error("Got exception: ", exception)
-            METRICS_LOGGER.logError( "Fatal exception", exception)
+            METRICS_LOGGER.logError("Fatal exception", exception)
         } finally {
             socket.close()
+        }
+    }
+
+    fun submitClientConnection(clientConnection: Socket) {
+        if (isConnectionAllowed(getWhiteList(), clientConnection.inetAddress.hostAddress)) {
+            val handler = ClientHandlerImpl(messageRouter, clientConnection, this)
+            try {
+                clientRequestThreadPool.submit(handler)
+            } catch (e: RejectedExecutionException) {
+                closeClientConnection(clientConnection)
+                return
+            }
+            connect(handler)
+        } else {
+            closeClientConnection(clientConnection)
+            LOGGER.info("Connection from host ${clientConnection.inetAddress.hostAddress} is not allowed.")
+        }
+    }
+
+
+    private fun closeClientConnection(clientConnection: Socket) {
+        try {
+            clientConnection.close()
+        } catch (e: Exception) {
+            LOGGER.error("Error during connection close for connection: ${clientConnection.inetAddress.hostAddress}")
         }
     }
 
@@ -81,7 +100,7 @@ class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTask
         return true
     }
 
-    private fun getWhiteList() : List<String>? {
+    private fun getWhiteList(): List<String>? {
         return config.me.whiteList?.split(";")
     }
 

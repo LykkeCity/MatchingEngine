@@ -104,4 +104,8 @@ class ClientHandlerImpl(
             LOGGER.info("Unable to close connection to $clientHostName")
         }
     }
+
+    override fun toString(): String {
+        return "Client handler, (clientHostName: $clientHostName)"
+    }
 }
