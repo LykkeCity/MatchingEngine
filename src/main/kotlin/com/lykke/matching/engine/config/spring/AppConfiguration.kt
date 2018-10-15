@@ -41,7 +41,7 @@ open class AppConfiguration : SchedulingConfigurer {
     open fun clientRequestThreadPool(@Value("\${concurrent.client.request.pool.core.pool.size}") corePoolSize: Int,
                                      @Value("#{Config.me.socket.maxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
-        threadPoolTaskExecutor.threadNamePrefix = "client-request-"
+        threadPoolTaskExecutor.threadNamePrefix = "client-connection-"
         threadPoolTaskExecutor.setQueueCapacity(0)
         threadPoolTaskExecutor.corePoolSize = corePoolSize
         threadPoolTaskExecutor.maxPoolSize = maxPoolSize
@@ -57,7 +57,7 @@ open class AppConfiguration : SchedulingConfigurer {
         }
 
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
-        threadPoolTaskExecutor.threadNamePrefix = "orderbook-subscriber-"
+        threadPoolTaskExecutor.threadNamePrefix = "orderbook-subscriber-connection-"
         threadPoolTaskExecutor.setQueueCapacity(0)
         threadPoolTaskExecutor.corePoolSize = corePoolSize
         threadPoolTaskExecutor.maxPoolSize = maxPoolSize!!

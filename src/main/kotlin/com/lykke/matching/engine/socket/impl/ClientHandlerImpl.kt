@@ -37,7 +37,7 @@ class ClientHandlerImpl(
 
     override fun run() {
         try {
-            Thread.currentThread().name = "client-request-$clientHostName"
+            Thread.currentThread().name = "client-connection-$clientHostName"
             inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
             outputStream = DataOutputStream(BufferedOutputStream(socket.outputStream))
             outputStream!!.flush()
