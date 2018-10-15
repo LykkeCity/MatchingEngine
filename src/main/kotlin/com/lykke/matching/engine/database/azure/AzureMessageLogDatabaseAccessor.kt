@@ -15,7 +15,7 @@ import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.util.UUID
 
-class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, logBlobContainer: String) : MessageLogDatabaseAccessor<Message> {
+class AzureMessageLogDatabaseAccessor(connString: String, tableName: String, logBlobContainer: String) : MessageLogDatabaseAccessor {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(AzureMessageLogDatabaseAccessor::class.java.name)

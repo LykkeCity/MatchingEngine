@@ -64,3 +64,4 @@ open class AppConfiguration: SchedulingConfigurer {
         return MonitoringStatsCollector()
     }
 }
+
