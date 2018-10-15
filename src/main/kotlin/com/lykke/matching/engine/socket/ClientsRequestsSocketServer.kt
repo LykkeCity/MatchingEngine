@@ -9,7 +9,7 @@ import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
-import org.springframework.core.task.AsyncTaskExecutor
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
 import java.net.Socket
@@ -18,7 +18,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.regex.Pattern
 
 @Component
-class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTaskExecutor) : Runnable {
+class ClientsRequestsSocketServer(private val clientRequestThreadPool: ThreadPoolTaskExecutor) : Runnable {
 
     @Autowired
     private lateinit var config: Config
@@ -69,6 +69,7 @@ class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTask
             try {
                 clientRequestThreadPool.submit(handler)
             } catch (e: RejectedExecutionException) {
+                logPoolRejection(handler)
                 closeClientConnection(clientConnection)
                 return
             }
@@ -79,6 +80,16 @@ class ClientsRequestsSocketServer(private val clientRequestThreadPool: AsyncTask
         }
     }
 
+
+    fun logPoolRejection(rejectedClientHandler: ClientHandler) {
+        val message = "Task rejected from client handler thread pool, client can not be connected to ME, " +
+                "rejected tasks: [$rejectedClientHandler] " +
+                "active threads size ${clientRequestThreadPool.activeCount}, " +
+                "max pool size ${clientRequestThreadPool.maxPoolSize}"
+
+        METRICS_LOGGER.logError(message)
+        LOGGER.error(message)
+    }
 
     private fun closeClientConnection(clientConnection: Socket) {
         try {

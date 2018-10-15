@@ -5,12 +5,14 @@ import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import org.springframework.core.task.AsyncTaskExecutor
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.net.ServerSocket
 import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.RejectedExecutionException
 import javax.annotation.PostConstruct
 
 @Component
@@ -19,10 +21,11 @@ class OrderBooksSubscribersSocketServer(val config: Config,
                                         val genericLimitOrderService: GenericLimitOrderService,
                                         val assetsHolder: AssetsHolder,
                                         val assetsPairsHolder: AssetsPairsHolder,
-                                        private val orderBookSubscribersThreadPool: Optional<AsyncTaskExecutor>): Thread(OrderBooksSubscribersSocketServer::class.java.name) {
+                                        private val orderBookSubscribersThreadPool: Optional<ThreadPoolTaskExecutor>): Thread(OrderBooksSubscribersSocketServer::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(OrderBooksSubscribersSocketServer::class.java.name)
+        val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
     @PostConstruct
@@ -44,7 +47,11 @@ class OrderBooksSubscribersSocketServer(val config: Config,
                 val clientConnection = socket.accept()
                 val connection = Connection(clientConnection, LinkedBlockingQueue<OrderBook>(),
                         genericLimitOrderService.getAllOrderBooks(), assetsHolder, assetsPairsHolder)
-                orderBookSubscribersThreadPool.get().submit(connection)
+                try {
+                    orderBookSubscribersThreadPool.get().submit(connection)
+                } catch (e: RejectedExecutionException) {
+                    logPoolRejection(connection)
+                }
                 connectionsHolder.addConnection(connection)
             }
         } catch (exception: Exception) {
@@ -52,5 +59,14 @@ class OrderBooksSubscribersSocketServer(val config: Config,
         } finally {
             socket.close()
         }
+    }
+
+    fun logPoolRejection(rejectedConnection: Connection) {
+        val message = "Task rejected from order book subscribe thread pool, " +
+                "rejected task: [$rejectedConnection.], " +
+                "active threads size ${orderBookSubscribersThreadPool.get().activeCount}, " +
+                "max pool size ${orderBookSubscribersThreadPool.get().maxPoolSize}"
+        LOGGER.error(message)
+        METRICS_LOGGER.logError(message)
     }
 }
