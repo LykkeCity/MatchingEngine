@@ -25,7 +25,6 @@ open class RedisConfig {
     @Autowired
     private lateinit var config: Config
 
-
     //<editor-fold desc="Redis connections">
     @Bean
     open fun pingRedisConnection(): RedisConnection? {
@@ -68,7 +67,6 @@ open class RedisConfig {
         return redisConnectionFactory.getConnection("cashTransferOperationsPreprocessorRedisConnection")
     }
     //</editor-fold>
-
 
     //<editor-fold desc="Redis database accessors">
     @Bean
@@ -114,6 +112,7 @@ open class RedisConfig {
     }
     //</editor-fold>
 
+    //<editor-fold desc="etc">
     @Bean
     open fun redisReconnectionManager(taskScheduler: TaskScheduler,
                                       applicationEventPublisher: ApplicationEventPublisher,
@@ -127,7 +126,7 @@ open class RedisConfig {
         return RedisReconnectionManager(config.me, allRedisConnections, pingRedisConnection()!!,
                 taskScheduler, applicationEventPublisher, updateInterval, reconnectInterval)
     }
-
+    //</editor-fold>
 
     private fun getProcessedMessageTTL(): Int {
         return (config.me.processedMessagesInterval / 500).toInt()
