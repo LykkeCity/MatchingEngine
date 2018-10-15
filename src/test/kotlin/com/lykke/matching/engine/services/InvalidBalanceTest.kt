@@ -63,6 +63,7 @@ class InvalidBalanceTest : AbstractTest() {
     @Before
     fun setUp() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("ETHUSD", "ETH", "USD", 5))
+        initServices()
     }
 
     @Test

@@ -3,6 +3,10 @@ package com.lykke.matching.engine.services
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
+import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -19,7 +23,8 @@ import java.util.stream.Collectors
 class LimitOrderCancelService(private val genericLimitOrderService: GenericLimitOrderService,
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
-                              private val limitOrdersCancelHelper: LimitOrdersCancelHelper) : AbstractService {
+                              private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                              private val persistenceManager: PersistenceManager) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
     }
@@ -77,7 +82,24 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
     private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper, context: LimitOrderCancelOperationContext,  now: Date) {
         LOGGER.debug("Got old limit  order messageId: ${context.messageId}  (id: ${context.limitOrderIds}) cancel request id: ${context.uid}")
 
-        genericLimitOrderService.cancelLimitOrder(now, context.limitOrderIds.first().toString(), true)
+        val limitOrderId = context.limitOrderIds.first().toString()
+        val order = genericLimitOrderService.getOrder(limitOrderId)
+        if (order != null) {
+            val newOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId).copy()
+            newOrderBook.removeOrder(order)
+            val updated = persistenceManager.persist(PersistenceData(null,
+                    messageWrapper.processedMessage(),
+                    OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId,
+                            order.isBuySide(),
+                            newOrderBook.getCopyOfOrderBook(order.isBuySide()))),
+                            emptyList(),
+                            listOf(order)),
+                    null,
+                    null))
+            if (updated) {
+                genericLimitOrderService.cancelLimitOrder(Date(), limitOrderId, true)
+            }
+        }
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
     }
 }

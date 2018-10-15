@@ -10,7 +10,6 @@ import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
 import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
 import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
@@ -80,6 +79,7 @@ open class DatabaseAccessorConfig {
     open fun readOnlyProcessedMessagesDatabaseAccessor(redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> redisProcessedMessagesDatabaseAccessor.get()
         }
     }
@@ -88,6 +88,7 @@ open class DatabaseAccessorConfig {
     open fun cashOperationIdDatabaseAccessor(redisCashOperationIdDatabaseAccessor: Optional<RedisCashOperationIdDatabaseAccessor>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> redisCashOperationIdDatabaseAccessor.get()
         }
     }
@@ -96,6 +97,7 @@ open class DatabaseAccessorConfig {
     open fun messageSequenceNumberDatabaseAccessor(redisMessageSequenceNumberDatabaseAccessor: Optional<RedisMessageSequenceNumberDatabaseAccessor>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
+            Storage.RedisWithoutOrders,
             Storage.Redis -> redisMessageSequenceNumberDatabaseAccessor.get()
         }
     }
