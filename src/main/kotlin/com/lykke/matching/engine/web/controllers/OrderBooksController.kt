@@ -41,8 +41,8 @@ class OrderBooksController {
 
         genericLimitOrderService.getAllOrderBooks().values.forEach {
             val orderBook = it.copy()
-            books.add(OrderBook(orderBook.assetId, true, now, orderBook.getOrderBook(true)))
-            books.add(OrderBook(orderBook.assetId, false, now, orderBook.getOrderBook(false)))
+            books.add(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)))
+            books.add(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)))
         }
 
         LOGGER.info("Order book snapshot sent to ${request.remoteAddr}")
