@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 class ClientHandlerImpl(
         private val messageRouter: MessageRouter,
         private val socket: Socket,
-        private val socketServer: ClientsRequestsSocketServer): Thread(ClientHandlerImpl::class.java.name), ClientHandler {
+        private val socketServer: ClientsRequestsSocketServer) : Thread(ClientHandlerImpl::class.java.name), ClientHandler {
 
     companion object {
         val LOGGER = Logger.getLogger(ClientHandlerImpl::class.java.name)
@@ -37,7 +37,7 @@ class ClientHandlerImpl(
 
     override fun run() {
         try {
-            Thread.currentThread().name = Thread.currentThread().name + "-$clientHostName"
+            Thread.currentThread().name = "client-request-$clientHostName"
             inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
             outputStream = DataOutputStream(BufferedOutputStream(socket.outputStream))
             outputStream!!.flush()

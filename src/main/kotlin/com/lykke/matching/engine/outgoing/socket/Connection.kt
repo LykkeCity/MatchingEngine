@@ -35,7 +35,7 @@ class Connection(val socket: Socket,
     var clientHostName = socket.inetAddress.canonicalHostName
 
     override fun run() {
-        Thread.currentThread().name = Thread.currentThread().name + "-$clientHostName"
+        Thread.currentThread().name = "orderbook-subscriber-$clientHostName"
         LOGGER.info("Got order book subscriber from $clientHostName.")
         try {
             val inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
