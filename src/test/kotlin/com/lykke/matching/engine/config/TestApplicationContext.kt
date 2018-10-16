@@ -538,7 +538,8 @@ open class TestApplicationContext {
 
     @Bean
     open fun multiLimitOrderCancelService(genericLimitOrderService: GenericLimitOrderService,
-                                          genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory): MultiLimitOrderCancelService {
-        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
+                                          genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+                                          applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderCancelService {
+        return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
     }
 }

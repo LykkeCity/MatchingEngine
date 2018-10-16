@@ -88,7 +88,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             val newOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId).copy()
             newOrderBook.removeOrder(order)
             val updated = persistenceManager.persist(PersistenceData(null,
-                    messageWrapper.processedMessage(),
+                    messageWrapper.processedMessage,
                     OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId,
                             order.isBuySide(),
                             newOrderBook.getCopyOfOrderBook(order.isBuySide()))),
