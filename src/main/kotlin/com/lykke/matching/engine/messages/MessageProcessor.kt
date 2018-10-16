@@ -269,8 +269,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.MARKET_ORDER] = marketOrderService
-        result[MessageType.NEW_MARKET_ORDER] = marketOrderService
-        result[MessageType.OLD_MARKET_ORDER] = marketOrderService
         result[MessageType.LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
