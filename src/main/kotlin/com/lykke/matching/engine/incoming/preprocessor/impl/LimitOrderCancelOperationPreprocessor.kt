@@ -61,16 +61,22 @@ class LimitOrderCancelOperationPreprocessor(val limitOrderCancelOperationContext
 
     override fun run() {
         while (true) {
-            val messageWrapper = limitOrderCancelInputQueue.take()
-
             try {
-                preProcess(messageWrapper)
-            } catch (e: Exception) {
-                val context = messageWrapper.context
-                LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}" +
-                        if(context != null) " context: $context" else "", e)
-                METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
-                writeResponse(messageWrapper, MessageStatus.RUNTIME)
+                val messageWrapper = limitOrderCancelInputQueue.take()
+
+                try {
+                    preProcess(messageWrapper)
+                } catch (e: Exception) {
+                    val context = messageWrapper.context
+                    LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}" +
+                            if(context != null) " context: $context" else "", e)
+                    METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
+                    writeResponse(messageWrapper, MessageStatus.RUNTIME)
+                }
+            } catch(e: Exception) {
+                val message = "Got error during message preprocessing"
+                LOGGER.error(message, e)
+                METRICS_LOGGER.logError(message, e)
             }
         }
     }
