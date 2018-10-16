@@ -25,7 +25,7 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
     override fun preProcess(messageWrapper: MessageWrapper) {
         val parsedData = limitOrderMassCancelOperationContextParser.parse(messageWrapper)
         preProcessedMessageQueue.put(parsedData.messageWrapper)
-     }
+    }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         val responseBuilder = ProtocolMessages.NewResponse.newBuilder()
@@ -38,15 +38,10 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
     override fun run() {
         while (true) {
             val messageWrapper = limitOrderMassCancelInputQueue.take()
-
             try {
                 preProcess(messageWrapper)
             } catch (e: Exception) {
-                val context = messageWrapper.context
-                LOGGER.error("[${messageWrapper.sourceIp}]: Got error during message preprocessing: ${e.message}" +
-                        if(context != null) " context: $context" else "", e)
-                METRICS_LOGGER.logError("[${messageWrapper.sourceIp}]: Got error during message preprocessing", e)
-                writeResponse(messageWrapper, MessageStatus.RUNTIME)
+                handlePreprocessingException(e, messageWrapper)
             }
         }
     }
@@ -54,5 +49,21 @@ class LimitOrderMassCancelOperationPreprocessor(val limitOrderMassCancelInputQue
     @PostConstruct
     fun init() {
         this.start()
+    }
+
+    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
+        try {
+            val context = message.context
+            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                    if (context != null) "Error details: $context" else "", exception)
+
+            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            writeResponse(message, MessageStatus.RUNTIME)
+        } catch (e: Exception) {
+            val errorMessage = "Got error during message preprocessing failure handling"
+            e.addSuppressed(exception)
+            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
+            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
+        }
     }
 }

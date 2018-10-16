@@ -1,4 +1,3 @@
-
 package com.lykke.matching.engine.incoming.preprocessor.impl
 
 import com.lykke.matching.engine.daos.context.CashTransferContext
@@ -32,7 +31,7 @@ class CashTransferPreprocessor(
         private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashTransferPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache
-): MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
+) : MessagePreprocessor, Thread(CashTransferPreprocessor::class.java.name) {
 
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(CashTransferPreprocessor::class.java.name)
@@ -123,13 +122,24 @@ class CashTransferPreprocessor(
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                val context = message.context
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                        if (context != null) "Error details: $context" else "", exception)
-
-                METRICS_LOGGER.logError( "[${message.sourceIp}]: Got error during message preprocessing", exception)
-                writeResponse(message, RUNTIME)
+                handlePreprocessingException(exception, message)
             }
+        }
+    }
+
+    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
+        try {
+            val context = message.context
+            LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                    if (context != null) "Error details: $context" else "", exception)
+
+            METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            writeResponse(message, RUNTIME)
+        } catch (e: Exception) {
+            val errorMessage = "Got error during message preprocessing failure handling"
+            e.addSuppressed(exception)
+            LOGGER.error(errorMessage, e)
+            METRICS_LOGGER.logError(errorMessage, e)
         }
     }
 }
