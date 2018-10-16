@@ -8,7 +8,13 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.holders.AssetsHolder
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -32,11 +38,9 @@ abstract class AbstractPerformanceTest {
         val REPEAT_TIMES = 100
     }
 
-    protected var testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
     protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
-    protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
     protected lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
@@ -55,6 +59,10 @@ abstract class AbstractPerformanceTest {
     protected lateinit var assetsPairsHolder: AssetsPairsHolder
     protected lateinit var assetCache: AssetsCache
     protected lateinit var balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder
+    private lateinit var ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder
+    private lateinit var stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder
+    protected val testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestFileOrderDatabaseAccessor
+    protected val stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
 
     protected lateinit var assetPairsCache: AssetPairsCache
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -88,7 +96,6 @@ abstract class AbstractPerformanceTest {
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
     open fun initServices() {
-        testOrderDatabaseAccessor = TestFileOrderDatabaseAccessor()
         testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
         testSettingsDatabaseAccessor.addTrustedClient("Client3")
 
@@ -99,7 +106,9 @@ abstract class AbstractPerformanceTest {
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
         balancesDatabaseAccessorsHolder = BalancesDatabaseAccessorsHolder(TestWalletDatabaseAccessor(), null)
-        persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor)
+        persistenceManager = TestPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor,
+                ordersDatabaseAccessorsHolder,
+                stopOrderDatabaseAccessor)
         balancesHolder = BalancesHolder(balancesDatabaseAccessorsHolder,
                 persistenceManager,
                 assetsHolder,
@@ -112,7 +121,7 @@ abstract class AbstractPerformanceTest {
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
 
-        genericLimitOrderService = GenericLimitOrderService(testOrderDatabaseAccessor,
+        genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
@@ -122,8 +131,8 @@ abstract class AbstractPerformanceTest {
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
 
-        stopOrderDatabaseAccessor = TestStopOrderBookDatabaseAccessor()
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrderDatabaseAccessor, genericLimitOrderService)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService,
+                persistenceManager)
 
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(assetsHolder, assetsPairsHolder, balancesHolder,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
@@ -139,7 +148,7 @@ abstract class AbstractPerformanceTest {
 
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsPairsHolder,
+        genericLimitOrdersCancellerFactory = GenericLimitOrdersCancellerFactory(testDictionariesDatabaseAccessor, assetsHolder, assetsPairsHolder,
                 balancesHolder, genericLimitOrderService, genericStopLimitOrderService,
                 genericLimitOrderProcessorFactory, orderBookQueue, rabbitOrderBookQueue, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender)
 

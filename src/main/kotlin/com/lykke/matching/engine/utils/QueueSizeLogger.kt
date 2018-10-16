@@ -36,12 +36,15 @@ class QueueSizeLogger @Autowired constructor(
 
     private fun log() {
         val balancesQueueSize = persistenceManager.balancesQueueSize()
-        LOGGER.info("Incoming queue: ${messageRouter.preProcessedMessageQueue.size}. " +
+        val ordersQueueSize = persistenceManager.ordersQueueSize()
+        val incomingQueueSize = messageRouter.preProcessedMessageQueue.size
+        LOGGER.info("Incoming queue: $incomingQueueSize. " +
                 "Order Book queue: ${connectionHandler.getOrderBookQueueSize()}. " +
                 "Rabbit Order Book queue ${rabbitOrderBookListener.getOrderBookQueueSize()}. " +
-                "Balances queue $balancesQueueSize.")
+                "Balances queue $balancesQueueSize. " +
+                "Persistence orders queue $ordersQueueSize.")
 
-        if (messageRouter.preProcessedMessageQueue.size > config.me.queueSizeLimit) {
+        if (incomingQueueSize > config.me.queueSizeLimit) {
             METRICS_LOGGER.logError("Internal queue size is higher than limit")
         }
 
@@ -55,6 +58,10 @@ class QueueSizeLogger @Autowired constructor(
 
         if (balancesQueueSize > config.me.queueSizeLimit) {
             METRICS_LOGGER.logError("Balances queue size is higher than limit")
+        }
+
+        if (ordersQueueSize > config.me.queueSizeLimit) {
+            METRICS_LOGGER.logError( "Persistence orders queue size is higher than limit")
         }
     }
 }
