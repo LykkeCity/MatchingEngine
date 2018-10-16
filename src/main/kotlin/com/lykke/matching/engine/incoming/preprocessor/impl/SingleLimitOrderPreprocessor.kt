@@ -64,7 +64,7 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         } catch (e: OrderFatalValidationException) {
-             return OrderValidationResult(false, true, e.message)
+            return OrderValidationResult(false, true, e.message)
         }
 
         return OrderValidationResult(true)
@@ -72,22 +72,11 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
 
     override fun run() {
         while (true) {
+            val message = limitOrderInputQueue.take()
             try {
-                val message = limitOrderInputQueue.take()
-                try {
-                    preProcess(message)
-                } catch (exception: Exception) {
-                    val context = message.context
-                    LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                            if (context != null) "Error details: $context" else "", exception)
-
-                    METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-                    writeResponse(message, MessageStatus.RUNTIME)
-                }
-            } catch (e: Exception) {
-                val message = "Got error during message preprocessing"
-                LOGGER.error(message, e)
-                METRICS_LOGGER.logError(message, e)
+                preProcess(message)
+            } catch (exception: Exception) {
+                handlePreprocessingException(exception, message)
             }
         }
     }
@@ -103,6 +92,22 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         } else {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
                     .setStatus(status.type))
+        }
+    }
+
+    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
+        try {
+            val context = message.context
+            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                    if (context != null) "Error details: $context" else "", exception)
+
+            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            writeResponse(message, MessageStatus.RUNTIME)
+        } catch (e: Exception) {
+            val errorMessage = "Got error during message preprocessing failure handling"
+            e.addSuppressed(exception)
+            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
+            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
         }
     }
 }
