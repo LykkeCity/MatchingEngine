@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.common.QueueConsumer
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
@@ -29,6 +31,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import java.util.*
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Configuration
@@ -53,10 +56,17 @@ open class DatabaseAccessorConfig {
 
 
     @Bean
+    open fun limitOrderCancelOperationPreprocessorPersistenceManager(limitOrderCancelOperationPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
+        return persistenceManagerFactory.get(limitOrderCancelOperationPreprocessorRedisConnection)
+
+    }
+
+    @Bean
     open fun cashTransferPreprocessorPersistenceManager(cashTransferOperationsPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
         return persistenceManagerFactory.get(cashTransferOperationsPreprocessorRedisConnection)
     }
     //</editor-fold>
+
 
     //<editor-fold desc="Persist listeners">
 
@@ -122,7 +132,7 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
+    open fun azureCashOperationsDatabaseAccessor(@Value("\${azure.cache.operation.table}") tableName: String)
             : CashOperationsDatabaseAccessor {
         return AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
     }
@@ -134,9 +144,9 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
-                                             @Value("\${azure.candles.table}")candlesTable: String,
-                                             @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
+    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable: String,
+                                             @Value("\${azure.candles.table}") candlesTable: String,
+                                             @Value("\${azure.hour.candles.table}") hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
         return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
                 bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)

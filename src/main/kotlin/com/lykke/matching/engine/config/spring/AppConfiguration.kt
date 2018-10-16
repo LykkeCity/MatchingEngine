@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.incoming.MessageRouter
-import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
@@ -19,7 +17,6 @@ import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
-import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 @EnableScheduling
@@ -66,3 +63,4 @@ open class AppConfiguration: SchedulingConfigurer {
         return MonitoringStatsCollector()
     }
 }
+

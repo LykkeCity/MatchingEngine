@@ -1,5 +1,7 @@
 package com.lykke.matching.engine.database
 
-interface MessageLogDatabaseAccessor<in T> {
-    fun log(message: T)
+import com.lykke.matching.engine.daos.Message
+
+interface MessageLogDatabaseAccessor {
+    fun log(message: Message)
 }

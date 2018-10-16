@@ -71,6 +71,19 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     }
 
     @Test
+    fun testUnknownAssetPair() {
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("UnknownAssetPair", "Client1",
+                listOf(IncomingLimitOrder(-0.1, 10000.0),
+                        IncomingLimitOrder(-0.1, 11000.0),
+                        IncomingLimitOrder(0.1, 9000.0),
+                        IncomingLimitOrder(0.1, 8000.0))))
+        assertEquals(0, clientsEventsQueue.size)
+        assertEquals(0, trustedClientsEventsQueue.size)
+        assertOrderBookSize("UnknownAssetPair", false, 0)
+        assertOrderBookSize("UnknownAssetPair", true, 0)
+    }
+
+    @Test
     fun testAdd() {
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1",
                 listOf(
