@@ -2,10 +2,10 @@ package com.lykke.matching.engine.services.validators.business.impl
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
-import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -22,9 +22,8 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
 
         validateLeadToNegativeSpread(order, orderBook)
         validatePreviousOrderNotFound(order)
+        validateNotEnoughFounds(order)
     }
-
-
 
     private fun validatePreviousOrderNotFound(order: LimitOrder) {
         if (order.status == OrderStatus.NotFoundPrevious.name) {
@@ -34,7 +33,13 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
 
     private fun validateLeadToNegativeSpread(order: LimitOrder, orderBook: AssetOrderBook) {
         if (orderBook.leadToNegativeSpreadForClient(order)) {
-            throw OrderValidationException(OrderStatus.LeadToNegativeSpread, "Limit order (id: ${order.externalId}) lead to negative spread")
+            throw OrderValidationException(OrderStatus.LeadToNegativeSpread, "Limit order ${orderInfo(order)} lead to negative spread")
+        }
+    }
+
+    private fun validateNotEnoughFounds(order: LimitOrder) {
+        if (order.status == OrderStatus.NotEnoughFunds.name) {
+            throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
         }
     }
 

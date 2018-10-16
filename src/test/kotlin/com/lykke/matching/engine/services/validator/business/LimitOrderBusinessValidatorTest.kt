@@ -61,6 +61,25 @@ class LimitOrderBusinessValidatorTest {
         }
     }
 
+    @Test(expected = OrderValidationException::class)
+    fun testNotEnoughFounds() {
+        //given
+        val limitOrderBusinessValidatorImpl = LimitOrderBusinessValidatorImpl()
+
+        try {
+            //when
+            limitOrderBusinessValidatorImpl.performValidation(true,
+                    getLimitOrder(status = OrderStatus.NotEnoughFunds.name, fee = getValidFee()),
+                    BigDecimal.valueOf(12.0),
+                    BigDecimal.valueOf(11.0),
+                    getValidOrderBook())
+        } catch (e: OrderValidationException) {
+            //then
+            assertEquals(OrderStatus.NotEnoughFunds, e.orderStatus)
+            throw e
+        }
+    }
+
     @Test
     fun testValidOrder() {
         //given
