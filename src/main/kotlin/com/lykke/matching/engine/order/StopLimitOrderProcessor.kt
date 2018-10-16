@@ -1,13 +1,10 @@
 package com.lykke.matching.engine.order
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.WalletOperation
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -27,8 +24,7 @@ import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
@@ -72,9 +68,14 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext)
 
         if (!orderValidationResult.isValid) {
-            processInvalidOrder(messageWrapper, singleLimitContext,
-                    orderValidationResult, balance, reservedBalance,
-                    cancelVolume, ordersToCancel, clientLimitOrdersReport, now)
+            processInvalidOrder(messageWrapper,
+                    singleLimitContext,
+                    orderValidationResult,
+                    newStopOrderBook,
+                    cancelVolume,
+                    ordersToCancel,
+                    clientLimitOrdersReport,
+                    now)
             return
         }
 
@@ -153,7 +154,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
     private fun processInvalidOrder(messageWrapper: MessageWrapper, singleLimitContext: SingleLimitOrderContext,
                                     orderValidationResult: OrderValidationResult,
-                                    newStopOrderBook: ,
+                                    newStopOrderBook: List<LimitOrder>,
                                     cancelVolume: BigDecimal,
                                     ordersToCancel: List<LimitOrder>,
                                     clientLimitOrdersReport: LimitOrdersReport,
