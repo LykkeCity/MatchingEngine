@@ -2,9 +2,14 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.Asset
+import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.daos.FeeSizeType
+import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
+import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -12,7 +17,6 @@ import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -20,9 +24,11 @@ import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderF
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -30,23 +36,14 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.HashMap
-import kotlin.test.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
-import org.springframework.beans.factory.annotation.Autowired
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import java.util.*
+import kotlin.test.*
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderServiceTest: AbstractTest() {
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
     @TestConfiguration
     open class Config {
         @Bean

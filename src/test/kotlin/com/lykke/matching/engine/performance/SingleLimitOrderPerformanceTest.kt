@@ -2,6 +2,8 @@ package com.lykke.matching.engine.performance
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
 import org.junit.Ignore
@@ -11,7 +13,11 @@ import java.math.BigDecimal
 @Ignore
 class SingleLimitOrderPerformanceTest: AbstractPerformanceTest()  {
 
-    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser, cashInOutContextParser, cashTransferContextParser)
+    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser,
+            cashInOutContextParser,
+            cashTransferContextParser,
+            LimitOrderCancelOperationContextParser(),
+            LimitOrderMassCancelOperationContextParser())
 
     override fun initServices() {
         super.initServices()

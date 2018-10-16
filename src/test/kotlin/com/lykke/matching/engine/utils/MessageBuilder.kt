@@ -1,22 +1,15 @@
 package com.lykke.matching.engine.utils
 
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.daos.FeeSizeType
-import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
@@ -27,8 +20,7 @@ import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
+import java.util.*
 
 class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrderContextParser,
                      private val cashInOutContextParser: CashInOutContextParser,

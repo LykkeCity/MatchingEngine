@@ -42,16 +42,6 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as Outgo
 @SpringBootTest(classes = [(TestApplicationContext::class), (MultiLimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MultiLimitOrderServiceTest: AbstractTest() {
-
-    @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
-
-    @Autowired
-    private lateinit var messageBuilder: MessageBuilder
-
-    @Autowired
-    private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
-
     @TestConfiguration
     open class Config {
         @Bean
@@ -83,6 +73,13 @@ class MultiLimitOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+
+    @Autowired
+    private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
+
 
     @Before
     fun setUp() {

@@ -86,7 +86,7 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         this.start()
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         if (messageWrapper.type == MessageType.OLD_LIMIT_ORDER.type) {
             messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
         } else {
@@ -106,8 +106,8 @@ class SingleLimitOrderPreprocessor(private val limitOrderInputQueue: BlockingQue
         } catch (e: Exception) {
             val errorMessage = "Got error during message preprocessing failure handling"
             e.addSuppressed(exception)
-            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
-            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
+            LOGGER.error(errorMessage, e)
+            METRICS_LOGGER.logError(errorMessage, e)
         }
     }
 }

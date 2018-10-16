@@ -14,12 +14,15 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
+import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -28,8 +31,7 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
-import com.lykke.matching.engine.utils.assertEquals
-import org.springframework.beans.factory.annotation.Autowired
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 
 @RunWith(SpringRunner::class)

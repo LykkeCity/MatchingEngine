@@ -2,11 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -34,7 +30,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
