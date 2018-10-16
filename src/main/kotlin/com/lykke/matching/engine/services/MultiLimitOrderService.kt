@@ -439,7 +439,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
         val message = messageWrapper.parsedMessage!! as ProtocolMessages.MultiLimitOrder
-        val assetPair = assetsPairsHolder.getAssetPair(message.assetPairId)
         val isTrustedClient = balancesHolder.isTrustedClient(message.clientId)
 
         LOGGER.debug("Got ${if (!isTrustedClient) "client " else ""}multi limit order id: ${message.uid}, " +
@@ -449,6 +448,12 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 (if (message.hasCancelAllPreviousLimitOrders()) "cancelPrevious: ${message.cancelAllPreviousLimitOrders}, " else "") +
                 (if (message.hasCancelMode()) "cancelMode: ${message.cancelMode}" else ""))
 
+        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(message.assetPairId)
+        if (assetPair == null) {
+            LOGGER.info("Unable to process message (${messageWrapper.messageId}): unknown asset pair")
+            writeResponse(messageWrapper, MessageStatus.UNKNOWN_ASSET)
+            return
+        }
         val multiLimitOrder = readMultiLimitOrder(message, isTrustedClient, assetPair)
         val now = Date()
 

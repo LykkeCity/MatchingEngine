@@ -7,31 +7,29 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
-abstract class DatabaseLogger<in AppFormat, out DbFormat>(private val dbAccessor: MessageLogDatabaseAccessor<DbFormat>) {
+class DatabaseLogger<in T>(private val dbAccessor: MessageLogDatabaseAccessor) {
 
     companion object {
         private val LOGGER = ThrottlingLogger.getLogger(DatabaseLogger::class.java.name)
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private val queue: BlockingQueue<AppFormat> = LinkedBlockingQueue()
+    private val queue: BlockingQueue<MessageWrapper> = LinkedBlockingQueue()
 
-    fun log(message: AppFormat) {
-        queue.put(message)
+    fun log(item: T, stringRepresentation: String) {
+        queue.put(MessageWrapper(item as Any, stringRepresentation))
     }
 
     private fun takeAndSaveMessage() {
         try {
-            val event = queue.take()
-            dbAccessor.log(transformMessage(event))
+            val message = queue.take()
+            dbAccessor.log(toLogMessage(message.item, message.stringRepresentation))
         } catch (e: Exception) {
             val errorMessage = "Unable to write log to DB: ${e.message}"
             LOGGER.error(errorMessage, e)
             METRICS_LOGGER.logError(errorMessage, e)
         }
     }
-
-    protected abstract fun transformMessage(message: AppFormat): DbFormat
 
     init {
         thread(name = DatabaseLogger::class.java.name) {
@@ -41,3 +39,5 @@ abstract class DatabaseLogger<in AppFormat, out DbFormat>(private val dbAccessor
         }
     }
 }
+
+private class MessageWrapper(val item: Any, val stringRepresentation: String)

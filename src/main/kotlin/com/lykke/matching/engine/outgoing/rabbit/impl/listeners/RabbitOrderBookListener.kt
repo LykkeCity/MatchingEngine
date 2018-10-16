@@ -16,14 +16,14 @@ class RabbitOrderBookListener {
     private lateinit var rabbitOrderBookQueue: BlockingQueue<OrderBook>
 
     @Autowired
-    private lateinit var rabbitMqService: RabbitMqService
+    private lateinit var rabbitMqOldService: RabbitMqService<Any>
 
     @Autowired
     private lateinit var config: Config
 
     @PostConstruct
     fun initRabbitMqPublisher() {
-        rabbitMqService.startPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBookQueue,
+        rabbitMqOldService.startPublisher(config.me.rabbitMqConfigs.orderBooks, rabbitOrderBookQueue,
                 config.me.name,
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT)

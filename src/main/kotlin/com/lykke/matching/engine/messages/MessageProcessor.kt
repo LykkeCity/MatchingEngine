@@ -27,8 +27,6 @@ import com.lykke.matching.engine.notification.QuotesUpdateHandler
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.http.RequestHandler
-import com.lykke.matching.engine.outgoing.http.StopOrderBooksRequestHandler
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
@@ -37,9 +35,7 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.GeneralHealthMonitor
 import com.lykke.utils.logging.MetricsLogger
 import com.lykke.utils.logging.ThrottlingLogger
-import com.sun.net.httpserver.HttpServer
 import org.springframework.context.ApplicationContext
-import java.net.InetSocketAddress
 import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.BlockingQueue
@@ -144,9 +140,9 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.marketOrderService = applicationContext.getBean(MarketOrderService::class.java)
 
-        this.limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
+        this.limitOrderCancelService = applicationContext.getBean(LimitOrderCancelService::class.java)
 
-        this.limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
         this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
@@ -194,12 +190,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 tradesInfoService.saveHourCandles()
             }
         }
-
-        val server = HttpServer.create(InetSocketAddress(config.me.httpOrderBookPort), 0)
-        server.createContext("/orderBooks", RequestHandler(genericLimitOrderService))
-        server.createContext("/stopOrderBooks", StopOrderBooksRequestHandler(genericStopLimitOrderService))
-        server.executor = null
-        server.start()
 
         appInitialData = AppInitialData(genericLimitOrderService.initialOrdersCount, genericStopLimitOrderService.initialStopOrdersCount, balanceHolder.initialBalancesCount, balanceHolder.initialClientsCount)
     }
