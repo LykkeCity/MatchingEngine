@@ -9,4 +9,4 @@ class CashOperation(val id: String,
                     val volume: String,
                     val asset: String,
                     val messageId: String,
-                    val fees: List<Fee>?): JsonSerializable()
+                    val fees: List<Fee>?)

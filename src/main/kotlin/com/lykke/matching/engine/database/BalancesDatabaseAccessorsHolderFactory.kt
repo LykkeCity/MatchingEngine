@@ -33,7 +33,7 @@ class BalancesDatabaseAccessorsHolderFactory: FactoryBean<BalancesDatabaseAccess
 
                 secondaryAccessor = null
             }
-
+            Storage.RedisWithoutOrders,
             Storage.Redis -> {
                 primaryAccessor = redisWalletDatabaseAccessor.get()
 
