@@ -104,13 +104,13 @@ open class QueueConfig {
 
     @Bean
     @InputQueue
-    open fun cashInOutQueue(): BlockingQueue<MessageWrapper> {
+    open fun cashInOutInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
     @Bean
     @InputQueue
-    open fun cashTransferQueue(): BlockingQueue<MessageWrapper> {
+    open fun cashTransferInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
