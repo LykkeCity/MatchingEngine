@@ -2,10 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.FeeSizeType
-import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
@@ -47,6 +44,9 @@ import kotlin.test.assertTrue
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderServiceTest: AbstractTest() {
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -275,7 +275,7 @@ class LimitOrderServiceTest: AbstractTest() {
         initServices()
 
         assertNotNull(genericLimitOrderService.searchOrders("Client1", "EURUSD", true).find { it.externalId == "2" })
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("2"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("2"))
     }
 
     @Test
@@ -894,7 +894,7 @@ class LimitOrderServiceTest: AbstractTest() {
 
         testRabbitOrderBookListener.clear()
 
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("1"))
 
         assertEquals(1, testRabbitOrderBookListener.getCount())
         assertEquals(BigDecimal.valueOf(0.99448777), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
@@ -1569,7 +1569,7 @@ class LimitOrderServiceTest: AbstractTest() {
         singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order1", clientId = "Client1", assetId = "EURUSD", volume = -1.0, price = 1.0
         )))
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper(listOf("order1")))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper(listOf("order1")))
 
         assertEquals(2, testClientLimitOrderListener.getCount())
 

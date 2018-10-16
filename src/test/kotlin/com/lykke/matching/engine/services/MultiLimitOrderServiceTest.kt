@@ -51,6 +51,9 @@ class MultiLimitOrderServiceTest: AbstractTest() {
     private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
 
     @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
     @TestConfiguration
@@ -672,7 +675,7 @@ class MultiLimitOrderServiceTest: AbstractTest() {
         assertEquals(OutgoingOrderStatus.PARTIALLY_MATCHED, event.orders[1].status)
         assertEquals("-0.20343524", event.orders[1].remainingVolume)
 
-        limitOrderCancelService.processMessage(MessageBuilder.buildLimitOrderCancelWrapper("1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("1"))
         assertEquals(BigDecimal.valueOf(0.001), testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
     }
 
