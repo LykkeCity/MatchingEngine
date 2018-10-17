@@ -3,6 +3,8 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.PrintUtils
@@ -12,6 +14,12 @@ import java.math.BigDecimal
 
 @Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
+
+    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser,
+            cashInOutContextParser,
+            cashTransferContextParser,
+            LimitOrderCancelOperationContextParser(),
+            LimitOrderMassCancelOperationContextParser())
 
     override fun initServices() {
         super.initServices()
@@ -128,7 +136,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
                 IncomingLimitOrder(100.0, 1.2)),
                 cancel = false)) }
 
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", price = 1.25, volume = -150.0)))
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
                 orders = listOf(IncomingLimitOrder(10.0, 1.3),
@@ -147,7 +155,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
                 cancel = false)) }
 
 
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", price = 1.25, volume = 150.0)))
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "EURUSD", clientId = "Client1",
                 orders = listOf(IncomingLimitOrder(-10.0, 1.2),
@@ -175,7 +183,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         listOf(IncomingLimitOrder(0.69031943, 26.915076)),
                 cancel = false))}
 
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "TIMEUSD", clientId = "Client2", price = 26.88023, volume = -26.0)))
         counter.executeAction {multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5",
                 orders = listOf(IncomingLimitOrder(10.0, 26.915076), IncomingLimitOrder(10.0, 26.875076)), cancel = true))}
 
@@ -190,7 +198,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = "Client5", orders =
         listOf(IncomingLimitOrder(-0.00574996, 3628.707)), cancel = true)) }
@@ -224,7 +232,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(MessageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCCHF", clientId = "Client3", orders =

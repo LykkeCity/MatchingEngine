@@ -3,7 +3,6 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
-import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -104,17 +103,32 @@ open class QueueConfig {
     }
 
     @Bean
-    open fun cashInOutQueue(): BlockingQueue<MessageWrapper> {
-        return LinkedBlockingQueue<MessageWrapper>()
-    }
-
-    @Bean
-    open fun cashTransferQueue(): BlockingQueue<MessageWrapper> {
+    open fun limitOrderInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
     @Bean
     open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun limitOrderCancelInputQueue(): BlockingQueue<MessageWrapper>{
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun limitOrderMassCancelInputQueue(): BlockingQueue<MessageWrapper>{
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun cashInOutInputQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    open fun cashTransferInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 }

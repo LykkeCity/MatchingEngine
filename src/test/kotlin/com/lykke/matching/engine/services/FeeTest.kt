@@ -2,10 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.FeeSizeType
-import com.lykke.matching.engine.daos.FeeType
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
@@ -13,15 +10,14 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
@@ -29,12 +25,17 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
 import kotlin.test.assertNull
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (FeeTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FeeTest: AbstractTest() {
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -86,7 +87,7 @@ class FeeTest: AbstractTest() {
         ))
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = 0.005,
                 fees = listOf(
                         buildLimitOrderFeeInstruction(
@@ -165,7 +166,7 @@ class FeeTest: AbstractTest() {
         ))
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = 0.005,
                 fees = listOf(
                         buildLimitOrderFeeInstruction(
@@ -254,7 +255,7 @@ class FeeTest: AbstractTest() {
         initServices()
 
         for (i in 1..5) {
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     uid = "order$i", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01,
                     fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
                             makerSizeType = FeeSizeType.PERCENTAGE,
@@ -268,7 +269,7 @@ class FeeTest: AbstractTest() {
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.05
         )))
 
@@ -291,7 +292,7 @@ class FeeTest: AbstractTest() {
         initServices()
 
         for (i in 1..2) {
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     uid = "order$i", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01,
                     fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
                             makerSizeType = FeeSizeType.PERCENTAGE,
@@ -301,7 +302,7 @@ class FeeTest: AbstractTest() {
             Thread.sleep(10)
         }
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order3", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01,
                 fees = listOf(
                         buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
@@ -315,7 +316,7 @@ class FeeTest: AbstractTest() {
                                 targetClientId = "Client3",
                                 assetIds = listOf("BTC"))!!))))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
                         makerSizeType = FeeSizeType.PERCENTAGE,
@@ -327,7 +328,7 @@ class FeeTest: AbstractTest() {
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.04
         )))
 
@@ -350,14 +351,14 @@ class FeeTest: AbstractTest() {
         initServices()
 
         for (i in 1..5) {
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01
             )))
         }
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.05,
                 fees = listOf(buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -381,7 +382,7 @@ class FeeTest: AbstractTest() {
         initServices()
 
         for (i in 1..5) {
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01
             )))
         }
@@ -412,7 +413,7 @@ class FeeTest: AbstractTest() {
         initServices()
 
         for (i in 1..5) {
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.01
             )))
         }
@@ -444,7 +445,7 @@ class FeeTest: AbstractTest() {
 
         val feeSizes = arrayListOf(0.01, 0.1, 0.01)
         feeSizes.forEachIndexed { index, feeSize ->
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     uid = "order$index", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.005,
                     fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
                             makerSizeType = FeeSizeType.PERCENTAGE,
@@ -456,7 +457,7 @@ class FeeTest: AbstractTest() {
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -473,7 +474,7 @@ class FeeTest: AbstractTest() {
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order5", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -512,7 +513,7 @@ class FeeTest: AbstractTest() {
 
         val feeSizes = arrayListOf(0.01, 0.1, 0.01)
         feeSizes.forEachIndexed { index, feeSize ->
-            singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+            singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                     uid = "order$index", clientId = "Client2", assetId = "BTCUSD", price = 15000.0, volume = -0.005,
                     fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE,
                             makerSizeType = FeeSizeType.PERCENTAGE,
@@ -524,7 +525,7 @@ class FeeTest: AbstractTest() {
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order4", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -541,7 +542,7 @@ class FeeTest: AbstractTest() {
 
         balanceUpdateHandlerTest.clear()
         testClientLimitOrderListener.clear()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "order5", clientId = "Client1", assetId = "BTCUSD", price = 15000.0, volume = 0.01,
                 fees = listOf(buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -577,7 +578,7 @@ class FeeTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0,
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0,
                 fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, takerSize = BigDecimal.valueOf(0.01), targetClientId = "TargetClient")!!))))
 
         // 0.01 * 0.04 * (1 - exp(-(10000.0 - 9700.0)/10000.0 * 50.0))
@@ -620,7 +621,7 @@ class FeeTest: AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0,
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0,
                 fees = listOf(buildLimitOrderFeeInstruction(type = FeeType.CLIENT_FEE, takerSize = BigDecimal.valueOf(0.01), targetClientId = "TargetClient")!!))))
 
         assertEquals(BigDecimal.valueOf(0.0004), balancesHolder.getBalance("TargetClient", "BTC"))
