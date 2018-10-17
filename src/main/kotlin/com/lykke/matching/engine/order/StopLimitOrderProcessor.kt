@@ -177,7 +177,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                     emptyList(),
                     ordersToCancel) else null
         val sequenceNumber = messageSequenceNumberHolder.getNewValue()
-        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+        val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage,
                 null,
                 orderBooksPersistenceData,
                 sequenceNumber)

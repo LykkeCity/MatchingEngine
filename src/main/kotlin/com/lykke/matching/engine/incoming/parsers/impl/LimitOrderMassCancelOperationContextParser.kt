@@ -24,6 +24,7 @@ class LimitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCa
         messageWrapper.messageId = messageId
         messageWrapper.id = message.uid
         messageWrapper.timestamp = Date().time
+        messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
 
         val messageType =  MessageType.valueOf(messageWrapper.type) ?: throw Exception("Unknown message type ${messageWrapper.type}")
 
@@ -31,7 +32,7 @@ class LimitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCa
         val isBuy = if (message.hasIsBuy()) message.isBuy else null
 
         return LimitOrderMassCancelOperationContext(message.uid, messageId, message.clientId,
-                ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageId), messageType,
+                messageWrapper.processedMessage!!, messageType,
                 assetPairId, isBuy)
     }
 }

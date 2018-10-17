@@ -38,6 +38,7 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
         messageWrapper.id = context.limitOrder.externalId
         messageWrapper.messageId = context.messageId
         messageWrapper.timestamp = context.processedMessage?.timestamp
+        messageWrapper.processedMessage = context.processedMessage
 
         return SingleLimitOrderParsedData(messageWrapper, context.limitOrder.assetPairId)
     }

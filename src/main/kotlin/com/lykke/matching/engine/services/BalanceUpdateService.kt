@@ -40,7 +40,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
             val balance = balancesHolder.getBalance(message.clientId, message.assetId)
             val reservedBalance = balancesHolder.getReservedBalance(message.clientId, message.assetId)
 
-            val updated = balancesHolder.updateBalance(messageWrapper.processedMessage(),
+            val updated = balancesHolder.updateBalance(messageWrapper.processedMessage,
                     null,
                     message.clientId,
                     message.assetId,
@@ -70,7 +70,7 @@ class BalanceUpdateService @Autowired constructor (private val balancesHolder: B
                 return
             }
 
-            val updated = balancesHolder.updateBalance(messageWrapper.processedMessage(),
+            val updated = balancesHolder.updateBalance(messageWrapper.processedMessage,
                     null,
                     message.clientId,
                     message.assetId,
