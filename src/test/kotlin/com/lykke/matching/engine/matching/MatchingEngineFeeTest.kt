@@ -37,8 +37,6 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         ))
 
-        initService()
-
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -200.0,
                 fee = buildLimitOrderFeeInstruction(
                         type = FeeType.CLIENT_FEE,
@@ -52,7 +50,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true), "test")
+        val matchingResult = match(limitOrder, getOrderBook("EURUSD", true))
 
         assertCashMovementsEquals(
                 listOf(
@@ -85,8 +83,6 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         ))
 
-        initService()
-
         val limitOrder = buildLimitOrder(clientId = "Client1", price = 1.2, volume = 200.0,
                 fees = buildLimitOrderFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -95,7 +91,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false), "test")
+        val matchingResult = match(limitOrder, getOrderBook("EURUSD", false))
 
         assertCashMovementsEquals(
                 listOf(
@@ -128,8 +124,6 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         ))
 
-        initService()
-
         val limitOrder = buildMarketOrder(clientId = "Client2", volume = -100.0,
                 fees = buildFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -138,7 +132,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
+        val matchingResult = match(limitOrder, getOrderBook("EURUSD", true))
 
         assertCashMovementsEquals(
                 listOf(
@@ -171,8 +165,6 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         ))
 
-        initService()
-
         val limitOrder = buildMarketOrder(clientId = "Client1", volume = 100.0,
                 fees = buildFeeInstructions(
                         type = FeeType.CLIENT_FEE,
@@ -181,7 +173,7 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
                 )
         )
 
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false), "test")
+        val matchingResult = match(limitOrder, getOrderBook("EURUSD", false))
 
         assertCashMovementsEquals(
                 listOf(

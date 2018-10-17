@@ -3,8 +3,6 @@ package com.lykke.matching.engine.performance
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.PrintUtils
@@ -14,12 +12,6 @@ import java.math.BigDecimal
 
 @Ignore
 class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
-
-    private val messageBuilder = MessageBuilder(singleLimitOrderContextParser,
-            cashInOutContextParser,
-            cashTransferContextParser,
-            LimitOrderCancelOperationContextParser(),
-            LimitOrderMassCancelOperationContextParser())
 
     override fun initServices() {
         super.initServices()
@@ -256,7 +248,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
         testBalanceHolderWrapper.updateBalance(client, "EUR", 700.04)
         testBalanceHolderWrapper.updateBalance(marketMaker, "BTC", 2.0)
 
-        testOrderDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
+        primaryOrdersDatabaseAccessor.addLimitOrder(MessageBuilder.buildLimitOrder(clientId = client, assetId = "BTCEUR", price = 4722.0, volume = 0.14825226))
         initServices()
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "BTCEUR", clientId = marketMaker, orders =
@@ -276,7 +268,7 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         val order = MessageBuilder.buildLimitOrder(clientId = client, assetId = "EURUSD", price = 1.2, volume = 1.0)
         order.reservedLimitVolume = BigDecimal.valueOf(1.19)
-        testOrderDatabaseAccessor.addLimitOrder(order)
+        primaryOrdersDatabaseAccessor.addLimitOrder(order)
 
         initServices()
 

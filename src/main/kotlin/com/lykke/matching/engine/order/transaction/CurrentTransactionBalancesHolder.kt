@@ -1,13 +1,12 @@
-package com.lykke.matching.engine.updaters
+package com.lykke.matching.engine.order.transaction
 
 import com.lykke.matching.engine.daos.wallet.AssetBalance
 import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.common.entity.BalancesData
-import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.holders.BalancesHolder
 import java.math.BigDecimal
 
-class BalancesUpdater(private val balancesHolder: BalancesHolder) {
+class CurrentTransactionBalancesHolder(private val balancesHolder: BalancesHolder) {
 
     private val changedBalances = mutableMapOf<String, MutableMap<String, AssetBalance>>()
     private val changedWallets = mutableMapOf<String, Wallet>()
@@ -42,6 +41,11 @@ class BalancesUpdater(private val balancesHolder: BalancesHolder) {
                     wallet.balances.getOrPut(assetId) { AssetBalance(clientId, assetId) }
                 }
         return WalletAssetBalance(wallet, assetBalance)
+    }
+
+    fun getChangedCopyOrOriginalAssetBalance(clientId: String, assetId: String): AssetBalance {
+        return (changedWallets[clientId] ?: balancesHolder.wallets[clientId] ?: Wallet(clientId)).balances[assetId]
+                ?: AssetBalance(clientId, assetId)
     }
 
     private fun copyWallet(wallet: Wallet?): Wallet? {

@@ -7,19 +7,20 @@ import com.lykke.matching.engine.daos.CopyWrapper
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.MarketOrder
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.Order
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.utils.TestOrderBookWrapper
 import com.lykke.matching.engine.services.GenericLimitOrderService
-import org.apache.log4j.Logger
+import com.lykke.matching.engine.order.transaction.ExecutionContext
+import com.lykke.matching.engine.order.transaction.ExecutionContextFactory
 import org.junit.After
 import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.apache.log4j.Logger
 import org.junit.Before
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
@@ -38,9 +39,7 @@ abstract class MatchingEngineTest {
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
 
     @Autowired
-    protected lateinit var assetsPairsHolder: AssetsPairsHolder
-
-    protected lateinit var matchingEngine: MatchingEngine
+    private lateinit var matchingEngine: MatchingEngine
 
     protected val now = Date()
 
@@ -60,13 +59,12 @@ abstract class MatchingEngineTest {
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     @Autowired
-    private lateinit var assetsHolder: AssetsHolder
-
-    @Autowired
     protected lateinit var testBackOfficeDatabaseAccessor: TestBackOfficeDatabaseAccessor
 
     @Autowired
-    private lateinit var feeProcessor: FeeProcessor
+    protected lateinit var executionContextFactory: ExecutionContextFactory
+
+    private lateinit var executionContext: ExecutionContext
 
     @TestConfiguration
     open class Config {
@@ -93,11 +91,31 @@ abstract class MatchingEngineTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8))
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCCHF", "BTC", "CHF", 3))
 
-        initService()
+        initExecutionContext()
+    }
+
+    protected fun initExecutionContext() {
+        executionContext = executionContextFactory.create("messageId", "requestId",
+                MessageType.LIMIT_ORDER,
+                null,
+                testDictionariesDatabaseAccessor.loadAssetPairs(),
+                now,
+                Logger.getLogger(MatchingEngineTest::class.java),
+                testBackOfficeDatabaseAccessor.assets)
     }
 
     @After
     fun tearDown() {
+    }
+
+    protected fun match(order: Order,
+                        orderBook: PriorityBlockingQueue<LimitOrder>,
+                        priceDeviationThreshold: BigDecimal? = null): MatchingResult {
+        return matchingEngine.match(order,
+                orderBook,
+                "test",
+                priceDeviationThreshold = priceDeviationThreshold,
+                executionContext = executionContext)
     }
 
     protected fun assertCompletedLimitOrders(completedLimitOrders: List<CopyWrapper<LimitOrder>>, checkOrderId: Boolean = true) {
@@ -127,7 +145,7 @@ abstract class MatchingEngineTest {
             orderBookSize: Int = 0
     ) {
         matchingResult.apply()
-        matchingEngine.apply()
+        executionContext.apply()
         assertTrue { matchingResult.order is MarketOrder }
         assertEquals(marketPrice, matchingResult.order.takePrice())
         assertMatchingResult(matchingResult, marketBalance, status, skipSize, cancelledSize,
@@ -150,7 +168,7 @@ abstract class MatchingEngineTest {
             matchedWithZeroLatestTrade: Boolean = false
     ) {
         matchingResult.apply()
-        matchingEngine.apply()
+        executionContext.apply()
         assertTrue { matchingResult.order is LimitOrder }
         val matchedOrder = matchingResult.order as LimitOrder
         assertEquals(remainingVolume, matchedOrder.remainingVolume)
@@ -211,9 +229,5 @@ abstract class MatchingEngineTest {
 
     protected fun getOrderBook(assetPairId: String, isBuySide: Boolean): PriorityBlockingQueue<LimitOrder> =
             genericService.getOrderBook(assetPairId).getOrderBook(isBuySide)
-
-    protected fun initService() {
-        matchingEngine = MatchingEngine(Logger.getLogger(MatchingEngineTest::class.java.name), genericService, assetsHolder, assetsPairsHolder, balancesHolder, feeProcessor)
-    }
 
 }

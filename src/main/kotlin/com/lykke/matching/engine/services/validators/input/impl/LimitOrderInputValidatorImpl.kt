@@ -8,6 +8,7 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.fee.checkFee
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.order.OrderStatus
+import com.lykke.matching.engine.order.process.context.StopLimitOrderContext
 import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderFatalValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
@@ -50,13 +51,31 @@ class LimitOrderInputValidatorImpl(val applicationSettingsCache: ApplicationSett
         val singleLimitContext = singleLimitOrderParsedData.messageWrapper.context as SingleLimitOrderContext
         val limitOrder = singleLimitContext.limitOrder
         val assetPair = singleLimitContext.assetPair
+        validateStopOrder(limitOrder,
+                assetPair,
+                singleLimitOrderParsedData.inputAssetPairId,
+                singleLimitContext.baseAsset!!)
+    }
 
-        validateAsset(assetPair, singleLimitOrderParsedData.inputAssetPairId)
+    override fun validateStopOrder(stopLimitOrderContext: StopLimitOrderContext) {
+        val assetPair = stopLimitOrderContext.executionContext.assetPairsById[stopLimitOrderContext.order.assetPairId]
+        val baseAsset = assetPair?.let { stopLimitOrderContext.executionContext.assetsById[assetPair.baseAssetId] }
+        validateStopOrder(stopLimitOrderContext.order,
+                assetPair,
+                stopLimitOrderContext.order.assetPairId,
+                baseAsset)
+    }
+
+    private fun validateStopOrder(limitOrder: LimitOrder,
+                                  assetPair: AssetPair?,
+                                  assetPairId: String,
+                                  baseAsset: Asset?) {
+        validateAsset(assetPair, assetPairId)
         validateFee(limitOrder)
         validateLimitPrices(limitOrder)
         validateVolume(limitOrder, assetPair!!)
         validateStopOrderMaxValue(limitOrder, assetPair)
-        validateVolumeAccuracy(limitOrder, singleLimitContext.baseAsset!!)
+        validateVolumeAccuracy(limitOrder, baseAsset!!)
         validateStopPricesAccuracy(limitOrder, assetPair)
     }
 
