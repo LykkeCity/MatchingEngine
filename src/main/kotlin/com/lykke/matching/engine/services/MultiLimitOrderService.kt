@@ -23,7 +23,7 @@ import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
@@ -434,8 +434,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
             messageSender.sendMessage(outgoingMessage)
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
     private fun processMultiOrder(messageWrapper: MessageWrapper) {
@@ -478,7 +477,6 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                 sellSideOrderBookChanged = true
             }
         }
-
 
         val notFoundReplacements = mutableMapOf<String, LimitOrder>()
 
@@ -525,8 +523,11 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
 
         val processor = limitOrdersProcessorFactory.create(matchingEngine,
                 now,
+                balancesHolder.isTrustedClient(multiLimitOrder.clientId),
                 multiLimitOrder.clientId,
                 assetPair,
+                assetsHolder.getAsset(assetPair.baseAssetId),
+                assetsHolder.getAsset(assetPair.quotingAssetId),
                 orderBook,
                 cancelBaseVolume,
                 cancelQuotingVolume,
@@ -573,8 +574,7 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
         }
         messageWrapper.writeMultiLimitOrderResponse(responseBuilder)
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId, now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
     }
 
     private fun readMultiLimitOrder(message: ProtocolMessages.MultiLimitOrder,

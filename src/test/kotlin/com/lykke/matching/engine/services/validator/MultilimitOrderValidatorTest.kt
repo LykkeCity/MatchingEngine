@@ -9,7 +9,7 @@ import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.validators.MultiLimitOrderValidator
 import org.junit.Test
