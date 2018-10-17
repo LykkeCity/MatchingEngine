@@ -5,8 +5,6 @@ import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
 import com.lykke.matching.engine.daos.order.LimitOrderType
-import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
-import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
@@ -23,6 +21,8 @@ import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.services.utils.MultiOrderFilter
 import org.apache.log4j.Logger
@@ -40,7 +40,8 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                              private val assetsPairsHolder: AssetsPairsHolder,
                              private val balancesHolder: BalancesHolder,
                              genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
-                             feeProcessor: FeeProcessor) : AbstractService {
+                             feeProcessor: FeeProcessor,
+                             private val settings: ApplicationSettingsCache) : AbstractService {
 
     companion object {
         private val LOGGER = Logger.getLogger(MultiLimitOrderService::class.java.name)

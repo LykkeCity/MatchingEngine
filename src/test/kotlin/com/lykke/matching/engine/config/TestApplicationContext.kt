@@ -321,9 +321,17 @@ open class TestApplicationContext {
                                     assetsPairsHolder: AssetsPairsHolder,
                                     balancesHolder: BalancesHolder,
                                     genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
-                                    feeProcessor: FeeProcessor): MultiLimitOrderService {
-        return MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrderProcessorFactory,
-                assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, feeProcessor)
+                                    feeProcessor: FeeProcessor,
+                                    applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
+        return MultiLimitOrderService(genericLimitOrderService,
+                genericLimitOrdersCancellerFactory,
+                limitOrderProcessorFactory,
+                assetsHolder,
+                assetsPairsHolder,
+                balancesHolder,
+                genericLimitOrderProcessorFactory,
+                feeProcessor,
+                applicationSettingsCache)
     }
 
     @Bean

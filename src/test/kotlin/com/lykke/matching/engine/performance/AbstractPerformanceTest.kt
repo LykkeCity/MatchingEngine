@@ -174,7 +174,8 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 genericLimitOrderProcessorFactory,
-                feeProcessor)
+                feeProcessor,
+                applicationSettingsCache)
 
         val marketOrderValidator = MarketOrderValidatorImpl(limitOrderInputValidator, assetsPairsHolder, assetsHolder, applicationSettingsCache)
         marketOrderService = MarketOrderService(
