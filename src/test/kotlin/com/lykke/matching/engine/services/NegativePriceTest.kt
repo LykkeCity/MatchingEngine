@@ -9,8 +9,8 @@ import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
@@ -48,6 +48,12 @@ class NegativePriceTest : AbstractTest() {
         }
     }
 
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestSettingsDatabaseAccessor
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client", "USD", 1.0)
@@ -60,7 +66,7 @@ class NegativePriceTest : AbstractTest() {
 
     @Test
     fun testLimitOrder() {
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client", assetId = "EURUSD", price = -1.0, volume = 1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client", assetId = "EURUSD", price = -1.0, volume = 1.0)))
 
         assertEquals(1, testClientLimitOrderListener.getCount())
         val result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport

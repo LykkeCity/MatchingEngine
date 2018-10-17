@@ -8,11 +8,7 @@ import com.lykke.matching.engine.daos.FeeSizeType
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstruction
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildFeeInstructions
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstruction

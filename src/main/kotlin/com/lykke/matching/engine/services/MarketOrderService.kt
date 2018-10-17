@@ -28,17 +28,21 @@ import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
 import com.lykke.matching.engine.order.OrderStatus.Processing
 import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
 import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
+import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
 import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
-import com.lykke.matching.engine.outgoing.messages.*
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -87,29 +91,17 @@ class MarketOrderService @Autowired constructor(
         val now = Date()
         val feeInstruction: FeeInstruction?
         val feeInstructions: List<NewFeeInstruction>?
-        val order = if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.OldMarketOrder
-            LOGGER.debug("Got old market order messageId: ${messageWrapper.messageId}, " +
-                    "id: ${message.uid}, client: ${message.clientId}, asset: ${message.assetPairId}, " +
-                    "volume: ${NumberUtils.roundForPrint(message.volume)}, straight: ${message.straight}")
+        val parsedMessage = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
+        feeInstruction = if (parsedMessage.hasFee()) FeeInstruction.create(parsedMessage.fee) else null
+        feeInstructions = NewFeeInstruction.create(parsedMessage.feesList)
+        LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
+                "id: ${parsedMessage.uid}, client: ${parsedMessage.clientId}, " +
+                "asset: ${parsedMessage.assetPairId}, volume: ${NumberUtils.roundForPrint(parsedMessage.volume)}, " +
+                "straight: ${parsedMessage.straight}, fee: $feeInstruction, fees: $feeInstructions")
 
-            feeInstruction = null
-            feeInstructions = null
-            MarketOrder(UUID.randomUUID().toString(), message.uid.toString(), message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
-                    Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume))
-        } else {
-            val message = messageWrapper.parsedMessage!! as ProtocolMessages.MarketOrder
-            feeInstruction = if (message.hasFee()) FeeInstruction.create(message.fee) else null
-            feeInstructions = NewFeeInstruction.create(message.feesList)
-            LOGGER.debug("Got market order messageId: ${messageWrapper.messageId}, " +
-                    "id: ${message.uid}, client: ${message.clientId}, " +
-                    "asset: ${message.assetPairId}, volume: ${NumberUtils.roundForPrint(message.volume)}, " +
-                    "straight: ${message.straight}, fee: $feeInstruction, fees: $feeInstructions")
-
-            MarketOrder(UUID.randomUUID().toString(), message.uid, message.assetPairId, message.clientId, BigDecimal.valueOf(message.volume), null,
-                    Processing.name, now, Date(message.timestamp), now, null, message.straight, BigDecimal.valueOf(message.reservedLimitVolume),
-                    feeInstruction, listOfFee(feeInstruction, feeInstructions))
-        }
+        val order = MarketOrder(UUID.randomUUID().toString(), parsedMessage.uid, parsedMessage.assetPairId, parsedMessage.clientId, BigDecimal.valueOf(parsedMessage.volume), null,
+                Processing.name, now, Date(parsedMessage.timestamp), now, null, parsedMessage.straight, BigDecimal.valueOf(parsedMessage.reservedLimitVolume),
+                feeInstruction, listOfFee(feeInstruction, feeInstructions))
 
         try {
             marketOrderValidator.performValidation(order, getOrderBook(order), feeInstruction, feeInstructions)
@@ -213,7 +205,7 @@ class MarketOrderService @Autowired constructor(
                     val sequenceNumber = messageSequenceNumberHolder.getNewValue()
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
-                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage(),
+                    val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage,
                             OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                             null,
                             trustedClientsSequenceNumber ?: sequenceNumber)
@@ -281,9 +273,7 @@ class MarketOrderService @Autowired constructor(
             }
         }
 
-        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!,
-                assetPair.assetPairId,
-                now)
+        genericLimitOrderProcessor?.checkAndProcessStopOrder(messageWrapper.messageId!!, assetPair, now)
 
         val endTime = System.nanoTime()
 
@@ -300,10 +290,6 @@ class MarketOrderService @Autowired constructor(
             genericLimitOrderService.getOrderBook(order.assetPairId).getOrderBook(!order.isBuySide())
 
     private fun getAssetPair(order: MarketOrder) = assetsPairsHolder.getAssetPair(order.assetPairId)
-
-    private fun parseOld(array: ByteArray): ProtocolMessages.OldMarketOrder {
-        return ProtocolMessages.OldMarketOrder.parseFrom(array)
-    }
 
     private fun parse(array: ByteArray): ProtocolMessages.MarketOrder {
         return ProtocolMessages.MarketOrder.parseFrom(array)
@@ -326,59 +312,27 @@ class MarketOrderService @Autowired constructor(
     }
 
     private fun writeResponse(messageWrapper: MessageWrapper, order: MarketOrder, status: MessageStatus, reason: String? = null) {
-        if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
-                    .setRecordId(order.id))
-        } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
-            val newResponseBuilder = ProtocolMessages.NewResponse.newBuilder()
-                    .setMatchingEngineId(order.id)
-                    .setStatus(status.type)
-
-            if (reason != null) {
-                newResponseBuilder.statusReason = reason
-            }
-
-            messageWrapper.writeNewResponse(newResponseBuilder)
-
-        } else {
-            val marketOrderResponse = ProtocolMessages.MarketOrderResponse.newBuilder()
-                    .setStatus(status.type)
-
-            if (order.price != null) {
-                marketOrderResponse.price = order.price!!.toDouble()
-            } else if (reason != null) {
-                marketOrderResponse.statusReason = reason
-            }
-
-            messageWrapper.writeMarketOrderResponse(marketOrderResponse)
+        val marketOrderResponse = ProtocolMessages.MarketOrderResponse.newBuilder()
+                .setStatus(status.type)
+        if (order.price != null) {
+            marketOrderResponse.price = order.price!!.toDouble()
+        } else if (reason != null) {
+            marketOrderResponse.statusReason = reason
         }
+        messageWrapper.writeMarketOrderResponse(marketOrderResponse)
     }
 
     override fun parseMessage(messageWrapper: MessageWrapper) {
-        if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            val message = parseOld(messageWrapper.byteArray)
-            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid.toString()
-            messageWrapper.timestamp = message.timestamp
-            messageWrapper.parsedMessage = message
-            messageWrapper.id = message.uid.toString()
-        } else {
-            val message = parse(messageWrapper.byteArray)
-            messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
-            messageWrapper.timestamp = message.timestamp
-            messageWrapper.parsedMessage = message
-            messageWrapper.id = message.uid
-        }
+        val message = parse(messageWrapper.byteArray)
+        messageWrapper.messageId = if (message.hasMessageId()) message.messageId else message.uid
+        messageWrapper.timestamp = message.timestamp
+        messageWrapper.parsedMessage = message
+        messageWrapper.id = message.uid
+        messageWrapper.processedMessage = ProcessedMessage(messageWrapper.type, messageWrapper.timestamp!!, messageWrapper.messageId!!)
     }
 
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
-        if (messageWrapper.type == MessageType.OLD_MARKET_ORDER.type) {
-            messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
-        } else if (messageWrapper.type == MessageType.MARKET_ORDER.type) {
-            messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setStatus(status.type))
-        } else {
-            messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
-                    .setStatus(status.type))
-        }
+        messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
+                .setStatus(status.type))
     }
 }
