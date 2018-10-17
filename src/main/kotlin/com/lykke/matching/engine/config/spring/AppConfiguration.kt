@@ -1,6 +1,7 @@
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.utils.config.Config
+import com.lykke.matching.engine.utils.monitoring.MonitoredComponent
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.matching.engine.utils.monitoring.QueueSizeHealthChecker
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
@@ -77,14 +78,18 @@ open class AppConfiguration : SchedulingConfigurer {
 
     @Bean
     open fun inputQueueSizeChecker(@InputQueue namesToInputQueues: Map<String, BlockingQueue<*>>): QueueSizeHealthChecker {
-        return QueueSizeHealthChecker(namesToInputQueues,
+        return QueueSizeHealthChecker(
+                MonitoredComponent.INPUT_QUEUE,
+                namesToInputQueues,
                 config.me.maxQueueSizeLimit,
                 config.me.recoverQueueSizeLimit)
     }
 
     @Bean
-    open fun rabbitQueueSizeChecker(namesToInputQueues: Map<String, BlockingQueue<*>>):  QueueSizeHealthChecker{
-        return QueueSizeHealthChecker(namesToInputQueues,
+    open fun rabbitQueueSizeChecker(@RabbitQueue namesToInputQueues: Map<String, BlockingQueue<*>>):  QueueSizeHealthChecker{
+        return QueueSizeHealthChecker(
+                MonitoredComponent.RABBIT_QUEUE,
+                namesToInputQueues,
                 config.me.rabbitMaxQueueSizeLimit,
                 config.me.rabbitRecoverQueueSizeLimit)
     }

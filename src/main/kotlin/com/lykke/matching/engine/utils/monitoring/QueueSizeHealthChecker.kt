@@ -7,7 +7,8 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.BlockingQueue
 
-class QueueSizeHealthChecker(private val nameToInputQueue: Map<String, BlockingQueue<*>>,
+class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
+                             private val nameToInputQueue: Map<String, BlockingQueue<*>>,
                              private val queueMaxSize: Int,
                              private val queueRecoverSize: Int) {
 
@@ -42,9 +43,9 @@ class QueueSizeHealthChecker(private val nameToInputQueue: Map<String, BlockingQ
         }
 
         if (longQueues.isNotEmpty()) {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, MonitoredComponent.INPUT_QUEUE))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(false, monitoredComponent))
         } else {
-            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, MonitoredComponent.INPUT_QUEUE))
+            applicationEventPublisher.publishEvent(HealthMonitorEvent(true, monitoredComponent))
         }
     }
 
