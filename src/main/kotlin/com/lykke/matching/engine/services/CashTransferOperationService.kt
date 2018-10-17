@@ -5,7 +5,6 @@ import com.lykke.matching.engine.daos.TransferOperation
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.CashTransferContext
 import com.lykke.matching.engine.daos.fee.v2.Fee
-import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.exception.PersistenceException
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
