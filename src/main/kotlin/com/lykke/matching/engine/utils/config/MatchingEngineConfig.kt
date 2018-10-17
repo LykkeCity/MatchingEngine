@@ -33,6 +33,8 @@ data class MatchingEngineConfig(
         val queueSizeLimit: Int,
         val maxQueueSizeLimit: Int,
         val recoverQueueSizeLimit: Int,
+        val rabbitMaxQueueSizeLimit: Int,
+        val rabbitRecoverQueueSizeLimit: Int,
         val name: String,
         val trustedClients: Set<String>,
         val aliveStatus: AliveStatusConfig,

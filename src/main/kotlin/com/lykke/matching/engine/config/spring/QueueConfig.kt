@@ -18,16 +18,19 @@ import java.util.concurrent.LinkedBlockingQueue
 open class QueueConfig {
 
     @Bean
+    @RabbitQueue
     open fun clientsEventsQueue(): BlockingQueue<Event<*>> {
         return LinkedBlockingQueue()
     }
 
     @Bean
+    @RabbitQueue
     open fun trustedClientsEventsQueue(): BlockingQueue<ExecutionEvent> {
         return LinkedBlockingQueue()
     }
 
     @Bean
+    @RabbitQueue
     open fun balanceUpdateQueue(): BlockingQueue<BalanceUpdate> {
         return LinkedBlockingQueue<BalanceUpdate>()
     }
@@ -38,11 +41,13 @@ open class QueueConfig {
     }
 
     @Bean
+    @RabbitQueue
     open fun cashSwapQueue(): BlockingQueue<CashSwapOperation> {
         return LinkedBlockingQueue<CashSwapOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun clientLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
         return LinkedBlockingQueue<LimitOrdersReport>()
     }
@@ -53,36 +58,43 @@ open class QueueConfig {
     }
 
     @Bean
+    @RabbitQueue
     open fun orderBookQueue(): BlockingQueue<OrderBook> {
         return LinkedBlockingQueue<OrderBook>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitOrderBookQueue(): BlockingQueue<OrderBook> {
         return LinkedBlockingQueue<OrderBook>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitCashInOutQueue(): BlockingQueue<CashOperation> {
         return LinkedBlockingQueue<CashOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitSwapQueue(): BlockingQueue<MarketOrderWithTrades> {
         return LinkedBlockingQueue<MarketOrderWithTrades>()
     }
 
     @Bean
+    @RabbitQueue
     open fun rabbitTransferQueue(): BlockingQueue<CashTransferOperation> {
         return LinkedBlockingQueue<CashTransferOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun reservedCashOperationQueue(): BlockingQueue<ReservedCashOperation> {
         return LinkedBlockingQueue<ReservedCashOperation>()
     }
 
     @Bean
+    @RabbitQueue
     open fun trustedClientsLimitOrdersQueue(): BlockingQueue<LimitOrdersReport> {
         return LinkedBlockingQueue<LimitOrdersReport>()
     }
