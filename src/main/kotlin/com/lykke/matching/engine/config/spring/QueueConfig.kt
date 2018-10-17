@@ -103,6 +103,7 @@ open class QueueConfig {
     }
 
     @Bean
+    @InputQueue
     open fun limitOrderInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
