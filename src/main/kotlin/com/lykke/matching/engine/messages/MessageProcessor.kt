@@ -1,12 +1,7 @@
 package com.lykke.matching.engine.messages
 
 import com.lykke.matching.engine.AppInitialData
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
 import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
@@ -28,7 +23,6 @@ import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
 import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
-import com.lykke.matching.engine.outgoing.socket.SocketServer
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
@@ -144,7 +138,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         this.limitOrderMassCancelService = applicationContext.getBean(LimitOrderMassCancelService::class.java)
 
-        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
+        this.multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
         this.balanceUpdateService = applicationContext.getBean(BalanceUpdateService::class.java)
         this.reservedBalanceUpdateService = ReservedBalanceUpdateService(balanceHolder)
 
@@ -171,10 +165,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()
-
-        if (config.me.serverOrderBookPort != null) {
-            SocketServer(config, connectionsHolder, genericLimitOrderService, assetsHolder, assetsPairsHolder).start()
-        }
 
         if (!isLocalProfile) {
             this.bestPriceBuilder = fixedRateTimer(name = "BestPriceBuilder", initialDelay = 0, period = config.me.bestPricesInterval) {
@@ -242,7 +232,8 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
                 return
             }
 
-            if (processedMessagesCache.isProcessed(message.type, message.messageId!!)) {
+            val processedMessage = message.processedMessage
+            if (processedMessage != null && processedMessagesCache.isProcessed(processedMessage.type, processedMessage.messageId)) {
                 service.writeResponse(message, MessageStatus.DUPLICATE)
                 LOGGER.error("Message already processed: ${message.type}: ${message.messageId!!}")
                 METRICS_LOGGER.logError("Message already processed: ${message.type}: ${message.messageId!!}")
@@ -251,7 +242,7 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
             service.processMessage(message)
 
-            message.processedMessage()?.let {
+            processedMessage?.let {
                 if (!message.triedToPersist) {
                     message.persisted = persistenceManager.persist(PersistenceData(it, messageSequenceNumberHolder.getValueToPersist()))
                 }
@@ -279,8 +270,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.OLD_LIMIT_ORDER] = singleLimitOrderService
         result[MessageType.MARKET_ORDER] = marketOrderService
-        result[MessageType.NEW_MARKET_ORDER] = marketOrderService
-        result[MessageType.OLD_MARKET_ORDER] = marketOrderService
         result[MessageType.LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.OLD_LIMIT_ORDER_CANCEL] = limitOrderCancelService
         result[MessageType.LIMIT_ORDER_MASS_CANCEL] = limitOrderMassCancelService
@@ -289,7 +278,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         result[MessageType.BALANCE_UPDATE] = balanceUpdateService
         result[MessageType.RESERVED_BALANCE_UPDATE] = reservedBalanceUpdateService
         result[MessageType.MULTI_LIMIT_ORDER] = multiLimitOrderService
-        result[MessageType.OLD_MULTI_LIMIT_ORDER] = multiLimitOrderService
         return result
     }
 }

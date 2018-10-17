@@ -1,38 +1,33 @@
 package com.lykke.matching.engine.utils
 
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.daos.FeeSizeType
-import com.lykke.matching.engine.daos.FeeType
-import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.daos.MarketOrder
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.*
+import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperationContextParser
-import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
+import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
-import org.springframework.stereotype.Component
+import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
+import java.util.*
 
-class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
+class MessageBuilder(private var singleLimitOrderContextParser: SingleLimitOrderContextParser,
+                     private val cashInOutContextParser: CashInOutContextParser,
                      private val cashTransferContextParser: CashTransferContextParser,
                      private val limitOrderCancelOperationContextParser: ContextParser<LimitOrderCancelOperationParsedData>,
                      private val limitOrderMassCancelOperationContextParser: ContextParser<LimitOrderMassCancelOperationParsedData>) {
-    companion object {
+companion object {
         fun buildLimitOrder(uid: String = UUID.randomUUID().toString(),
                             assetId: String = "EURUSD",
                             clientId: String = "Client1",
@@ -156,31 +151,6 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
 
-        fun buildLimitOrderWrapper(order: LimitOrder,
-                                   cancel: Boolean = false): MessageWrapper {
-            val builder = ProtocolMessages.LimitOrder.newBuilder()
-                    .setUid(order.externalId)
-                    .setTimestamp(order.createdAt.time)
-                    .setClientId(order.clientId)
-                    .setAssetPairId(order.assetPairId)
-                    .setVolume(order.volume.toDouble())
-                    .setCancelAllPreviousLimitOrders(cancel)
-                    .setType(order.type!!.externalId)
-            if (order.type == LimitOrderType.LIMIT) {
-                builder.price = order.price.toDouble()
-            }
-            order.fee?.let {
-                builder.setFee(buildLimitOrderFee(it as LimitOrderFeeInstruction))
-            }
-            order.fees?.forEach {
-                builder.addFees(buildNewLimitOrderFee(it as NewLimitOrderFeeInstruction))
-            }
-            order.lowerLimitPrice?.let { builder.setLowerLimitPrice(it.toDouble()) }
-            order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
-            order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
-            order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
-            return MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test")
-        }
 
         @Deprecated("Use buildMultiLimitOrderWrapper(5)")
         fun buildMultiLimitOrderWrapper(pair: String,
@@ -373,5 +343,38 @@ class MessageBuilder(private val cashInOutContextParser: CashInOutContextParser,
 
         val messageWrapper = MessageWrapper("Test", MessageType.LIMIT_ORDER_MASS_CANCEL.type, builder.build().toByteArray(), null)
         return limitOrderMassCancelOperationContextParser.parse(messageWrapper).messageWrapper
+    }
+
+    fun buildLimitOrderWrapper(order: LimitOrder,
+                               cancel: Boolean = false): MessageWrapper {
+        val builder = ProtocolMessages.LimitOrder.newBuilder()
+                .setUid(order.externalId)
+                .setTimestamp(order.createdAt.time)
+                .setClientId(order.clientId)
+                .setAssetPairId(order.assetPairId)
+                .setVolume(order.volume.toDouble())
+                .setCancelAllPreviousLimitOrders(cancel)
+                .setType(order.type!!.externalId)
+        if (order.type == LimitOrderType.LIMIT) {
+            builder.price = order.price.toDouble()
+        }
+        order.fee?.let {
+            builder.setFee(buildLimitOrderFee(it as LimitOrderFeeInstruction))
+        }
+        order.fees?.forEach {
+            builder.addFees(buildNewLimitOrderFee(it as NewLimitOrderFeeInstruction))
+        }
+        order.lowerLimitPrice?.let { builder.setLowerLimitPrice(it.toDouble()) }
+        order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
+        order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
+        order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
+        val messageWrapper = singleLimitOrderContextParser
+                .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
+                .messageWrapper
+
+        val singleLimitContext = messageWrapper.context as SingleLimitOrderContext
+        singleLimitContext.validationResult = OrderValidationResult(true)
+
+        return messageWrapper
     }
 }
