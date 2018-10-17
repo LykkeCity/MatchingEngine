@@ -259,12 +259,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun multiLimitOrderValidator(assetsHolder: AssetsHolder, limitOrderInputValidator: LimitOrderInputValidator,
-                                      assetPairHolder: AssetsPairsHolder): MultiLimitOrderValidator {
-        return MultiLimitOrderValidatorImpl(assetsHolder, assetPairHolder, limitOrderInputValidator)
-    }
-
-    @Bean
     open fun balanceUpdateValidator(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder): BalanceUpdateValidator {
         return BalanceUpdateValidatorImpl(balancesHolder, assetsHolder)
     }
@@ -320,23 +314,24 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun multiLimitOrderService(genericLimitOrderService: GenericLimitOrderService, genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
+    open fun multiLimitOrderService(genericLimitOrderService: GenericLimitOrderService,
+                                    genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                     limitOrderProcessorFactory: LimitOrdersProcessorFactory,
-                                    clientLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
-                                    orderBookQueue: BlockingQueue<OrderBook>,
-                                    rabbitOrderBookQueue: BlockingQueue<OrderBook>,
-                                    lkkTradesQueue: BlockingQueue<List<LkkTrade>>,
-                                    assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, balancesHolder: BalancesHolder,
-                                    genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory, multiLimitOrderValidator: MultiLimitOrderValidator,
-                                    feeProcessor: FeeProcessor, messageSequenceNumberHolder: MessageSequenceNumberHolder, messageSender: MessageSender,
+                                    assetsHolder: AssetsHolder,
+                                    assetsPairsHolder: AssetsPairsHolder,
+                                    balancesHolder: BalancesHolder,
+                                    genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory,
+                                    feeProcessor: FeeProcessor,
                                     applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderService {
-        return MultiLimitOrderService(genericLimitOrderService, genericLimitOrdersCancellerFactory, limitOrderProcessorFactory,
-                clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                assetsHolder, assetsPairsHolder, balancesHolder, genericLimitOrderProcessorFactory, multiLimitOrderValidator, feeProcessor,
-                applicationSettingsCache,
-                messageSequenceNumberHolder,
-                messageSender)
+        return MultiLimitOrderService(genericLimitOrderService,
+                genericLimitOrdersCancellerFactory,
+                limitOrderProcessorFactory,
+                assetsHolder,
+                assetsPairsHolder,
+                balancesHolder,
+                genericLimitOrderProcessorFactory,
+                feeProcessor,
+                applicationSettingsCache)
     }
 
     @Bean

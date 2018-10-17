@@ -7,9 +7,6 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
-import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.messages.MessageWrapper
-import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
@@ -30,7 +27,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -278,41 +274,6 @@ class PersistenceErrorTest : AbstractTest() {
         )))
         assertLimitOrderResult()
     }
-
-    @Test
-    fun testOldMultiLimitOrder() {
-        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(
-                "EURUSD", "TrustedClient",
-                listOf(VolumePrice(BigDecimal.valueOf(-1.0), BigDecimal.valueOf(3.1)),
-                        VolumePrice(BigDecimal.valueOf(-2.0), BigDecimal.valueOf(3.19)),
-                        VolumePrice(BigDecimal.valueOf(-3.0), BigDecimal.valueOf(3.29))), cancel = true))
-
-        assertData()
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-    }
-
-    private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
-    }
-
-    private fun buildOldMultiLimitOrder(assetPairId: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean): ProtocolMessages.OldMultiLimitOrder {
-        val uid = Date().time
-        val orderBuilder = ProtocolMessages.OldMultiLimitOrder.newBuilder()
-                .setUid(uid)
-                .setTimestamp(uid)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEach{ volume ->
-            orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume.toDouble())
-                    .setPrice(volume.price.toDouble())
-                    .build())
-        }
-        return orderBuilder.build()
-    }
-
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
