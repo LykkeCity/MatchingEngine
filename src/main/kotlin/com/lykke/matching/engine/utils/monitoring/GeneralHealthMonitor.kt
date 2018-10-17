@@ -49,7 +49,7 @@ class GeneralHealthMonitor: HealthMonitor {
 
     fun processMaintenanceModeOn() {
         previousMaintenanceModeStatus = true
-        val message = "Maintenance mode is on, broken component are: $brokenComponents"
+        val message = "Maintenance mode is on, broken component are: ${monitoredComponentsToQualifiers.keys}"
         LOGGER.error(message)
         METRICS_LOGGER.logError(message)
     }
