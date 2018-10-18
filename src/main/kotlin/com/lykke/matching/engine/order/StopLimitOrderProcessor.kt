@@ -3,11 +3,8 @@ package com.lykke.matching.engine.order
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -28,7 +25,6 @@ import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.*
-import java.util.Date
 import java.util.concurrent.BlockingQueue
 
 class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderService,
@@ -65,7 +61,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
+        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset!!.assetId, cancelVolume), limitAsset.accuracy)
 
         val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext)
 
@@ -170,7 +166,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         if (cancelVolume > BigDecimal.ZERO) {
             walletOperationsProcessor.preProcess(listOf(WalletOperation(order.clientId,
-                    limitAsset.assetId,
+                    limitAsset!!.assetId,
                     BigDecimal.ZERO,
                     -cancelVolume)), true)
         }
