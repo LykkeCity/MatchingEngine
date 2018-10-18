@@ -17,18 +17,16 @@ import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.business.CashInOutOperationBusinessValidator
-import com.lykke.matching.engine.services.validators.business.CashTransferOperationBusinessValidator
-import org.springframework.beans.factory.annotation.Autowired
-import java.math.BigDecimal
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import java.math.BigDecimal
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 abstract class AbstractTest {
     @Autowired
@@ -44,7 +42,6 @@ abstract class AbstractTest {
     protected lateinit var stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder
 
     protected lateinit var testWalletDatabaseAccessor: TestWalletDatabaseAccessor
-    protected lateinit var testOrderDatabaseAccessor: TestOrderBookDatabaseAccessor
     protected lateinit var stopOrderDatabaseAccessor: TestStopOrderBookDatabaseAccessor
 
     @Autowired
@@ -52,9 +49,6 @@ abstract class AbstractTest {
 
     @Autowired
     private lateinit var assetsCache: AssetsCache
-
-    @Autowired
-    protected lateinit var assetsHolder: AssetsHolder
 
     @Autowired
     protected lateinit var applicationSettingsCache: ApplicationSettingsCache
@@ -66,19 +60,10 @@ abstract class AbstractTest {
     protected lateinit var balanceUpdateHandlerTest: BalanceUpdateHandlerTest
 
     @Autowired
-    private lateinit var cashInOutOperationBusinessValidator: CashInOutOperationBusinessValidator
-
-    @Autowired
-    private lateinit var cashTransferOperationBusinessValidator: CashTransferOperationBusinessValidator
-
-    @Autowired
     protected lateinit var reservedCashInOutOperationService: ReservedCashInOutOperationService
 
     @Autowired
     protected lateinit var testDictionariesDatabaseAccessor: TestDictionariesDatabaseAccessor
-
-    @Autowired
-    protected lateinit var assetsPairsHolder: AssetsPairsHolder
 
     @Autowired
     protected lateinit var assetPairsCache: AssetPairsCache
@@ -88,6 +73,9 @@ abstract class AbstractTest {
 
     @Autowired
     protected lateinit var persistenceManager: TestPersistenceManager
+
+    @Autowired
+    protected lateinit var testOrderDatabaseAccessor: TestFileOrderDatabaseAccessor
 
     @Autowired
     private lateinit var genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory
@@ -138,6 +126,9 @@ abstract class AbstractTest {
     protected lateinit var rabbitTransferQueue: BlockingQueue<CashTransferOperation>
 
     @Autowired
+    protected lateinit var limitOrderCancelService: LimitOrderCancelService
+
+    @Autowired
     protected lateinit var cashTransferOperationsService: CashTransferOperationService
 
     @Autowired
@@ -159,20 +150,19 @@ abstract class AbstractTest {
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
 
     @Autowired
+    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
+
+    @Autowired
     protected lateinit var cashInOutOperationService: CashInOutOperationService
 
-    protected lateinit var singleLimitOrderService: SingleLimitOrderService
-
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
-    protected lateinit var limitOrderCancelService: LimitOrderCancelService
-    protected lateinit var limitOrderMassCancelService: LimitOrderMassCancelService
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
+    protected lateinit var singleLimitOrderService: SingleLimitOrderService
+    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
 
     private var initialized = false
     protected open fun initServices() {
         initialized = true
         testWalletDatabaseAccessor = balancesDatabaseAccessorsHolder.primaryAccessor as TestWalletDatabaseAccessor
-        testOrderDatabaseAccessor = ordersDatabaseAccessorsHolder.primaryAccessor as TestOrderBookDatabaseAccessor
         stopOrderDatabaseAccessor = stopOrdersDatabaseAccessorsHolder.primaryAccessor as TestStopOrderBookDatabaseAccessor
         clearMessageQueues()
         assetsCache.update()
@@ -182,10 +172,7 @@ abstract class AbstractTest {
         reservedBalanceUpdateService = ReservedBalanceUpdateService(balancesHolder)
         singleLimitOrderService = SingleLimitOrderService(genericLimitOrderProcessorFactory)
 
-        limitOrderCancelService = LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory, persistenceManager)
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
-        limitOrderMassCancelService = LimitOrderMassCancelService(genericLimitOrderService, genericStopLimitOrderService, genericLimitOrdersCancellerFactory)
-        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory)
+        multiLimitOrderCancelService = MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
     }
 
     protected fun clearMessageQueues() {

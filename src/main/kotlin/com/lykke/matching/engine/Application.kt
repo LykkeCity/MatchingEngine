@@ -6,9 +6,9 @@ import org.springframework.stereotype.Component
 @Component
 class Application {
     @Autowired
-    lateinit var socketServer: Runnable
+    lateinit var clientsRequestsSocketServer: Runnable
 
     fun run () {
-        socketServer.run()
+        clientsRequestsSocketServer.run()
     }
 }

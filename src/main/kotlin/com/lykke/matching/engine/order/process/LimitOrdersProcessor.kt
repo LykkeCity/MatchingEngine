@@ -11,16 +11,13 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.matching.MatchingResult
 import com.lykke.matching.engine.messages.MessageType
-import com.lykke.matching.engine.order.LimitOrderValidator
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderValidationException
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
@@ -31,6 +28,9 @@ import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
+import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
+import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.lang.IllegalArgumentException
@@ -39,8 +39,10 @@ import java.util.Date
 import java.util.LinkedList
 import java.util.concurrent.BlockingQueue
 
-class LimitOrdersProcessor(assetsHolder: AssetsHolder,
-                           assetsPairsHolder: AssetsPairsHolder,
+class LimitOrdersProcessor(private val isTrustedClient: Boolean,
+                           private val baseAsset: Asset,
+                           private val quotingAsset: Asset,
+                           private val limitOrderInputValidator: LimitOrderInputValidator,
                            balancesHolder: BalancesHolder,
                            private val genericLimitOrderService: GenericLimitOrderService,
                            private val applicationSettingsCache: ApplicationSettingsCache,
@@ -59,18 +61,14 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
                            payBackQuotingReserved: BigDecimal,
                            clientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
                            trustedClientsLimitOrdersWithTrades: Collection<LimitOrderWithTrades>,
+                           private val businessValidator: LimitOrderBusinessValidator,
                            private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                            private val messageSender: MessageSender,
                            private val LOGGER: Logger) {
 
-    private val validator = LimitOrderValidator(assetsPairsHolder, assetsHolder, applicationSettingsCache)
-
     private val orderServiceHelper = OrderServiceHelper(genericLimitOrderService, LOGGER)
     private val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
 
-    private val isTrustedClient = balancesHolder.isTrustedClient(clientId)
-    private val baseAsset = assetsHolder.getAsset(assetPair.baseAssetId)
-    private val quotingAsset = assetsHolder.getAsset(assetPair.quotingAssetId)
     private val availableBalances = HashMap<String, BigDecimal>()
 
     private var buySideOrderBookChanged = false
@@ -214,13 +212,12 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
 
-        try {
-            validateLimitOrder(order, orderBook, assetPair, availableBalance, limitVolume)
-        } catch (e: OrderValidationException) {
-            LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${e.message}")
-            order.updateStatus(e.orderStatus, date)
-            addToReportIfNotTrusted(order)
-            processedOrders.add(ProcessedOrder(order, false, e.message))
+
+        val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
+                assetPair, baseAsset, availableBalance, limitVolume)
+
+        if (!orderValidationResult.isValid) {
+            processInvalidOrder(orderValidationResult, order)
             return
         }
 
@@ -262,7 +259,6 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
             return
         }
 
-
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
         ordersToAdd.add(order)
@@ -285,6 +281,13 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         if (!isTrustedClient) {
             LOGGER.info("$orderInfo added to order book")
         }
+    }
+
+    private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
+        LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
+        order.updateStatus(orderValidationResult.status!!, date)
+        addToReportIfNotTrusted(order)
+        processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
     }
 
     private fun processMatchingResult(matchingResult: MatchingResult, orderCopy: LimitOrder, orderInfo: String, order: LimitOrder, limitAsset: Asset): Boolean {
@@ -410,33 +413,22 @@ class LimitOrdersProcessor(assetsHolder: AssetsHolder,
         return true
     }
 
-    private fun validateLimitOrder(order: LimitOrder, orderBook: AssetOrderBook, assetPair: AssetPair, availableBalance: BigDecimal, limitVolume: BigDecimal) {
-        if (order.clientId != clientId) {
-            throw OrderValidationException(OrderStatus.Cancelled, "${orderInfo(order)} has invalid clientId: ${order.clientId}")
-        }
-        if (order.assetPairId != assetPair.assetPairId) {
-            throw OrderValidationException(OrderStatus.Cancelled, "${orderInfo(order)} has invalid assetPairId: ${order.assetPairId}")
-        }
-        if (order.status == OrderStatus.NotFoundPrevious.name) {
-            throw OrderValidationException(OrderStatus.NotFoundPrevious, "${orderInfo(order)} has not found previous order (${order.previousExternalId})")
-        }
-        if (order.status == OrderStatus.NotEnoughFunds.name) {
-            throw OrderValidationException(OrderStatus.NotEnoughFunds, "${orderInfo(order)} has not enough funds")
+    private fun validateLimitOrder(isTrustedClient: Boolean,
+                                   order: LimitOrder,
+                                   orderBook: AssetOrderBook,
+                                   assetPair: AssetPair,
+                                   baseAsset: Asset,
+                                   availableBalance: BigDecimal,
+                                   limitVolume: BigDecimal): OrderValidationResult {
+        try {
+            //input validator will be moved from the business thread after multilimit order context release
+            limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, assetPair.assetPairId, baseAsset)
+            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
+        } catch (e: OrderValidationException) {
+            return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
 
-        if (!isTrustedClient) {
-            validator.validateFee(order)
-            validator.validateAssets(assetPair)
-            validator.checkBalance(availableBalance, limitVolume)
-        }
-        validator.validatePrice(order)
-        validator.validateVolume(order, assetPair)
-        validator.validatePriceAccuracy(order)
-        validator.validateVolumeAccuracy(order)
-
-        if (orderBook.leadToNegativeSpreadForClient(order)) {
-            throw OrderValidationException(OrderStatus.LeadToNegativeSpread, "${orderInfo(order)} lead to negative spread")
-        }
+        return OrderValidationResult(true)
     }
 
     private fun orderInfo(order: LimitOrder) = "Limit order (id: ${order.externalId})"
