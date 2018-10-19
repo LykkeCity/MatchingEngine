@@ -19,7 +19,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderType
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
@@ -41,6 +40,7 @@ import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (MarketOrderServiceTest.Config::class)])
@@ -830,71 +830,5 @@ class MarketOrderServiceTest: AbstractTest() {
         assertEquals(OrderRejectReason.INVALID_VOLUME, eventOrder.rejectReason)
 
         assertOrderBookSize("BTCUSD", true, 1)
-    }
-
-    @Test
-    fun testBuyPriceDeviationThreshold() {
-        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 2.0)
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 3.0)
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.1, volume = -1.0))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", price = 1.2, volume = -1.0))
-
-        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.ZERO)
-        applicationSettingsCache.update()
-
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
-        var eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
-        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
-
-        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.04))
-        applicationSettingsCache.update()
-
-        clearMessageQueues()
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
-        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
-        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
-
-        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.05))
-        applicationSettingsCache.update()
-
-        clearMessageQueues()
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "EURUSD", volume = 2.0)))
-        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single { it.orderType == OrderType.MARKET }
-        assertEquals(OutgoingOrderStatus.MATCHED, eventOrder.status)
-    }
-
-    @Test
-    fun testSellPriceDeviationThreshold() {
-        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 2.0)
-        testBalanceHolderWrapper.updateBalance("Client2", "USD", 3.0)
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 1.0, volume = 1.0))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", price = 0.9, volume = 1.0))
-
-        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.ZERO)
-        applicationSettingsCache.update()
-
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
-        var eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
-        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
-
-        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.04))
-        applicationSettingsCache.update()
-
-        clearMessageQueues()
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
-        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single()
-        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
-        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
-
-        testConfigDatabaseAccessor.addMarketOrderPriceDeviationThreshold("EURUSD", BigDecimal.valueOf(0.05))
-        applicationSettingsCache.update()
-
-        clearMessageQueues()
-        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "EURUSD", volume = -2.0)))
-        eventOrder = (clientsEventsQueue.single() as ExecutionEvent).orders.single { it.orderType == OrderType.MARKET }
-        assertEquals(OutgoingOrderStatus.MATCHED, eventOrder.status)
     }
 }

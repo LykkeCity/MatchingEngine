@@ -1,16 +1,12 @@
 package com.lykke.matching.engine.matching
 
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
-import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -199,14 +195,6 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test")
 
         assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.ReservedVolumeGreaterThanBalance, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
-    }
-
-    @Test
-    fun testMatchLimitOrderPriceDeviation() {
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 1.0))
-        val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.1, volume = -100.0)
-        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true),"test", priceDeviationThreshold = BigDecimal.valueOf(0.08))
-        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
     }
 
     @Test

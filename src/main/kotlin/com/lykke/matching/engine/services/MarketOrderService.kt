@@ -1,16 +1,19 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.daos.*
-import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
+import com.lykke.matching.engine.daos.v2.FeeInstruction
+import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
+import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
+import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -18,38 +21,23 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.messages.ProtocolMessages
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.order.OrderStatus.InvalidFee
-import com.lykke.matching.engine.order.OrderStatus.InvalidValue
-import com.lykke.matching.engine.order.OrderStatus.InvalidVolume
-import com.lykke.matching.engine.order.OrderStatus.InvalidVolumeAccuracy
-import com.lykke.matching.engine.order.OrderStatus.Matched
-import com.lykke.matching.engine.order.OrderStatus.NoLiquidity
-import com.lykke.matching.engine.order.OrderStatus.NotEnoughFunds
-import com.lykke.matching.engine.order.OrderStatus.Processing
-import com.lykke.matching.engine.order.OrderStatus.ReservedVolumeGreaterThanBalance
-import com.lykke.matching.engine.order.OrderStatus.TooHighPriceDeviation
-import com.lykke.matching.engine.services.validators.impl.OrderValidationException
+import com.lykke.matching.engine.order.OrderStatus.*
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.MarketOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.OrderBook
+import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
-import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.utils.NumberUtils
+import com.lykke.matching.engine.utils.PrintUtils
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
-import com.lykke.matching.engine.daos.v2.FeeInstruction
-import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.fee.FeeProcessor
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.util.Date
-import java.util.LinkedList
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -123,8 +111,7 @@ class MarketOrderService @Autowired constructor(
 
         val matchingResult = matchingEngine.initTransaction().match(order,
                 getOrderBook(order),
-                messageWrapper.messageId!!,
-                priceDeviationThreshold = settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
+                messageWrapper.messageId!!)
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             ReservedVolumeGreaterThanBalance -> {
@@ -136,9 +123,6 @@ class MarketOrderService @Autowired constructor(
             InvalidVolumeAccuracy,
             InvalidVolume,
             InvalidValue -> {
-                writeErrorNotification(messageWrapper, order, now)
-            }
-            TooHighPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {

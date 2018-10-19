@@ -1,12 +1,7 @@
 package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.balance.BalanceException
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.TradeInfo
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
@@ -17,28 +12,42 @@ import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.matching.MatchingResult
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
-import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.LimitTradeInfo
 import com.lykke.matching.engine.outgoing.messages.OrderBook
-import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
-import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
+import kotlin.collections.ArrayList
+import kotlin.collections.Collection
+import kotlin.collections.HashMap
+import kotlin.collections.List
+import kotlin.collections.any
+import kotlin.collections.emptyList
+import kotlin.collections.filter
+import kotlin.collections.find
+import kotlin.collections.forEach
+import kotlin.collections.isNotEmpty
+import kotlin.collections.listOf
+import kotlin.collections.map
+import kotlin.collections.mutableListOf
+import kotlin.collections.set
+import kotlin.collections.toMutableList
 
 class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val baseAsset: Asset,
@@ -225,8 +234,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
-                    availableBalance,
-                    applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId))
+                    availableBalance)
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
             when (OrderStatus.valueOf(orderStatus)) {
@@ -242,8 +250,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
-                OrderStatus.InvalidFee,
-                OrderStatus.TooHighPriceDeviation -> {
+                OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }

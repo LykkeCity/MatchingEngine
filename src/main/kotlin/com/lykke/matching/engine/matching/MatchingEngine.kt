@@ -1,12 +1,6 @@
 package com.lykke.matching.engine.matching
 
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.CopyWrapper
-import com.lykke.matching.engine.daos.LkkTrade
-import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.daos.Order
-import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.fee.FeeException
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.NotEnoughFundsFeeException
@@ -31,6 +25,17 @@ import java.util.HashSet
 import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.PriorityBlockingQueue
+import kotlin.collections.ArrayList
+import kotlin.collections.MutableMap
+import kotlin.collections.emptyList
+import kotlin.collections.forEach
+import kotlin.collections.getOrPut
+import kotlin.collections.isNotEmpty
+import kotlin.collections.map
+import kotlin.collections.mapOf
+import kotlin.collections.mutableListOf
+import kotlin.collections.set
+import kotlin.collections.toList
 
 class MatchingEngine(private val LOGGER: Logger,
                      private val genericLimitOrderService: GenericLimitOrderService,
@@ -75,20 +80,12 @@ class MatchingEngine(private val LOGGER: Logger,
     fun match(originOrder: Order,
               orderBook: PriorityBlockingQueue<LimitOrder>,
               messageId: String,
-              balance: BigDecimal? = null,
-              priceDeviationThreshold: BigDecimal? = null): MatchingResult {
+              balance: BigDecimal? = null): MatchingResult {
         val orderWrapper = CopyWrapper(originOrder)
         val order = orderWrapper.copy
         val availableBalance = balance ?: getBalance(order)
         val workingOrderBook = PriorityBlockingQueue(orderBook)
-        val bestPrice = if (workingOrderBook.isNotEmpty()) workingOrderBook.peek().takePrice() else null
         val now = Date()
-
-        if (order.takePrice() != null && !checkExecutionPriceDeviation(order.isBuySide(), order.takePrice()!!, bestPrice, priceDeviationThreshold)) {
-            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, price: ${order.takePrice()})")
-            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            return MatchingResult(orderWrapper, now, emptySet())
-        }
 
         var remainingVolume = order.getAbsVolume()
         val matchedOrders = LinkedList<CopyWrapper<LimitOrder>>()
@@ -382,11 +379,6 @@ class MatchingEngine(private val LOGGER: Logger,
             LOGGER.info("Too large value of market order (${order.externalId}): volume=${order.volume}, price=$executionPrice, maxValue=${assetPair.maxValue}, straight=${order.isStraight()}")
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
-        if (order.takePrice() == null && !checkExecutionPriceDeviation(order.isBuySide(), executionPrice, bestPrice, priceDeviationThreshold)) {
-            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            LOGGER.info("Too high price deviation (order id: ${order.externalId}): threshold: $priceDeviationThreshold, bestPrice: $bestPrice, executionPrice: $executionPrice)")
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
-        }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
             val newRemainingVolume = if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume
@@ -474,23 +466,6 @@ class MatchingEngine(private val LOGGER: Logger,
             order.takePrice() != null || assetPair.maxValue == null -> true
             order.isStraight() -> order.getAbsVolume() * executionPrice <= assetPair.maxValue
             else -> order.getAbsVolume() <= assetPair.maxValue
-        }
-    }
-
-    private fun checkExecutionPriceDeviation(isBuySide: Boolean,
-                                             price: BigDecimal,
-                                             expectedPrice: BigDecimal?,
-                                             threshold: BigDecimal?): Boolean {
-        if (threshold == null || expectedPrice == null) {
-            return true
-        }
-        if (NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, expectedPrice)) {
-            return false
-        }
-        return if (isBuySide) {
-            NumberUtils.divideWithMaxScale(price - expectedPrice, expectedPrice) <= threshold
-        } else {
-            NumberUtils.divideWithMaxScale(expectedPrice - price, expectedPrice) <= threshold
         }
     }
 }

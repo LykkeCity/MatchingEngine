@@ -5,8 +5,8 @@ import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
-import org.junit.Assert.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -307,28 +307,6 @@ class MatchingEngineMarketOrderTest : MatchingEngineTest() {
         val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", true),"test")
 
         assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.ReservedVolumeGreaterThanBalance, marketBalance = null)
-    }
-
-    @Test
-    fun testMatchMarketOrderPriceDeviation() {
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 1.0))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.1, volume = 1.0))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
-
-        val marketOrder = buildMarketOrder(clientId = "Client2", volume = -3.0)
-        val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", true),"test", priceDeviationThreshold = BigDecimal.valueOf(0.08))
-        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
-    }
-
-    @Test
-    fun testMatchNotStraightMarketOrderPriceDeviation() {
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.2, volume = 1.0))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.1, volume = 1.0))
-        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.0, volume = 1.0))
-
-        val marketOrder = buildMarketOrder(clientId = "Client2", volume = 3.3, straight = false)
-        val matchingResult = matchingEngine.match(marketOrder, getOrderBook("EURUSD", true),"test", priceDeviationThreshold = BigDecimal.valueOf(0.08))
-        assertMarketOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null)
     }
 
     @Test
