@@ -34,20 +34,8 @@ import java.util.LinkedList
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import kotlin.collections.ArrayList
-import kotlin.collections.Collection
 import kotlin.collections.HashMap
-import kotlin.collections.List
-import kotlin.collections.any
-import kotlin.collections.emptyList
-import kotlin.collections.filter
-import kotlin.collections.find
-import kotlin.collections.forEach
-import kotlin.collections.isNotEmpty
-import kotlin.collections.listOf
-import kotlin.collections.map
-import kotlin.collections.mutableListOf
 import kotlin.collections.set
-import kotlin.collections.toMutableList
 
 class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                            private val baseAsset: Asset,
@@ -114,7 +102,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     fun preProcess(messageId: String, orders: Collection<LimitOrder>): LimitOrdersProcessor {
-        orders.forEach { preProcess(messageId, it) }
+        val acceptedLowerMidPriceBound = BigDecimal(1)
+        var acceptedUpperMidPriceBound = BigDecimal(1)
+
+        orders.forEach { preProcess(messageId, it, acceptedLowerMidPriceBound, acceptedUpperMidPriceBound) }
         return this
     }
 
@@ -214,14 +205,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         return OrderProcessResult(true, processedOrders)
     }
 
-    private fun preProcess(messageId: String, order: LimitOrder) {
+    private fun preProcess(messageId: String, order: LimitOrder, acceptedLowerMidPriceBound: BigDecimal, acceptedUpperMidPriceBound: BigDecimal) {
 
         val limitAsset = if (order.isBuySide()) quotingAsset else baseAsset
         val limitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundUp(order.getAbsVolume() * order.price, limitAsset.accuracy) else order.getAbsVolume()
 
         val orderInfo = orderInfo(order)
         val availableBalance = availableBalances[limitAsset.assetId]!!
-
 
         val orderValidationResult = validateLimitOrder(isTrustedClient, order, orderBook,
                 assetPair, baseAsset, availableBalance, limitVolume)
@@ -257,8 +247,14 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 OrderStatus.InOrderBook,
                 OrderStatus.Matched,
                 OrderStatus.Processing -> {
-                    if (!processMatchingResult(matchingResult, orderCopy, orderInfo, order, limitAsset)) return
-                }
+                    if (!processMatchingResult(matchingResult,
+                                    orderCopy,
+                                    orderInfo,
+                                    order,
+                                    limitAsset,
+                                    acceptedLowerMidPriceBound,
+                                    acceptedUpperMidPriceBound)) return
+                 }
                 else -> {
                     LOGGER.error("Not handled order status: ${matchingResult.order.status}")
                 }
@@ -298,7 +294,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
     }
 
-    private fun processMatchingResult(matchingResult: MatchingResult, orderCopy: LimitOrder, orderInfo: String, order: LimitOrder, limitAsset: Asset): Boolean {
+    private fun processMatchingResult(matchingResult: MatchingResult,
+                                      orderCopy: LimitOrder,
+                                      orderInfo: String,
+                                      order: LimitOrder,
+                                      limitAsset: Asset,
+                                      acceptedLowerMidPriceBound: BigDecimal,
+                                      acceptedUpperMidPriceBound: BigDecimal): Boolean {
         val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
         val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
         val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
@@ -312,7 +314,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
             cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
         }
+
         val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
+        orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
+        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
         val ownWalletOperations = LinkedList<WalletOperation>(matchingResult.ownCashMovements)
         if (OrderStatus.Processing.name == orderCopy.status || OrderStatus.InOrderBook.name == orderCopy.status) {
@@ -331,6 +336,16 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             }
         }
 
+        val oppositeSideBestPrice = matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO
+        val orderSideBestPrice = getOrderSideBestPrice(orderCopy, orderBook)
+
+        val midPriceAfterMatching = getMidPriceAfterMatching(orderSideBestPrice, oppositeSideBestPrice)
+
+        if (isNewMidPriceValid(midPriceAfterMatching, acceptedLowerMidPriceBound, acceptedUpperMidPriceBound)) {
+            order.updateStatus(OrderStatus.TooHighPriceDeviation, matchingResult.timestamp)
+            return false
+        }
+
         try {
             walletOperationsProcessor.preProcess(ownWalletOperations).preProcess(matchingResult.oppositeCashMovements, true)
             try {
@@ -345,7 +360,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, message))
             return false
-        }
+    }
 
         matchingResult.apply()
         completedOrders.addAll(matchingResult.completedLimitOrders.map { it.origin!! })
@@ -359,8 +374,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             sellSideOrderBookChanged = sellSideOrderBookChanged || originCancelledLimitOrders.any { !it.isBuySide() }
         }
 
-        matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
-        orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
 
         orderBook.setOrderBook(!order.isBuySide(), matchingResult.orderBook)
         lkkTrades.addAll(matchingResult.lkkTrades)
@@ -455,4 +468,23 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
     }
 
+    private fun isNewMidPriceValid(midPrice: BigDecimal, lowerLimitMidPrice: BigDecimal, upperLimitMidPrice: BigDecimal): Boolean {
+        return midPrice in lowerLimitMidPrice..upperLimitMidPrice
+    }
+
+    private fun getOrderSideBestPrice(order: LimitOrder, orderBook: AssetOrderBook): BigDecimal {
+        if(OrderStatus.Processing.name == order.status || OrderStatus.InOrderBook.name == order.status) {
+            if (order.isBuySide()) {
+                return  if(order.price > orderBook.getBidPrice()) order.price else orderBook.getBidPrice()
+            }
+
+            return if(order.price < orderBook.getAskPrice()) order.price else orderBook.getAskPrice()
+        }
+
+        return if(order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice()
+    }
+
+    private fun getMidPriceAfterMatching(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal {
+        return NumberUtils.divideWithMaxScale((orderSideBestPrice - oppositeBestPrice).abs(), BigDecimal.valueOf(2))
+    }
 }
