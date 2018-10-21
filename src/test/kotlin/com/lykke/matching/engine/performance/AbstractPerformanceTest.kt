@@ -46,8 +46,7 @@ abstract class AbstractPerformanceTest {
 
     protected val testBackOfficeDatabaseAccessor = TestBackOfficeDatabaseAccessor()
     protected val testDictionariesDatabaseAccessor = TestDictionariesDatabaseAccessor()
-    protected lateinit var testSettingsDatabaseAccessor: TestConfigDatabaseAccessor
-    protected lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    protected lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
     protected lateinit var genericStopLimitOrderService: GenericStopLimitOrderService
@@ -107,12 +106,8 @@ abstract class AbstractPerformanceTest {
 
 
     open fun initServices() {
-        testSettingsDatabaseAccessor = TestConfigDatabaseAccessor()
-        testSettingsDatabaseAccessor.addTrustedClient("Client3")
-
-        testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-        applicationSettingsCache = ApplicationSettingsCache(testConfigDatabaseAccessor, 60000)
-
+        testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
+        applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
 
         assetCache = AssetsCache(testBackOfficeDatabaseAccessor)
         assetsHolder = AssetsHolder(assetCache)
