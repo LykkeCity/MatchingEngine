@@ -298,9 +298,10 @@ open class TestApplicationContext {
                                          trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                          messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                          limitOrderBusinessValidator: LimitOrderBusinessValidator,
-                                         messageSender: MessageSender): LimitOrdersProcessorFactory {
+                                         messageSender: MessageSender,
+                                         midPriceHolder: MidPriceHolder): LimitOrdersProcessorFactory {
         return LimitOrdersProcessorFactory(balancesHolder, limitOrderBusinessValidator, limitOrderInputValidator, genericLimitOrderService, clientLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender, applicationSettingsCache)
+                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, messageSender, applicationSettingsCache, midPriceHolder)
     }
 
     @Bean
@@ -568,5 +569,16 @@ open class TestApplicationContext {
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                           applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+    }
+
+    @Bean
+    open fun testReadOnlyMidPriceDatabaseAccessor(): TestReadOnlyMidPriceDatabaseAccessor {
+        return TestReadOnlyMidPriceDatabaseAccessor()
+    }
+
+    @Bean
+    open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
+                            applicationSettingsCache: ApplicationSettingsCache): MidPriceHolder {
+        return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor)
     }
 }

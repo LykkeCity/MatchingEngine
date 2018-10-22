@@ -2,11 +2,12 @@ package com.lykke.matching.engine.order.process
 
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -19,7 +20,7 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Component
@@ -34,7 +35,8 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                                   private val trustedClientsLimitOrdersQueue: BlockingQueue<LimitOrdersReport>,
                                   private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                   private val messageSender: MessageSender,
-                                  private val applicationSettingsCache: ApplicationSettingsCache) {
+                                  private val applicationSettingsCache: ApplicationSettingsCache,
+                                  private val midPriceHolder: MidPriceHolder) {
 
     fun create(matchingEngine: MatchingEngine,
                date: Date,
@@ -59,6 +61,7 @@ class LimitOrdersProcessorFactory(private val balancesHolder: BalancesHolder,
                     balancesHolder,
                     genericLimitOrderService,
                     applicationSettingsCache,
+                    midPriceHolder,
                     ordersToCancel,
                     clientLimitOrdersQueue,
                     lkkTradesQueue,

@@ -8,16 +8,10 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.fee.FeeProcessor
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.incoming.parsers.impl.CashInOutContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.CashTransferContextParser
 import com.lykke.matching.engine.incoming.parsers.impl.SingleLimitOrderContextParser
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
-import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -152,7 +146,7 @@ abstract class AbstractPerformanceTest {
 
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache)
+                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache, MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor()))
 
         genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
                 genericStopLimitOrderService,
