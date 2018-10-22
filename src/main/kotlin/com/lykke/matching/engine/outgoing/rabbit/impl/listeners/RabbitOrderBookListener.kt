@@ -40,10 +40,6 @@ class RabbitOrderBookListener {
                 BuiltinExchangeType.FANOUT)
     }
 
-    fun getOrderBookQueueSize(): Int {
-        return rabbitOrderBookQueue.size
-    }
-
     @EventListener
     fun onFailure(rabbitFailureEvent: RabbitFailureEvent<*>) {
         if(rabbitFailureEvent.publisherName == RabbitOrderBookListener::class.java.simpleName) {

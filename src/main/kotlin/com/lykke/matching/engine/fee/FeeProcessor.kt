@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.UUID
 
 @Component
 class FeeProcessor(private val balancesHolder: BalancesHolder,
@@ -72,8 +71,8 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         }
         val receiptOperationWrapper = ReceiptOperationWrapper(receiptOperation)
         val balances = HashMap<String, MutableMap<String, BigDecimal>>() // clientId -> assetId -> balance
-        externalBalances?.let {
-            balances.putAll(it.mapValues { HashMap<String, BigDecimal>(it.value) })
+        externalBalances?.let { clientBalances ->
+            balances.putAll(clientBalances.mapValues { HashMap<String, BigDecimal>(it.value) })
         }
         val newOperations = LinkedList(operations)
         val fees = feeInstructions.map { feeInstruction ->
@@ -143,7 +142,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
 
         return when (feeInstruction.type) {
             FeeType.CLIENT_FEE -> processClientFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, isAnotherAsset, feeCoef, balances)
-            FeeType.EXTERNAL_FEE -> processExternalFee(feeInstruction, receiptOperationWrapper, operations, absFeeAmount, feeAsset, feeCoef, balances)
+            FeeType.EXTERNAL_FEE -> processExternalFee(feeInstruction, operations, absFeeAmount, feeAsset, feeCoef, balances)
             else -> {
                 LOGGER.error("Unknown fee type: ${feeInstruction.type}")
                 null
@@ -152,7 +151,6 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
     }
 
     private fun processExternalFee(feeInstruction: FeeInstruction,
-                                   receiptOperationWrapper: ReceiptOperationWrapper,
                                    operations: MutableList<WalletOperation>,
                                    absFeeAmount: BigDecimal,
                                    feeAsset: Asset,
@@ -166,12 +164,11 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
         if (balance < absFeeAmount) {
             throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
         }
-        val receiptOperation = receiptOperationWrapper.baseReceiptOperation
         clientBalances[feeAsset.assetId] = NumberUtils.setScaleRoundHalfUp(balance - absFeeAmount, feeAsset.accuracy)
-        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.sourceClientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
-        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!, feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
-        return FeeTransfer(receiptOperation.externalId, feeInstruction.sourceClientId, feeInstruction.targetClientId,
-                receiptOperation.dateTime, absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
+        operations.add(WalletOperation(feeInstruction.sourceClientId, feeAsset.assetId, -absFeeAmount))
+        operations.add(WalletOperation(feeInstruction.targetClientId!!, feeAsset.assetId, absFeeAmount))
+        return FeeTransfer(feeInstruction.sourceClientId, feeInstruction.targetClientId,
+                absFeeAmount, feeAsset.assetId, if (feeCoef != null) NumberUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
     }
 
     private fun processClientFee(feeInstruction: FeeInstruction,
@@ -191,7 +188,7 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
                 throw NotEnoughFundsFeeException("Not enough funds for fee (asset: ${feeAsset.assetId}, available balance: $balance, feeAmount: $absFeeAmount)")
             }
             clientBalances[feeAsset.assetId] = NumberUtils.setScaleRoundHalfUp(balance - absFeeAmount, feeAsset.accuracy)
-            operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, receiptOperation.clientId, feeAsset.assetId, receiptOperation.dateTime, -absFeeAmount, isFee = true))
+            operations.add(WalletOperation(receiptOperation.clientId, feeAsset.assetId, -absFeeAmount))
         } else {
             val baseReceiptOperationAmount = receiptOperationWrapper.baseReceiptOperation.amount
             if (absFeeAmount > baseReceiptOperationAmount.abs()) {
@@ -199,16 +196,16 @@ class FeeProcessor(private val balancesHolder: BalancesHolder,
             }
             val newReceiptAmount = if (baseReceiptOperationAmount > BigDecimal.ZERO) receiptOperation.amount - absFeeAmount else receiptOperation.amount
             operations.remove(receiptOperation)
-            val newReceiptOperation = WalletOperation(receiptOperation.id, receiptOperation.externalId, receiptOperation.clientId,
-                    receiptOperation.assetId, receiptOperation.dateTime, NumberUtils.setScaleRoundHalfUp(newReceiptAmount, feeAsset.accuracy))
+            val newReceiptOperation = WalletOperation(receiptOperation.clientId,
+                    receiptOperation.assetId, NumberUtils.setScaleRoundHalfUp(newReceiptAmount, feeAsset.accuracy))
             operations.add(newReceiptOperation)
             receiptOperationWrapper.currentReceiptOperation = newReceiptOperation
         }
 
-        operations.add(WalletOperation(UUID.randomUUID().toString(), receiptOperation.externalId, feeInstruction.targetClientId!!,
-                feeAsset.assetId, receiptOperation.dateTime, absFeeAmount, isFee = true))
+        operations.add(WalletOperation(feeInstruction.targetClientId!!,
+                feeAsset.assetId, absFeeAmount))
 
-        return FeeTransfer(receiptOperation.externalId, receiptOperation.clientId, feeInstruction.targetClientId, receiptOperation.dateTime, absFeeAmount,
+        return FeeTransfer(receiptOperation.clientId, feeInstruction.targetClientId, absFeeAmount,
                 feeAsset.assetId, if (feeCoef != null) NumberUtils.setScaleRoundHalfUp(feeCoef, FEE_COEF_ACCURACY) else null)
     }
 
