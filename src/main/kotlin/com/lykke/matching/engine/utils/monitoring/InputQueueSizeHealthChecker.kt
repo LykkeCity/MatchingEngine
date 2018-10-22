@@ -34,7 +34,7 @@ class InputQueueSizeHealthChecker {
     @Autowired
     private lateinit var config: Config
 
-    @Scheduled(fixedRateString = "#{Config.me.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueSizeHealthCheckInterval}")
+    @Scheduled(fixedRateString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}")
     fun checkQueueSize() {
         nameToInputQueue.forEach {
             checkQueueReachedMaxLimit(it)
@@ -58,7 +58,7 @@ class InputQueueSizeHealthChecker {
     }
 
     fun checkQueueRecovered(nameToQueue: Map.Entry<String, BlockingQueue<*>>) {
-        if (nameToQueue.value.size <= config.me.recoverQueueSizeLimit && longQueues.remove(nameToQueue.key)) {
+        if (nameToQueue.value.size <= config.me.queueConfig.recoverQueueSizeLimit && longQueues.remove(nameToQueue.key)) {
             val logMessage = QUEUE_RECOVERED_MESSAGE.format(nameToQueue.key, nameToQueue.value.size)
             METRICS_LOGGER.logWarning(logMessage)
             LOGGER.info(logMessage)
@@ -66,7 +66,7 @@ class InputQueueSizeHealthChecker {
     }
 
     fun checkQueueReachedMaxLimit(nameToQueue: Map.Entry<String, BlockingQueue<*>>) {
-        if (nameToQueue.value.size >= config.me.maxQueueSizeLimit && !longQueues.contains(nameToQueue.key)) {
+        if (nameToQueue.value.size >= config.me.queueConfig.maxQueueSizeLimit && !longQueues.contains(nameToQueue.key)) {
             longQueues.add(nameToQueue.key)
             val logMessage = QUEUE_REACHED_THRESHOLD_MESSAGE.format(nameToQueue.key, nameToQueue.value.size)
             METRICS_LOGGER.logError(logMessage)

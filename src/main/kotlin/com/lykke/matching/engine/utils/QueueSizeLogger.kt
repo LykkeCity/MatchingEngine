@@ -8,8 +8,8 @@ import com.lykke.matching.engine.utils.config.Config
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import org.springframework.context.annotation.Profile
+import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 import kotlin.concurrent.fixedRateTimer
 
@@ -29,7 +29,7 @@ class QueueSizeLogger @Autowired constructor(
 
     @PostConstruct
     fun start() {
-        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueSizeLoggerInterval, period = config.me.queueSizeLoggerInterval) {
+        fixedRateTimer(name = "QueueSizeLogger", initialDelay = config.me.queueConfig.queueSizeLoggerInterval, period = config.me.queueConfig.queueSizeLoggerInterval) {
             log()
         }
     }
@@ -44,23 +44,24 @@ class QueueSizeLogger @Autowired constructor(
                 "Balances queue $balancesQueueSize. " +
                 "Persistence orders queue $ordersQueueSize.")
 
-        if (incomingQueueSize > config.me.queueSizeLimit) {
+        val queueSizeLimit = config.me.queueConfig.queueSizeLimit
+        if (incomingQueueSize > queueSizeLimit) {
             METRICS_LOGGER.logError("Internal queue size is higher than limit")
         }
 
-        if (connectionHandler.getOrderBookQueueSize() > config.me.queueSizeLimit) {
+        if (connectionHandler.getOrderBookQueueSize() > queueSizeLimit) {
             METRICS_LOGGER.logError("Order book queue size is higher than limit")
         }
 
-        if (rabbitOrderBookListener.getOrderBookQueueSize() > config.me.queueSizeLimit) {
+        if (rabbitOrderBookListener.getOrderBookQueueSize() > queueSizeLimit) {
             METRICS_LOGGER.logError("Rabbit order book size queue size is higher than limit")
         }
 
-        if (balancesQueueSize > config.me.queueSizeLimit) {
+        if (balancesQueueSize > queueSizeLimit) {
             METRICS_LOGGER.logError("Balances queue size is higher than limit")
         }
 
-        if (ordersQueueSize > config.me.queueSizeLimit) {
+        if (ordersQueueSize > queueSizeLimit) {
             METRICS_LOGGER.logError( "Persistence orders queue size is higher than limit")
         }
     }
