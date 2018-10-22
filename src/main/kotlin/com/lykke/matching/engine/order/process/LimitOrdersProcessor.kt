@@ -304,16 +304,6 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val cancelledOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
         val cancelledTrustedOrdersWithTrades = LinkedList<LimitOrderWithTrades>()
         val cancelledOrdersWalletOperations = LinkedList<WalletOperation>()
-        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
-            val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
-                val cancelledOrder = it.copy
-                cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
-                cancelledOrder
-            })
-            cancelledOrdersWalletOperations.addAll(result.walletOperations)
-            cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
-            cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
-        }
 
         val preProcessUncompletedOrderResult = orderServiceHelper.preProcessUncompletedOrder(matchingResult, assetPair, cancelledOrdersWalletOperations)
         orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
@@ -344,6 +334,17 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         if (isNewMidPriceValid(midPriceAfterMatching, acceptedLowerMidPriceBound, acceptedUpperMidPriceBound)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, matchingResult.timestamp)
             return false
+        }
+
+        if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
+            val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
+                val cancelledOrder = it.copy
+                cancelledOrder.updateStatus(OrderStatus.Cancelled, matchingResult.timestamp)
+                cancelledOrder
+            })
+            cancelledOrdersWalletOperations.addAll(result.walletOperations)
+            cancelledOrdersWithTrades.addAll(result.clientLimitOrderWithTrades)
+            cancelledTrustedOrdersWithTrades.addAll(result.trustedClientLimitOrderWithTrades)
         }
 
         try {

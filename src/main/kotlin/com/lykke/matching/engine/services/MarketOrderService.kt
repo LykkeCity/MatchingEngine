@@ -279,6 +279,10 @@ class MarketOrderService @Autowired constructor(
         return ProtocolMessages.MarketOrder.parseFrom(array)
     }
 
+    private fun isMidPriceValid(newMidPrice: BigDecimal, acceptableLowerMidPrice: BigDecimal, acceptableUpperMidPrice: BigDecimal): Boolean {
+        return newMidPrice in acceptableLowerMidPrice..acceptableUpperMidPrice
+    }
+
     private fun writeErrorNotification(messageWrapper: MessageWrapper,
                                        order: MarketOrder,
                                        now: Date,
