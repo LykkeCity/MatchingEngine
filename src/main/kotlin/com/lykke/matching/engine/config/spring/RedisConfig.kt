@@ -1,3 +1,4 @@
+
 package com.lykke.matching.engine.config.spring
 
 import com.lykke.matching.engine.database.Storage
@@ -102,7 +103,7 @@ open class RedisConfig {
     }
 
     @Bean
-    open fun RedisMessageSequenceNumberDatabaseAccessor(): RedisMessageSequenceNumberDatabaseAccessor? {
+    open fun redisMessageSequenceNumberDatabaseAccessor(): RedisMessageSequenceNumberDatabaseAccessor? {
         if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }

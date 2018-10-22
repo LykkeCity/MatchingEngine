@@ -29,8 +29,4 @@ class TestPersistenceManager(private val walletDatabaseAccessor: WalletDatabaseA
         }
         return true
     }
-
-    override fun balancesQueueSize() = 0
-
-    override fun ordersQueueSize() = 0
 }
