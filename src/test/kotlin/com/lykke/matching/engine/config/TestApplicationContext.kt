@@ -578,7 +578,8 @@ open class TestApplicationContext {
 
     @Bean
     open fun midPriceHolder(readOnlyMidPriceDatabaseAccessor: TestReadOnlyMidPriceDatabaseAccessor,
-                            applicationSettingsCache: ApplicationSettingsCache): MidPriceHolder {
-        return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor)
+                            applicationSettingsCache: ApplicationSettingsCache,
+                            assetsPairsHolder: AssetsPairsHolder): MidPriceHolder {
+        return MidPriceHolder(1000, readOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
     }
 }

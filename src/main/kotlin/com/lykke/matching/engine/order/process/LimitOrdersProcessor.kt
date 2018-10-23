@@ -108,9 +108,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, date)
 
-        if (limitOrderPriceDeviationThreshold != null) {
-            val referenceMidPrice = midPriceHolder.getReferenceMidPrice(date)
+        if (limitOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
             lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * limitOrderPriceDeviationThreshold)
             upperMidPriceBound = referenceMidPrice + (referenceMidPrice * limitOrderPriceDeviationThreshold)
         }

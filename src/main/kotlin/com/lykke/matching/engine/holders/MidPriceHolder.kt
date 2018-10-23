@@ -1,5 +1,6 @@
 package com.lykke.matching.engine.holders
 
+import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.utils.NumberUtils
@@ -7,40 +8,52 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
-import javax.annotation.PostConstruct
 
 @Component
 class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val refreshMidPricePeriod: Long,
-                     private val readOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor) {
+                     readOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor,
+                     assetsPairsHolder: AssetsPairsHolder) {
 
     private val MAX_MID_PRICE_RECALCULATION_COUNT = 1000
 
-    private var midPrices = LinkedList<MidPrice>()
-    private lateinit var referenceMidPrice: BigDecimal
+    private var assetPairIdToMidPrices = HashMap<String, LinkedList<MidPrice>>()
+    private var assetPairIdToReferencePrice = HashMap<String, BigDecimal>()
     private var midPriceRecalculationCount = 0
 
-    @PostConstruct
-    private fun init() {
-        midPrices = LinkedList(readOnlyMidPriceDatabaseAccessor.all())
-        performFullRecalculationOfReferenceMidPrice()
+    init {
+        readOnlyMidPriceDatabaseAccessor
+                .all()
+                .forEach { assetPairId, midPrices -> assetPairIdToMidPrices[assetPairId] = LinkedList(midPrices) }
+
+        assetPairIdToMidPrices.keys.forEach { key ->
+            val assetPair = assetsPairsHolder.getAssetPairAllowNulls(key)
+            if (assetPair != null) performFullRecalculationOfReferenceMidPrice(assetPair)
+        }
     }
 
-    fun getReferenceMidPrice(operationTime: Date): BigDecimal {
-        removeObsoleteMidPrices(getLowerTimeBound(operationTime.time))
+    fun getReferenceMidPrice(assetPair: AssetPair, operationTime: Date): BigDecimal? {
+        removeObsoleteMidPrices(assetPair, getLowerTimeBound(operationTime.time))
 
-        return referenceMidPrice
+        val result = assetPairIdToReferencePrice[assetPair.assetPairId]
+        return if (result != null) {
+            NumberUtils.setScaleRoundUp(result, assetPair.accuracy)
+        } else {
+            null
+        }
     }
 
-    fun addMidPrice(midPrice: BigDecimal, operationTime: Date) {
-        removeObsoleteMidPrices(getLowerTimeBound(operationTime.time))
+    fun addMidPrice(assetPair: AssetPair, midPrice: BigDecimal, operationTime: Date) {
+        removeObsoleteMidPrices(assetPair, getLowerTimeBound(operationTime.time))
+        val midPrices = assetPairIdToMidPrices.getOrPut(assetPair.assetPairId) { LinkedList() }
+
+        recalculateReferenceMidPriceForNewAddedMidPrice(assetPair, midPrices, midPrice)
         midPrices.add(MidPrice(midPrice, operationTime.time))
-
-        referenceMidPrice += NumberUtils.divideWithMaxScale(midPrice, BigDecimal.valueOf(midPrices.size.toLong()))
-        val newMidPriceCoef = NumberUtils.divideWithMaxScale(BigDecimal.valueOf(midPrices.size.toLong()), BigDecimal.valueOf(midPrices.size.toLong() - 1))
-        referenceMidPrice = NumberUtils.divideWithMaxScale(referenceMidPrice, newMidPriceCoef)
     }
 
-    private fun removeObsoleteMidPrices(lowerBoundTimeMillisBound: Long) {
+
+    private fun removeObsoleteMidPrices(assetPair: AssetPair, lowerBoundTimeMillisBound: Long) {
+        val midPrices = assetPairIdToMidPrices.getOrPut(assetPair.assetPairId) { LinkedList() }
+
         val initialSize = midPrices.size
         var removedMidPricesSum = BigDecimal.ZERO
 
@@ -48,43 +61,68 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
             removedMidPricesSum += midPrices.removeFirst().midPrice
         }
 
-        calculateCurrentReferenceMidPrice(removedMidPricesSum, initialSize)
+        recalculateReferenceMidPriceAfterRemoval(removedMidPricesSum, initialSize, midPrices.size, assetPair)
     }
 
-    private fun calculateCurrentReferenceMidPrice(removedMidPricesSum: BigDecimal, midSizesInitialSize: Int) {
-        val removedMidPricesCount = midSizesInitialSize - midPrices.size
+    private fun recalculateReferenceMidPriceForNewAddedMidPrice(assetPair: AssetPair,
+                                                                midPrices: MutableList<MidPrice>,
+                                                                midPrice: BigDecimal) {
+        var prevReferencePrice = assetPairIdToReferencePrice.getOrPut(assetPair.assetPairId) { BigDecimal.ZERO }
+
+        val result = if (prevReferencePrice == BigDecimal.ZERO || midPrices.size == 0) {
+            midPrice
+        } else {
+            prevReferencePrice += NumberUtils.divideWithMaxScale(midPrice, BigDecimal.valueOf(midPrices.size.toLong()))
+            val newMidPriceCoef = NumberUtils.divideWithMaxScale(BigDecimal.valueOf(midPrices.size.toLong() + 1), BigDecimal.valueOf(midPrices.size.toLong()))
+            NumberUtils.divideWithMaxScale(prevReferencePrice, newMidPriceCoef)
+        }
+
+        assetPairIdToReferencePrice[assetPair.assetPairId] = result
+    }
+
+    private fun recalculateReferenceMidPriceAfterRemoval(removedMidPricesSum: BigDecimal,
+                                                         midSizesInitialSize: Int,
+                                                         currentSize: Int,
+                                                         assetPair: AssetPair) {
+        val removedMidPricesCount = midSizesInitialSize - currentSize
 
         //we are using previous mid price if no mid prices were removed or new mid price can not be calculated due to no new data
-        if (removedMidPricesCount == 0 || removedMidPricesCount == midSizesInitialSize) {
+        if (midSizesInitialSize == 0 || removedMidPricesCount == 0 || removedMidPricesCount == midSizesInitialSize) {
             return
         }
 
-        //perform full mid price recalculation if prev mid prices empty or we exceeded max mid price recalculations - to
+        val referencePrice = assetPairIdToReferencePrice.getOrPut(assetPair.assetPairId) { BigDecimal.ZERO }
+
+        //perform full reference mid price recalculation if we exceeded max mid price recalculations count - to
         // prevent accumulation of calculation error
-        if (midSizesInitialSize == 0 || MAX_MID_PRICE_RECALCULATION_COUNT == midPriceRecalculationCount) {
-            performFullRecalculationOfReferenceMidPrice()
+        if (referencePrice == BigDecimal.ZERO || MAX_MID_PRICE_RECALCULATION_COUNT == midPriceRecalculationCount) {
+            performFullRecalculationOfReferenceMidPrice(assetPair)
             return
         }
 
-        val referencePriceWithoutObsolete = referenceMidPrice - NumberUtils.divideWithMaxScale(removedMidPricesSum, BigDecimal.valueOf(midSizesInitialSize.toLong()))
-        val newMidPriceCoef = NumberUtils.divideWithMaxScale(BigDecimal.valueOf(removedMidPricesCount.toLong()), BigDecimal.valueOf(midSizesInitialSize.toLong()))
+        val midPricesInitialSize = BigDecimal.valueOf(midSizesInitialSize.toLong())
+        val referencePriceWithoutObsolete = referencePrice - NumberUtils.divideWithMaxScale(removedMidPricesSum, midPricesInitialSize)
+        val newMidPriceCoef = NumberUtils.divideWithMaxScale(midPricesInitialSize - BigDecimal.valueOf(removedMidPricesCount.toLong()), midPricesInitialSize)
 
-        referenceMidPrice = NumberUtils.divideWithMaxScale(referencePriceWithoutObsolete, newMidPriceCoef)
+        val result = NumberUtils.divideWithMaxScale(referencePriceWithoutObsolete, newMidPriceCoef)
+        assetPairIdToReferencePrice[assetPair.assetPairId] = result
         midPriceRecalculationCount++
     }
 
-    private fun performFullRecalculationOfReferenceMidPrice() {
+    private fun performFullRecalculationOfReferenceMidPrice(assetPair: AssetPair) {
+        val midPrices = assetPairIdToMidPrices.getOrPut(assetPair.assetPairId) { LinkedList() }
+
         midPriceRecalculationCount = 0
         var sum = BigDecimal.ZERO
         val midPricesCount = BigDecimal.valueOf(midPrices.size.toLong())
 
         if (midPricesCount == BigDecimal.ZERO) {
-            referenceMidPrice = BigDecimal.ZERO
             return
         }
 
         midPrices.forEach { midPrice -> sum += midPrice.midPrice }
-        referenceMidPrice = NumberUtils.divideWithMaxScale(sum, midPricesCount)
+        val result = NumberUtils.divideWithMaxScale(sum, midPricesCount)
+        assetPairIdToReferencePrice.put(assetPair.assetPairId, result)
     }
 
     private fun getLowerTimeBound(operationTimeMillis: Long): Long {

@@ -146,7 +146,7 @@ abstract class AbstractPerformanceTest {
 
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,
-                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache, MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor()))
+                trustedClientsLimitOrdersQueue, messageSequenceNumberHolder, notificationSender, applicationSettingsCache, MidPriceHolder(10000, TestReadOnlyMidPriceDatabaseAccessor(), assetsPairsHolder))
 
         genericLimitOrderProcessorFactory = GenericLimitOrderProcessorFactory(genericLimitOrderService,
                 genericStopLimitOrderService,
