@@ -12,9 +12,6 @@ import java.util.HashMap
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import kotlin.Comparator
-import kotlin.Int
-import kotlin.Long
-import kotlin.String
 import kotlin.math.sign
 
 class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
@@ -42,7 +39,7 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
         val assetPairIdToMidPrices = HashMap<String, List<MidPrice>>()
         redisConnection.resource { jedis ->
             jedis.select(dbIndex)
-            val midPriceKeys = jedis.keys(KEY_PREFIX).toList()
+            val midPriceKeys = jedis.keys("$KEY_PREFIX*").toList()
 
             if (CollectionUtils.isEmpty(midPriceKeys)) {
                 return@resource
@@ -67,7 +64,7 @@ class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
 
     override fun removeAll(transaction: Transaction) {
         transaction.select(dbIndex)
-        KeyUtils.removeAllKeysByPattern(transaction, KEY_PREFIX)
+        KeyUtils.removeAllKeysByPattern(transaction, "$KEY_PREFIX*")
     }
 
     private fun getAssetPairId(key: String): String? {
