@@ -1,9 +1,6 @@
 package com.lykke.matching.engine.database.common
 
-import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.Storage
+import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWithoutOrdersPersistenceManager
@@ -23,6 +20,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
                                     private val cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
+                                    private val redisMidPriceDatabaseAccessor: Optional<MidPriceDatabaseAccessor>,
                                     private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor,
                                     private val config: Config) : PersistenceManagerFactory {
 
@@ -43,6 +41,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
                         stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
                         config
                 )
@@ -54,6 +53,7 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                         ordersDatabaseAccessorsHolder.primaryAccessor,
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
                         config)
         }

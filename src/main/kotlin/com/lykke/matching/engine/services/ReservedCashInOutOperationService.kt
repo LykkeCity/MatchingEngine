@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.services
 
-import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.balance.BalanceException
+import com.lykke.matching.engine.daos.WalletOperation
 import com.lykke.matching.engine.holders.AssetsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.messages.MessageStatus
@@ -18,8 +18,7 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.BlockingQueue
 
 @Service
@@ -62,7 +61,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null, null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {

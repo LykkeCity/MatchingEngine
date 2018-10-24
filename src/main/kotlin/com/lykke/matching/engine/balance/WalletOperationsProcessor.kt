@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -14,13 +15,21 @@ import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.ClientBalanceUpdate
-import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.utils.logging.MetricsLogger
 import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
 import java.util.concurrent.BlockingQueue
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
+import kotlin.collections.List
+import kotlin.collections.forEach
+import kotlin.collections.getOrPut
+import kotlin.collections.isNotEmpty
+import kotlin.collections.mapValues
+import kotlin.collections.toList
+import com.lykke.matching.engine.outgoing.messages.v2.events.common.BalanceUpdate as OutgoingBalanceUpdate
 
 class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
                                 private val applicationSettings: ApplicationSettingsCache,
@@ -105,13 +114,15 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     fun persistBalances(processedMessage: ProcessedMessage?,
                         orderBooksData: OrderBooksPersistenceData?,
                         stopOrderBooksData: OrderBooksPersistenceData?,
-                        messageSequenceNumber: Long?): Boolean {
+                        messageSequenceNumber: Long?,
+                        midPricePersistenceData: MidPricePersistenceData?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
         return persistenceManager.persist(PersistenceData(persistenceData(),
                 processedMessage,
                 orderBooksData,
                 stopOrderBooksData,
-                messageSequenceNumber))
+                messageSequenceNumber,
+                midPricePersistenceData))
     }
 
     fun sendNotification(id: String, type: String, messageId: String) {

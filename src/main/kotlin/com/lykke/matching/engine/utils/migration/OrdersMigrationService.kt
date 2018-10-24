@@ -18,8 +18,7 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import java.util.Date
-import java.util.Optional
+import java.util.*
 
 @Component
 @Order(2)
@@ -74,7 +73,9 @@ class OrdersMigrationService(private val config: Config,
                 OrderBooksPersistenceData(RedisPersistenceManager.mapOrdersToOrderBookPersistenceDataList(stopOrders),
                         stopOrders,
                         emptyList()),
+                null,
                 null))
+
         genericLimitOrderService.update()
         genericStopLimitOrderService.update()
         val saveTime = Date().time

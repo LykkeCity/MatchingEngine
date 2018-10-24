@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -73,6 +74,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
     private var buySideOrderBookChanged = false
     private var sellSideOrderBookChanged = false
+
+    private var newMidPrice: BigDecimal?  = null
 
     private val ordersToCancel = ordersToCancel.filter { it.status != OrderStatus.Replaced.name }.toMutableList()
     private val completedOrders = ordersToCancel.filter { it.status == OrderStatus.Replaced.name }.toMutableList()
@@ -160,13 +163,17 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val updated = walletOperationsProcessor.persistBalances(processedMessage,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
-                sequenceNumber)
+                sequenceNumber, if(newMidPrice != null) MidPricePersistenceData(MidPrice(assetPair.assetPairId, newMidPrice!!, date.time)) else null)
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }
         walletOperationsProcessor.apply().sendNotification(operationId, messageType.name, messageId)
 
         matchingEngine.apply()
+
+        if (newMidPrice != null) {
+            midPriceHolder.addMidPrice(assetPair, newMidPrice!!, date)
+        }
 
         genericLimitOrderService.moveOrdersToDone(completedOrders)
         genericLimitOrderService.cancelLimitOrders(ordersToCancel, date)
@@ -278,6 +285,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         order.reservedLimitVolume = limitVolume
         orderBook.addOrder(order)
+        newMidPrice = orderBook.getMidPrice()
         ordersToAdd.add(order)
         addToReport(order.copy())
         processedOrders.add(ProcessedOrder(order, true))
@@ -342,12 +350,14 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val oppositeSideBestPrice = matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO
         val orderSideBestPrice = getOrderSideBestPrice(orderCopy, orderBook)
 
-        val midPriceAfterMatching = getMidPriceAfterMatching(orderSideBestPrice, oppositeSideBestPrice)
+        val newMidPriceAfterMatching = getMidPriceAfterMatching(orderSideBestPrice, oppositeSideBestPrice)
 
-        if (!isNewMidPriceValid(midPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+        if (newMidPriceAfterMatching != null && !isNewMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
             order.updateStatus(OrderStatus.TooHighPriceDeviation, matchingResult.timestamp)
             return false
         }
+
+        newMidPrice = newMidPriceAfterMatching
 
         if (matchingResult.cancelledLimitOrders.isNotEmpty()) {
             val result = genericLimitOrderService.calculateWalletOperationsForCancelledOrders(matchingResult.cancelledLimitOrders.map {
@@ -502,7 +512,11 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         return if(order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice()
     }
 
-    private fun getMidPriceAfterMatching(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal {
+    private fun getMidPriceAfterMatching(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal? {
+        if (orderSideBestPrice == BigDecimal.ZERO || oppositeBestPrice == BigDecimal.ZERO) {
+            return null
+        }
+
         return NumberUtils.divideWithMaxScale((orderSideBestPrice - oppositeBestPrice).abs(), BigDecimal.valueOf(2))
     }
 }

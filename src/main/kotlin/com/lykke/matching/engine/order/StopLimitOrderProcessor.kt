@@ -48,8 +48,6 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             else null
         } else order.getAbsVolume()
 
-        val balance = balancesHolder.getBalance(order.clientId, limitAsset!!.assetId)
-        val reservedBalance = balancesHolder.getReservedBalance(order.clientId, limitAsset.assetId)
         val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
         var cancelVolume = BigDecimal.ZERO
         val ordersToCancel = mutableListOf<LimitOrder>()
@@ -63,7 +61,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
             }
         }
 
-        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset.assetId, cancelVolume), limitAsset.accuracy)
+        val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset!!.assetId, cancelVolume), limitAsset.accuracy)
 
         val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext)
 
@@ -122,7 +120,8 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
                 OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId, order.isBuySide(), newStopOrderBook)),
                         listOf(order),
                         ordersToCancel),
-                sequenceNumber)
+                sequenceNumber,
+                null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
 
@@ -180,7 +179,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage,
                 null,
                 orderBooksPersistenceData,
-                sequenceNumber)
+                sequenceNumber, null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (updated) {

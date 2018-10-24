@@ -10,10 +10,7 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.ArrayList
-import java.util.Date
-import java.util.HashMap
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
@@ -136,6 +133,7 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
                             newStopOrderBook)),
                             emptyList(),
                             listOf(order)),
+                    null,
                     null))
             if (!updated) {
                 LOGGER.error("Unable to save stop order book")

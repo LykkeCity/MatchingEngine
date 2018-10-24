@@ -2,7 +2,7 @@ package com.lykke.matching.engine.holders
 
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.MidPrice
-import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
+import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -11,7 +11,7 @@ import java.util.*
 
 @Component
 class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val refreshMidPricePeriod: Long,
-                     readOnlyMidPriceDatabaseAccessor: ReadOnlyMidPriceDatabaseAccessor,
+                     midPriceDatabaseAccessor: MidPriceDatabaseAccessor,
                      assetsPairsHolder: AssetsPairsHolder) {
 
     private val MAX_MID_PRICE_RECALCULATION_COUNT = 1000
@@ -21,7 +21,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
     private var midPriceRecalculationCount = 0
 
     init {
-        readOnlyMidPriceDatabaseAccessor
+        midPriceDatabaseAccessor
                 .all()
                 .forEach { assetPairId, midPrices -> assetPairIdToMidPrices[assetPairId] = LinkedList(midPrices) }
 
@@ -47,9 +47,14 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         val midPrices = assetPairIdToMidPrices.getOrPut(assetPair.assetPairId) { LinkedList() }
 
         recalculateReferenceMidPriceForNewAddedMidPrice(assetPair, midPrices, midPrice)
-        midPrices.add(MidPrice(midPrice, operationTime.time))
+        midPrices.add(MidPrice(assetPair.assetPairId, midPrice, operationTime.time))
     }
 
+    fun clear() {
+        assetPairIdToMidPrices.clear()
+        assetPairIdToReferencePrice.clear()
+        midPriceRecalculationCount = 0
+    }
 
     private fun removeObsoleteMidPrices(assetPair: AssetPair, lowerBoundTimeMillisBound: Long) {
         val midPrices = assetPairIdToMidPrices.getOrPut(assetPair.assetPairId) { LinkedList() }

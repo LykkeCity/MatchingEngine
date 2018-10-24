@@ -1,6 +1,6 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
+import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
@@ -110,12 +110,12 @@ open class RedisConfig {
     }
 
     @Bean
-    open fun redisReadOnlyMidPriceDatabaseAccessor(): ReadOnlyMidPriceDatabaseAccessor? {
+    open fun redisMidPriceDatabaseAccessor(): MidPriceDatabaseAccessor? {
         if (config.me.storage != Storage.Redis && config.me.storage != Storage.RedisWithoutOrders) {
             return null
         }
 
-        return RedisReadOnlyMidPriceDatabaseAccessor(initialLoadingRedisConnection()!!, config.me.redis.midPriceDatabase)
+        return RedisMidPriceDatabaseAccessor(config.me.redis.midPriceDatabase, config.me.referenceMidPricePeriod, initialLoadingRedisConnection()!!)
     }
     //</editor-fold>
 

@@ -1,28 +1,36 @@
 package com.lykke.matching.engine.order.cancel
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
+import com.lykke.matching.engine.services.AssetOrderBook
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import org.apache.log4j.Logger
+import org.springframework.util.CollectionUtils
 import java.util.Date
 import java.util.concurrent.BlockingQueue
+import kotlin.collections.ArrayList
+import kotlin.collections.Collection
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.forEach
+import kotlin.collections.isNotEmpty
+import kotlin.collections.mutableListOf
 
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsHolder: AssetsHolder,
-                                  assetsPairsHolder: AssetsPairsHolder,
+                                  private val assetsPairsHolder: AssetsPairsHolder,
                                   private val balancesHolder: BalancesHolder,
                                   orderBookQueue: BlockingQueue<OrderBook>,
                                   rabbitOrderBookQueue: BlockingQueue<OrderBook>,
@@ -34,7 +42,9 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
                                   private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                   private val messageSender: MessageSender,
                                   private val date: Date,
-                                  LOGGER: Logger) {
+                                  private val midPriceHolder: MidPriceHolder,
+                                  LOGGER: Logger,
+                                  private val cancelAll: Boolean = false) {
 
     private val limitOrdersCanceller = LimitOrdersCanceller(dictionariesDatabaseAccessor,
             assetsHolder,
@@ -116,12 +126,23 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             sequenceNumber = clientsSequenceNumber
         }
 
+        val midPricePersistenceData = getMidPricePersistenceData(limitOrdersCancelResult.assetOrderBooks)
         val updated = walletProcessor.persistBalances(processedMessage,
                 limitOrdersCanceller.getPersistenceData(),
                 stopLimitOrdersCanceller.getPersistenceData(),
-                sequenceNumber)
+                sequenceNumber, midPricePersistenceData)
+
         if (!updated) {
             return false
+        }
+
+        if(!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
+            midPricePersistenceData.midPrices!!.forEach {
+                val assetPair = assetsPairsHolder.getAssetPairAllowNulls(it.assetPairId)
+                if (assetPair != null) {
+                    midPriceHolder.addMidPrice(assetPair, it.midPrice, date)
+                }
+            }
         }
 
         walletProcessor.apply().sendNotification(operationId, messageType.name, messageId)
@@ -152,5 +173,21 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         limitOrdersCanceller.checkAndProcessStopOrders(messageId)
 
         return true
+    }
+
+    private fun getMidPricePersistenceData(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): MidPricePersistenceData {
+        if (cancelAll) {
+            return MidPricePersistenceData(midPrice = null, removeAll = true)
+        }
+
+        val result = ArrayList<MidPrice>()
+        assetPairIdToAssetOrderBook.forEach { assetPairId, orderBook ->
+            val midPrice = orderBook.getMidPrice()
+            if (midPrice != null) {
+                result.add(MidPrice(assetPairId, midPrice, date.time))
+            }
+        }
+
+        return MidPricePersistenceData(result)
     }
 }

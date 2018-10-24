@@ -1,9 +1,11 @@
 package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.daos.context.LimitOrderCancelOperationContext
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
@@ -79,7 +81,7 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         return genericLimitOrderService.getOrder(orderId) ?: genericStopLimitOrderService.getOrder(orderId)
     }
 
-    private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper, context: LimitOrderCancelOperationContext,  now: Date) {
+    private fun processOldLimitOrderCancelMessage(messageWrapper: MessageWrapper, context: LimitOrderCancelOperationContext, now: Date) {
         LOGGER.debug("Got old limit  order messageId: ${context.messageId}  (id: ${context.limitOrderIds}) cancel request id: ${context.uid}")
 
         val limitOrderId = context.limitOrderIds.first().toString()
@@ -87,6 +89,15 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
         if (order != null) {
             val newOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId).copy()
             newOrderBook.removeOrder(order)
+
+            val midPrice = newOrderBook.getMidPrice()
+
+            val midPricePersistenceData = if (midPrice != null) {
+                MidPricePersistenceData(MidPrice(order.assetPairId, midPrice, now.time))
+            } else {
+                null
+            }
+
             val updated = persistenceManager.persist(PersistenceData(null,
                     messageWrapper.processedMessage,
                     OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId,
@@ -95,7 +106,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                             emptyList(),
                             listOf(order)),
                     null,
-                    null))
+                    null,
+                    midPricePersistenceData))
             if (updated) {
                 genericLimitOrderService.cancelLimitOrder(Date(), limitOrderId, true)
             }

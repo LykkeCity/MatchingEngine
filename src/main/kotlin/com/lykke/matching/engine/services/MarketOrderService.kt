@@ -189,10 +189,12 @@ class MarketOrderService @Autowired constructor(
                     val sequenceNumber = messageSequenceNumberHolder.getNewValue()
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
+
+                    //todo implement mid price protection for market order
                     val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage,
                             OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                             null,
-                            trustedClientsSequenceNumber ?: sequenceNumber)
+                            trustedClientsSequenceNumber ?: sequenceNumber, null)
                     messageWrapper.triedToPersist = true
                     messageWrapper.persisted = updated
                     if (!updated) {

@@ -91,5 +91,4 @@ class RedisWalletDatabaseAccessor(private val redisConnection: RedisConnection, 
     private fun key(balance: AssetBalance): String {
         return "$KEY_PREFIX_BALANCE${balance.clientId}$KEY_SEPARATOR${balance.asset}"
     }
-
 }

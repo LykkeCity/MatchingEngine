@@ -49,7 +49,7 @@ class MidPriceHolderTest {
     @Test
     fun initialLoadingTest() {
         //given
-        val midPrices = getRandomMidPrices(100)
+        val midPrices = getRandomMidPrices(100, "EURUSD")
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
@@ -90,14 +90,14 @@ class MidPriceHolderTest {
     @Test
     fun addNotFirstMidPriceTest() {
         //given
-        val midPrices = ArrayList(getRandomMidPrices(3))
+        val midPrices = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
         val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
         val date = Date()
 
-        val midPrice = MidPrice(getRandomBigDecimal(), date.time)
+        val midPrice = MidPrice("EURUSD", getRandomBigDecimal(), date.time)
         midPrices.add(midPrice)
 
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
@@ -111,7 +111,7 @@ class MidPriceHolderTest {
     @Test
     fun accumulationOfCalculationErrorTest() {
         //given
-        val midPrices = ArrayList(getRandomMidPrices(3))
+        val midPrices = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
@@ -121,7 +121,7 @@ class MidPriceHolderTest {
         IntRange(0, 900).forEach {
             val date = Date()
             val midPrice = getRandomBigDecimal()
-            midPrices.add(MidPrice(midPrice, date.time))
+            midPrices.add(MidPrice("EURUSD", midPrice, date.time))
             midPriceHolder.addMidPrice(assetPair, midPrice, date)
         }
 
@@ -131,7 +131,7 @@ class MidPriceHolderTest {
     @Test
     fun fullRecalculationTest() {
         //given
-        val midPrices = ArrayList(getRandomMidPrices(3))
+        val midPrices = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPrices)
 
         //when
@@ -141,7 +141,7 @@ class MidPriceHolderTest {
         IntRange(0, 1100).forEach {
             val date = Date()
             val midPrice = getRandomBigDecimal()
-            midPrices.add(MidPrice(midPrice, date.time))
+            midPrices.add(MidPrice("EURUSD", midPrice, date.time))
             midPriceHolder.addMidPrice(assetPair, midPrice, date)
         }
 
@@ -152,13 +152,13 @@ class MidPriceHolderTest {
     fun notAllMidPricesExpiredTest() {
         //given
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        val midPricesToExpire = ArrayList(getRandomMidPrices(3))
+        val midPricesToExpire = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesToExpire)
         val midPriceHolder = MidPriceHolder(100, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
 
         //when
         Thread.sleep(70)
-        val notExpiredMidPrices = ArrayList(getRandomMidPrices(4))
+        val notExpiredMidPrices = ArrayList(getRandomMidPrices(4, "EURUSD"))
         notExpiredMidPrices.forEach { midPriceHolder.addMidPrice(assetPair, it.midPrice, Date()) }
 
         Thread.sleep(50)
@@ -173,13 +173,13 @@ class MidPriceHolderTest {
     fun allMidPricesExpiredAddNewMidPricesTest() {
         //given
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        val midPricesToExpire = ArrayList(getRandomMidPrices(3))
+        val midPricesToExpire = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesToExpire)
         val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
 
         //when
         Thread.sleep(100)
-        val notExpiredMidPrices = ArrayList(getRandomMidPrices(4))
+        val notExpiredMidPrices = ArrayList(getRandomMidPrices(4, "EURUSD"))
         notExpiredMidPrices.forEach { midPriceHolder.addMidPrice(assetPair, it.midPrice, Date()) }
 
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date())
@@ -193,7 +193,7 @@ class MidPriceHolderTest {
     fun allMidPricesExpiredUsePreviousReferenceMidPriceTest() {
         //given
         val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
-        val midPricesToExpire = ArrayList(getRandomMidPrices(3))
+        val midPricesToExpire = ArrayList(getRandomMidPrices(3, "EURUSD"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesToExpire)
         val midPriceHolder = MidPriceHolder(50, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
 
@@ -209,8 +209,8 @@ class MidPriceHolderTest {
     @Test
     fun testMultipleAssetPairs() {
         //given
-        val midPricesEURUSD = ArrayList(getRandomMidPrices(3))
-        val midPricesEURCHF = ArrayList(getRandomMidPrices(3))
+        val midPricesEURUSD = ArrayList(getRandomMidPrices(3, "EURUSD"))
+        val midPricesEURCHF = ArrayList(getRandomMidPrices(3, "EURCHF"))
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURUSD", midPricesEURUSD)
         testReadOnlyMidPriceDatabaseAccessor.addAll("EURCHF", midPricesEURCHF)
         val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
@@ -226,10 +226,28 @@ class MidPriceHolderTest {
         assertEquals(getExpectedReferencePrice(midPricesEURCHF, assetPairEURUSD.accuracy), referenceMidPriceEURCHF)
     }
 
-    private fun getRandomMidPrices(size: Int): List<MidPrice> {
+    @Test
+    fun clearTest() {
+        //given
+        val assetPair = assetsPairsHolder.getAssetPair("EURUSD")
+        val midPrices = ArrayList(getRandomMidPrices(3, "EURUSD"))
+        val midPriceHolder = MidPriceHolder(1000, testReadOnlyMidPriceDatabaseAccessor, assetsPairsHolder)
+
+        //when
+        midPriceHolder.clear()
+        val clearedReferenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date())
+        midPriceHolder.addMidPrice(assetPair, BigDecimal.TEN, Date())
+        val newReferenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, Date())
+
+        //then
+        assertEquals(null, clearedReferenceMidPrice)
+        assertEquals(BigDecimal.TEN, newReferenceMidPrice)
+    }
+
+    private fun getRandomMidPrices(size: Int, assetId: String): List<MidPrice> {
         val result = ArrayList<MidPrice>()
         val start = Date().time
-        IntRange(0, size - 1).forEach { result.add(MidPrice(getRandomBigDecimal(), start - it * 10)) }
+        IntRange(0, size - 1).forEach { result.add(MidPrice(assetId, getRandomBigDecimal(), start - it * 10)) }
         return result
     }
 

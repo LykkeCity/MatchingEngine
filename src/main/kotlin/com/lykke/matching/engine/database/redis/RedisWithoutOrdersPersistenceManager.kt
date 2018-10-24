@@ -6,12 +6,10 @@ import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.StopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.WalletDatabaseAccessor
+import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.*
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
@@ -32,6 +30,7 @@ class RedisWithoutOrdersPersistenceManager(
         private val orderBookDatabaseAccessor: OrderBookDatabaseAccessor,
         private val stopOrderBookDatabaseAccessor: StopOrderBookDatabaseAccessor,
         private val redisMessageSequenceNumberDatabaseAccessor: RedisMessageSequenceNumberDatabaseAccessor,
+        private val redisMidPriceDatabaseAccessor: RedisMidPriceDatabaseAccessor,
         private val redisConnection: RedisConnection,
         private val config: Config) : PersistenceManager {
 
@@ -84,6 +83,7 @@ class RedisWithoutOrdersPersistenceManager(
             }
 
             persistMessageSequenceNumber(transaction, data.messageSequenceNumber)
+            persistMidPrices(transaction, data.midPricePersistenceData)
 
             val persistTime = System.nanoTime()
 
@@ -151,6 +151,26 @@ class RedisWithoutOrdersPersistenceManager(
         data.orderBooks.forEach {
             stopOrderBookDatabaseAccessor.updateStopOrderBook(it.assetPairId, it.isBuy, it.orders)
         }
+    }
+
+    private fun persistMidPrices(transaction: Transaction, midPricePersistenceData: MidPricePersistenceData?) {
+        LOGGER.trace("Start to persist mid price")
+
+        if (midPricePersistenceData == null) {
+            LOGGER.trace("Mid price is empty - skipping")
+            return
+        }
+
+        if (midPricePersistenceData.removeAll) {
+            LOGGER.info("Removing all mid prices")
+            redisMidPriceDatabaseAccessor.removeAll(transaction)
+            return
+        }
+
+        if (midPricePersistenceData.midPrices != null) {
+            redisMidPriceDatabaseAccessor.save(transaction, midPricePersistenceData.midPrices)
+        }
+
     }
 
     private fun startSecondaryBalancesUpdater() {

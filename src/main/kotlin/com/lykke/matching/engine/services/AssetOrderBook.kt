@@ -39,6 +39,7 @@ class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: BigDecimal.ZERO
     fun getBidPrice() = bidOrderBook.peek()?.price ?: BigDecimal.ZERO
+    fun getMidPrice() = if(getAskPrice() != BigDecimal.ZERO && getBidPrice() != BigDecimal.ZERO) (getAskPrice() - getBidPrice()).abs() else null
 
     fun leadToNegativeSpread(order: LimitOrder): Boolean {
         val book = getOrderBook(!order.isBuySide())
