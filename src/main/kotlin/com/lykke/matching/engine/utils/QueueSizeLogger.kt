@@ -23,7 +23,7 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
         val LOG_THREAD_NAME = "QueueSizeLogger"
     }
 
-    @Scheduled(fixedRateString = "#{Config.me.queueSizeLoggerInterval}",  initialDelayString = "#{Config.me.queueSizeLoggerInterval}")
+    @Scheduled(fixedRateString = "#{Config.me.queueConfig.queueSizeLoggerInterval}",  initialDelayString = "#{Config.me.queueConfig.queueSizeLoggerInterval}")
     private fun log() {
         Thread.currentThread().name = LOG_THREAD_NAME
         val queueNameToQueueSize = getQueueNameToQueueSize(queues)
@@ -45,7 +45,7 @@ class QueueSizeLogger @Autowired constructor(private val queues: Map<String, Blo
     private fun checkQueueSizeLimits(nameToQueueSize: Map<String, Int>) {
         nameToQueueSize
                 .forEach { entry ->
-                    if (entry.value > config.me.queueSizeLimit) {
+                    if (entry.value > config.me.queueConfig.queueSizeLimit) {
                         val message = ENTRY_SIZE_LIMIT_FORMAT.format(entry.key)
                         METRICS_LOGGER.logError(message)
                         LOGGER.warn(message)

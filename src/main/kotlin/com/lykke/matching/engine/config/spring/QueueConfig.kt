@@ -81,32 +81,38 @@ open class QueueConfig {
 
     //<editor-fold desc="Input queues">
     @Bean
+    @InputQueue
     open fun limitOrderInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
     @Bean
-    open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
-        return LinkedBlockingQueue<MessageWrapper>()
-    }
-
-    @Bean
-    open fun limitOrderCancelInputQueue(): BlockingQueue<MessageWrapper>{
-        return LinkedBlockingQueue<MessageWrapper>()
-    }
-
-    @Bean
-    open fun limitOrderMassCancelInputQueue(): BlockingQueue<MessageWrapper>{
-        return LinkedBlockingQueue<MessageWrapper>()
-    }
-
-    @Bean
+    @InputQueue
     open fun cashInOutInputQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
     @Bean
+    @InputQueue
     open fun cashTransferInputQueue(): BlockingQueue<MessageWrapper> {
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    @InputQueue
+    open fun limitOrderCancelInputQueue(): BlockingQueue<MessageWrapper>{
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    @InputQueue
+    open fun limitOrderMassCancelInputQueue(): BlockingQueue<MessageWrapper>{
+        return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    @Bean
+    @InputQueue
+    open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
     }
     //</editor-fold>
