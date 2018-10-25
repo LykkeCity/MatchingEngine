@@ -347,9 +347,11 @@ open class TestApplicationContext {
                                 feeProcessor: FeeProcessor,
                                 messageSequenceNumberHolder: MessageSequenceNumberHolder,
                                 messageSender: MessageSender,
-                                applicationSettingsCache: ApplicationSettingsCache): MarketOrderService {
+                                applicationSettingsCache: ApplicationSettingsCache,
+                                midPriceHolder: MidPriceHolder): MarketOrderService {
         return MarketOrderService(genericLimitOrderService, assetsHolder, assetsPairsHolder, balancesHolder, clientLimitOrdersQueue, trustedClientsLimitOrdersQueue,
-                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator, feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, messageSender)
+                lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue, genericLimitOrderProcessorFactory, marketOrderValidator, feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, messageSender,
+                midPriceHolder)
     }
 
     @Bean

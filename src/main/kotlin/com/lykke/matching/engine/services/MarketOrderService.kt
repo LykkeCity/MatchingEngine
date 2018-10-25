@@ -10,10 +10,7 @@ import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceDat
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.fee.listOfFee
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
-import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
+import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.matching.MatchingEngine
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
@@ -55,9 +52,10 @@ class MarketOrderService @Autowired constructor(
         genericLimitOrderProcessorFactory: GenericLimitOrderProcessorFactory? = null,
         private val marketOrderValidator: MarketOrderValidator,
         feeProcessor: FeeProcessor,
-        private val settings: ApplicationSettingsCache,
+        private val applicationSettingsCache: ApplicationSettingsCache,
         private val messageSequenceNumberHolder: MessageSequenceNumberHolder,
-        private val messageSender: MessageSender): AbstractService {
+        private val messageSender: MessageSender,
+        private val midPriceHolder: MidPriceHolder) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(MarketOrderService::class.java.name)
         private val STATS_LOGGER = Logger.getLogger("${MarketOrderService::class.java.name}.stats")
@@ -108,10 +106,25 @@ class MarketOrderService @Autowired constructor(
         }
 
         val assetPair = getAssetPair(order)
+        val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
+        val limitOrderPriceDeviationThreshold = applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId)
+
+        var lowerMidPriceBound: BigDecimal? = null
+        var upperMidPriceBound: BigDecimal? = null
+        val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now)
+
+        if (limitOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * limitOrderPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * limitOrderPriceDeviationThreshold)
+        }
 
         val matchingResult = matchingEngine.initTransaction().match(order,
                 getOrderBook(order),
-                messageWrapper.messageId!!)
+                messageWrapper.messageId!!,
+                orderBook.getOppositeBestPrice(order.isBuySide()),
+                lowerMidPriceBound,
+                upperMidPriceBound
+        )
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             ReservedVolumeGreaterThanBalance -> {
@@ -247,7 +260,6 @@ class MarketOrderService @Autowired constructor(
                         messageSender.sendTrustedClientsMessage(trustedClientsOutgoingMessage)
                     }
 
-                    val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
                     val newOrderBook = OrderBook(order.assetPairId, !order.isBuySide(), order.matchedAt!!, orderBook.getCopyOfOrderBook(!order.isBuySide()))
                     genericLimitOrderService.putTradeInfo(TradeInfo(order.assetPairId, !order.isBuySide(), if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice(), now))
                     orderBookQueue.put(newOrderBook)

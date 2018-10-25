@@ -179,7 +179,7 @@ abstract class AbstractPerformanceTest {
                 assetsPairsHolder,
                 balancesHolder,
                 clientLimitOrdersQueue, trustedClientsLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue, rabbitSwapQueue,
-                genericLimitOrderProcessorFactory, marketOrderValidator,  feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, notificationSender)
+                genericLimitOrderProcessorFactory, marketOrderValidator,  feeProcessor, applicationSettingsCache, messageSequenceNumberHolder, notificationSender, midPriceHolder)
 
     }
 }

@@ -244,6 +244,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         if (orderBook.leadToNegativeSpread(order)) {
             val matchingResult = matchingEngine.match(order, orderBook.getOrderBook(!order.isBuySide()),
                     messageId,
+                    orderBook.getOppositeBestPrice(order.isBuySide()),
+                    lowerAcceptableMidPrice,
+                    upperAcceptableMidPrice,
                     availableBalance)
             val orderCopy = matchingResult.order as LimitOrder
             val orderStatus = orderCopy.status
@@ -260,6 +263,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
+                OrderStatus.TooHighPriceDeviation,
                 OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
