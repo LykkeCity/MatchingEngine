@@ -2,6 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.services.utils.AbstractAssetOrderBook
+import com.lykke.matching.engine.utils.NumberUtils
 import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
@@ -39,7 +40,12 @@ class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
 
     fun getAskPrice() = askOrderBook.peek()?.price ?: BigDecimal.ZERO
     fun getBidPrice() = bidOrderBook.peek()?.price ?: BigDecimal.ZERO
-    fun getMidPrice() = if(getAskPrice() != BigDecimal.ZERO && getBidPrice() != BigDecimal.ZERO) (getAskPrice() - getBidPrice()).abs() else null
+    fun getMidPrice(): BigDecimal? {
+        return if (getAskPrice() != BigDecimal.ZERO && getBidPrice() != BigDecimal.ZERO) {
+            NumberUtils.divideWithMaxScale(getAskPrice() + getBidPrice(), BigDecimal.valueOf(2))
+        } else
+            null
+    }
 
     fun leadToNegativeSpread(order: LimitOrder): Boolean {
         val book = getOrderBook(!order.isBuySide())

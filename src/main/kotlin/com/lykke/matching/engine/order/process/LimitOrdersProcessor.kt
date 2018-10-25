@@ -75,7 +75,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     private var buySideOrderBookChanged = false
     private var sellSideOrderBookChanged = false
 
-    private var newMidPrice: BigDecimal?  = null
+    private var newMidPrice: BigDecimal? = null
 
     private val ordersToCancel = ordersToCancel.filter { it.status != OrderStatus.Replaced.name }.toMutableList()
     private val completedOrders = ordersToCancel.filter { it.status == OrderStatus.Replaced.name }.toMutableList()
@@ -163,7 +163,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val updated = walletOperationsProcessor.persistBalances(processedMessage,
                 OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                 null,
-                sequenceNumber, if(newMidPrice != null) MidPricePersistenceData(MidPrice(assetPair.assetPairId, newMidPrice!!, date.time)) else null)
+                sequenceNumber, if (newMidPrice != null) MidPricePersistenceData(MidPrice(assetPair.assetPairId, newMidPrice!!, date.time)) else null)
         if (!updated) {
             return OrderProcessResult(false, emptyList())
         }
@@ -274,12 +274,19 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                     limitAsset,
                                     lowerAcceptableMidPrice,
                                     upperAcceptableMidPrice)) return
-                 }
+                }
                 else -> {
                     LOGGER.error("Not handled order status: ${matchingResult.order.status}")
                 }
             }
             LOGGER.info("$orderInfo matched")
+            return
+        }
+
+        val orderSideBestPrice = getOrderSideBestPrice(order, orderBook)
+        val oppositeBestPrice = if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice()
+
+        if (!isMidPriceValid(order, date, getMidPrice(orderSideBestPrice, oppositeBestPrice), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
             return
         }
 
@@ -350,10 +357,9 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val oppositeSideBestPrice = matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO
         val orderSideBestPrice = getOrderSideBestPrice(orderCopy, orderBook)
 
-        val newMidPriceAfterMatching = getMidPriceAfterMatching(orderSideBestPrice, oppositeSideBestPrice)
+        val newMidPriceAfterMatching = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
 
-        if (newMidPriceAfterMatching != null && !isNewMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
-            order.updateStatus(OrderStatus.TooHighPriceDeviation, matchingResult.timestamp)
+        if (!isMidPriceValid(order, matchingResult.timestamp, newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
             return false
         }
 
@@ -384,7 +390,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
             addToReportIfNotTrusted(order)
             processedOrders.add(ProcessedOrder(order, false, message))
             return false
-    }
+        }
 
         matchingResult.apply()
         completedOrders.addAll(matchingResult.completedLimitOrders.map { it.origin!! })
@@ -458,6 +464,24 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         return true
     }
 
+    private fun isMidPriceValid(order: LimitOrder,
+                                timestamp: Date,
+                                newMidPriceAfterMatching: BigDecimal?,
+                                lowerAcceptableMidPrice: BigDecimal?,
+                                upperAcceptableMidPrice: BigDecimal?): Boolean {
+        if (newMidPriceAfterMatching == null ||
+                lowerAcceptableMidPrice == null ||
+                upperAcceptableMidPrice == null ||
+                newMidPriceAfterMatching in lowerAcceptableMidPrice..upperAcceptableMidPrice) {
+            return true
+        }
+
+        order.updateStatus(OrderStatus.TooHighPriceDeviation, timestamp)
+        addToReportIfNotTrusted(order)
+        processedOrders.add(ProcessedOrder(order, false))
+        return false
+    }
+
     private fun validateLimitOrder(isTrustedClient: Boolean,
                                    order: LimitOrder,
                                    orderBook: AssetOrderBook,
@@ -492,31 +516,23 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         }
     }
 
-    private fun isNewMidPriceValid(midPrice: BigDecimal, lowerAcceptableMidPrice: BigDecimal?, upperAcceptableMidPrice: BigDecimal?): Boolean {
-        if (lowerAcceptableMidPrice == null || upperAcceptableMidPrice == null) {
-            return true
-        }
-
-        return midPrice in lowerAcceptableMidPrice..upperAcceptableMidPrice
-    }
-
     private fun getOrderSideBestPrice(order: LimitOrder, orderBook: AssetOrderBook): BigDecimal {
-        if(OrderStatus.Processing.name == order.status || OrderStatus.InOrderBook.name == order.status) {
+        if (OrderStatus.Processing.name == order.status || OrderStatus.InOrderBook.name == order.status) {
             if (order.isBuySide()) {
-                return  if(order.price > orderBook.getBidPrice()) order.price else orderBook.getBidPrice()
+                return if (order.price > orderBook.getBidPrice()) order.price else orderBook.getBidPrice()
             }
 
-            return if(order.price < orderBook.getAskPrice()) order.price else orderBook.getAskPrice()
+            return if (order.price < orderBook.getAskPrice()) order.price else orderBook.getAskPrice()
         }
 
-        return if(order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice()
+        return if (order.isBuySide()) orderBook.getBidPrice() else orderBook.getAskPrice()
     }
 
-    private fun getMidPriceAfterMatching(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal? {
+    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeBestPrice: BigDecimal): BigDecimal? {
         if (orderSideBestPrice == BigDecimal.ZERO || oppositeBestPrice == BigDecimal.ZERO) {
             return null
         }
 
-        return NumberUtils.divideWithMaxScale((orderSideBestPrice - oppositeBestPrice).abs(), BigDecimal.valueOf(2))
+        return NumberUtils.divideWithMaxScale((orderSideBestPrice + oppositeBestPrice), BigDecimal.valueOf(2))
     }
 }
