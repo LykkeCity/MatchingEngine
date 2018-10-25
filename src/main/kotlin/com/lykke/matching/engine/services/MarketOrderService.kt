@@ -121,7 +121,6 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.initTransaction().match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                orderBook.getOppositeBestPrice(order.isBuySide()),
                 lowerMidPriceBound,
                 upperMidPriceBound
         )

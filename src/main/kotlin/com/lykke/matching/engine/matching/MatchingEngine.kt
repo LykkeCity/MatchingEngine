@@ -71,7 +71,6 @@ class MatchingEngine(private val LOGGER: Logger,
     fun match(originOrder: Order,
               orderBook: PriorityBlockingQueue<LimitOrder>,
               messageId: String,
-              oppositeBestPrice: BigDecimal? = null,
               lowerMidPriceBound: BigDecimal? = null,
               upperMidPriceBound: BigDecimal? = null,
               balance: BigDecimal? = null): MatchingResult {
@@ -130,7 +129,6 @@ class MatchingEngine(private val LOGGER: Logger,
                 val volume = if (marketRemainingVolume > limitRemainingVolume) limitRemainingVolume else {
                     isFullyMatched = true; marketRemainingVolume
                 }
-
 
                 var marketRoundedVolume = NumberUtils.setScale(if (isBuy) volume else -volume, assetsHolder.getAsset(assetPair.baseAssetId).accuracy, !isBuy)
                 var oppositeRoundedVolume = NumberUtils.setScale(if (isBuy) -limitOrder.price * volume else limitOrder.price * volume, assetsHolder.getAsset(assetPair.quotingAssetId).accuracy, isBuy)
@@ -197,6 +195,14 @@ class MatchingEngine(private val LOGGER: Logger,
                     LOGGER.info("Added order ($limitOrderInfo) to cancelled limit orders: ${e.message}")
                     cancelledLimitOrders.add(limitOrderCopyWrapper)
                     continue
+                }
+
+                val midPrice = getMidPrice(skipLimitOrders, bestAsk, bestBid, isBuy)
+
+                if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPrice)) {
+                    LOGGER.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPrice")
+                    order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
+                    return MatchingResult(orderWrapper, now, cancelledLimitOrders)
                 }
 
                 val takerFees = try {
@@ -378,13 +384,7 @@ class MatchingEngine(private val LOGGER: Logger,
             return MatchingResult(orderWrapper, now, cancelledLimitOrders)
         }
 
-        val midPriceAfterMatching = getMidPrice(skipLimitOrders, workingOrderBook.peek()?.price, oppositeBestPrice)
 
-        if (!checkMidPrice(lowerMidPriceBound, upperMidPriceBound, midPriceAfterMatching)) {
-            LOGGER.info("Invalid mid price order(${order.externalId}), lowerMidPriceBound=$lowerMidPriceBound, upperMidPriceBound=$upperMidPriceBound, midPrice=$midPriceAfterMatching")
-            order.updateStatus(OrderStatus.TooHighPriceDeviation, now)
-            return MatchingResult(orderWrapper, now, cancelledLimitOrders)
-        }
 
         if (order.takePrice() != null && remainingVolume > BigDecimal.ZERO) {
             val newRemainingVolume = if (order.isBuySide() || NumberUtils.equalsIgnoreScale(remainingVolume, BigDecimal.ZERO)) remainingVolume else -remainingVolume
@@ -483,24 +483,25 @@ class MatchingEngine(private val LOGGER: Logger,
         return midPrice in lowerMidPriceBound..upperMidPriceBound
     }
 
-    private fun getMidPrice(skipLimitOrders: List<LimitOrder>, bestPrice: BigDecimal?, oppositeBestPrice: BigDecimal?): BigDecimal? {
-        if (oppositeBestPrice == null
-                || oppositeBestPrice == BigDecimal.ZERO
+    private fun getMidPrice(skipLimitOrders: List<LimitOrder>, bestAsk: BigDecimal?, bestBid: BigDecimal?, isBuy: Boolean): BigDecimal? {
+        val orderSideBestPrice = if (isBuy) bestBid else bestAsk
+        val bestOppositePrice = if (isBuy) bestAsk else bestBid
+
+        if (orderSideBestPrice == null
+                || orderSideBestPrice == BigDecimal.ZERO
                 || (skipLimitOrders.isEmpty()
-                && (bestPrice == null ||  bestPrice == BigDecimal.ZERO))) {
+                        && (bestOppositePrice == null || bestOppositePrice == BigDecimal.ZERO))) {
             return null
         }
 
 
-        val resultBestPrice = if (!skipLimitOrders.isEmpty()) {
+        val resultBestOppositePrice = if (!skipLimitOrders.isEmpty()) {
             skipLimitOrders.first().price
         } else {
-            bestPrice
+            bestOppositePrice
         }
 
-
-
-        return NumberUtils.divideWithMaxScale(resultBestPrice!! + oppositeBestPrice, BigDecimal.valueOf(2))
+        return NumberUtils.divideWithMaxScale(resultBestOppositePrice!! + orderSideBestPrice, BigDecimal.valueOf(2))
     }
 
 }
