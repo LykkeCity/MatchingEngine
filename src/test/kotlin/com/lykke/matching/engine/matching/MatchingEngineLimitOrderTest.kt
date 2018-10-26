@@ -623,7 +623,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     }
 
     @Test
-    fun testMatchingSellOrderPriceDeviationWithSkipOrders() {
+    fun testMatchingBuyOrderPriceDeviationWithSkipOrders() {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.7, volume = -1.0))
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.65, volume = -1.0))
@@ -636,5 +636,20 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
         val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.7, volume = 5.0)
         val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", false), "test", BigDecimal("1.53"), BigDecimal("1.57"), BigDecimal.valueOf(100))
         assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null, remainingVolume = BigDecimal.valueOf(5.0))
+    }
+
+    @Test
+    fun testMatchingSellOrderPriceDeviationWithSkipOrders() {
+        testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.7, volume = -1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.6, volume = -1.0))
+
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.3, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(clientId = "Client2", price = 1.3, volume = 1.0))
+        testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.5, volume = 1.0))
+
+        val limitOrder = buildLimitOrder(clientId = "Client2", price = 1.2, volume = -100.0)
+        val matchingResult = matchingEngine.match(limitOrder, getOrderBook("EURUSD", true), "test", BigDecimal("1.53"), BigDecimal("1.57"))
+        assertLimitOrderMatchingResult(matchingResult, status = OrderStatus.TooHighPriceDeviation, marketBalance = null, remainingVolume = BigDecimal.valueOf(-100.0))
     }
 }
