@@ -225,8 +225,12 @@ class MarketOrderService @Autowired constructor(
                         writeResponse(messageWrapper, order, MessageStatusUtils.toMessageStatus(order.status), message)
                         return
                     }
-                    walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
 
+                    if (newMidPrice != null) {
+                        midPriceHolder.addMidPrice(assetPair, newMidPrice, matchingResult.timestamp)
+                    }
+
+                    walletOperationsProcessor.apply().sendNotification(order.externalId, MessageType.MARKET_ORDER.name, messageWrapper.messageId!!)
 
                     matchingEngine.apply()
                     genericLimitOrderService.moveOrdersToDone(matchingResult.completedLimitOrders.map { it.origin!! })
