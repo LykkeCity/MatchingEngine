@@ -6,7 +6,6 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.UUID
 
 @Component
 class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcessor,
@@ -56,11 +55,8 @@ class StopOrderBookProcessor(private val limitOrderProcessor: LimitOrderProcesso
         }
         val assetPair = executionContext.assetPairsById[order.assetPairId]!!
         val limitAssetId = if (order.isBuySide()) assetPair.quotingAssetId else assetPair.baseAssetId
-        val walletOperation = WalletOperation(UUID.randomUUID().toString(),
-                null,
-                order.clientId,
+        val walletOperation = WalletOperation(order.clientId,
                 limitAssetId,
-                executionContext.date,
                 BigDecimal.ZERO,
                 -reservedVolume)
         executionContext.walletOperationsProcessor.preProcess(listOf(walletOperation), true)

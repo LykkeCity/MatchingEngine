@@ -16,7 +16,6 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.UUID
 
 @Component
 class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
@@ -135,11 +134,8 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
     private fun addOrderToStopOrderBook(orderContext: StopLimitOrderContext): ProcessedOrder {
         val order = orderContext.order
         val limitVolume = orderContext.limitVolume!!
-        val walletOperation = WalletOperation(UUID.randomUUID().toString(),
-                null,
-                order.clientId,
+        val walletOperation = WalletOperation(order.clientId,
                 orderContext.limitAsset!!.assetId,
-                orderContext.executionContext.date,
                 BigDecimal.ZERO,
                 limitVolume)
 

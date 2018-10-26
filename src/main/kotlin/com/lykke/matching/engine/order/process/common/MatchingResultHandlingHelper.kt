@@ -10,7 +10,6 @@ import com.lykke.matching.engine.outgoing.messages.LimitOrderWithTrades
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.UUID
 
 @Component
 class MatchingResultHandlingHelper(private val applicationSettingsCache: ApplicationSettingsCache) {
@@ -58,11 +57,8 @@ class MatchingResultHandlingHelper(private val applicationSettingsCache: Applica
         val reservedVolume = oppositeOrder.reservedLimitVolume
                 ?: if (oppositeOrder.isBuySide()) oppositeOrder.getAbsRemainingVolume() * oppositeOrder.price else oppositeOrder.getAbsRemainingVolume()
         val reservedBalance = orderExecutionContext.executionContext.walletOperationsProcessor.getReservedBalance(oppositeOrder.clientId, assetId)
-        return WalletOperation(UUID.randomUUID().toString(),
-                null,
-                oppositeOrder.clientId,
+        return WalletOperation(oppositeOrder.clientId,
                 assetId,
-                orderExecutionContext.executionContext.date,
                 BigDecimal.ZERO,
                 if (reservedVolume > reservedBalance) -reservedBalance else -reservedVolume)
     }

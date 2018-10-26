@@ -54,18 +54,18 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client2", "EUR", now, BigDecimal.valueOf(-100.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client2", "USD", now, BigDecimal.valueOf(119.89), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client3", "USD", now, BigDecimal.valueOf(1.22), BigDecimal.ZERO, true)
+                        WalletOperation("Client2", "EUR", BigDecimal.valueOf(-100.0), BigDecimal.ZERO),
+                        WalletOperation("Client2", "USD", BigDecimal.valueOf(119.89), BigDecimal.ZERO),
+                        WalletOperation("Client3", "USD", BigDecimal.valueOf(1.22), BigDecimal.ZERO)
                 ),
                 matchingResult.ownCashMovements
         )
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, BigDecimal.valueOf(97.8888), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client1", "USD", now, BigDecimal.valueOf(-121.11), BigDecimal.valueOf(-121.11)),
-                        WalletOperation("", null, "Client4", "EUR", now, BigDecimal.valueOf(2.1112), BigDecimal.ZERO, true)
+                        WalletOperation( "Client1", "EUR", BigDecimal.valueOf(97.8888), BigDecimal.ZERO),
+                        WalletOperation( "Client1", "USD", BigDecimal.valueOf(-121.11), BigDecimal.valueOf(-121.11)),
+                        WalletOperation( "Client4", "EUR", BigDecimal.valueOf(2.1112), BigDecimal.ZERO)
                 ),
                 matchingResult.oppositeCashMovements
         )
@@ -95,18 +95,18 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, BigDecimal.valueOf(99.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client1", "USD", now, BigDecimal.valueOf(-120.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client3", "EUR", now, BigDecimal.valueOf(1.0), BigDecimal.ZERO, true)
+                        WalletOperation( "Client1", "EUR", BigDecimal.valueOf(99.0), BigDecimal.ZERO),
+                        WalletOperation( "Client1", "USD", BigDecimal.valueOf(-120.0), BigDecimal.ZERO),
+                        WalletOperation( "Client3", "EUR", BigDecimal.valueOf(1.0), BigDecimal.ZERO)
                 ),
                 matchingResult.ownCashMovements
         )
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client2", "EUR", now, BigDecimal.valueOf(-100.0), BigDecimal.valueOf(-100.0)),
-                        WalletOperation("", null, "Client2", "USD", now, BigDecimal.valueOf(117.6), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client4", "USD", now, BigDecimal.valueOf(2.4), BigDecimal.ZERO, true)
+                        WalletOperation( "Client2", "EUR", BigDecimal.valueOf(-100.0), BigDecimal.valueOf(-100.0)),
+                        WalletOperation( "Client2", "USD", BigDecimal.valueOf(117.6), BigDecimal.ZERO),
+                        WalletOperation( "Client4", "USD", BigDecimal.valueOf(2.4), BigDecimal.ZERO)
                 ),
                 matchingResult.oppositeCashMovements
         )
@@ -136,18 +136,18 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client2", "EUR", now, BigDecimal.valueOf(-100.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client2", "USD", now, BigDecimal.valueOf(118.8), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client3", "USD", now, BigDecimal.valueOf(1.2), BigDecimal.ZERO, true)
+                        WalletOperation( "Client2", "EUR", BigDecimal.valueOf(-100.0), BigDecimal.ZERO),
+                        WalletOperation( "Client2", "USD", BigDecimal.valueOf(118.8), BigDecimal.ZERO),
+                        WalletOperation( "Client3", "USD", BigDecimal.valueOf(1.2), BigDecimal.ZERO)
                 ),
                 matchingResult.ownCashMovements
         )
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, BigDecimal.valueOf(98.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client1", "USD", now, BigDecimal.valueOf(-120.0), BigDecimal.valueOf(-120.0)),
-                        WalletOperation("", null, "Client4", "EUR", now, BigDecimal.valueOf(2.0), BigDecimal.ZERO, true)
+                        WalletOperation( "Client1", "EUR", BigDecimal.valueOf(98.0), BigDecimal.ZERO),
+                        WalletOperation( "Client1", "USD", BigDecimal.valueOf(-120.0), BigDecimal.valueOf(-120.0)),
+                        WalletOperation( "Client4", "EUR", BigDecimal.valueOf(2.0), BigDecimal.ZERO)
                 ),
                 matchingResult.oppositeCashMovements
         )
@@ -177,18 +177,18 @@ class MatchingEngineFeeTest : MatchingEngineTest() {
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client1", "EUR", now, BigDecimal.valueOf(99.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client1", "USD", now, BigDecimal.valueOf(-120.0), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client3", "EUR", now, BigDecimal.valueOf(1.0), BigDecimal.ZERO, true)
+                        WalletOperation( "Client1", "EUR", BigDecimal.valueOf(99.0), BigDecimal.ZERO),
+                        WalletOperation( "Client1", "USD", BigDecimal.valueOf(-120.0), BigDecimal.ZERO),
+                        WalletOperation( "Client3", "EUR", BigDecimal.valueOf(1.0), BigDecimal.ZERO)
                 ),
                 matchingResult.ownCashMovements
         )
 
         assertCashMovementsEquals(
                 listOf(
-                        WalletOperation("", null, "Client2", "EUR", now, BigDecimal.valueOf(-100.0), BigDecimal.valueOf(-100.0)),
-                        WalletOperation("", null, "Client2", "USD", now, BigDecimal.valueOf(117.6), BigDecimal.ZERO),
-                        WalletOperation("", null, "Client4", "USD", now, BigDecimal.valueOf(2.4), BigDecimal.ZERO, true)
+                        WalletOperation( "Client2", "EUR", BigDecimal.valueOf(-100.0), BigDecimal.valueOf(-100.0)),
+                        WalletOperation( "Client2", "USD", BigDecimal.valueOf(117.6), BigDecimal.ZERO),
+                        WalletOperation( "Client4", "USD", BigDecimal.valueOf(2.4), BigDecimal.ZERO)
                 ),
                 matchingResult.oppositeCashMovements
         )

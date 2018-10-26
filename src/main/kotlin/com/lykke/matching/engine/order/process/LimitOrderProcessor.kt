@@ -20,7 +20,6 @@ import com.lykke.matching.engine.services.validators.input.LimitOrderInputValida
 import com.lykke.matching.engine.utils.NumberUtils
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.UUID
 
 @Component
 class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputValidator,
@@ -221,11 +220,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                 orderCopy.reservedLimitVolume = if (orderCopy.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                 if (!applicationSettingsCache.isTrustedClient(orderCopy.clientId)) {
                     val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
-                    orderContext.ownWalletOperations!!.add(WalletOperation(UUID.randomUUID().toString(),
-                            null,
-                            orderCopy.clientId,
+                    orderContext.ownWalletOperations!!.add(WalletOperation(orderCopy.clientId,
                             limitAsset.assetId,
-                            orderContext.executionContext.date,
                             BigDecimal.ZERO,
                             newReservedBalance))
                 }
@@ -291,11 +287,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
         val order = orderContext.order
         val limitVolume = orderContext.limitVolume!!
 
-        val walletOperation = WalletOperation(UUID.randomUUID().toString(),
-                null,
-                order.clientId,
+        val walletOperation = WalletOperation(order.clientId,
                 orderContext.limitAsset!!.assetId,
-                orderContext.executionContext.date,
                 BigDecimal.ZERO,
                 limitVolume)
 
