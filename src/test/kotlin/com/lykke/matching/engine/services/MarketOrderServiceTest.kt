@@ -833,4 +833,67 @@ class MarketOrderServiceTest: AbstractTest() {
 
         assertOrderBookSize("BTCUSD", true, 1)
     }
+
+    @Test
+    fun testSellOrderDeviation() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
+
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        applicationSettingsCache.update()
+
+        clientsEventsQueue.clear()
+
+        //when
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client1", assetId = "BTCUSD", volume = -0.3)))
+
+
+        //then
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        val eventOrder = event.orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 2)
+    }
+
+    @Test
+    fun testBuyOrderDeviation() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = -0.3)))
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 2000.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.3)))
+
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.MO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        applicationSettingsCache.update()
+
+        clientsEventsQueue.clear()
+
+        //when
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client2", assetId = "BTCUSD", volume = 0.3)))
+
+        //then
+        assertEquals(1, clientsEventsQueue.size)
+        val event = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, event.orders.size)
+        val eventOrder = event.orders.single()
+        assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
+
+        assertOrderBookSize("BTCUSD", false, 2)
+        assertOrderBookSize("BTCUSD", true, 2)
+    }
 }

@@ -47,6 +47,10 @@ class AssetOrderBook(assetId: String) : AbstractAssetOrderBook(assetId) {
             null
     }
 
+    fun getBestPrice(isBuy: Boolean): BigDecimal {
+        return if (isBuy) getBidPrice() else getAskPrice()
+    }
+
     fun leadToNegativeSpread(order: LimitOrder): Boolean {
         val book = getOrderBook(!order.isBuySide())
         if (book.isEmpty()) {

@@ -16,6 +16,7 @@ import com.lykke.matching.engine.outgoing.messages.TradeInfo
 import com.lykke.matching.engine.outgoing.messages.v2.builders.bigDecimalToString
 import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import com.lykke.matching.engine.services.GenericLimitOrderService
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.utils.NumberUtils
 import org.apache.log4j.Logger
 import java.math.BigDecimal
@@ -476,11 +477,7 @@ class MatchingEngine(private val LOGGER: Logger,
     }
 
     private fun checkMidPrice(lowerMidPriceBound: BigDecimal?, upperMidPriceBound: BigDecimal?, midPrice: BigDecimal?): Boolean {
-        if (lowerMidPriceBound == null || upperMidPriceBound == null || midPrice == null) {
-            return true
-        }
-
-        return midPrice in lowerMidPriceBound..upperMidPriceBound
+        return OrderValidationUtils.isMidPriceValid(midPrice, lowerMidPriceBound, upperMidPriceBound)
     }
 
     private fun getMidPrice(skipLimitOrders: List<LimitOrder>, bestAsk: BigDecimal?, bestBid: BigDecimal?, isBuy: Boolean): BigDecimal? {

@@ -623,6 +623,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     }
 
     @Test
+    //normally not a case, for limit orders as tha should be rejected with NegativeSpread business validation before matching
     fun testMatchingBuyOrderPriceDeviationWithSkipOrders() {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.7, volume = -1.0))
@@ -639,6 +640,7 @@ class MatchingEngineLimitOrderTest : MatchingEngineTest() {
     }
 
     @Test
+    //normally not a case, for limit orders as tha should be rejected with NegativeSpread business validation before matching
     fun testMatchingSellOrderPriceDeviationWithSkipOrders() {
         testBalanceHolderWrapper.updateBalance("Client1", "EUR", 1000.0)
         testOrderBookWrapper.addLimitOrder(buildLimitOrder(price = 1.7, volume = -1.0))

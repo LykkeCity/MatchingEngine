@@ -26,6 +26,7 @@ import com.lykke.matching.engine.outgoing.messages.OrderBook
 import com.lykke.matching.engine.outgoing.messages.v2.builders.EventFactory
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.utils.NumberUtils
 import com.lykke.matching.engine.utils.PrintUtils
@@ -107,7 +108,7 @@ class MarketOrderService @Autowired constructor(
 
         val assetPair = getAssetPair(order)
         val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
-        val limitOrderPriceDeviationThreshold = applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId)
+        val limitOrderPriceDeviationThreshold = applicationSettingsCache.marketOrderPriceDeviationThreshold(assetPair.assetPairId)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
@@ -134,7 +135,8 @@ class MarketOrderService @Autowired constructor(
             InvalidFee,
             InvalidVolumeAccuracy,
             InvalidVolume,
-            InvalidValue -> {
+            InvalidValue,
+            TooHighPriceDeviation -> {
                 writeErrorNotification(messageWrapper, order, now)
             }
             Matched -> {
@@ -187,6 +189,15 @@ class MarketOrderService @Autowired constructor(
                     orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
                     matchingResult.skipLimitOrders.forEach { matchingResult.orderBook.put(it) }
 
+                    val newMidPrice = getMidPrice(genericLimitOrderService.getOrderBook(order.assetPairId).getBestPrice(order.isBuySide()),
+                            matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
+
+                    if (!OrderValidationUtils.isMidPriceValid(newMidPrice, lowerMidPriceBound, upperMidPriceBound)) {
+                        order.updateStatus(TooHighPriceDeviation, matchingResult.timestamp)
+                        writeErrorNotification(messageWrapper, order, now)
+                        return
+                    }
+
                     val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
                     val ordersToSave = mutableListOf<LimitOrder>()
                     val ordersToRemove = mutableListOf<LimitOrder>()
@@ -202,7 +213,6 @@ class MarketOrderService @Autowired constructor(
                     val trustedClientsSequenceNumber = if (trustedClientLimitOrdersReport.orders.isNotEmpty())
                         messageSequenceNumberHolder.getNewValue() else null
 
-                    //todo implement mid price protection for market order
                     val updated = walletOperationsProcessor.persistBalances(messageWrapper.processedMessage,
                             OrderBooksPersistenceData(orderBookPersistenceDataList, ordersToSave, ordersToRemove),
                             null,
@@ -292,10 +302,6 @@ class MarketOrderService @Autowired constructor(
         return ProtocolMessages.MarketOrder.parseFrom(array)
     }
 
-    private fun isMidPriceValid(newMidPrice: BigDecimal, acceptableLowerMidPrice: BigDecimal, acceptableUpperMidPrice: BigDecimal): Boolean {
-        return newMidPrice in acceptableLowerMidPrice..acceptableUpperMidPrice
-    }
-
     private fun writeErrorNotification(messageWrapper: MessageWrapper,
                                        order: MarketOrder,
                                        now: Date,
@@ -335,5 +341,13 @@ class MarketOrderService @Autowired constructor(
     override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
         messageWrapper.writeMarketOrderResponse(ProtocolMessages.MarketOrderResponse.newBuilder()
                 .setStatus(status.type))
+    }
+
+    private fun getMidPrice(orderSideBestPrice: BigDecimal, oppositeSideBestPrice: BigDecimal): BigDecimal? {
+        if (orderSideBestPrice == BigDecimal.ZERO || oppositeSideBestPrice == BigDecimal.ZERO) {
+            return null
+        }
+
+        return NumberUtils.divideWithMaxScale(orderSideBestPrice + oppositeSideBestPrice, BigDecimal.valueOf(2))
     }
 }

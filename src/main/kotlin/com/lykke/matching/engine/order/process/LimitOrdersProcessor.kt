@@ -25,6 +25,7 @@ import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.MessageSender
 import com.lykke.matching.engine.services.utils.OrderServiceHelper
 import com.lykke.matching.engine.services.validators.business.LimitOrderBusinessValidator
+import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.impl.OrderValidationResult
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
@@ -471,10 +472,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                                 newMidPriceAfterMatching: BigDecimal?,
                                 lowerAcceptableMidPrice: BigDecimal?,
                                 upperAcceptableMidPrice: BigDecimal?): Boolean {
-        if (newMidPriceAfterMatching == null ||
-                lowerAcceptableMidPrice == null ||
-                upperAcceptableMidPrice == null ||
-                newMidPriceAfterMatching in lowerAcceptableMidPrice..upperAcceptableMidPrice) {
+        if (OrderValidationUtils.isMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
             return true
         }
 
