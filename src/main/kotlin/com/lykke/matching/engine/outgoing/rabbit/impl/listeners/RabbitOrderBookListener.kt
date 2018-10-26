@@ -28,8 +28,4 @@ class RabbitOrderBookListener {
                 AppVersion.VERSION,
                 BuiltinExchangeType.FANOUT)
     }
-
-    fun getOrderBookQueueSize(): Int {
-        return rabbitOrderBookQueue.size
-    }
 }

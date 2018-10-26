@@ -1,7 +1,15 @@
 package com.lykke.matching.engine.database.common
 
 import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
+import com.lykke.matching.engine.database.PersistenceManager
+import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.Storage
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.RedisPersistenceManager
 import com.lykke.matching.engine.database.redis.RedisWithoutOrdersPersistenceManager
 import com.lykke.matching.engine.database.redis.accessor.impl.*
@@ -22,6 +30,9 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                                     private val messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>,
                                     private val redisMidPriceDatabaseAccessor: Optional<MidPriceDatabaseAccessor>,
                                     private val fileProcessedMessagesDatabaseAccessor: FileProcessedMessagesDatabaseAccessor,
+                                    private val persistedOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<OrderBookPersistEvent>,
+                                    private val persistedStopOrdersApplicationEventPublisher: SimpleApplicationEventPublisher<StopOrderBookPersistEvent>,
+                                    private val persistedWalletsApplicationEventPublisher: SimpleApplicationEventPublisher<AccountPersistEvent>,
                                     private val config: Config) : PersistenceManagerFactory {
 
     override fun get(redisConnection: Optional<RedisConnection>): PersistenceManager {
@@ -30,29 +41,30 @@ class PersistenceManagerFactoryImpl(private val balancesDatabaseAccessorsHolder:
                     ordersDatabaseAccessorsHolder.primaryAccessor,
                     stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                     fileProcessedMessagesDatabaseAccessor)
-            Storage.Redis ->
+            Storage.Redis -> {
                 RedisPersistenceManager(
                         balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.primaryAccessor as RedisOrderBookDatabaseAccessor,
-                        ordersDatabaseAccessorsHolder.secondaryAccessor,
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor as RedisStopOrderBookDatabaseAccessor,
-                        stopOrdersDatabaseAccessorsHolder.secondaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistedOrdersApplicationEventPublisher,
+                        persistedStopOrdersApplicationEventPublisher,
+                        persistedWalletsApplicationEventPublisher,
                         redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
                         config
                 )
+            }
             Storage.RedisWithoutOrders ->
                 RedisWithoutOrdersPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
                         redisProcessedMessagesDatabaseAccessor.get(),
                         cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
                         ordersDatabaseAccessorsHolder.primaryAccessor,
                         stopOrdersDatabaseAccessorsHolder.primaryAccessor,
                         messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
+                        persistedWalletsApplicationEventPublisher,
                         redisMidPriceDatabaseAccessor.get() as RedisMidPriceDatabaseAccessor,
                         redisConnection.get(),
                         config)

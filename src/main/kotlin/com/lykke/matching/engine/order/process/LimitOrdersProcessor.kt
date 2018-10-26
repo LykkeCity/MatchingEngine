@@ -33,7 +33,6 @@ import org.apache.log4j.Logger
 import java.math.BigDecimal
 import java.util.Date
 import java.util.LinkedList
-import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -97,10 +96,10 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val payBackReservedOperations = ArrayList<WalletOperation>(2)
         if (!isTrustedClient) {
             if (payBackBaseReserved > BigDecimal.ZERO) {
-                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.baseAssetId, date, BigDecimal.ZERO, -payBackBaseReserved))
+                payBackReservedOperations.add(WalletOperation(clientId, assetPair.baseAssetId, BigDecimal.ZERO, -payBackBaseReserved))
             }
             if (payBackQuotingReserved > BigDecimal.ZERO) {
-                payBackReservedOperations.add(WalletOperation(UUID.randomUUID().toString(), null, clientId, assetPair.quotingAssetId, date, BigDecimal.ZERO, -payBackQuotingReserved))
+                payBackReservedOperations.add(WalletOperation(clientId, assetPair.quotingAssetId, BigDecimal.ZERO, -payBackQuotingReserved))
             }
         }
         walletOperationsProcessor.preProcess(payBackReservedOperations, true)
@@ -303,7 +302,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         availableBalances[limitAsset.assetId] = availableBalance - limitVolume
         if (!isTrustedClient) {
             walletOperationsProcessor.preProcess(listOf(
-                    WalletOperation(UUID.randomUUID().toString(), null, clientId, limitAsset.assetId, date, BigDecimal.ZERO, NumberUtils.setScaleRoundHalfUp(limitVolume, limitAsset.accuracy))
+                    WalletOperation(clientId, limitAsset.assetId, BigDecimal.ZERO, NumberUtils.setScaleRoundHalfUp(limitVolume, limitAsset.accuracy))
             ), true)
         }
 
@@ -352,7 +351,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                 if (!isTrustedClient) {
                     val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
-                    ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
+                    ownWalletOperations.add(WalletOperation(orderCopy.clientId, limitAsset.assetId, BigDecimal.ZERO, newReservedBalance))
                 }
             }
         }

@@ -51,13 +51,24 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingQueue
 
 @Configuration
 @Import(QueueConfig::class)
 open class TestApplicationContext {
 
+    @Bean
+    open fun threadPoolTaskExecutor(): Executor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "executor-task"
+        threadPoolTaskExecutor.corePoolSize = 2
+        threadPoolTaskExecutor.maxPoolSize = 2
+
+        return threadPoolTaskExecutor
+    }
     @Bean
     open fun balanceHolder(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
                            persistenceManager: PersistenceManager,
@@ -122,8 +133,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun testConfigDatabaseAccessor(): ConfigDatabaseAccessor {
-        return TestConfigDatabaseAccessor()
+    open fun testSettingsDatabaseAccessor(): SettingsDatabaseAccessor {
+        return TestSettingsDatabaseAccessor()
     }
 
     @Bean
@@ -132,8 +143,8 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun applicationSettingsCache(configDatabaseAccessor: ConfigDatabaseAccessor): ApplicationSettingsCache {
-        return ApplicationSettingsCache(configDatabaseAccessor, 60000)
+    open fun applicationSettingsCache(configDatabaseAccessor: SettingsDatabaseAccessor): ApplicationSettingsCache {
+        return ApplicationSettingsCache(configDatabaseAccessor)
     }
 
     @Bean
@@ -266,6 +277,18 @@ open class TestApplicationContext {
     @Bean
     open fun balance(balancesHolder: BalancesHolder, balanceUpdateValidator: BalanceUpdateValidator): BalanceUpdateService {
         return BalanceUpdateService(balancesHolder, balanceUpdateValidator)
+    }
+
+    @Bean
+    open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
+        return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
+    }
+
+    @Bean
+    open fun applicationSettingsService(settingsDatabaseAccessor: SettingsDatabaseAccessor,
+                                        applicationSettingsCache: ApplicationSettingsCache,
+                                        settingsHistoryDatabaseAccessor: SettingsHistoryDatabaseAccessor): ApplicationSettingsService {
+        return ApplicationSettingsServiceImpl(settingsDatabaseAccessor, applicationSettingsCache, settingsHistoryDatabaseAccessor)
     }
 
     @Bean

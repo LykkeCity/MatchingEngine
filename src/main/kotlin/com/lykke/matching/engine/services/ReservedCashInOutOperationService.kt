@@ -40,13 +40,14 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
                 "operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)}")
 
-        val operation = WalletOperation(UUID.randomUUID().toString(), message.id, message.clientId, message.assetId,
-                Date(message.timestamp), BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
+        val now = Date()
+        val matchingEngineOperationId = UUID.randomUUID().toString()
+        val operation = WalletOperation(message.clientId, message.assetId, BigDecimal.ZERO, BigDecimal.valueOf(message.reservedVolume))
 
         try {
             reservedCashInOutOperationValidator.performValidation(message)
         } catch (e: ValidationException) {
-            writeErrorResponse(messageWrapper, operation, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
+            writeErrorResponse(messageWrapper, matchingEngineOperationId, MessageStatusUtils.toMessageStatus(e.validationType), e.message)
             return
         }
 
@@ -57,7 +58,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
             walletProcessor.preProcess(listOf(operation))
         } catch (e: BalanceException) {
             LOGGER.info("Reserved cash in/out operation (${message.id}) failed due to invalid balance: ${e.message}")
-            writeErrorResponse(messageWrapper, operation, MessageStatus.LOW_BALANCE, e.message)
+            writeErrorResponse(messageWrapper, matchingEngineOperationId, MessageStatus.LOW_BALANCE, e.message)
             return
         }
 
@@ -66,7 +67,7 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
         messageWrapper.persisted = updated
         if (!updated) {
             messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                    .setMatchingEngineId(operation.id)
+                    .setMatchingEngineId(matchingEngineOperationId)
                     .setStatus(MessageStatus.RUNTIME.type))
             LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId} asset ${message.assetId}, volume: ${NumberUtils.roundForPrint(message.reservedVolume)}: unable to save balance")
             return
@@ -75,23 +76,23 @@ class ReservedCashInOutOperationService @Autowired constructor (private val asse
 
         reservedCashOperationQueue.put(ReservedCashOperation(message.id,
                 operation.clientId,
-                operation.dateTime,
+                now,
                 NumberUtils.setScaleRoundHalfUp(operation.reservedAmount, accuracy).toPlainString(),
                 operation.assetId,
                 messageWrapper.messageId!!))
 
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder()
-                .setMatchingEngineId(operation.id)
+                .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(MessageStatus.OK.type))
 
         LOGGER.info("Reserved cash in/out operation (${message.id}) for client ${message.clientId}, " +
                 "asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.reservedVolume)} processed")
     }
 
-    fun writeErrorResponse(messageWrapper: MessageWrapper, operation: WalletOperation, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
+    fun writeErrorResponse(messageWrapper: MessageWrapper, matchingEngineOperationId: String, status: MessageStatus, errorMessage: String = StringUtils.EMPTY) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse
                 .newBuilder()
-                .setMatchingEngineId(operation.id)
+                .setMatchingEngineId(matchingEngineOperationId)
                 .setStatus(status.type).setStatusReason(errorMessage))
     }
 

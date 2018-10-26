@@ -19,6 +19,12 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import java.util.*
 import kotlin.test.*
+import kotlin.test.assertEquals
+import com.lykke.matching.engine.utils.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (WalletOperationsProcessorTest.Config::class)])
@@ -48,21 +54,21 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         walletOperationsProcessor.preProcess(
                 listOf(
-                        WalletOperation("1", null, "Client1", "BTC", Date(), BigDecimal.valueOf( -0.5), BigDecimal.valueOf(-0.1)),
-                        WalletOperation("2", null, "Client2", "ETH", Date(), BigDecimal.valueOf(2.0), BigDecimal.valueOf(0.1))
+                        WalletOperation("Client1", "BTC", BigDecimal.valueOf( -0.5), BigDecimal.valueOf(-0.1)),
+                        WalletOperation("Client2", "ETH", BigDecimal.valueOf(2.0), BigDecimal.valueOf(0.1))
 
                 )
         )
 
         walletOperationsProcessor.preProcess(
-                listOf(WalletOperation("3", null, "Client2", "ETH", Date(), BigDecimal.valueOf(1.0), BigDecimal.valueOf(0.2)))
+                listOf(WalletOperation("Client2", "ETH", BigDecimal.valueOf(1.0), BigDecimal.valueOf(0.2)))
         )
 
         assertFailsWith(BalanceException::class) {
             walletOperationsProcessor.preProcess(
                     listOf(
-                            WalletOperation("4", null, "Client1", "BTC", Date(), BigDecimal.ZERO, BigDecimal.valueOf(-0.1)),
-                            WalletOperation("5", null, "Client3", "BTC", Date(), BigDecimal.valueOf(1.0), BigDecimal.ZERO)
+                            WalletOperation("Client1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(-0.1)),
+                            WalletOperation("Client3", "BTC", BigDecimal.valueOf(1.0), BigDecimal.ZERO)
                     )
             )
         }
@@ -107,7 +113,7 @@ class WalletOperationsProcessorTest : AbstractTest() {
 
         walletOperationsProcessor.preProcess(
                 listOf(
-                        WalletOperation("1", null, "Client1", "BTC", Date(), BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
+                        WalletOperation("Client1", "BTC", BigDecimal.ZERO, BigDecimal.valueOf(-0.1))
                 ), true)
 
         assertTrue(walletOperationsProcessor.persistBalances(null, null, null, null, null))

@@ -7,9 +7,10 @@ import java.math.BigDecimal
 class CashInOutOperationConverter {
     companion object {
         fun fromCashInOutOperationToWalletOperation(cashInOutOperation: CashInOutOperation): WalletOperation {
-            return WalletOperation(cashInOutOperation.matchingEngineOperationId, cashInOutOperation.externalId,
-                    cashInOutOperation.clientId, cashInOutOperation.asset!!.assetId,
-                    cashInOutOperation.dateTime, cashInOutOperation.amount, BigDecimal.ZERO)
+            return WalletOperation(cashInOutOperation.clientId,
+                    cashInOutOperation.asset!!.assetId,
+                    cashInOutOperation.amount,
+                    BigDecimal.ZERO)
         }
     }
 }

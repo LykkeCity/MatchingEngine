@@ -101,14 +101,14 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
 
         val walletOperations = mutableListOf<WalletOperation>()
-        walletOperations.add(WalletOperation(UUID.randomUUID().toString(),
-                order.externalId,
-                order.clientId,
-                limitAsset.assetId, now, BigDecimal.ZERO, -cancelVolume))
-        walletOperations.add(WalletOperation(UUID.randomUUID().toString(),
-                order.externalId,
-                order.clientId,
-                limitAsset.assetId, now, BigDecimal.ZERO, limitVolume!!))
+        walletOperations.add(WalletOperation(order.clientId,
+                limitAsset.assetId,
+                BigDecimal.ZERO,
+                -cancelVolume))
+        walletOperations.add(WalletOperation(order.clientId,
+                limitAsset.assetId,
+                BigDecimal.ZERO,
+                limitVolume!!))
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         walletOperationsProcessor.preProcess(walletOperations, true)
 
@@ -166,10 +166,10 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         val messageStatus = MessageStatusUtils.toMessageStatus(orderValidationResult.status)
         val walletOperationsProcessor = balancesHolder.createWalletProcessor(LOGGER, true)
         if (cancelVolume > BigDecimal.ZERO) {
-            walletOperationsProcessor.preProcess(listOf(WalletOperation(UUID.randomUUID().toString(),
-                    order.externalId,
-                    order.clientId,
-                    limitAsset!!.assetId, now, BigDecimal.ZERO, -cancelVolume)), true)
+            walletOperationsProcessor.preProcess(listOf(WalletOperation(order.clientId,
+                    limitAsset!!.assetId,
+                    BigDecimal.ZERO,
+                    -cancelVolume)), true)
         }
         val orderBooksPersistenceData = if (ordersToCancel.isNotEmpty())
             OrderBooksPersistenceData(listOf(OrderBookPersistenceData(order.assetPairId, order.isBuySide(), newStopOrderBook)),
