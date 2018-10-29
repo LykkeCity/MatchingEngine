@@ -7,6 +7,7 @@ import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderCancelOperation
 import com.lykke.matching.engine.incoming.parsers.impl.LimitOrderMassCancelOperationContextParser
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.PrintUtils
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Ignore
 import org.junit.Test
 import java.math.BigDecimal

@@ -1,8 +1,11 @@
 package com.lykke.matching.engine.config.spring
 
+import com.lykke.matching.engine.common.QueueConsumer
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.azure.*
-import com.lykke.matching.engine.database.common.DefaultPersistenceManager
+import com.lykke.matching.engine.database.common.PersistenceManagerFactory
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
@@ -25,7 +28,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import java.util.*
 import java.util.*
 import java.util.concurrent.BlockingQueue
 
