@@ -21,12 +21,6 @@ import org.springframework.util.CollectionUtils
 import java.util.Date
 import java.util.concurrent.BlockingQueue
 import kotlin.collections.ArrayList
-import kotlin.collections.Collection
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.forEach
-import kotlin.collections.isNotEmpty
-import kotlin.collections.mutableListOf
 
 class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesDatabaseAccessor,
                                   assetsHolder: AssetsHolder,
@@ -136,14 +130,7 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
             return false
         }
 
-        if(!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
-            midPricePersistenceData.midPrices!!.forEach {
-                val assetPair = assetsPairsHolder.getAssetPairAllowNulls(it.assetPairId)
-                if (assetPair != null) {
-                    midPriceHolder.addMidPrice(assetPair, it.midPrice, date)
-                }
-            }
-        }
+        updateMidPricesInCache(midPricePersistenceData)
 
         walletProcessor.apply().sendNotification(operationId, messageType.name, messageId)
         stopLimitOrdersCanceller.apply(messageId, processedMessage, stopLimitOrdersResult)
@@ -173,6 +160,22 @@ class GenericLimitOrdersCanceller(dictionariesDatabaseAccessor: DictionariesData
         limitOrdersCanceller.checkAndProcessStopOrders(messageId)
 
         return true
+    }
+
+    private fun updateMidPricesInCache(midPricePersistenceData: MidPricePersistenceData) {
+        if (midPricePersistenceData.removeAll) {
+            midPriceHolder.clear()
+            return
+        }
+
+        if(!CollectionUtils.isEmpty(midPricePersistenceData.midPrices)) {
+            midPricePersistenceData.midPrices!!.forEach {
+                val assetPair = assetsPairsHolder.getAssetPairAllowNulls(it.assetPairId)
+                if (assetPair != null) {
+                    midPriceHolder.addMidPrice(assetPair, it.midPrice, date)
+                }
+            }
+        }
     }
 
     private fun getMidPricePersistenceData(assetPairIdToAssetOrderBook: Map<String, AssetOrderBook>): MidPricePersistenceData {

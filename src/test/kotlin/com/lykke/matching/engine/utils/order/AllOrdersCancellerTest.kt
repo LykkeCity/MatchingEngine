@@ -8,12 +8,13 @@ import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.assertEquals
-import com.lykke.matching.engine.utils.getSetting
 import com.lykke.matching.engine.utils.balance.ReservedVolumesRecalculator
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,12 +26,14 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (AllOrdersCancellerTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class AllOrdersCancellerTest: AbstractTest() {
+class AllOrdersCancellerTest : AbstractTest() {
 
     @TestConfiguration
     open class Config {
@@ -66,6 +69,9 @@ class AllOrdersCancellerTest: AbstractTest() {
     @Autowired
     private lateinit var reservedVolumesRecalculator: ReservedVolumesRecalculator
 
+    @Autowired
+    private lateinit var midPriceHolder: MidPriceHolder
+
     @Before
     fun init() {
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
@@ -82,9 +88,12 @@ class AllOrdersCancellerTest: AbstractTest() {
     @Test
     fun testCancelAllOrders() {
         //given
+        val assetPair = assetPairsCache.getAssetPair("BTCUSD")
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 3500.0, volume = 0.5)))
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 6500.0, volume = 0.5)))
-        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6000.0, volume = -0.25)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 6700.0, volume = -0.25)))
+        assertEquals(BigDecimal.valueOf(6600), midPriceHolder.getReferenceMidPrice(assetPair!!, Date()))
+
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = 10.0,
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 10.0, lowerPrice = 10.5
@@ -97,20 +106,20 @@ class AllOrdersCancellerTest: AbstractTest() {
         allOrdersCanceller.cancelAllOrders()
 
         //then
+        assertNull(midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client1", "USD"))
         assertEquals(BigDecimal.ZERO, testWalletDatabaseAccessor.getReservedBalance("Client2", "BTC"))
 
-        assertEquals(BigDecimal.valueOf(0.25), testWalletDatabaseAccessor.getBalance("Client1", "BTC"))
-        assertEquals(BigDecimal.valueOf(8375.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
-        assertEquals(BigDecimal.valueOf(1625.0), testWalletDatabaseAccessor.getBalance("Client2", "USD"))
-        assertEquals(BigDecimal.valueOf(0.25), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
+        assertEquals(BigDecimal.valueOf(10000.0), testWalletDatabaseAccessor.getBalance("Client1", "USD"))
+        assertEquals(BigDecimal.valueOf(0.5), testWalletDatabaseAccessor.getBalance("Client2", "BTC"))
 
         assertEquals(0, testOrderDatabaseAccessor.getOrders("EURUSD", true).size)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", true).size)
         assertEquals(0, testOrderDatabaseAccessor.getOrders("BTCUSD", false).size)
 
         assertEquals(1, testClientLimitOrderListener.getCount())
-        assertEquals(3, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
+        assertEquals(4, (testClientLimitOrderListener.getQueue().first() as LimitOrdersReport).orders.size)
 
         assertEquals(1, balanceUpdateHandlerTest.getCountOfBalanceUpdate())
     }

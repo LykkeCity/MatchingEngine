@@ -34,7 +34,7 @@ class AllOrdersCanceller @Autowired constructor(private val assetsPairsHolder: A
     }
 
     init {
-        genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, Date())
+        genericLimitOrdersCanceller = genericLimitOrdersCancellerFactory.create(LOGGER, Date(), true)
     }
 
     override fun run(args: ApplicationArguments?) {
