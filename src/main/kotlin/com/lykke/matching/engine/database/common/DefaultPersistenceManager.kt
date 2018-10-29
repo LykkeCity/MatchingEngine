@@ -21,9 +21,6 @@ class DefaultPersistenceManager(private val walletDatabaseAccessor: WalletDataba
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    override fun balancesQueueSize() = 0
-    override fun ordersQueueSize() = 0
-
     override fun persist(data: PersistenceData): Boolean {
         if (data.isEmpty()) {
             return true

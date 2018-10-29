@@ -8,9 +8,10 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
 import com.lykke.matching.engine.database.TestDictionariesDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.incoming.parsers.data.SingleLimitOrderParsedData
 import com.lykke.matching.engine.messages.MessageType
@@ -18,6 +19,7 @@ import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import com.lykke.matching.engine.services.validators.input.LimitOrderInputValidator
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,9 +58,9 @@ class LimitOrderInputValidatorTest {
 
         @Bean
         @Primary
-        open fun testConfigDatabaseAccessor(): TestConfigDatabaseAccessor {
-            val testConfigDatabaseAccessor = TestConfigDatabaseAccessor()
-            testConfigDatabaseAccessor.addDisabledAsset("JPY")
+        open fun testSettingsDatabaseAccessor(): TestSettingsDatabaseAccessor {
+            val testConfigDatabaseAccessor = TestSettingsDatabaseAccessor()
+            testConfigDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.DISABLED_ASSETS.settingGroupName, getSetting("JPY"))
             return testConfigDatabaseAccessor
         }
     }

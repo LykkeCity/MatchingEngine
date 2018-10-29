@@ -30,9 +30,7 @@ import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [(TestApplicationContext::class), (FeeProcessorTest.Config::class)])
@@ -80,8 +78,8 @@ class FeeProcessorTest {
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.0)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.0)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.0)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.0)))
         val originalOperations = LinkedList(operations)
         val receiptOperation = operations[1]
 
@@ -159,9 +157,8 @@ class FeeProcessorTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-0.5)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(0.5)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(0.5)))
         val originalOperations = LinkedList(operations)
         val receiptOperation = operations[1]
 
@@ -186,8 +183,7 @@ class FeeProcessorTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-0.5)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
         val receiptOperation = operations[0]
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3")
@@ -206,8 +202,7 @@ class FeeProcessorTest {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("EURUSD", "EUR", "USD", 5))
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-0.5)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
         val receiptOperation = operations[0]
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.4, sizeType = FeeSizeType.PERCENTAGE, targetClientId = "Client3")
@@ -226,9 +221,8 @@ class FeeProcessorTest {
         testBackOfficeDatabaseAccessor.addAsset(Asset("EUR", 4))
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-0.5)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(0.5)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-0.5)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(0.5)))
         val receiptOperation = operations[1]
 
         val feeInstructions = buildFeeInstructions(type = FeeType.CLIENT_FEE, size = 0.6543, sizeType = FeeSizeType.ABSOLUTE, targetClientId = "Client3", assetIds = listOf("EUR"))
@@ -242,9 +236,8 @@ class FeeProcessorTest {
     @Test
     fun testClientPercentageFee() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -256,26 +249,20 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.11), fee.transfer!!.volume)
 
         assertEquals(3, operations.size)
         assertEquals(originalOperations[0], operations[0])
-        assertFalse { operations[0].isFee }
         assertEquals(BigDecimal.valueOf(9.99), operations[1].amount)
-        assertFalse { operations[1].isFee }
         assertEquals(BigDecimal.valueOf(0.11), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
     }
 
     @Test
     fun testClientAbsoluteFee() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-11.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(11.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-11.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(11.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -287,26 +274,20 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(1.1), fee.transfer!!.volume)
 
         assertEquals(3, operations.size)
         assertEquals(originalOperations[0], operations[0])
-        assertFalse { operations[0].isFee }
         assertEquals(BigDecimal.valueOf(10.0), operations[1].amount)
-        assertFalse { operations[1].isFee }
         assertEquals(BigDecimal.valueOf(1.1), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
     }
 
     @Test
     fun testClientPercentageFeeRound() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-29.99)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(29.99)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-29.99)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(29.99)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -318,17 +299,13 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.01), fee.transfer!!.volume)
 
         assertEquals(3, operations.size)
         assertEquals(originalOperations[0], operations[0])
         assertEquals(BigDecimal.valueOf(29.98), operations[1].amount)
-        assertFalse { operations[1].isFee }
         assertEquals(BigDecimal.valueOf(0.01), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
     }
 
     @Test
@@ -336,9 +313,8 @@ class FeeProcessorTest {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 1000.0)
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -350,18 +326,14 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client3", fee.transfer!!.fromClientId)
         assertEquals("Client4", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.11), fee.transfer!!.volume)
 
         assertEquals(4, operations.size)
         assertEquals(originalOperations, operations.subList(0, 2))
         assertEquals(BigDecimal.valueOf(-0.11), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
         assertEquals(BigDecimal.valueOf(0.11), operations[3].amount)
         assertEquals("Client4", operations[3].clientId)
-        assertTrue { operations[3].isFee }
     }
 
     @Test
@@ -369,9 +341,8 @@ class FeeProcessorTest {
         testBalanceHolderWrapper.updateBalance("Client3", "USD", 0.1)
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -383,9 +354,8 @@ class FeeProcessorTest {
     @Test
     fun testMakerPercentageFee() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -397,26 +367,20 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.21), fee.transfer!!.volume)
 
         assertEquals(3, operations.size)
         assertEquals(originalOperations[0], operations[0])
-        assertFalse { operations[0].isFee }
         assertEquals(BigDecimal.valueOf(9.89), operations[1].amount)
-        assertFalse { operations[1].isFee }
         assertEquals(BigDecimal.valueOf(0.21), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
     }
 
     @Test
     fun testMakerAbsoluteFee() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -433,18 +397,13 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.2), fee.transfer!!.volume)
 
         assertEquals(3, operations.size)
         assertEquals(originalOperations[0], operations[0])
-        assertFalse { operations[0].isFee }
         assertEquals(BigDecimal.valueOf(9.9), operations[1].amount)
-        assertFalse { operations[1].isFee }
         assertEquals(BigDecimal.valueOf(0.2), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
     }
 
     @Test
@@ -452,9 +411,8 @@ class FeeProcessorTest {
         testBalanceHolderWrapper.updateBalance("Client4", "USD", 1000.0)
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -470,50 +428,38 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.21), fee.transfer!!.volume)
 
         fee = fees[1]
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client5", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.41), fee.transfer!!.volume)
 
         fee = fees[2]
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client4", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.31), fee.transfer!!.volume)
 
 
         assertEquals(6, operations.size)
         assertEquals(originalOperations[0], operations[0])
-        assertFalse { operations[0].isFee }
 
         val subOperations = operations.subList(1, operations.size).sortedBy { it.amount }
         assertEquals(BigDecimal.valueOf(-0.31), subOperations[0].amount)
         assertEquals("Client4", subOperations[0].clientId)
-        assertTrue { subOperations[0].isFee }
 
         assertEquals(BigDecimal.valueOf(0.21), subOperations[1].amount)
         assertEquals("Client3", subOperations[1].clientId)
-        assertTrue { subOperations[1].isFee }
 
         assertEquals(BigDecimal.valueOf(0.31), subOperations[2].amount)
         assertEquals("Client3", subOperations[2].clientId)
-        assertTrue { subOperations[2].isFee }
 
         assertEquals(BigDecimal.valueOf(0.41), subOperations[3].amount)
         assertEquals("Client5", subOperations[3].clientId)
-        assertTrue { subOperations[3].isFee }
 
         assertEquals(BigDecimal.valueOf(9.48), subOperations[4].amount)
-        assertFalse { subOperations[4].isFee }
     }
 
     @Test
@@ -522,8 +468,8 @@ class FeeProcessorTest {
 
         val operations = LinkedList<WalletOperation>()
         val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.12)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.12)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.12)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.12)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -539,9 +485,8 @@ class FeeProcessorTest {
     @Test
     fun testMultipleFeeMoreThanOperationVolume() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.12)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.12)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.12)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.12)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -558,9 +503,8 @@ class FeeProcessorTest {
     @Test
     fun testMakerMultipleFeeMoreThanOperationVolume() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.12)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.12)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.12)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.12)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -579,9 +523,8 @@ class FeeProcessorTest {
 
 
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.12)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.12)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.12)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.12)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -594,26 +537,20 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client3", fee.transfer!!.fromClientId)
         assertEquals("Client4", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(10.23), fee.transfer!!.volume)
 
         assertEquals(4, operations.size)
         assertEquals(originalOperations, operations.subList(0, 2))
         assertEquals(BigDecimal.valueOf(-10.23), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
         assertEquals(BigDecimal.valueOf(10.23), operations[3].amount)
         assertEquals("Client4", operations[3].clientId)
-        assertTrue { operations[3].isFee }
-
     }
 
     @Test
     fun testNegativeReceiptOperationAmount() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-900.0)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-900.0)))
         val receiptOperation = operations.first()
 
         val feeInstructions = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 100.0, targetClientId = "Client4")!!)
@@ -629,8 +566,7 @@ class FeeProcessorTest {
     @Test
     fun testNegativeReceiptOperationAmountMultipleFee() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-900.0)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-900.0)))
         val receiptOperation = operations.first()
 
         val feeInstructions = listOf(buildFeeInstruction(type = FeeType.CLIENT_FEE, sizeType = FeeSizeType.ABSOLUTE, size = 50.0, targetClientId = "Client4")!!,
@@ -642,11 +578,9 @@ class FeeProcessorTest {
         assertEquals(3, operations.size)
         assertEquals(BigDecimal.valueOf(-900.0), operations.firstOrNull { it.clientId == "Client1" }!!.amount)
 
-        val feeOperations = operations.filter { it.isFee }
+        val feeOperations = operations.filter { it.clientId == "Client4" }
         assertEquals(2, feeOperations.size)
-        assertEquals("Client4", feeOperations[0].clientId)
         assertEquals(BigDecimal.valueOf(50.0), feeOperations[0].amount)
-        assertEquals("Client4", feeOperations[1].clientId)
         assertEquals(BigDecimal.valueOf(50.0), feeOperations[1].amount)
 
     }
@@ -654,9 +588,8 @@ class FeeProcessorTest {
     @Test
     fun testMakerFeeModificator() {
         val operations = LinkedList<WalletOperation>()
-        val now = Date()
-        operations.add(WalletOperation("1", null, "Client1", "USD", now, BigDecimal.valueOf(-10.1)))
-        operations.add(WalletOperation("2", null, "Client2", "USD", now, BigDecimal.valueOf(10.1)))
+        operations.add(WalletOperation("Client1", "USD", BigDecimal.valueOf(-10.1)))
+        operations.add(WalletOperation("Client2", "USD", BigDecimal.valueOf(10.1)))
         val receiptOperation = operations[1]
         val originalOperations = LinkedList(operations)
 
@@ -668,19 +601,14 @@ class FeeProcessorTest {
         assertEquals("USD", fee.transfer!!.asset)
         assertEquals("Client2", fee.transfer!!.fromClientId)
         assertEquals("Client3", fee.transfer!!.toClientId)
-        assertNull(fee.transfer!!.externalId)
         assertEquals(BigDecimal.valueOf(0.393469340287), fee.transfer!!.feeCoef) // 1 - exp(-0.01*50)
-        assertEquals(now, fee.transfer!!.dateTime)
         assertEquals(BigDecimal.valueOf(0.08), fee.transfer!!.volume)
 
         assertEquals(3, operations.size)
         assertEquals(originalOperations[0], operations[0])
-        assertFalse { operations[0].isFee }
         assertEquals(BigDecimal.valueOf(10.02), operations[1].amount)
-        assertFalse { operations[1].isFee }
         assertEquals(BigDecimal.valueOf(0.08), operations[2].amount)
         assertEquals("Client3", operations[2].clientId)
-        assertTrue { operations[2].isFee }
     }
 }
 

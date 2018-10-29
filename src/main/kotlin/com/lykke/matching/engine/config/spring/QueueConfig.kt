@@ -3,6 +3,9 @@ package com.lykke.matching.engine.config.spring
 import com.lykke.matching.engine.daos.LkkTrade
 import com.lykke.matching.engine.daos.TradeInfo
 import com.lykke.matching.engine.daos.TransferOperation
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.BalanceUpdateNotification
 import com.lykke.matching.engine.notification.QuotesUpdate
@@ -148,5 +151,19 @@ open class QueueConfig {
     @InputQueue
     open fun preProcessedMessageQueue(): BlockingQueue<MessageWrapper> {
         return LinkedBlockingQueue<MessageWrapper>()
+    }
+
+    open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
+        return LinkedBlockingQueue<OrderBookPersistEvent>()
+    }
+
+    @Bean
+    open fun updatedStopOrderBooksQueue(): BlockingQueue<StopOrderBookPersistEvent>? {
+        return LinkedBlockingQueue<StopOrderBookPersistEvent>()
+    }
+
+    @Bean
+    open fun updatedWalletsQueue(): BlockingQueue<AccountPersistEvent>? {
+        return LinkedBlockingQueue<AccountPersistEvent>()
     }
 }
