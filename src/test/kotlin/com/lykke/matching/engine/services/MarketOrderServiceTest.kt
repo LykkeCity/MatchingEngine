@@ -9,6 +9,7 @@ import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
 import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.order.OrderStatus.Matched
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -75,6 +77,9 @@ class MarketOrderServiceTest: AbstractTest() {
 
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
+
+    @Autowired
+    private lateinit var midPriceHolder: MidPriceHolder
 
     @Before
     fun setUp() {
@@ -833,6 +838,27 @@ class MarketOrderServiceTest: AbstractTest() {
 
         assertOrderBookSize("BTCUSD", true, 1)
     }
+
+    @Test
+    fun testMidPriceUpdatedAfterMatching() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "BTC", 0.6)
+
+        val assetPair = assetPairsCache.getAssetPair("BTCUSD")
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9050.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 9100.0, volume = 0.3)))
+        assertEquals(BigDecimal("9537.5"), midPriceHolder.getReferenceMidPrice(assetPair!!, Date()))
+
+        //when
+        marketOrderService.processMessage(buildMarketOrderWrapper(buildMarketOrder(clientId = "Client4", assetId = "BTCUSD", volume = -0.3)))
+
+        //then
+        assertEquals(NumberUtils.setScaleRoundUp(BigDecimal("9533.333333333"), assetPair.accuracy), midPriceHolder.getReferenceMidPrice(assetPair, Date()))
+    }
+
 
     @Test
     fun testSellOrderDeviation() {

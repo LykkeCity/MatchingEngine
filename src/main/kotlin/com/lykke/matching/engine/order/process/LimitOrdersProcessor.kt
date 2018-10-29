@@ -289,7 +289,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         val orderSideBestPrice = getOrderSideBestPrice(order, orderBook)
         val oppositeBestPrice = if (order.isBuySide()) orderBook.getAskPrice() else orderBook.getBidPrice()
 
-        if (!isMidPriceValid(order, date, getMidPrice(orderSideBestPrice, oppositeBestPrice), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+        if (!isMidPriceValid(getMidPrice(orderSideBestPrice, oppositeBestPrice), lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+            processInvalidOrder(order, OrderStatus.TooHighPriceDeviation, "too high price deviation")
             return
         }
 
@@ -319,10 +320,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
     }
 
     private fun processInvalidOrder(orderValidationResult: OrderValidationResult, order: LimitOrder) {
-        LOGGER.info("Limit order (id: ${order.externalId}) is rejected: ${orderValidationResult.message}")
-        order.updateStatus(orderValidationResult.status!!, date)
+        processInvalidOrder(order, orderValidationResult.status!!, orderValidationResult.message)
+    }
+    private fun processInvalidOrder(order: LimitOrder, orderStatus: OrderStatus, message: String? = null) {
+        LOGGER.info("Limit order (id: ${order.externalId}) is rejected: $message")
+        order.updateStatus(orderStatus, date)
         addToReportIfNotTrusted(order)
-        processedOrders.add(ProcessedOrder(order, false, orderValidationResult.message))
+        processedOrders.add(ProcessedOrder(order, false, message))
     }
 
     private fun processMatchingResult(matchingResult: MatchingResult,
@@ -362,7 +366,8 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
 
         val newMidPriceAfterMatching = getMidPrice(orderSideBestPrice, oppositeSideBestPrice)
 
-        if (!isMidPriceValid(order, matchingResult.timestamp, newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+        if (!isMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
+            processInvalidOrder(order, OrderStatus.TooHighPriceDeviation, "too high price deviation")
             return false
         }
 
@@ -467,18 +472,13 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         return true
     }
 
-    private fun isMidPriceValid(order: LimitOrder,
-                                timestamp: Date,
-                                newMidPriceAfterMatching: BigDecimal?,
+    private fun isMidPriceValid(newMidPriceAfterMatching: BigDecimal?,
                                 lowerAcceptableMidPrice: BigDecimal?,
                                 upperAcceptableMidPrice: BigDecimal?): Boolean {
         if (OrderValidationUtils.isMidPriceValid(newMidPriceAfterMatching, lowerAcceptableMidPrice, upperAcceptableMidPrice)) {
             return true
         }
 
-        order.updateStatus(OrderStatus.TooHighPriceDeviation, timestamp)
-        addToReportIfNotTrusted(order)
-        processedOrders.add(ProcessedOrder(order, false))
         return false
     }
 

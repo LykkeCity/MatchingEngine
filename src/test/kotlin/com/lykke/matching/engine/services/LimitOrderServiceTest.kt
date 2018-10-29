@@ -1676,7 +1676,7 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun luldProtectionDoesNotWorkWhenNoThresholdForAssetPairTest() {
+    fun midPriceProtectionDoesNotWorkWhenNoThresholdForAssetPairTest() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
@@ -1722,7 +1722,36 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testBuyPriceDeviationThreshold() {
+    fun testPriceDeviationOrderRejectedWithoutMatching() {
+        //given
+        testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
+        testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
+        testBalanceHolderWrapper.updateBalance("Client4", "USD", 10000.0)
+
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 10000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 5000.0, volume = 0.3)))
+
+        testSettingsDatabaseAccessor.createOrUpdateSetting (AvailableSettingGroup.LO_PRICE_DEVIATION_THRESHOLD.settingGroupName, getSetting(BigDecimal.valueOf(0.09).toString(), "BTCUSD") )
+        applicationSettingsCache.update()
+
+        clientsEventsQueue.clear()
+
+        //when
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client4", assetId = "BTCUSD", price = 9000.0, volume = 0.3)))
+
+        //then
+        assertEquals(1, clientsEventsQueue.size)
+        val executionEvent = clientsEventsQueue.poll() as ExecutionEvent
+        assertEquals(1, executionEvent.orders.size)
+        assertEquals(OutgoingOrderStatus.REJECTED, executionEvent.orders.single().status)
+        assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, executionEvent.orders.single().rejectReason)
+        assertOrderBookSize("BTCUSD", false, 1)
+        assertOrderBookSize("BTCUSD", true, 1)
+    }
+
+
+    @Test
+    fun testBuyPriceDeviationOrderRejected() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
@@ -1752,7 +1781,7 @@ class LimitOrderServiceTest : AbstractTest() {
     }
 
     @Test
-    fun testSellPriceDeviationThreshold() {
+    fun testSellPriceDeviationOrderRejected() {
         //given
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.6)
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 10000.0)
