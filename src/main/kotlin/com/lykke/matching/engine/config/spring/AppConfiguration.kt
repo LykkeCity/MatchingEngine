@@ -83,8 +83,8 @@ open class AppConfiguration: SchedulingConfigurer {
         return QueueSizeHealthChecker(
                 MonitoredComponent.INPUT_QUEUE,
                 namesToInputQueues,
-                config.me.maxQueueSizeLimit,
-                config.me.recoverQueueSizeLimit)
+                config.me.queueConfig.maxQueueSizeLimit,
+                config.me.queueConfig.recoverQueueSizeLimit)
     }
 
     @Bean
@@ -92,8 +92,8 @@ open class AppConfiguration: SchedulingConfigurer {
         return QueueSizeHealthChecker(
                 MonitoredComponent.RABBIT_QUEUE,
                 namesToInputQueues,
-                config.me.rabbitMaxQueueSizeLimit,
-                config.me.rabbitRecoverQueueSizeLimit)
+                config.me.queueConfig.rabbitMaxQueueSizeLimit,
+                config.me.queueConfig.rabbitRecoverQueueSizeLimit)
     }
 
     @Bean
