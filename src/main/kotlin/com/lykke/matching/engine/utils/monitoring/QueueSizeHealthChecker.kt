@@ -26,7 +26,7 @@ class QueueSizeHealthChecker(private val monitoredComponent: MonitoredComponent,
     @Autowired
     private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
-    @Scheduled(fixedRateString = "#{Config.me.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueSizeHealthCheckInterval}")
+    @Scheduled(fixedRateString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}", initialDelayString = "#{Config.me.queueConfig.queueSizeHealthCheckInterval}")
     fun checkQueueSize() {
         nameToInputQueue.forEach {
             checkQueueReachedMaxLimit(it)
