@@ -142,6 +142,19 @@ open class QueueConfig {
         return LinkedBlockingQueue<List<LkkTrade>>()
     }
 
+    @Bean
+    open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
+        return LinkedBlockingQueue<OrderBookPersistEvent>()
+    }
 
+    @Bean
+    open fun updatedStopOrderBooksQueue(): BlockingQueue<StopOrderBookPersistEvent>? {
+        return LinkedBlockingQueue<StopOrderBookPersistEvent>()
+    }
+
+    @Bean
+    open fun updatedWalletsQueue(): BlockingQueue<AccountPersistEvent>? {
+        return LinkedBlockingQueue<AccountPersistEvent>()
+    }
     //</editor-fold>
 }
