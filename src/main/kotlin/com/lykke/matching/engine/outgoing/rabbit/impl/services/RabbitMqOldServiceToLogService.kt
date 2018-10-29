@@ -1,4 +1,4 @@
-package com.lykke.matching.engine.outgoing.rabbit.impl
+package com.lykke.matching.engine.outgoing.rabbit.impl.services
 
 import com.google.gson.Gson
 import org.apache.log4j.Logger
