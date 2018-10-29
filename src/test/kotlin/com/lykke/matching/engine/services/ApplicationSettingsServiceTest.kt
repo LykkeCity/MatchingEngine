@@ -212,7 +212,7 @@ class ApplicationSettingsServiceTest : AbstractTest() {
             assertEquals("stop", firstValue.name)
             assertEquals("stop", firstValue.value)
             assertEquals("testUser", firstValue.user)
-            assertEquals("[ADD] testComment", firstValue.comment)
+            assertEquals("[CREATE] testComment", firstValue.comment)
         }
     }
 }

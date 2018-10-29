@@ -4,7 +4,6 @@ import com.lykke.matching.engine.exception.MatchingEngineException
 
 class ValidationException(val validationType: Validation = Validation.GENERIC_VALIDATION_FAILURE, validationMessage: String? = null) : MatchingEngineException(validationMessage ?: validationType.message) {
     enum class Validation(val message: String) {
-        GENERIC_VALIDATION_FAILURE("Bad request"),
         NEGATIVE_OVERDRAFT_LIMIT("Overdraft limit can not be negative"),
         INVALID_VOLUME_ACCURACY("Invalid volume accuracy"),
         INVALID_PRICE_ACCURACY("Invalid price accuracy"),
