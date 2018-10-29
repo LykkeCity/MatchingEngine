@@ -10,8 +10,6 @@ import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.MarketStateCache
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
-import com.lykke.matching.engine.holders.AssetsHolder
-import com.lykke.matching.engine.holders.AssetsPairsHolder
 import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.incoming.MessageRouter
@@ -20,7 +18,6 @@ import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreproce
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.outgoing.database.TransferOperationSaveService
-import com.lykke.matching.engine.outgoing.socket.ConnectionsHolder
 import com.lykke.matching.engine.performance.PerformanceStatsHolder
 import com.lykke.matching.engine.services.*
 import com.lykke.matching.engine.utils.config.Config
@@ -55,7 +52,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
 
     private val cashInOutOperationService: CashInOutOperationService
     private val cashTransferOperationService: CashTransferOperationService
-    private val cashSwapOperationService: CashSwapOperationService
     private val singleLimitOrderService: SingleLimitOrderService
     private val multiLimitOrderService: MultiLimitOrderService
     private val marketOrderService: MarketOrderService
@@ -101,8 +97,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
         this.marketOrderDatabaseAccessor = applicationContext.getBean(AzureMarketOrderDatabaseAccessor::class.java)
         this.backOfficeDatabaseAccessor = applicationContext.getBean(AzureBackOfficeDatabaseAccessor::class.java)
 
-        val assetsHolder = applicationContext.getBean(AssetsHolder::class.java)
-        val assetsPairsHolder = applicationContext.getBean(AssetsPairsHolder::class.java)
         val balanceHolder = applicationContext.getBean(BalancesHolder::class.java)
         this.applicationSettingsCache = applicationContext.getBean(ApplicationSettingsCache::class.java)
 
@@ -144,8 +138,6 @@ class MessageProcessor(config: Config, messageRouter: MessageRouter, application
             marketStateCache.refresh()
             this.historyTicksBuilder = historyTicksService.start()
         }
-
-        val connectionsHolder = applicationContext.getBean(ConnectionsHolder::class.java)
 
         processedMessagesCache = applicationContext.getBean(ProcessedMessagesCache::class.java)
         servicesMap = initServicesMap()

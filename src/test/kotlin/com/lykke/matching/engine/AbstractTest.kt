@@ -6,8 +6,6 @@ import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.cache.AssetPairsCache
 import com.lykke.matching.engine.database.cache.AssetsCache
-import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
-import com.lykke.matching.engine.holders.BalancesHolder
 import com.lykke.matching.engine.holders.*
 import com.lykke.matching.engine.notification.*
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
@@ -23,14 +21,11 @@ import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.order.MinVolumeOrderCanceller
 import org.junit.After
 import org.springframework.beans.factory.annotation.Autowired
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import com.lykke.matching.engine.utils.assertEquals
 import org.springframework.beans.factory.annotation.Qualifier
 import java.math.BigDecimal
+import java.util.concurrent.BlockingQueue
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 abstract class AbstractTest {
     @Autowired
@@ -141,8 +136,6 @@ abstract class AbstractTest {
     @Autowired
     protected lateinit var trustedClientsEventsQueue: BlockingQueue<ExecutionEvent>
 
-    protected val quotesNotificationQueue = LinkedBlockingQueue<QuotesUpdate>()
-
     @Autowired
     @Qualifier("rabbitCashInOutQueue")
     protected lateinit var cashInOutQueue:  BlockingQueue<CashOperation>
@@ -155,7 +148,6 @@ abstract class AbstractTest {
 
     protected lateinit var multiLimitOrderCancelService: MultiLimitOrderCancelService
     protected lateinit var singleLimitOrderService: SingleLimitOrderService
-    protected lateinit var reservedBalanceUpdateService: ReservedBalanceUpdateService
 
     private var initialized = false
     protected open fun initServices() {

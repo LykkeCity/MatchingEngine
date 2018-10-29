@@ -1,6 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory

@@ -28,10 +28,12 @@ import com.lykke.matching.engine.outgoing.messages.*
 import com.lykke.matching.engine.outgoing.messages.v2.events.Event
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
 import com.lykke.matching.engine.services.*
-import com.lykke.matching.engine.services.validators.*
+import com.lykke.matching.engine.services.validators.MarketOrderValidator
+import com.lykke.matching.engine.services.validators.ReservedCashInOutOperationValidator
 import com.lykke.matching.engine.services.validators.business.*
 import com.lykke.matching.engine.services.validators.business.impl.*
-import com.lykke.matching.engine.services.validators.impl.*
+import com.lykke.matching.engine.services.validators.impl.MarketOrderValidatorImpl
+import com.lykke.matching.engine.services.validators.impl.ReservedCashInOutOperationValidatorImpl
 import com.lykke.matching.engine.services.validators.input.CashInOutOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.CashTransferOperationInputValidator
 import com.lykke.matching.engine.services.validators.input.LimitOrderCancelOperationInputValidator
@@ -191,13 +193,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun cashOperationValidator(balancesHolder: BalancesHolder,
-                                    assetsHolder: AssetsHolder,
-                                    applicationSettingsCache: ApplicationSettingsCache): CashOperationValidator {
-        return CashOperationValidatorImpl(balancesHolder, assetsHolder, applicationSettingsCache)
-    }
-
-    @Bean
     open fun cashInOutOperationBusinessValidator(balancesHolder: BalancesHolder): CashInOutOperationBusinessValidator {
         return CashInOutOperationBusinessValidatorImpl(balancesHolder)
     }
@@ -226,12 +221,6 @@ open class TestApplicationContext {
                                        messageSender: MessageSender): CashInOutOperationService {
         return CashInOutOperationService(balancesHolder, rabbitCashInOutQueue, feeProcessor,
                 cashInOutOperationBusinessValidator, messageSequenceNumberHolder, messageSender)
-    }
-
-    @Bean
-    open fun cashSwapOperationValidator(balancesHolder: BalancesHolder,
-                                        assetsHolder: AssetsHolder): CashSwapOperationValidator {
-        return CashSwapOperationValidatorImpl(balancesHolder, assetsHolder)
     }
 
     @Bean
@@ -267,11 +256,6 @@ open class TestApplicationContext {
     }
 
     @Bean
-    open fun balanceUpdateValidator(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder): BalanceUpdateValidator {
-        return BalanceUpdateValidatorImpl(balancesHolder, assetsHolder)
-    }
-
-    @Bean
     open fun applicationSettingsHistoryDatabaseAccessor(): SettingsHistoryDatabaseAccessor {
         return Mockito.mock(SettingsHistoryDatabaseAccessor::class.java)
     }
@@ -288,14 +272,12 @@ open class TestApplicationContext {
                                       assetsHolder: AssetsHolder,
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
-                                      quotesUpdateQueue: BlockingQueue<QuotesUpdate>,
                                       tradeInfoQueue: BlockingQueue<TradeInfo>,
                                       applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue,
                 tradeInfoQueue,
                 applicationSettingsCache)
     }
