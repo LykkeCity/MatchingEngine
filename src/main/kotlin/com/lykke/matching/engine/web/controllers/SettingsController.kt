@@ -37,7 +37,6 @@ class SettingsController {
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 400, message = "Supplied group name is not supported"),
-            ApiResponse(code = 404, message = "Setting group with supplied name was not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}", produces = [MediaType.APPLICATION_JSON_VALUE])
