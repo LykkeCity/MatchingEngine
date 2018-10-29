@@ -76,19 +76,19 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         return this
     }
 
-    private fun calculateWalletOperations(ordersInfo: Collection<OrdersProcessingInfo>, date: Date): List<WalletOperation> {
+    private fun calculateWalletOperations(ordersInfo: Collection<OrdersProcessingInfo>): List<WalletOperation> {
         val walletOperations = LinkedList<WalletOperation>()
 
         ordersInfo.forEach { orderInfo ->
             val assetPair = assetsPairsHolder.getAssetPairAllowNulls(orderInfo.assetPairId)
             if (assetPair != null) {
-                walletOperations.addAll(calculateWalletOperation(orderInfo, assetPair, date))
+                walletOperations.addAll(calculateWalletOperation(orderInfo, assetPair))
             }
         }
         return walletOperations
     }
 
-    private fun calculateWalletOperation(orderInfo: OrdersProcessingInfo, assetPair: AssetPair, date: Date): List<WalletOperation> {
+    private fun calculateWalletOperation(orderInfo: OrdersProcessingInfo, assetPair: AssetPair): List<WalletOperation> {
         val walletOperations = LinkedList<WalletOperation>()
 
         orderInfo.allOrders.forEach { order ->
@@ -102,7 +102,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
 
                 if (reservedBalance > BigDecimal.ZERO) {
                     walletOperations.add(
-                            WalletOperation(UUID.randomUUID().toString(), null, order.clientId, limitAssetId, date, BigDecimal.ZERO,
+                            WalletOperation(order.clientId, limitAssetId, BigDecimal.ZERO,
                                     if (limitVolume > reservedBalance) -reservedBalance else -limitVolume))
                 }
             }
@@ -143,7 +143,7 @@ abstract class AbstractLimitOrdersCanceller<TAssetOrderBook : AbstractAssetOrder
         clientsLimitOrders.addAll(ordersWithTrades.clientsOrders)
         trustedClientsLimitOrders.addAll(ordersWithTrades.trustedClientsOrders)
 
-        return getCancelResult(calculateWalletOperations(this.ordersToCancel, date), clientsLimitOrders, trustedClientsLimitOrders, assetOrderBooks)
+        return getCancelResult(calculateWalletOperations(this.ordersToCancel), clientsLimitOrders, trustedClientsLimitOrders, assetOrderBooks)
     }
 
     protected abstract fun getCancelResult(walletOperations: List<WalletOperation>,

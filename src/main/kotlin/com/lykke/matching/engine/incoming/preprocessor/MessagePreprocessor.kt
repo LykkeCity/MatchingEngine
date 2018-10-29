@@ -5,5 +5,5 @@ import com.lykke.matching.engine.messages.MessageWrapper
 
 interface MessagePreprocessor {
     fun preProcess(messageWrapper: MessageWrapper)
-    fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus)
+    fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String? = null)
 }

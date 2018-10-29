@@ -1,24 +1,25 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.socket.SocketServer
 import com.lykke.matching.engine.utils.config.Config
 import com.lykke.matching.engine.utils.monitoring.MonitoringStatsCollector
-import com.lykke.utils.AppVersion
 import com.lykke.utils.alivestatus.processor.AliveStatusProcessorFactory
-import com.lykke.utils.logging.MetricsLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.core.env.get
 import org.springframework.scheduling.TaskScheduler
+import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
 
 @Configuration
 @EnableScheduling
+@EnableAsync
 open class AppConfiguration: SchedulingConfigurer {
     @Autowired
     private lateinit var config: Config
@@ -33,19 +34,37 @@ open class AppConfiguration: SchedulingConfigurer {
     @Bean
     open fun taskScheduler(): TaskScheduler {
         val threadPoolTaskScheduler = ThreadPoolTaskScheduler()
-        threadPoolTaskScheduler.threadNamePrefix = "scheduled-task"
-        threadPoolTaskScheduler.poolSize = environment["concurent.pool.size"].toInt()
+        threadPoolTaskScheduler.threadNamePrefix = "scheduled-task-"
+        threadPoolTaskScheduler.poolSize = environment["concurrent.scheduler.pool.size"].toInt()
         return threadPoolTaskScheduler
     }
 
     @Bean
-    open fun socketServer(): Runnable {
-        return SocketServer { appInitialData ->
-            MetricsLogger.getLogger().logWarning("Spot.${config.me.name} ${AppVersion.VERSION} : " +
-                    "Started : ${appInitialData.ordersCount} orders, ${appInitialData.stopOrdersCount} " +
-                    "stop orders,${appInitialData.balancesCount} " +
-                    "balances for ${appInitialData.clientsCount} clients")
+    open fun clientRequestThreadPool(@Value("\${concurrent.client.request.pool.core.pool.size}") corePoolSize: Int,
+                                     @Value("#{Config.me.socket.maxConnections}") maxPoolSize: Int): ThreadPoolTaskExecutor {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "client-connection-"
+        threadPoolTaskExecutor.setQueueCapacity(0)
+        threadPoolTaskExecutor.corePoolSize = corePoolSize
+        threadPoolTaskExecutor.maxPoolSize = maxPoolSize
+
+        return threadPoolTaskExecutor
+    }
+
+    @Bean
+    open fun orderBookSubscribersThreadPool(@Value("\${concurrent.orderbook.subscribers.pool.core.pool.size}") corePoolSize: Int,
+                                            @Value("#{Config.me.serverOrderBookMaxConnections}") maxPoolSize: Int?): ThreadPoolTaskExecutor? {
+        if (config.me.serverOrderBookPort == null) {
+            return null
         }
+
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.threadNamePrefix = "orderbook-subscriber-connection-"
+        threadPoolTaskExecutor.setQueueCapacity(0)
+        threadPoolTaskExecutor.corePoolSize = corePoolSize
+        threadPoolTaskExecutor.maxPoolSize = maxPoolSize!!
+
+        return threadPoolTaskExecutor
     }
 
     @Bean
@@ -61,3 +80,4 @@ open class AppConfiguration: SchedulingConfigurer {
         return MonitoringStatsCollector()
     }
 }
+

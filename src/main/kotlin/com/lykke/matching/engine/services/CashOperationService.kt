@@ -14,7 +14,6 @@ import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import java.util.Date
 import java.util.UUID
 
 @Service
@@ -37,8 +36,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
             return
         }
 
-        val operation = WalletOperation(UUID.randomUUID().toString(), message.uid.toString(), message.clientId, message.assetId,
-                Date(message.timestamp), BigDecimal.valueOf(message.amount), BigDecimal.ZERO)
+        val operation = WalletOperation(message.clientId, message.assetId, BigDecimal.valueOf(message.amount), BigDecimal.ZERO)
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         try {
@@ -50,7 +48,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
             return
         }
 
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null, null, null)
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (updated) {
@@ -59,7 +57,7 @@ class CashOperationService @Autowired constructor (private val balancesHolder: B
 
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder()
                 .setBussinesId(message.bussinesId)
-                .setRecordId(operation.id))
+                .setRecordId(UUID.randomUUID().toString()))
         LOGGER.debug("Cash operation (${message.bussinesId}) for client ${message.clientId}, asset ${message.assetId}, amount: ${NumberUtils.roundForPrint(message.amount)} processed")
     }
 
