@@ -153,6 +153,7 @@ open class QueueConfig {
         return LinkedBlockingQueue<MessageWrapper>()
     }
 
+    @Bean
     open fun updatedOrderBooksQueue(): BlockingQueue<OrderBookPersistEvent>? {
         return LinkedBlockingQueue<OrderBookPersistEvent>()
     }
