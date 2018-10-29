@@ -2,7 +2,6 @@ package com.lykke.matching.engine.deduplication.impl
 
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,10 +36,6 @@ class ProcessedMessagesCacheImpl @Autowired constructor(
     }
 
     override fun isProcessed(type: Byte, messageId: String): Boolean {
-        if (ProcessedMessageUtils.isDeduplicationNotNeeded(type)) {
-            return false
-        }
-
         lock.read {
             return containsMessageId(typeToProcessedMessage[type], messageId)
                     || containsMessageId(prevTypeToProcessedMessage[type], messageId)

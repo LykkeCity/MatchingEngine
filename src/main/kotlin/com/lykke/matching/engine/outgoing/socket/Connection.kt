@@ -15,7 +15,7 @@ import java.io.BufferedOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.Socket
-import java.util.Date
+import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
@@ -35,6 +35,7 @@ class Connection(val socket: Socket,
     var clientHostName = socket.inetAddress.canonicalHostName
 
     override fun run() {
+        Thread.currentThread().name = "orderbook-subscriber-connection-$clientHostName"
         LOGGER.info("Got order book subscriber from $clientHostName.")
         try {
             val inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
@@ -59,8 +60,8 @@ class Connection(val socket: Socket,
             val now = Date()
             orderBooks.values.forEach {
                 val orderBook = it.copy()
-                writeOrderBook(OrderBook(orderBook.assetId, true, now, orderBook.getOrderBook(true)), outputStream)
-                writeOrderBook(OrderBook(orderBook.assetId, false, now, orderBook.getOrderBook(false)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, true, now, orderBook.getOrderBook(true)), outputStream)
+                writeOrderBook(OrderBook(orderBook.assetPairId, false, now, orderBook.getOrderBook(false)), outputStream)
             }
 
             while (true) {
@@ -96,5 +97,9 @@ class Connection(val socket: Socket,
 
     fun isClosed() : Boolean {
         return socket.isClosed
+    }
+
+    override fun toString(): String {
+        return "Connection, (clientHostName: $clientHostName)"
     }
 }

@@ -15,15 +15,15 @@ import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.BalanceUpdate
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
-import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -32,6 +32,7 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
+import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.utils.assertEquals
 import com.lykke.matching.engine.utils.getSetting
 
@@ -40,8 +41,6 @@ import com.lykke.matching.engine.utils.getSetting
 @SpringBootTest(classes = [(TestApplicationContext::class), (LimitOrderMassCancelServiceTest.Config::class)])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class LimitOrderMassCancelServiceTest : AbstractTest() {
-
-    
     @TestConfiguration
     open class Config {
         @Bean
@@ -64,7 +63,10 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
             return testSettingsDatabaseAccessor
         }
     }
-    
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
     @Before
     fun setUp() {
 
@@ -81,12 +83,12 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     }
 
     private fun setOrders() {
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "BTCUSD", volume = -0.5, price = 9000.0)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "3", clientId = "Client1", assetId = "BTCUSD", volume = 0.01, price = 7000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "BTCUSD", volume = -0.5, price = 9000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "2", clientId = "Client1", assetId = "BTCUSD", volume = -0.1, price = 9000.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "3", clientId = "Client1", assetId = "BTCUSD", volume = 0.01, price = 7000.0)))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client1", assetId = "EURUSD", volume = 10.0, price = 1.1)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "5",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "4", clientId = "Client1", assetId = "EURUSD", volume = 10.0, price = 1.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "5",
                 clientId = "Client1",
                 assetId = "BTCUSD",
                 type = LimitOrderType.STOP_LIMIT,
@@ -116,7 +118,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelOrdersOneSide() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1", "BTCUSD", false))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 1)
@@ -159,7 +161,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun cancelAllClientOrders() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1"))
 
         assertOrderBookSize("BTCUSD", false, 1)
         assertOrderBookSize("BTCUSD", true, 0)
@@ -216,7 +218,7 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
     fun testCancelTrustedClientOrders() {
         setOrders()
 
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("TrustedClient", "EURUSD"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("TrustedClient", "EURUSD"))
 
         assertOrderBookSize("BTCUSD", false, 3)
         assertOrderBookSize("BTCUSD", true, 1)
@@ -244,5 +246,4 @@ class LimitOrderMassCancelServiceTest : AbstractTest() {
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m1" }.status)
         assertEquals(OutgoingOrderStatus.CANCELLED, event.orders.single { it.externalId == "m2" }.status)
     }
-
 }

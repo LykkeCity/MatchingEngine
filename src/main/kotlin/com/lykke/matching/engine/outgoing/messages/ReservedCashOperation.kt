@@ -7,4 +7,4 @@ class ReservedCashOperation(val id: String,
                             val dateTime: Date,
                             val reservedVolume: String,
                             var asset: String,
-                            val messageId: String) : JsonSerializable()
+                            val messageId: String)

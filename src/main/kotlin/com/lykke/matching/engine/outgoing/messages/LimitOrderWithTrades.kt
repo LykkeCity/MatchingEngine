@@ -6,4 +6,4 @@ import java.util.LinkedList
 class LimitOrderWithTrades (
         val order: LimitOrder,
         val trades: MutableList<LimitTradeInfo> = LinkedList()
-): JsonSerializable()
+)

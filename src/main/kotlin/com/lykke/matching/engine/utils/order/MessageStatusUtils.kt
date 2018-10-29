@@ -52,6 +52,7 @@ class MessageStatusUtils {
                 BALANCE_LOWER_THAN_RESERVED -> MessageStatus.BALANCE_LOWER_THAN_RESERVED
                 NEGATIVE_OVERDRAFT_LIMIT -> MessageStatus.NEGATIVE_OVERDRAFT_LIMIT
                 GENERIC_VALIDATION_FAILURE -> MessageStatus.BAD_REQUEST
+                LIMIT_ORDER_NOT_FOUND -> MessageStatus.LIMIT_ORDER_NOT_FOUND
             }
         }
     }

@@ -82,6 +82,10 @@ class SettingsController {
     }
 
     @ApiOperation("Get list of supported setting groups")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "Success"),
+            ApiResponse(code = 500, message = "Internal server error occurred")
+    )
     @GetMapping("/supported", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSupportedSettings(): Set<String> {
         return AvailableSettingGroup.values().map { it.settingGroupName }.toSet()
@@ -91,6 +95,7 @@ class SettingsController {
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
             ApiResponse(code = 400, message = "Supplied group name is not supported"),
+            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @GetMapping("/{settingGroupName}/setting/{settingName}/history", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -132,7 +137,8 @@ class SettingsController {
     @ApiOperation("Delete setting for given setting group and given setting name")
     @ApiResponses(
             ApiResponse(code = 200, message = "Success"),
-            ApiResponse(code = 404, message = "Supplied setting group is not supported"),
+            ApiResponse(code = 400, message = "Supplied setting group is not supported"),
+            ApiResponse(code = 404, message = "Setting not found"),
             ApiResponse(code = 500, message = "Internal server error occurred")
     )
     @DeleteMapping("/{settingGroupName}/setting/{settingName}")
@@ -161,6 +167,6 @@ class SettingsController {
 
     @ExceptionHandler
     private fun handleInvalidSettingGroup(request: HttpServletRequest, exception: InvalidSettingGroupException): ResponseEntity<String> {
-        return ResponseEntity<String>(exception.message, HttpStatus.BAD_REQUEST)
+        return ResponseEntity(exception.message, HttpStatus.BAD_REQUEST)
     }
 }

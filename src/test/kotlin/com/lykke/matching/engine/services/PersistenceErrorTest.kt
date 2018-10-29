@@ -2,10 +2,7 @@ package com.lykke.matching.engine.services
 
 import com.lykke.matching.engine.AbstractTest
 import com.lykke.matching.engine.config.TestApplicationContext
-import com.lykke.matching.engine.daos.Asset
-import com.lykke.matching.engine.daos.AssetPair
-import com.lykke.matching.engine.daos.IncomingLimitOrder
-import com.lykke.matching.engine.daos.LimitOrder
+import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
@@ -15,9 +12,6 @@ import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildBalanceUpdateWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderCancelWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderMassCancelWrapper
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMarketOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderCancelWrapper
@@ -64,10 +58,10 @@ class PersistenceErrorTest : AbstractTest() {
         }
     }
 
+    private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
+
     @Autowired
     private lateinit var messageBuilder: MessageBuilder
-
-    private val clientIds = listOf("Client1", "Client2", "Client3", "TrustedClient")
 
     @Before
     fun setUp() {
@@ -82,7 +76,7 @@ class PersistenceErrorTest : AbstractTest() {
 
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = 1.0, price = 2.0, uid = "order1"
         )))
 
@@ -92,11 +86,11 @@ class PersistenceErrorTest : AbstractTest() {
                         IncomingLimitOrder(-3.0, 3.2, "order4"),
                         IncomingLimitOrder(-4.0, 3.3, "order5"))))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = -5.0, price = 4.0, uid = "order6"
         )))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = -1.0,
                 type = LimitOrderType.STOP_LIMIT, upperLimitPrice = 2.8, upperPrice = 2.5, uid = "stopOrder1"
         )))
@@ -107,7 +101,8 @@ class PersistenceErrorTest : AbstractTest() {
     }
 
     @After
-    fun tearDown() {
+    override fun tearDown() {
+        super.tearDown()
         persistenceManager.persistenceErrorMode = false
     }
 
@@ -139,13 +134,13 @@ class PersistenceErrorTest : AbstractTest() {
     @Test
     fun testLimitOrderCancel() {
         // Limit Order
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("order1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("order1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
 
         // Stop Limit Order
-        limitOrderCancelService.processMessage(buildLimitOrderCancelWrapper("stopOrder1"))
+        limitOrderCancelService.processMessage(messageBuilder.buildLimitOrderCancelWrapper("stopOrder1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
@@ -153,14 +148,12 @@ class PersistenceErrorTest : AbstractTest() {
 
     @Test
     fun testLimitOrderMassCancel() {
-        limitOrderMassCancelService.processMessage(buildLimitOrderMassCancelWrapper("Client1"))
+        limitOrderMassCancelService.processMessage(messageBuilder.buildLimitOrderMassCancelWrapper("Client1"))
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
 
-    /*
-    todo: enable this test then orders redis persistence will be done
     @Test
     fun testMultiLimitOrderCancel() {
         val messageWrapper = buildMultiLimitOrderCancelWrapper("TrustedClient", "EURUSD", false)
@@ -170,7 +163,6 @@ class PersistenceErrorTest : AbstractTest() {
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
     }
-    */
 
     @Test
     fun testClientMultiLimitOrderCancel() {
@@ -199,56 +191,56 @@ class PersistenceErrorTest : AbstractTest() {
     @Test
     fun testLimitOrder() {
         // Add order
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client2", assetId = "BTCUSD", volume = -0.5, price = 1000.0
         )))
         assertLimitOrderResult()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = -1.0, price = 2.2
         )))
         assertLimitOrderResult()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = 1.0, price = 2.1
         )))
         assertLimitOrderResult()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = 1.0, price = 2.1
         ), cancel = true))
         assertLimitOrderResult()
 
         // Add and match
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = -4.0, price = 2.0
         )))
         assertLimitOrderResult()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = -4.0, price = 2.0
         ), cancel = true))
         assertLimitOrderResult()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = -0.9, price = 2.0
         )))
         assertLimitOrderResult()
 
         // Add and match, uncompleted limit order has min volume
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = -0.96, price = 2.0
         )))
         assertLimitOrderResult()
 
         // Add and match with several orders
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = 5.96, price = 3.2
         )))
         assertLimitOrderResult()
 
         // Add and match with pending stop order
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client3", assetId = "EURUSD", volume = 1.0, price = 2.8
         )))
         assertLimitOrderResult()
@@ -257,70 +249,33 @@ class PersistenceErrorTest : AbstractTest() {
     @Test
     fun testStopLimitOrder() {
         // Add stop order
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = -1.0,
                 type = LimitOrderType.STOP_LIMIT, upperLimitPrice = 2.7, upperPrice = 2.4
         )))
         assertLimitOrderResult()
 
         // Add stop order and cancel previous
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = -1.0,
                 type = LimitOrderType.STOP_LIMIT, upperLimitPrice = 2.7, upperPrice = 2.4
         ), cancel = true))
         assertLimitOrderResult()
 
         // Add invalid stop order and cancel previous
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client1", assetId = "EURUSD", volume = -100000000.0,
                 type = LimitOrderType.STOP_LIMIT, upperLimitPrice = 2.7, upperPrice = 2.4
         ), cancel = true))
         assertLimitOrderResult()
 
         // Add stop order which will be processed immediately
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 clientId = "Client2", assetId = "EURUSD", volume = -1.0,
                 type = LimitOrderType.STOP_LIMIT, lowerLimitPrice = 2.0, lowerPrice = 1.8
         )))
         assertLimitOrderResult()
     }
-
-    /*
-    todo: enable this test then orders redis persistence will be done
-    @Test
-    fun testOldMultiLimitOrder() {
-        multiLimitOrderService.processMessage(buildOldMultiLimitOrderWrapper(
-                "EURUSD", "TrustedClient",
-                listOf(VolumePrice(-1.0, 3.1),
-                        VolumePrice(-2.0, 3.19),
-                        VolumePrice(-3.0, 3.29)), cancel = true))
-
-        assertData()
-        assertEquals(0, testClientLimitOrderListener.getCount())
-        assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-    }
-
-    private fun buildOldMultiLimitOrderWrapper(pair: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean = false): MessageWrapper {
-        return MessageWrapper("Test", MessageType.OLD_MULTI_LIMIT_ORDER.type, buildOldMultiLimitOrder(pair, clientId, volumes, cancel).toByteArray(), null)
-    }
-
-    private fun buildOldMultiLimitOrder(assetPairId: String, clientId: String, volumes: List<VolumePrice>, cancel: Boolean): ProtocolMessages.OldMultiLimitOrder {
-        val uid = Date().time
-        val orderBuilder = ProtocolMessages.OldMultiLimitOrder.newBuilder()
-                .setUid(uid)
-                .setTimestamp(uid)
-                .setClientId(clientId)
-                .setAssetPairId(assetPairId)
-                .setCancelAllPreviousLimitOrders(cancel)
-        volumes.forEach{ volume ->
-            orderBuilder.addOrders(ProtocolMessages.OldMultiLimitOrder.Order.newBuilder()
-                    .setVolume(volume.volume)
-                    .setPrice(volume.price)
-                    .build())
-        }
-        return orderBuilder.build()
-    }
-
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
@@ -333,7 +288,7 @@ class PersistenceErrorTest : AbstractTest() {
         assertData()
         assertEquals(0, testClientLimitOrderListener.getCount())
         assertEquals(0, testTrustedClientsLimitOrderListener.getCount())
-    }*/
+    }
 
     @Test
     fun testClientMultiLimitOrder() {

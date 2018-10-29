@@ -15,6 +15,8 @@ class ValidationException(val validationType: Validation = Validation.GENERIC_VA
         NO_LIQUIDITY("No liquidity"),
         TOO_SMALL_VOLUME("Too small volume"),
         UNKNOWN_ASSET("Unknown asset"),
-        BALANCE_LOWER_THAN_RESERVED("Balance lower than reserved")
+        BALANCE_LOWER_THAN_RESERVED("Balance lower than reserved"),
+        LIMIT_ORDER_NOT_FOUND("Limit order not found"),
+        GENERIC_VALIDATION_FAILURE("Input data is not valid")
     }
 }
