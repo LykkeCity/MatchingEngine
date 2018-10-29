@@ -27,9 +27,9 @@ import java.util.concurrent.BlockingQueue
 
 @Component
 class CashInOutPreprocessor(
-        private val cashInOutQueue: BlockingQueue<MessageWrapper>,
+        private val cashInOutInputQueue: BlockingQueue<MessageWrapper>,
         private val preProcessedMessageQueue: BlockingQueue<MessageWrapper>,
-        private val databaseAccessor: CashOperationIdDatabaseAccessor,
+        private val cashOperationIdDatabaseAccessor: CashOperationIdDatabaseAccessor,
         private val cashInOutOperationPreprocessorPersistenceManager: PersistenceManager,
         private val processedMessagesCache: ProcessedMessagesCache): MessagePreprocessor, Thread(CashInOutPreprocessor::class.java.name) {
 
@@ -70,6 +70,7 @@ class CashInOutPreprocessor(
                                    message: String) {
         val messageWrapper = cashInOutParsedData.messageWrapper
         val context = messageWrapper.context as CashInOutContext
+        LOGGER.info("Input validation failed messageId: ${context.messageId}, details: $message")
 
         val persistSuccess = cashInOutOperationPreprocessorPersistenceManager.persist(PersistenceData(context.processedMessage))
         if (!persistSuccess) {
@@ -88,7 +89,7 @@ class CashInOutPreprocessor(
     private fun performDeduplicationCheck(cashInOutParsedData: CashInOutParsedData) {
         val parsedMessageWrapper = cashInOutParsedData.messageWrapper
         val context = cashInOutParsedData.messageWrapper.context as CashInOutContext
-        if (databaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
+        if (cashOperationIdDatabaseAccessor.isAlreadyProcessed(parsedMessageWrapper.type.toString(), context.messageId)) {
             writeResponse(parsedMessageWrapper, DUPLICATE)
             LOGGER.info("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
             METRICS_LOGGER.logError("Message already processed: ${parsedMessageWrapper.type}: ${context.messageId}")
@@ -97,7 +98,7 @@ class CashInOutPreprocessor(
         }
     }
 
-    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus) {
+    override fun writeResponse(messageWrapper: MessageWrapper, status: MessageStatus, message: String?) {
         messageWrapper.writeNewResponse(ProtocolMessages.NewResponse.newBuilder().setStatus(status.type))
     }
 
@@ -116,17 +117,28 @@ class CashInOutPreprocessor(
 
     override fun run() {
         while (true) {
-            val message = cashInOutQueue.take()
+            val message = cashInOutInputQueue.take()
             try {
                 preProcess(message)
             } catch (exception: Exception) {
-                val context = message.context
-                LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
-                        if (context != null) "Error details: $context" else "", exception)
-
-                METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
-                writeResponse(message, RUNTIME)
+                handlePreprocessingException(exception, message)
             }
+        }
+    }
+
+    private fun handlePreprocessingException(exception: Exception, message: MessageWrapper) {
+        try {
+            val context = message.context
+            CashTransferPreprocessor.LOGGER.error("[${message.sourceIp}]: Got error during message preprocessing: ${exception.message} " +
+                    if (context != null) "Error details: $context" else "", exception)
+
+            CashTransferPreprocessor.METRICS_LOGGER.logError("[${message.sourceIp}]: Got error during message preprocessing", exception)
+            writeResponse(message, RUNTIME)
+        } catch (e: Exception) {
+            val errorMessage = "Got error during message preprocessing failure handling"
+            e.addSuppressed(exception)
+            CashTransferPreprocessor.LOGGER.error(errorMessage, e)
+            CashTransferPreprocessor.METRICS_LOGGER.logError(errorMessage, e)
         }
     }
 }

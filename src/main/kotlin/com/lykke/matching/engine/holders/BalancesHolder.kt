@@ -88,7 +88,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         val balancesUpdater = createUpdater()
         balancesUpdater.updateBalance(clientId, assetId, balance)
         val balancesData = balancesUpdater.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, messageSequenceNumber))
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber))
         if (!persisted) {
             return false
         }
@@ -105,7 +105,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
         val balancesUpdater = createUpdater()
         balancesUpdater.updateReservedBalance(clientId, assetId, balance)
         val balancesData = balancesUpdater.persistenceData()
-        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, messageSequenceNumber))
+        val persisted = persistenceManager.persist(PersistenceData(balancesData, processedMessage, null, null, messageSequenceNumber))
         if (!persisted) {
             return false
         }
@@ -114,7 +114,7 @@ class BalancesHolder(private val balancesDbAccessorsHolder: BalancesDatabaseAcce
     }
 
     fun insertOrUpdateWallets(wallets: Collection<Wallet>, messageSequenceNumber: Long?) {
-        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }),
+        persistenceManager.persist(PersistenceData(BalancesData(wallets, wallets.flatMap { it.balances.values }), null, null, null,
                 messageSequenceNumber = messageSequenceNumber))
         update()
     }

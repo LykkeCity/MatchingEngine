@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.wallet.Wallet
 import com.lykke.matching.engine.database.PersistenceManager
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.database.common.entity.BalancesData
+import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -48,6 +49,9 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         }
         val transactionChangedAssetBalances = HashMap<String, TransactionChangedAssetBalance>()
         operations.forEach { operation ->
+            if (isTrustedClientReservedBalanceOperation(operation)) {
+                return@forEach
+            }
             val key = key(operation)
             val changedAssetBalance = transactionChangedAssetBalances.getOrPut(key) {
                 TransactionChangedAssetBalance(changedAssetBalances.getOrDefault(key, defaultChangedAssetBalance(operation)))
@@ -100,10 +104,15 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
         return balancesUpdater.persistenceData()
     }
 
-    fun persistBalances(processedMessage: ProcessedMessage?, messageSequenceNumber: Long?): Boolean {
+    fun persistBalances(processedMessage: ProcessedMessage?,
+                        orderBooksData: OrderBooksPersistenceData?,
+                        stopOrderBooksData: OrderBooksPersistenceData?,
+                        messageSequenceNumber: Long?): Boolean {
         changedAssetBalances.forEach { it.value.apply() }
         return persistenceManager.persist(PersistenceData(persistenceData(),
                 processedMessage,
+                orderBooksData,
+                stopOrderBooksData,
                 messageSequenceNumber))
     }
 
@@ -120,6 +129,10 @@ class WalletOperationsProcessor(private val balancesHolder: BalancesHolder,
     private fun defaultChangedAssetBalance(operation: WalletOperation): ChangedAssetBalance {
         val walletAssetBalance = balancesUpdater.getWalletAssetBalance(operation.clientId, operation.assetId)
         return ChangedAssetBalance(walletAssetBalance.wallet, walletAssetBalance.assetBalance)
+    }
+
+    private fun isTrustedClientReservedBalanceOperation(operation: WalletOperation): Boolean {
+        return NumberUtils.equalsIgnoreScale(BigDecimal.ZERO, operation.amount) && applicationSettings.isTrustedClient(operation.clientId)
     }
 }
 
