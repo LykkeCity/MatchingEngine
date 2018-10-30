@@ -35,11 +35,7 @@ class MidPriceHolder(@Value("#{Config.me.referenceMidPricePeriod}") private val 
         removeObsoleteMidPrices(assetPair, getLowerTimeBound(operationTime.time))
 
         val result = assetPairIdToReferencePrice[assetPair.assetPairId]
-        return if (result != null) {
-            NumberUtils.setScaleRoundUp(result, assetPair.accuracy)
-        } else {
-            null
-        }
+        return result?.let { NumberUtils.setScaleRoundUp(result, assetPair.accuracy) }
     }
 
     fun addMidPrice(assetPair: AssetPair, midPrice: BigDecimal, operationTime: Date) {

@@ -6,7 +6,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.util.*
 import kotlin.math.sign
 
-class TestReadOnlyMidPriceDatabaseAccessor : MidPriceDatabaseAccessor {
+class TestReadOnlyMidPriceDatabaseAccessor : MidPriceDatabaseAccessor, ReadOnlyMidPriceDatabaseAccessor {
     private val assetPairIdToMidPrices = HashMap<String, LinkedList<MidPrice>>()
 
     override fun all(): Map<String, List<MidPrice>> {

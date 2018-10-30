@@ -43,6 +43,7 @@ import java.math.BigDecimal
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 
@@ -884,6 +885,7 @@ class MarketOrderServiceTest: AbstractTest() {
         val event = clientsEventsQueue.poll() as ExecutionEvent
         assertEquals(1, event.orders.size)
         val eventOrder = event.orders.single()
+        assertNull(eventOrder.price)
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 
@@ -916,6 +918,7 @@ class MarketOrderServiceTest: AbstractTest() {
         val event = clientsEventsQueue.poll() as ExecutionEvent
         assertEquals(1, event.orders.size)
         val eventOrder = event.orders.single()
+        assertNull(eventOrder.price)
         assertEquals(OutgoingOrderStatus.REJECTED, eventOrder.status)
         assertEquals(OrderRejectReason.TOO_HIGH_PRICE_DEVIATION, eventOrder.rejectReason)
 

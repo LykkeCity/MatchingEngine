@@ -108,15 +108,15 @@ class MarketOrderService @Autowired constructor(
 
         val assetPair = getAssetPair(order)
         val orderBook = genericLimitOrderService.getOrderBook(order.assetPairId)
-        val limitOrderPriceDeviationThreshold = applicationSettingsCache.marketOrderPriceDeviationThreshold(assetPair.assetPairId)
+        val marketOrderPriceDeviationThreshold = applicationSettingsCache.marketOrderPriceDeviationThreshold(assetPair.assetPairId)
 
         var lowerMidPriceBound: BigDecimal? = null
         var upperMidPriceBound: BigDecimal? = null
         val referenceMidPrice = midPriceHolder.getReferenceMidPrice(assetPair, now)
 
-        if (limitOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
-            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * limitOrderPriceDeviationThreshold)
-            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * limitOrderPriceDeviationThreshold)
+        if (marketOrderPriceDeviationThreshold != null && referenceMidPrice != null && !NumberUtils.equalsIgnoreScale(referenceMidPrice, BigDecimal.ZERO)) {
+            lowerMidPriceBound = referenceMidPrice - (referenceMidPrice * marketOrderPriceDeviationThreshold)
+            upperMidPriceBound = referenceMidPrice + (referenceMidPrice * marketOrderPriceDeviationThreshold)
         }
 
         val matchingResult = matchingEngine.initTransaction().match(order,
