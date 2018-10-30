@@ -831,7 +831,7 @@ class StopLimitOrderTest : AbstractTest() {
     @Test
     fun testProcessImmediateOrCancelStopLimitOrderWithTrades() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 0.5)
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
                 type = LimitOrderType.STOP_LIMIT,
                 volume = -1.0,
                 lowerLimitPrice = 1.0,
@@ -840,7 +840,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         clearMessageQueues()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
                 volume = 0.5, price = 1.0)))
 
         assertStopOrderBookSize("BTCUSD", false, 0)
@@ -863,7 +863,7 @@ class StopLimitOrderTest : AbstractTest() {
     @Test
     fun testProcessImmediateOrCancelStopLimitOrderWithoutTrades() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 0.5)
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD",
                 type = LimitOrderType.STOP_LIMIT,
                 volume = -1.0,
                 lowerLimitPrice = 0.99,
@@ -872,7 +872,7 @@ class StopLimitOrderTest : AbstractTest() {
 
         clearMessageQueues()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD",
                 volume = 0.5, price = 0.97)))
 
         assertStopOrderBookSize("BTCUSD", false, 0)

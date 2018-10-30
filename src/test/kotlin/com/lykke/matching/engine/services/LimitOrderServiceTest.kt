@@ -1788,7 +1788,7 @@ class LimitOrderServiceTest: AbstractTest() {
                 volume = -10.0,
                 price = 1.4))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
                 assetId = "EURUSD",
                 volume = 30.0,
                 price = 1.3,
@@ -1817,7 +1817,7 @@ class LimitOrderServiceTest: AbstractTest() {
                 volume = -10.0,
                 price = 1.4))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1",
                 assetId = "EURUSD",
                 volume = 30.0,
                 price = 1.3,
