@@ -7,7 +7,7 @@ import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import org.nustaq.serialization.annotations.Version
 import java.io.Serializable
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 
 class LimitOrder(id: String,
                  externalId: String,
@@ -18,7 +18,7 @@ class LimitOrder(id: String,
                  status: String,
                  statusDate: Date?,
                  createdAt: Date,
-                 registered: Date,
+                 registered: Date?,
                  var remainingVolume: BigDecimal,
                  var lastMatchTime: Date?,
                  reservedLimitVolume: BigDecimal? = null,

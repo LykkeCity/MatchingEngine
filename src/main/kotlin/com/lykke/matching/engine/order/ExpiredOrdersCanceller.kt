@@ -36,7 +36,7 @@ class ExpiredOrdersCanceller(private val expiryOrdersQueue: ExpiryOrdersQueue,
                     MessageType.LIMIT_ORDER_CANCEL.type,
                     generateMessage(messageId, ordersToCancelExternalIds),
                     null)
-            messageRouter.preProcessedMessageQueue.put(messageWrapper)
+            messageRouter.process(messageWrapper)
         } catch (e: Exception) {
             val message = "Unable to cancel expired orders"
             LOGGER.error(message, e)

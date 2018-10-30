@@ -3,7 +3,6 @@ package com.lykke.matching.engine.messages
 import com.google.protobuf.Message
 import com.google.protobuf.MessageOrBuilder
 import com.lykke.matching.engine.deduplication.ProcessedMessage
-import com.lykke.matching.engine.deduplication.ProcessedMessageUtils
 import com.lykke.matching.engine.socket.ClientHandler
 import com.lykke.matching.engine.utils.ByteHelper.Companion.toByteArray
 import com.lykke.utils.logging.MetricsLogger
@@ -29,12 +28,7 @@ class MessageWrapper(
         val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    fun processedMessage(): ProcessedMessage? {
-        if (ProcessedMessageUtils.isDeduplicationNotNeeded(type)) {
-            return null
-        }
-        return ProcessedMessage(type, timestamp!!, messageId!!)
-    }
+    var processedMessage: ProcessedMessage? = null
 
     fun writeResponse(responseBuilder: ProtocolMessages.Response.Builder) {
         if (!responseBuilder.hasMessageId() && messageId != null) {

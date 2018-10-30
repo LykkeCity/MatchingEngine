@@ -5,12 +5,14 @@ import com.lykke.matching.engine.config.TestApplicationContext
 import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.VolumePrice
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.*
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
+import com.lykke.matching.engine.utils.getSetting
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,7 +32,7 @@ import kotlin.test.assertEquals
 class NegativePriceTest : AbstractTest() {
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    private lateinit var testSettingsDatabaseAccessor: TestSettingsDatabaseAccessor
 
     @TestConfiguration
     open class Config {
@@ -46,6 +48,12 @@ class NegativePriceTest : AbstractTest() {
         }
     }
 
+    @Autowired
+    private lateinit var testConfigDatabaseAccessor: TestSettingsDatabaseAccessor
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
+
     @Before
     fun setUp() {
         testBalanceHolderWrapper.updateBalance("Client", "USD", 1.0)
@@ -58,7 +66,7 @@ class NegativePriceTest : AbstractTest() {
 
     @Test
     fun testLimitOrder() {
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client", assetId = "EURUSD", price = -1.0, volume = 1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client", assetId = "EURUSD", price = -1.0, volume = 1.0)))
 
         assertEquals(1, testClientLimitOrderListener.getCount())
         val result = testClientLimitOrderListener.getQueue().poll() as LimitOrdersReport
@@ -69,7 +77,7 @@ class NegativePriceTest : AbstractTest() {
 
     @Test
     fun testTrustedClientMultiLimitOrder() {
-        testConfigDatabaseAccessor.addTrustedClient("Client")
+        testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client"))
 
         initServices()
 

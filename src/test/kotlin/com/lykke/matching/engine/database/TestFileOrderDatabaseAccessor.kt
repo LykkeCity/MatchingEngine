@@ -6,13 +6,12 @@ import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.LinkedList
-import java.util.concurrent.PriorityBlockingQueue
 
 class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
 
     private val orders = HashMap<String, MutableList<LimitOrder>>()
 
-    override fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: PriorityBlockingQueue<LimitOrder>) {
+    override fun updateOrderBook(asset: String, isBuy: Boolean, orderBook: Collection<LimitOrder>) {
         orders["$asset-$isBuy"] = orderBook.map { copyOfNewLimitOrder(it) }.toMutableList()
     }
 
@@ -32,10 +31,6 @@ class TestFileOrderDatabaseAccessor : OrderBookDatabaseAccessor {
 
     fun getOrders(asset: String, isBuy: Boolean): List<LimitOrder> {
         return (orders["$asset-$isBuy"] ?: LinkedList()).map { copyOfNewLimitOrder(it) }
-    }
-
-    fun getLastOrder(asset: String, isBuy: Boolean): LimitOrder? {
-        return copyOfNewLimitOrder(orders["$asset-$isBuy"]?.last() ?: return null)
     }
 
     companion object {

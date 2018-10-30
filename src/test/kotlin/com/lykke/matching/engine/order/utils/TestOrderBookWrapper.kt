@@ -1,19 +1,19 @@
 package com.lykke.matching.engine.order.utils
 
 import com.lykke.matching.engine.daos.LimitOrder
-import com.lykke.matching.engine.database.TestFileOrderDatabaseAccessor
+import com.lykke.matching.engine.database.TestOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.TestStopOrderBookDatabaseAccessor
 import com.lykke.matching.engine.services.GenericLimitOrderService
 import com.lykke.matching.engine.services.GenericStopLimitOrderService
 
 class TestOrderBookWrapper(private val genericLimitOrderService:  GenericLimitOrderService,
-                           private val testFileOrderDatabaseAccessor: TestFileOrderDatabaseAccessor,
+                           private val testOrderBookDatabaseAccessor: TestOrderBookDatabaseAccessor,
                            private val genericStopLimitOrderService: GenericStopLimitOrderService,
                            private val stopOrderBookDatabaseAccessor: TestStopOrderBookDatabaseAccessor) {
 
 
     fun addLimitOrder(limitOrder: LimitOrder) {
-        testFileOrderDatabaseAccessor.addLimitOrder(limitOrder)
+        testOrderBookDatabaseAccessor.addLimitOrder(limitOrder)
 
         genericLimitOrderService.addOrder(limitOrder)
         val orderBook = genericLimitOrderService.getOrderBook(limitOrder.assetPairId)

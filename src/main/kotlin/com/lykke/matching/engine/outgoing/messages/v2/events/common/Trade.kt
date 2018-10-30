@@ -6,15 +6,15 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.TradeRole
 import java.util.Date
 
 class Trade(val tradeId: String,
-            val assetId: String,
-            val volume: String,
+            val baseAssetId: String,
+            val baseVolume: String,
             val price: String,
             val timestamp: Date,
             val oppositeOrderId: String,
             val oppositeExternalOrderId: String,
             val oppositeWalletId: String,
-            val oppositeAssetId: String,
-            val oppositeVolume: String,
+            val quotingAssetId: String,
+            val quotingVolume: String,
             val index: Int,
             val absoluteSpread: String?,
             val relativeSpread: String?,
@@ -24,15 +24,15 @@ class Trade(val tradeId: String,
     override fun createGeneratedMessageBuilder(): OutgoingMessages.ExecutionEvent.Order.Trade.Builder {
         val builder = OutgoingMessages.ExecutionEvent.Order.Trade.newBuilder()
         builder.setTradeId(tradeId)
-                .setAssetId(assetId)
-                .setVolume(volume)
+                .setBaseAssetId(baseAssetId)
+                .setBaseVolume(baseVolume)
                 .setPrice(price)
                 .setTimestamp(timestamp.createProtobufTimestampBuilder())
                 .setOppositeOrderId(oppositeOrderId)
                 .setOppositeExternalOrderId(oppositeExternalOrderId)
                 .setOppositeWalletId(oppositeWalletId)
-                .setOppositeAssetId(oppositeAssetId)
-                .setOppositeVolume(oppositeVolume)
+                .setQuotingAssetId(quotingAssetId)
+                .setQuotingVolume(quotingVolume)
                 .setIndex(index)
                 .role = role.id
         absoluteSpread?.let {

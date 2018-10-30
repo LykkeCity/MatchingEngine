@@ -5,7 +5,8 @@ import com.lykke.utils.logging.ThrottlingLogger
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.*
+import org.springframework.util.CollectionUtils
+import java.util.concurrent.ConcurrentHashMap
 
 @Component("GeneralHealthMonitor")
 class GeneralHealthMonitor: HealthMonitor {
@@ -15,11 +16,11 @@ class GeneralHealthMonitor: HealthMonitor {
         private val METRICS_LOGGER = MetricsLogger.getLogger()
     }
 
-    private var ok = false
+    private var previousMaintenanceModeStatus = false
 
-    private val brokenComponents = EnumSet.noneOf(MonitoredComponent::class.java)
+    private val brokenComponents = ConcurrentHashMap.newKeySet<MonitoredComponent>()
 
-    override fun ok() = ok
+    override fun ok() = brokenComponents.isEmpty()
 
     @EventListener
     fun processHealthMonitorEvent(event: HealthMonitorEvent) {
@@ -31,12 +32,26 @@ class GeneralHealthMonitor: HealthMonitor {
     }
 
     @Scheduled(fixedRateString = "\${health.check.update.interval}")
-    open fun checkBrokenComponents() {
-        ok = brokenComponents.isEmpty()
-        if (!ok) {
-            val message = "Maintenance mode is on"
-            LOGGER.error(message)
-            METRICS_LOGGER.logError(message)
+    fun checkBrokenComponents() {
+        if (!CollectionUtils.isEmpty(brokenComponents)) {
+            processMaintenanceModeOn()
+        } else if (previousMaintenanceModeStatus) {
+            processMaintenanceModeOff()
         }
+    }
+
+    fun processMaintenanceModeOn() {
+        previousMaintenanceModeStatus = true
+        val message = "Maintenance mode is on, broken component are: $brokenComponents"
+        LOGGER.error(message)
+        METRICS_LOGGER.logError(message)
+    }
+
+
+    fun processMaintenanceModeOff() {
+        previousMaintenanceModeStatus = false
+        val message = "Maintenance mode is off"
+        LOGGER.info(message)
+        METRICS_LOGGER.logWarning(message)
     }
 }
