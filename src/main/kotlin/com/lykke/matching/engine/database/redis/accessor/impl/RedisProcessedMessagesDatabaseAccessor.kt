@@ -1,7 +1,7 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.database.redis.utils.SetUtils
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.utils.logging.ThrottlingLogger
@@ -10,7 +10,7 @@ import redis.clients.jedis.Transaction
 import java.text.SimpleDateFormat
 import java.util.stream.Collectors
 
-class RedisProcessedMessagesDatabaseAccessor(private val redisHolder: InitialLoadingRedisHolder,
+class RedisProcessedMessagesDatabaseAccessor(private val redisConnection: RedisConnection,
                                              private val dbIndex: Int,
                                              private val timeToLive: Int) : ReadOnlyProcessedMessagesDatabaseAccessor {
     companion object {
@@ -23,18 +23,23 @@ class RedisProcessedMessagesDatabaseAccessor(private val redisHolder: InitialLoa
     private var conf = FSTConfiguration.createJsonConfiguration()
 
     override fun get(): Set<ProcessedMessage> {
-        val jedis = redisHolder.initialLoadingRedis()
-        jedis.select(dbIndex)
+        var result: Set<ProcessedMessage> = HashSet()
 
-        val keys = jedis.keys("$PREFIX$SEPARATOR*")
+        redisConnection.resource { jedis ->
+            jedis.select(dbIndex)
 
-        val result = keys
-                .stream()
-                .flatMap { jedis.smembers(it).stream() }
-                .map { conf.asObject(it.toByteArray()) as ProcessedMessage }
-                .collect(Collectors.toSet())
+            val keys = jedis.keys("$PREFIX$SEPARATOR*")
 
-        LOGGER.info("Loaded ${result.size} processed messages from redis")
+            result = keys
+                    .stream()
+                    .flatMap { jedis.smembers(it).stream() }
+                    .map { conf.asObject(it.toByteArray()) as ProcessedMessage }
+                    .collect(Collectors.toSet())
+
+            LOGGER.info("Loaded ${result.size} processed messages from redis")
+
+        }
+
         return result
     }
 

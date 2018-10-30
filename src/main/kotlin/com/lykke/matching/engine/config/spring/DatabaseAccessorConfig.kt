@@ -1,55 +1,38 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.BackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.CashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.ConfigDatabaseAccessor
-import com.lykke.matching.engine.database.DictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.HistoryTicksDatabaseAccessor
-import com.lykke.matching.engine.database.LimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.MarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.ReadOnlyMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.MonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.OrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.PersistenceManager
-import com.lykke.matching.engine.database.ReadOnlyProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.ReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.Storage
-import com.lykke.matching.engine.database.azure.AzureBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureCashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureCashOperationsDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureConfigDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureDictionariesDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureHistoryTicksDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureLimitOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMarketOrderDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMessageSequenceNumberDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureMonitoringDatabaseAccessor
-import com.lykke.matching.engine.database.azure.AzureReservedVolumesDatabaseAccessor
-import com.lykke.matching.engine.database.common.DefaultPersistenceManager
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.azure.*
+import com.lykke.matching.engine.common.QueueConsumer
+import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
+import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
+import com.lykke.matching.engine.database.*
+import com.lykke.matching.engine.database.azure.*
+import com.lykke.matching.engine.database.common.PersistenceManagerFactory
 import com.lykke.matching.engine.database.file.FileOrderBookDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.file.FileStopOrderBookDatabaseAccessor
-import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
-import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHolder
-import com.lykke.matching.engine.database.redis.InitialLoadingRedisHolder
-import com.lykke.matching.engine.database.redis.PersistenceRedisHolder
-import com.lykke.matching.engine.database.redis.RedisPersistenceManager
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisHolder
+import com.lykke.matching.engine.database.listeners.OrderBookPersistListener
+import com.lykke.matching.engine.database.listeners.StopOrderBookPersistListener
+import com.lykke.matching.engine.database.listeners.WalletOperationsPersistListener
+import com.lykke.matching.engine.database.reconciliation.events.AccountPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersistEvent
+import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
-import com.lykke.matching.engine.database.redis.accessor.impl.RedisWalletDatabaseAccessor
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
+import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.utils.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import org.springframework.scheduling.TaskScheduler
-import java.util.Optional
+import java.util.*
+import java.util.*
+import java.util.concurrent.BlockingQueue
 
 @Configuration
 open class DatabaseAccessorConfig {
@@ -57,93 +40,99 @@ open class DatabaseAccessorConfig {
     @Autowired
     private lateinit var config: Config
 
+    @Autowired
+    private lateinit var persistenceManagerFactory: PersistenceManagerFactory
+
+    //<editor-fold desc="Persistence managers">
     @Bean
-    open fun persistenceManager(balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder,
-                                redisHolder: Optional<PersistenceRedisHolder>,
-                                redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>,
-                                cashOperationIdDatabaseAccessor: Optional<CashOperationIdDatabaseAccessor>,
-                                messageSequenceNumberDatabaseAccessor: Optional<ReadOnlyMessageSequenceNumberDatabaseAccessor>): PersistenceManager {
-        return when (config.me.storage) {
-            Storage.Azure -> DefaultPersistenceManager(balancesDatabaseAccessorsHolder.primaryAccessor, fileProcessedMessagesDatabaseAccessor())
-            Storage.Redis -> {
-                RedisPersistenceManager(
-                        balancesDatabaseAccessorsHolder.primaryAccessor as RedisWalletDatabaseAccessor,
-                        balancesDatabaseAccessorsHolder.secondaryAccessor,
-                        redisProcessedMessagesDatabaseAccessor.get(),
-                        cashOperationIdDatabaseAccessor.get() as RedisCashOperationIdDatabaseAccessor,
-                        messageSequenceNumberDatabaseAccessor.get() as RedisMessageSequenceNumberDatabaseAccessor,
-                        redisHolder.get(),
-                        config
-                )
-            }
+    open fun persistenceManager(persistenceRedisConnection: Optional<RedisConnection>): PersistenceManager {
+        return persistenceManagerFactory.get(persistenceRedisConnection)
+    }
+
+    @Bean
+    open fun cashInOutOperationPreprocessorPersistenceManager(cashInOutOperationPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
+        return persistenceManagerFactory.get(cashInOutOperationPreprocessorRedisConnection)
+    }
+
+
+    @Bean
+    open fun limitOrderCancelOperationPreprocessorPersistenceManager(limitOrderCancelOperationPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
+        return persistenceManagerFactory.get(limitOrderCancelOperationPreprocessorRedisConnection)
+
+    }
+
+    @Bean
+    open fun cashTransferPreprocessorPersistenceManager(cashTransferOperationsPreprocessorRedisConnection: Optional<RedisConnection>): PersistenceManager {
+        return persistenceManagerFactory.get(cashTransferOperationsPreprocessorRedisConnection)
+    }
+    //</editor-fold>
+
+
+    //<editor-fold desc="Persist listeners">
+
+    @Bean
+    open fun walletOperationsPersistListener(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
+                                             balancesDatabaseAccessorsHolder: BalancesDatabaseAccessorsHolder): QueueConsumer<AccountPersistEvent>? {
+        return balancesDatabaseAccessorsHolder.secondaryAccessor?.let {
+            WalletOperationsPersistListener(updatedWalletsQueue, balancesDatabaseAccessorsHolder.secondaryAccessor)
         }
     }
 
     @Bean
-    open fun readOnlyProcessedMessagesDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): ReadOnlyProcessedMessagesDatabaseAccessor {
+    open fun orderBookPersistListener(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
+                                      ordersDatabaseAccessorsHolder: OrdersDatabaseAccessorsHolder): OrderBookPersistListener? {
+        return ordersDatabaseAccessorsHolder.secondaryAccessor?.let {
+            OrderBookPersistListener(updatedOrderBooksQueue,
+                    ordersDatabaseAccessorsHolder.secondaryAccessor)
+        }
+    }
+
+    @Bean
+    open fun stopOrderBookPersistListener(updatedStopOrderBooksQueue: BlockingQueue<StopOrderBookPersistEvent>,
+                                          stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder): StopOrderBookPersistListener? {
+        return stopOrdersDatabaseAccessorsHolder.secondaryAccessor?.let {
+            StopOrderBookPersistListener(updatedStopOrderBooksQueue, stopOrdersDatabaseAccessorsHolder.secondaryAccessor)
+        }
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Multisource database accessors">
+    @Bean
+    open fun readOnlyProcessedMessagesDatabaseAccessor(redisProcessedMessagesDatabaseAccessor: Optional<RedisProcessedMessagesDatabaseAccessor>): ReadOnlyProcessedMessagesDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
-            Storage.Redis -> RedisProcessedMessagesDatabaseAccessor(redisHolder.get(),
-                    config.me.redis.processedMessageDatabase,
-                    getProcessedMessageTTL())
+            Storage.RedisWithoutOrders,
+            Storage.Redis -> redisProcessedMessagesDatabaseAccessor.get()
         }
     }
 
     @Bean
-    open fun redisHolder(taskScheduler: TaskScheduler,
-                         applicationEventPublisher: ApplicationEventPublisher,
-                         @Value("\${redis.health.check.interval}") updateInterval: Long,
-                         @Value("\${redis.health.check.reconnect.interval}") reconnectInterval: Long): RedisHolder? {
-        if (config.me.storage != Storage.Redis) {
-            return null
-        }
-        return RedisHolder(config.me, taskScheduler, applicationEventPublisher, updateInterval, reconnectInterval)
-    }
-
-    @Bean
-    open fun redisProcessedMessagesDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): RedisProcessedMessagesDatabaseAccessor? {
-        if (!redisHolder.isPresent) {
-            return null
-        }
-        return RedisProcessedMessagesDatabaseAccessor(redisHolder.get(),
-                config.me.redis.processedMessageDatabase,
-                getProcessedMessageTTL())
-    }
-
-    @Bean
-    open fun cashOperationIdDatabaseAccessor(cashInOutOperationIdRedisHolder: Optional<CashInOutOperationIdRedisHolder>,
-                                             cashTransferOperationIdRedisHolder: Optional<CashTransferOperationIdRedisHolder>): CashOperationIdDatabaseAccessor? {
+    open fun cashOperationIdDatabaseAccessor(redisCashOperationIdDatabaseAccessor: Optional<RedisCashOperationIdDatabaseAccessor>): CashOperationIdDatabaseAccessor? {
         return when (config.me.storage) {
             Storage.Azure -> AzureCashOperationIdDatabaseAccessor()
-            Storage.Redis -> {
-                if (!cashInOutOperationIdRedisHolder.isPresent || !cashTransferOperationIdRedisHolder.isPresent) {
-                    return null
-                }
-                return RedisCashOperationIdDatabaseAccessor(cashInOutOperationIdRedisHolder.get(),
-                        cashTransferOperationIdRedisHolder.get(),
-                        config.me.redis.processedCashMessageDatabase)
-            }
+            Storage.RedisWithoutOrders,
+            Storage.Redis -> redisCashOperationIdDatabaseAccessor.get()
         }
     }
 
     @Bean
-    open fun messageSequenceNumberDatabaseAccessor(redisHolder: Optional<InitialLoadingRedisHolder>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
+    open fun messageSequenceNumberDatabaseAccessor(redisMessageSequenceNumberDatabaseAccessor: Optional<RedisMessageSequenceNumberDatabaseAccessor>): ReadOnlyMessageSequenceNumberDatabaseAccessor {
         return when (config.me.storage) {
             Storage.Azure -> AzureMessageSequenceNumberDatabaseAccessor()
-            Storage.Redis -> {
-                RedisMessageSequenceNumberDatabaseAccessor(redisHolder.get(),
-                        config.me.redis.sequenceNumberDatabase)
-            }
+            Storage.RedisWithoutOrders,
+            Storage.Redis -> redisMessageSequenceNumberDatabaseAccessor.get()
         }
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Azure DB accessors">
     @Bean
     open fun backOfficeDatabaseAccessor(): BackOfficeDatabaseAccessor {
         return AzureBackOfficeDatabaseAccessor(config.me.db.dictsConnString)
     }
 
     @Bean
-    open fun azureCashOperationsDatabaseAccessor( @Value("\${azure.cache.operation.table}") tableName: String)
+    open fun azureCashOperationsDatabaseAccessor(@Value("\${azure.cache.operation.table}") tableName: String)
             : CashOperationsDatabaseAccessor {
         return AzureCashOperationsDatabaseAccessor(config.me.db.balancesInfoConnString, tableName)
     }
@@ -155,9 +144,9 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable : String,
-                                             @Value("\${azure.candles.table}")candlesTable: String,
-                                             @Value("\${azure.hour.candles.table}")hourCandlesTable: String)
+    open fun azureLimitOrderDatabaseAccessor(@Value("\${azure.best.price.table}") bestPricesTable: String,
+                                             @Value("\${azure.candles.table}") candlesTable: String,
+                                             @Value("\${azure.hour.candles.table}") hourCandlesTable: String)
             : LimitOrderDatabaseAccessor {
         return AzureLimitOrderDatabaseAccessor(connectionString = config.me.db.hLiquidityConnString,
                 bestPricesTable = bestPricesTable, candlesTable = candlesTable, hourCandlesTable = hourCandlesTable)
@@ -177,9 +166,14 @@ open class DatabaseAccessorConfig {
     }
 
     @Bean
-    open fun azureConfigDatabaseAccessor(@Value("\${azure.config.database.acessor.table}") tableName: String)
-            : ConfigDatabaseAccessor {
-        return AzureConfigDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
+    open fun azureSettingsDatabaseAccessor(@Value("\${azure.settings.database.accessor.table}") tableName: String)
+            : SettingsDatabaseAccessor {
+        return AzureSettingsDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
+    }
+
+    @Bean
+    open fun settingsHistoryDatabaseAccessor(@Value("\${azure.settings.history.database.accessor.table}") tableName: String): SettingsHistoryDatabaseAccessor {
+        return AzureSettingsHistoryDatabaseAccessor(config.me.db.matchingEngineConnString, tableName)
     }
 
     @Bean
@@ -194,7 +188,9 @@ open class DatabaseAccessorConfig {
     open fun azureDictionariesDatabaseAccessor(): DictionariesDatabaseAccessor {
         return AzureDictionariesDatabaseAccessor(config.me.db.dictsConnString)
     }
+    //</editor-fold>
 
+    //<editor-fold desc="File db accessors">
     @Bean
     open fun fileOrderBookDatabaseAccessor()
             : OrderBookDatabaseAccessor {
@@ -207,12 +203,29 @@ open class DatabaseAccessorConfig {
         return FileProcessedMessagesDatabaseAccessor(config.me.processedMessagesPath, config.me.processedMessagesInterval)
     }
 
-    private fun getProcessedMessageTTL(): Int {
-        return (config.me.processedMessagesInterval / 500).toInt()
-    }
-
     @Bean
     open fun fileStopOrderBookDatabaseAccessor(): FileStopOrderBookDatabaseAccessor {
         return FileStopOrderBookDatabaseAccessor(config.me.stopOrderBookPath)
     }
+    //</editor-fold>
+
+    //<editor-fold desc="Persist publishers>
+    @Bean
+    open fun persistedWalletsApplicationEventPublisher(updatedWalletsQueue: BlockingQueue<AccountPersistEvent>,
+                                                       listeners: Optional<List<QueueConsumer<AccountPersistEvent>?>>): SimpleApplicationEventPublisher<AccountPersistEvent> {
+        return ApplicationEventPublisherImpl(updatedWalletsQueue, listeners)
+    }
+
+    @Bean
+    open fun persistedStopOrdersApplicationEventPublisher(updatedStopOrderBooksQueue: BlockingQueue<StopOrderBookPersistEvent>,
+                                                          listeners: Optional<List<QueueConsumer<StopOrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<StopOrderBookPersistEvent> {
+        return ApplicationEventPublisherImpl(updatedStopOrderBooksQueue, listeners)
+    }
+
+    @Bean
+    open fun persistedOrdersApplicationEventPublisher(updatedOrderBooksQueue: BlockingQueue<OrderBookPersistEvent>,
+                                                      listeners: Optional<List<QueueConsumer<OrderBookPersistEvent>?>>): SimpleApplicationEventPublisher<OrderBookPersistEvent> {
+        return ApplicationEventPublisherImpl(updatedOrderBooksQueue, listeners)
+    }
+    //</editor-fold>
 }

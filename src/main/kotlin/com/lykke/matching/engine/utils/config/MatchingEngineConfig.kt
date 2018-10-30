@@ -19,15 +19,16 @@ data class MatchingEngineConfig(
         val bestPricesInterval: Long,
         val candleSaverInterval: Long,
         val hoursCandleSaverInterval: Long,
-        val queueSizeLoggerInterval: Long,
         val whiteList: String?,
         val migrate: Boolean,
         val correctReservedVolumes: Boolean,
         val cancelMinVolumeOrders: Boolean,
         val cancelAllOrders: Boolean,
         val orderBookPath: String,
+        val secondaryStopOrderBookPath: String,
+        val secondaryOrderBookPath: String,
         val stopOrderBookPath: String,
-        val queueSizeLimit: Int,
+        val queueConfig: QueueConfig,
         val name: String,
         val trustedClients: Set<String>,
         val aliveStatus: AliveStatusConfig,
@@ -38,5 +39,7 @@ data class MatchingEngineConfig(
         val logFilesCleaner: LogFilesCleanerConfig,
         val storage: Storage,
         val walletsMigration: Boolean,
-        val writeBalancesToSecondaryDb: Boolean
+        val writeBalancesToSecondaryDb: Boolean,
+        val ordersMigration: Boolean,
+        val writeOrdersToSecondaryDb: Boolean
 )

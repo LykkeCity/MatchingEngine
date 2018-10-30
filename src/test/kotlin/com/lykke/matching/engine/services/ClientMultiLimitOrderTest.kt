@@ -6,8 +6,9 @@ import com.lykke.matching.engine.daos.Asset
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.FeeType
 import com.lykke.matching.engine.daos.IncomingLimitOrder
+import com.lykke.matching.engine.daos.setting.AvailableSettingGroup
 import com.lykke.matching.engine.database.TestBackOfficeDatabaseAccessor
-import com.lykke.matching.engine.database.TestConfigDatabaseAccessor
+import com.lykke.matching.engine.database.TestSettingsDatabaseAccessor
 import com.lykke.matching.engine.order.OrderCancelMode
 import com.lykke.matching.engine.order.OrderStatus
 import com.lykke.matching.engine.outgoing.messages.LimitOrdersReport
@@ -15,9 +16,9 @@ import com.lykke.matching.engine.outgoing.messages.v2.enums.MessageType
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderRejectReason
 import com.lykke.matching.engine.outgoing.messages.v2.enums.OrderStatus as OutgoingOrderStatus
 import com.lykke.matching.engine.outgoing.messages.v2.events.ExecutionEvent
+import com.lykke.matching.engine.utils.MessageBuilder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrder
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderFeeInstructions
-import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildLimitOrderWrapper
 import com.lykke.matching.engine.utils.MessageBuilder.Companion.buildMultiLimitOrderWrapper
 import org.junit.Before
 import org.junit.Test
@@ -32,6 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 import com.lykke.matching.engine.utils.assertEquals
+import com.lykke.matching.engine.utils.getSetting
 import kotlin.test.assertTrue
 
 @RunWith(SpringRunner::class)
@@ -40,7 +42,10 @@ import kotlin.test.assertTrue
 class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Autowired
-    private lateinit var testConfigDatabaseAccessor: TestConfigDatabaseAccessor
+    private lateinit var testSettingDatabaseAccessor: TestSettingsDatabaseAccessor
+
+    @Autowired
+    private lateinit var messageBuilder: MessageBuilder
 
     @TestConfiguration
     open class Config {
@@ -68,6 +73,19 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client2", "USD", 1000.0)
 
         initServices()
+    }
+
+    @Test
+    fun testUnknownAssetPair() {
+        multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("UnknownAssetPair", "Client1",
+                listOf(IncomingLimitOrder(-0.1, 10000.0),
+                        IncomingLimitOrder(-0.1, 11000.0),
+                        IncomingLimitOrder(0.1, 9000.0),
+                        IncomingLimitOrder(0.1, 8000.0))))
+        assertEquals(0, clientsEventsQueue.size)
+        assertEquals(0, trustedClientsEventsQueue.size)
+        assertOrderBookSize("UnknownAssetPair", false, 0)
+        assertOrderBookSize("UnknownAssetPair", true, 0)
     }
 
     @Test
@@ -159,14 +177,14 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     fun testCancelAllPrevious() {
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.2)
         initServices()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10500.0, volume = -0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", price = 10500.0, volume = -0.2)))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-1", clientId = "Client1", assetId = "BTCUSD", price = 10100.0, volume = -0.4)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-2", clientId = "Client1", assetId = "BTCUSD", price = 11000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-1", clientId = "Client1", assetId = "BTCUSD", price = 10100.0, volume = -0.4)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-2", clientId = "Client1", assetId = "BTCUSD", price = 11000.0, volume = -0.3)))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-3", clientId = "Client1", assetId = "BTCUSD", price = 9000.0, volume = 0.1)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-4", clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = 0.2)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-5", clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = 0.001)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-3", clientId = "Client1", assetId = "BTCUSD", price = 9000.0, volume = 0.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-4", clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-5", clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = 0.001)))
 
         clearMessageQueues()
 
@@ -221,12 +239,12 @@ class ClientMultiLimitOrderTest : AbstractTest() {
     @Test
     fun testCancelAllPreviousOneSide() {
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-1", clientId = "Client1", assetId = "BTCUSD", price = 10100.0, volume = -0.4)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-2", clientId = "Client1", assetId = "BTCUSD", price = 11000.0, volume = -0.3)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-1", clientId = "Client1", assetId = "BTCUSD", price = 10100.0, volume = -0.4)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "ForCancel-2", clientId = "Client1", assetId = "BTCUSD", price = 11000.0, volume = -0.3)))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 9000.0, volume = 0.1)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = 0.2)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = 0.001)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 9000.0, volume = 0.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 8000.0, volume = 0.2)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 7000.0, volume = 0.001)))
 
         clearMessageQueues()
 
@@ -309,7 +327,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
 
     @Test
     fun testMatch() {
-        testConfigDatabaseAccessor.addTrustedClient("TrustedClient")
+        testSettingDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("TrustedClient"))
 
         testBalanceHolderWrapper.updateBalance("Client1", "USD", 10000.0)
 
@@ -330,7 +348,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
                 IncomingLimitOrder(0.2, 9300.0, "7")
         )))
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(
                 uid = "ToCancelDueToNoFundsForFee", clientId = "Client3", assetId = "BTCUSD", volume = -0.2, price = 10500.0,
                 fees = buildLimitOrderFeeInstructions(FeeType.CLIENT_FEE, makerSize = 0.05, targetClientId = "TargetClient", assetIds = listOf("BTC"))
         )))
@@ -444,7 +462,7 @@ class ClientMultiLimitOrderTest : AbstractTest() {
         testBalanceHolderWrapper.updateBalance("Client1", "BTC", 0.0)
         initServices()
 
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.3, price = 9500.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "BTCUSD", volume = -0.3, price = 9500.0)))
 
         multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper("BTCUSD", "Client1", listOf(
                 IncomingLimitOrder(0.1, 9000.0),

@@ -1,16 +1,15 @@
 package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.database.CashOperationIdDatabaseAccessor
-import com.lykke.matching.engine.database.redis.CashInOutOperationIdRedisHolder
-import com.lykke.matching.engine.database.redis.CashTransferOperationIdRedisHolder
+import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.deduplication.ProcessedMessage
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.utils.logging.ThrottlingLogger
 import org.nustaq.serialization.FSTConfiguration
 import redis.clients.jedis.Transaction
 
-class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationIdRedisHolder: CashInOutOperationIdRedisHolder,
-                                           private val cashTransferOperationIdRedisHolder: CashTransferOperationIdRedisHolder,
+class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationRedisConnection: RedisConnection,
+                                           private val cashTransferOperationRedisConnection: RedisConnection,
                                            private val dbIndex: Int): CashOperationIdDatabaseAccessor {
     companion object {
         val LOGGER = ThrottlingLogger.getLogger(RedisCashOperationIdDatabaseAccessor::class.java.name)
@@ -28,25 +27,25 @@ class RedisCashOperationIdDatabaseAccessor(private val cashInOutOperationIdRedis
     }
 
     private fun isCashInOutAlreadyProcessed(id: String): Boolean {
-        try {
-            val jedis = cashInOutOperationIdRedisHolder.cashInOutOperationIdRedis()
-            jedis.select(dbIndex)
-            return jedis.exists(getKey(MessageType.CASH_IN_OUT_OPERATION.type.toString(), id))
-        } catch (e: Exception) {
-            cashInOutOperationIdRedisHolder.fail()
-            throw e
+        var result = false
+
+        cashInOutOperationRedisConnection.resource {
+            jedis -> jedis.select(dbIndex)
+            result = jedis.exists(getKey(MessageType.CASH_IN_OUT_OPERATION.type.toString(), id))
         }
+
+        return result
     }
 
     private fun isTransferAlreadyProcessed(id: String): Boolean {
-        try {
-            val jedis = cashTransferOperationIdRedisHolder.cashTransferOperationIdRedis()
+        var result = false
+
+        cashTransferOperationRedisConnection.resource { jedis ->
             jedis.select(dbIndex)
-            return jedis.exists(getKey(MessageType.CASH_TRANSFER_OPERATION.type.toString(), id))
-        } catch (e: Exception) {
-            cashTransferOperationIdRedisHolder.fail()
-            throw e
+            result = jedis.exists(getKey(MessageType.CASH_TRANSFER_OPERATION.type.toString(), id))
         }
+
+        return result
     }
 
     fun save(transaction: Transaction, message: ProcessedMessage) {

@@ -4,7 +4,7 @@ import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.socket.ClientHandler
-import com.lykke.matching.engine.socket.SocketServer
+import com.lykke.matching.engine.socket.ClientsRequestsSocketServer
 import com.lykke.matching.engine.utils.IntUtils
 import org.apache.log4j.Logger
 import java.io.BufferedInputStream
@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 class ClientHandlerImpl(
         private val messageRouter: MessageRouter,
         private val socket: Socket,
-        private val socketServer: SocketServer): Thread(ClientHandlerImpl::class.java.name), ClientHandler {
+        private val socketServer: ClientsRequestsSocketServer) : Thread(ClientHandlerImpl::class.java.name), ClientHandler {
 
     companion object {
         val LOGGER = Logger.getLogger(ClientHandlerImpl::class.java.name)
@@ -37,6 +37,7 @@ class ClientHandlerImpl(
 
     override fun run() {
         try {
+            Thread.currentThread().name = "client-connection-$clientHostName"
             inputStream = DataInputStream(BufferedInputStream(socket.inputStream))
             outputStream = DataOutputStream(BufferedOutputStream(socket.outputStream))
             outputStream!!.flush()
@@ -103,5 +104,9 @@ class ClientHandlerImpl(
         } catch (e: Exception) {
             LOGGER.info("Unable to close connection to $clientHostName")
         }
+    }
+
+    override fun toString(): String {
+        return "Client handler, (clientHostName: $clientHostName)"
     }
 }
