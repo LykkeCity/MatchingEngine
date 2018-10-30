@@ -4,7 +4,7 @@ import redis.clients.jedis.Transaction
 
 class KeyUtils {
     companion object {
-        private val LUA_REMOVE_KEYS_BY_PATTERN_SCRIPT = """local keys = redis.call('keys', %s)
+        private val LUA_REMOVE_KEYS_BY_PATTERN_SCRIPT = """local keys = redis.call('keys', '%s')
             | for i,k in ipairs(keys) do
             |   redis.call('del', k)
             | end
