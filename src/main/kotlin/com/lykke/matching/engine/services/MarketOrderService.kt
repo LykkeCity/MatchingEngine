@@ -124,7 +124,7 @@ class MarketOrderService @Autowired constructor(
         val matchingResult = matchingEngine.initTransaction().match(order,
                 getOrderBook(order),
                 messageWrapper.messageId!!,
-                priceDeviationThreshold = settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
+                priceDeviationThreshold = assetPair.marketOrderPriceDeviationThreshold ?: settings.marketOrderPriceDeviationThreshold(assetPair.assetPairId))
 
         when (OrderStatus.valueOf(matchingResult.order.status)) {
             ReservedVolumeGreaterThanBalance -> {
