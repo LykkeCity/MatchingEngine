@@ -58,7 +58,10 @@ class StopLimitOrderProcessor(private val limitOrderInputValidator: LimitOrderIn
     private fun performBusinessValidation(orderContext: StopLimitOrderContext): OrderValidationResult {
         if (orderContext.limitVolume != null) {
             try {
-                stopOrderBusinessValidator.performValidation(calculateAvailableBalance(orderContext), orderContext.limitVolume)
+                stopOrderBusinessValidator.performValidation(calculateAvailableBalance(orderContext),
+                        orderContext.limitVolume,
+                        orderContext.order,
+                        orderContext.executionContext.date)
             } catch (e: OrderValidationException) {
                 return OrderValidationResult(false, false, e.message, e.orderStatus)
             }

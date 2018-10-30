@@ -119,14 +119,12 @@ abstract class AbstractPerformanceTest {
         rabbitEventsQueue.clear()
         rabbitTrustedClientsEventsQueue.clear()
         balanceUpdateQueue.clear()
-        balanceUpdateNotificationQueue.clear()
         clientLimitOrdersQueue.clear()
         lkkTradesQueue.clear()
         orderBookQueue.clear()
         rabbitOrderBookQueue.clear()
         rabbitSwapQueue.clear()
         trustedClientsLimitOrdersQueue.clear()
-        quotesUpdateQueue.clear()
         tradeInfoQueue.clear()
     }
 
@@ -154,7 +152,6 @@ abstract class AbstractPerformanceTest {
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
-                quotesUpdateQueue,
                 tradeInfoQueue,
                 expiryOrdersQueue)
 

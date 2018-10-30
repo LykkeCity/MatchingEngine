@@ -3,6 +3,7 @@ package com.lykke.matching.engine.order.process
 import com.lykke.matching.engine.balance.BalanceException
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.WalletOperation
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.order.transaction.ExecutionContext
 import com.lykke.matching.engine.matching.MatchingEngine
@@ -75,7 +76,8 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
                     order,
                     availableLimitAssetBalance,
                     orderContext.limitVolume!!,
-                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId))
+                    orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId),
+                    orderContext.executionContext.date)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }
@@ -113,22 +115,31 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
     private fun processValidOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val order = orderContext.order
         val orderBook = orderContext.executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
-        return if (orderBook.leadToNegativeSpread(order)) {
-            matchOrder(orderContext)
-        } else {
-            addOrderToOrderBook(orderContext)
+        if (orderBook.leadToNegativeSpread(order)) {
+            return matchOrder(orderContext)
         }
+
+        if (order.timeInForce == OrderTimeInForce.IOC || order.timeInForce == OrderTimeInForce.FOK) {
+            order.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+            orderContext.executionContext.info("${getOrderInfo(order)} cancelled due to IOC")
+            addOrderToReport(order, orderContext.executionContext)
+            return ProcessedOrder(order, true)
+        }
+
+        return addOrderToOrderBook(orderContext)
     }
 
     private fun matchOrder(orderContext: LimitOrderExecutionContext): ProcessedOrder {
         val executionContext = orderContext.executionContext
         val order = orderContext.order
         val orderBook = executionContext.orderBooksHolder.getChangedCopyOrOriginalOrderBook(order.assetPairId)
+        val assetPair = orderContext.executionContext.assetPairsById[order.assetPairId]!!
         val matchingResult = matchingEngine.match(order,
                 orderBook.getOrderBook(!order.isBuySide()),
                 executionContext.messageId,
                 orderContext.availableLimitAssetBalance!!,
-                applicationSettingsCache.limitOrderPriceDeviationThreshold(order.assetPairId),
+                assetPair.limitOrderPriceDeviationThreshold
+                        ?: applicationSettingsCache.limitOrderPriceDeviationThreshold(assetPair.assetPairId),
                 executionContext = executionContext)
         orderContext.matchingResult = matchingResult
         val orderCopy = matchingResult.order as LimitOrder
@@ -214,6 +225,16 @@ class LimitOrderProcessor(private val limitOrderInputValidator: LimitOrderInputV
             matchingResult.matchedWithZeroLatestTrade -> {
                 orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled due to zero latest trade")
                 orderCopy.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+            }
+            orderCopy.timeInForce == OrderTimeInForce.IOC -> {
+                orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to IOC, remainingVolume: ${orderCopy.remainingVolume}")
+                orderCopy.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+            }
+            orderCopy.timeInForce == OrderTimeInForce.FOK -> {
+                orderContext.executionContext.info("${getOrderInfo(orderCopy)}: cancelled after matching due to FOK, remainingVolume: ${orderCopy.remainingVolume}")
+                orderContext.order.updateStatus(OrderStatus.Cancelled, orderContext.executionContext.date)
+                addOrderToReport(orderContext.order, orderContext.executionContext)
+                return ProcessedOrder(orderContext.order, true)
             }
             else -> {
                 val limitAsset = orderContext.limitAsset!!

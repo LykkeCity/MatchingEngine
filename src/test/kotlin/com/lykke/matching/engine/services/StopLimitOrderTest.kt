@@ -802,11 +802,11 @@ class StopLimitOrderTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", true, 1)
 
-        assertEquals(2, clientsEventsQueue.size)
-        val stopOrderEvent = clientsEventsQueue.last() as ExecutionEvent
-        assertEquals(1, stopOrderEvent.orders.size)
-        assertEquals(1, stopOrderEvent.balanceUpdates?.size)
-        assertEquals(OutgoingOrderStatus.CANCELLED, stopOrderEvent.orders.single().status)
+        assertEquals(1, clientsEventsQueue.size)
+        val stopOrderEvent = clientsEventsQueue.single() as ExecutionEvent
+        assertEquals(2, stopOrderEvent.orders.size)
+        assertEquals(2, stopOrderEvent.balanceUpdates?.size)
+        assertEquals(OutgoingOrderStatus.CANCELLED, stopOrderEvent.orders.single { it.orderType == OrderType.STOP_LIMIT }.status)
 
         assertBalance("Client1", "BTC", 1.0, 0.0)
     }
@@ -830,9 +830,9 @@ class StopLimitOrderTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", true, 0)
 
-        assertEquals(2, clientsEventsQueue.size)
+        assertEquals(1, clientsEventsQueue.size)
 
-        val event = clientsEventsQueue.last() as ExecutionEvent
+        val event = clientsEventsQueue.single() as ExecutionEvent
         assertEquals(2, event.orders.size)
         assertEquals(4, event.balanceUpdates?.size)
 
@@ -862,11 +862,11 @@ class StopLimitOrderTest : AbstractTest() {
         assertOrderBookSize("BTCUSD", false, 0)
         assertOrderBookSize("BTCUSD", true, 1)
 
-        assertEquals(2, clientsEventsQueue.size)
+        assertEquals(1, clientsEventsQueue.size)
 
-        val event = clientsEventsQueue.last() as ExecutionEvent
-        assertEquals(1, event.orders.size)
-        assertEquals(1, event.balanceUpdates?.size)
+        val event = clientsEventsQueue.single() as ExecutionEvent
+        assertEquals(2, event.orders.size)
+        assertEquals(2, event.balanceUpdates?.size)
 
         val eventStopOrder = event.orders.single { it.orderType == OrderType.STOP_LIMIT }
         assertEquals(OrderType.STOP_LIMIT, eventStopOrder.orderType)
