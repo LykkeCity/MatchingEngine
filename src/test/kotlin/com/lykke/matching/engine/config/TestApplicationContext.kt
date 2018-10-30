@@ -601,10 +601,17 @@ open class TestApplicationContext {
     open fun expiryOrdersQueue() = ExpiryOrdersQueue()
 
     @Bean
-    open fun messageRouter(): MessageRouter {
-        return MessageRouter(LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>(),
-                LinkedBlockingQueue<MessageWrapper>())
+    open fun messageRouter(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                           cashInOutInputQueue: BlockingQueue<MessageWrapper>,
+                           cashTransferInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessageRouter {
+        return MessageRouter(limitOrderInputQueue,
+                cashInOutInputQueue,
+                cashTransferInputQueue,
+                limitOrderCancelInputQueue,
+                limitOrderMassCancelInputQueue,
+                preProcessedMessageQueue)
     }
 }

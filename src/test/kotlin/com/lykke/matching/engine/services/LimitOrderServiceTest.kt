@@ -1736,15 +1736,15 @@ class LimitOrderServiceTest: AbstractTest() {
 
     @Test
     fun testMatchWithExpiredOrder() {
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", volume = 20.0, price = 1.1)))
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", volume = 20.0, price = 1.2,
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "EURUSD", volume = 20.0, price = 1.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(uid = "1", clientId = "Client1", assetId = "EURUSD", volume = 20.0, price = 1.2,
                 timeInForce = OrderTimeInForce.GTD,
                 expiryTime = Date(Date().time + 500))))
 
         Thread.sleep(600)
 
         clearMessageQueues()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = -15.0, price = 1.1)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client2", assetId = "EURUSD", volume = -15.0, price = 1.1)))
 
         assertOrderBookSize("EURUSD", true, 1)
         assertEquals(1, clientsEventsQueue.size)
@@ -1764,7 +1764,7 @@ class LimitOrderServiceTest: AbstractTest() {
                 timeInForce = OrderTimeInForce.GTD,
                 expiryTime = Date())
         Thread.sleep(10)
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(order))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(order))
 
         assertOrderBookSize("EURUSD", true, 0)
         assertEquals(1, clientsEventsQueue.size)

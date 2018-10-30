@@ -37,11 +37,12 @@ class GenericStopLimitOrderService(private val stopOrdersDatabaseAccessorsHolder
     }
 
     fun update() {
+        stopLimitOrdersMap.values.forEach {
+            expiryOrdersQueue.removeOrder(it)
+        }
         stopLimitOrdersQueues.clear()
         stopLimitOrdersMap.clear()
         clientStopLimitOrdersMap.clear()
-
-        // todo clear expiryOrdersQueue ?
 
         val stopOrders = stopOrdersDatabaseAccessorsHolder.primaryAccessor.loadStopLimitOrders()
         stopOrders.forEach { order ->

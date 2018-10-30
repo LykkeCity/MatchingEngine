@@ -423,7 +423,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
         try {
             //input validator will be moved from the business thread after multilimit order context release
             limitOrderInputValidator.validateLimitOrder(isTrustedClient, order, assetPair, assetPair.assetPairId, baseAsset)
-            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook)
+            businessValidator.performValidation(isTrustedClient, order, availableBalance, limitVolume, orderBook, date)
         } catch (e: OrderValidationException) {
             return OrderValidationResult(false, false, e.message, e.orderStatus)
         }

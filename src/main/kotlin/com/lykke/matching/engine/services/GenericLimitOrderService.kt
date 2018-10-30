@@ -50,6 +50,9 @@ class GenericLimitOrderService @Autowired constructor(private val orderBookDatab
     }
 
     fun update() {
+        limitOrdersMap.values.forEach {
+            expiryOrdersQueue.removeOrder(it)
+        }
         limitOrdersQueues.clear()
         limitOrdersMap.clear()
         clientLimitOrdersMap.clear()

@@ -6,6 +6,7 @@ import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.order.LimitOrderType
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
 import com.lykke.matching.engine.database.cache.ApplicationSettingsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessage
@@ -101,7 +102,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
 
         val limitOrder = LimitOrder(uid, oldMessage.uid.toString(), oldMessage.assetPairId, oldMessage.clientId, BigDecimal.valueOf(oldMessage.volume),
                 BigDecimal.valueOf(oldMessage.price), OrderStatus.InOrderBook.name, null, Date(oldMessage.timestamp), null, BigDecimal.valueOf(oldMessage.volume), null,
-                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null)
+                type = LimitOrderType.LIMIT, lowerLimitPrice = null, lowerPrice = null, upperLimitPrice = null, upperPrice = null, previousExternalId = null,
+                timeInForce = null, expiryTime = null)
 
         logger.info("Got old limit order messageId: $messageId id: ${oldMessage.uid}, client ${oldMessage.clientId}")
 
@@ -158,6 +160,8 @@ class SingleLimitOrderContextParser(val assetsPairsHolder: AssetsPairsHolder,
                 lowerPrice = if (message.hasLowerPrice()) BigDecimal.valueOf(message.lowerPrice) else null,
                 upperLimitPrice = if (message.hasUpperLimitPrice()) BigDecimal.valueOf(message.upperLimitPrice) else null,
                 upperPrice = if (message.hasUpperPrice()) BigDecimal.valueOf(message.upperPrice) else null,
-                previousExternalId = null)
+                previousExternalId = null,
+                timeInForce = if (message.hasTimeInForce()) OrderTimeInForce.getByExternalId(message.timeInForce) else null,
+                expiryTime = if (message.hasExpiryTime()) Date(message.expiryTime) else null)
     }
 }
