@@ -9,6 +9,8 @@ import com.lykke.matching.engine.database.common.entity.MidPricePersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBookPersistenceData
 import com.lykke.matching.engine.database.common.entity.OrderBooksPersistenceData
 import com.lykke.matching.engine.database.common.entity.PersistenceData
+import com.lykke.matching.engine.holders.AssetsPairsHolder
+import com.lykke.matching.engine.holders.MidPriceHolder
 import com.lykke.matching.engine.messages.MessageStatus
 import com.lykke.matching.engine.messages.MessageType
 import com.lykke.matching.engine.messages.MessageWrapper
@@ -18,6 +20,7 @@ import com.lykke.matching.engine.services.validators.impl.ValidationException
 import com.lykke.matching.engine.utils.order.MessageStatusUtils
 import org.apache.log4j.Logger
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 import java.util.*
 import java.util.stream.Collectors
 
@@ -26,6 +29,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                               private val genericStopLimitOrderService: GenericStopLimitOrderService,
                               private val validator: LimitOrderCancelOperationBusinessValidator,
                               private val limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                              private val midPriceHolder: MidPriceHolder,
+                              private val assetsPairsHolder: AssetsPairsHolder,
                               private val persistenceManager: PersistenceManager) : AbstractService {
     companion object {
         private val LOGGER = Logger.getLogger(LimitOrderCancelService::class.java.name)
@@ -90,12 +95,8 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
             val newOrderBook = genericLimitOrderService.getOrderBook(order.assetPairId).copy()
             newOrderBook.removeOrder(order)
 
-            val midPrice = newOrderBook.getMidPrice()
-
-            val midPricePersistenceData = if (midPrice != null) {
-                MidPricePersistenceData(MidPrice(order.assetPairId, midPrice, now.time))
-            } else {
-                null
+            val midPricePersistenceData = newOrderBook.getMidPrice()?.let {
+                MidPricePersistenceData(MidPrice(order.assetPairId, it, now.time))
             }
 
             val updated = persistenceManager.persist(PersistenceData(null,
@@ -109,9 +110,17 @@ class LimitOrderCancelService(private val genericLimitOrderService: GenericLimit
                     null,
                     midPricePersistenceData))
             if (updated) {
+                updateMidPriceInCache(order.assetPairId, newOrderBook.getMidPrice(), now)
                 genericLimitOrderService.cancelLimitOrder(Date(), limitOrderId, true)
             }
         }
         messageWrapper.writeResponse(ProtocolMessages.Response.newBuilder())
+    }
+
+    private fun updateMidPriceInCache(assetPairId: String, midPrice: BigDecimal?, operationTime: Date) {
+        val assetPair = assetsPairsHolder.getAssetPairAllowNulls(assetPairId)
+        if (assetPair != null && midPrice != null) {
+            midPriceHolder.addMidPrice(assetPair, midPrice, operationTime)
+        }
     }
 }
