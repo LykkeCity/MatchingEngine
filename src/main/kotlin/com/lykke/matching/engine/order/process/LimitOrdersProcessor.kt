@@ -444,7 +444,7 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                 orderCopy.reservedLimitVolume = if (order.isBuySide()) NumberUtils.setScaleRoundDown(orderCopy.getAbsRemainingVolume() * orderCopy.price, limitAsset.accuracy) else orderCopy.getAbsRemainingVolume()
                 if (!isTrustedClient) {
                     val newReservedBalance = NumberUtils.setScaleRoundHalfUp(orderCopy.reservedLimitVolume!!, limitAsset.accuracy)
-                    ownWalletOperations.add(WalletOperation(UUID.randomUUID().toString(), null, orderCopy.clientId, limitAsset.assetId, matchingResult.timestamp, BigDecimal.ZERO, newReservedBalance))
+                    ownWalletOperations.add(WalletOperation(orderCopy.clientId, limitAsset.assetId, BigDecimal.ZERO, newReservedBalance))
                 }
             }
         }
