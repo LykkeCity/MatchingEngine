@@ -63,7 +63,7 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
 
         val availableBalance = NumberUtils.setScaleRoundHalfUp(balancesHolder.getAvailableBalance(order.clientId, limitAsset!!.assetId, cancelVolume), limitAsset.accuracy)
 
-        val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext)
+        val orderValidationResult = validateOrder(availableBalance, limitVolume, singleLimitContext, now)
 
         if (!orderValidationResult.isValid) {
             processInvalidOrder(messageWrapper,
@@ -206,14 +206,17 @@ class StopLimitOrderProcessor(private val limitOrderService: GenericLimitOrderSe
         }
     }
 
-    private fun validateOrder(availableBalance: BigDecimal, limitVolume: BigDecimal?, singleLimitContext: SingleLimitOrderContext): OrderValidationResult {
+    private fun validateOrder(availableBalance: BigDecimal, limitVolume: BigDecimal?, singleLimitContext: SingleLimitOrderContext, date: Date): OrderValidationResult {
         if (!singleLimitContext.validationResult!!.isValid) {
             return singleLimitContext.validationResult!!
         }
 
         if (limitVolume != null) {
             try {
-                stopOrderBusinessValidator.performValidation(availableBalance, limitVolume)
+                stopOrderBusinessValidator.performValidation(availableBalance,
+                        limitVolume,
+                        singleLimitContext.limitOrder,
+                        date)
             } catch (e: OrderValidationException) {
                 return OrderValidationResult(false, false, e.message, e.orderStatus)
             }

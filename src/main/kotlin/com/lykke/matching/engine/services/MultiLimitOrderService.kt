@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
 import com.lykke.matching.engine.daos.AssetPair
 import com.lykke.matching.engine.daos.LimitOrder
 import com.lykke.matching.engine.daos.MultiLimitOrder
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.fee.listOfLimitOrderFee
 import com.lykke.matching.engine.holders.AssetsHolder
@@ -248,7 +249,9 @@ class MultiLimitOrderService(private val limitOrderService: GenericLimitOrderSer
                     upperLimitPrice = null,
                     lowerPrice = null,
                     lowerLimitPrice = null,
-                    previousExternalId = previousExternalId)
+                    previousExternalId = previousExternalId,
+                    timeInForce = if (currentOrder.hasTimeInForce()) OrderTimeInForce.getByExternalId(currentOrder.timeInForce) else null,
+                    expiryTime = if (currentOrder.hasExpiryTime()) Date(currentOrder.expiryTime) else null)
 
             filter.checkAndAdd(order)
             previousExternalId?.let {

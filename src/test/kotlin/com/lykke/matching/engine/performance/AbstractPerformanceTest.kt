@@ -19,6 +19,7 @@ import com.lykke.matching.engine.holders.MessageSequenceNumberHolder
 import com.lykke.matching.engine.holders.OrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.holders.StopOrdersDatabaseAccessorsHolder
 import com.lykke.matching.engine.notification.BalanceUpdateHandlerTest
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -80,6 +81,7 @@ abstract class AbstractPerformanceTest {
     protected lateinit var testBalanceHolderWrapper: TestBalanceHolderWrapper
 
     private lateinit var feeProcessor: FeeProcessor
+    private lateinit var expiryOrdersQueue: ExpiryOrdersQueue
 
     val balanceUpdateQueue = LinkedBlockingQueue<BalanceUpdate>()
 
@@ -117,13 +119,15 @@ abstract class AbstractPerformanceTest {
         assetsPairsHolder = AssetsPairsHolder(assetPairsCache)
 
         feeProcessor = FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
+        expiryOrdersQueue = ExpiryOrdersQueue()
 
         genericLimitOrderService = GenericLimitOrderService(ordersDatabaseAccessorsHolder,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 tradeInfoQueue,
-                applicationSettingsCache)
+                applicationSettingsCache,
+                expiryOrdersQueue)
 
         val messageSequenceNumberHolder = MessageSequenceNumberHolder(TestMessageSequenceNumberDatabaseAccessor())
         val notificationSender = MessageSender(rabbitEventsQueue, rabbitTrustedClientsEventsQueue)
@@ -133,8 +137,10 @@ abstract class AbstractPerformanceTest {
         cashInOutContextParser = CashInOutContextParser(assetsHolder)
         cashTransferContextParser = CashTransferContextParser(assetsHolder)
 
-        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService,
-                persistenceManager)
+        genericStopLimitOrderService = GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder,
+                genericLimitOrderService,
+                persistenceManager,
+                expiryOrdersQueue)
 
         limitOrdersProcessorFactory = LimitOrdersProcessorFactory(balancesHolder, LimitOrderBusinessValidatorImpl(), limitOrderInputValidator,
                 genericLimitOrderService, clientLimitOrdersQueue, lkkTradesQueue, orderBookQueue, rabbitOrderBookQueue,

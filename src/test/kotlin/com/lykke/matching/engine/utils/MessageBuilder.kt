@@ -4,6 +4,7 @@ import com.lykke.matching.engine.daos.*
 import com.lykke.matching.engine.daos.context.SingleLimitOrderContext
 import com.lykke.matching.engine.daos.fee.v2.NewFeeInstruction
 import com.lykke.matching.engine.daos.fee.v2.NewLimitOrderFeeInstruction
+import com.lykke.matching.engine.daos.order.OrderTimeInForce
 import com.lykke.matching.engine.daos.order.LimitOrderType
 import com.lykke.matching.engine.daos.v2.FeeInstruction
 import com.lykke.matching.engine.daos.v2.LimitOrderFeeInstruction
@@ -43,12 +44,16 @@ companion object {
                             reservedVolume: Double? = null,
                             fee: LimitOrderFeeInstruction? = null,
                             fees: List<NewLimitOrderFeeInstruction> = listOf(),
-                            previousExternalId: String? = null): LimitOrder =
+                            previousExternalId: String? = null,
+                            timeInForce: OrderTimeInForce? = null,
+                            expiryTime: Date? = null): LimitOrder =
                 LimitOrder(uid, uid, assetId, clientId, BigDecimal.valueOf(volume), BigDecimal.valueOf(price), status, registered, registered, registered, BigDecimal.valueOf(volume), null,
                         reservedVolume?.toBigDecimal(), fee, fees,
                         type, lowerLimitPrice?.toBigDecimal(), lowerPrice?.toBigDecimal(),
                         upperLimitPrice?.toBigDecimal(), upperPrice?.toBigDecimal(),
-                        previousExternalId)
+                        previousExternalId,
+                        timeInForce,
+                        expiryTime)
 
         fun buildMarketOrderWrapper(order: MarketOrder): MessageWrapper {
             val builder = ProtocolMessages.MarketOrder.newBuilder()
@@ -150,7 +155,6 @@ companion object {
                         null, straight,
                         reservedVolume?.toBigDecimal(),
                         fee = fee, fees = fees)
-
 
         @Deprecated("Use buildMultiLimitOrderWrapper(5)")
         fun buildMultiLimitOrderWrapper(pair: String,
@@ -360,6 +364,8 @@ companion object {
         order.lowerPrice?.let { builder.setLowerPrice(it.toDouble()) }
         order.upperLimitPrice?.let { builder.setUpperLimitPrice(it.toDouble()) }
         order.upperPrice?.let { builder.setUpperPrice(it.toDouble()) }
+        order.expiryTime?.let { builder.setExpiryTime(it.time) }
+        order.timeInForce?.let { builder.setTimeInForce(it.externalId) }
         val messageWrapper = singleLimitOrderContextParser
                 .parse(MessageWrapper("Test", MessageType.LIMIT_ORDER.type, builder.build().toByteArray(), null, messageId = "test", id = "test"))
                 .messageWrapper

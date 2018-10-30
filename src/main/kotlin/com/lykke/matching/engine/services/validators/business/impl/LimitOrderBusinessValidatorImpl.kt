@@ -8,13 +8,15 @@ import com.lykke.matching.engine.services.validators.common.OrderValidationUtils
 import com.lykke.matching.engine.services.validators.impl.OrderValidationException
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
+import java.util.Date
 
 @Component
 class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
     override fun performValidation(isTrustedClient: Boolean, order: LimitOrder,
                                    availableBalance: BigDecimal,
                                    limitVolume: BigDecimal,
-                                   orderBook: AssetOrderBook) {
+                                   orderBook: AssetOrderBook,
+                                   date: Date) {
 
         if (!isTrustedClient) {
             OrderValidationUtils.validateBalance(availableBalance, limitVolume)
@@ -23,6 +25,7 @@ class LimitOrderBusinessValidatorImpl: LimitOrderBusinessValidator {
         validateLeadToNegativeSpread(order, orderBook)
         validatePreviousOrderNotFound(order)
         validateNotEnoughFounds(order)
+        OrderValidationUtils.validateExpiration(order, date)
     }
 
     private fun validatePreviousOrderNotFound(order: LimitOrder) {

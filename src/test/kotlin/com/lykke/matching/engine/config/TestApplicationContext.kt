@@ -13,6 +13,7 @@ import com.lykke.matching.engine.database.cache.AssetsCache
 import com.lykke.matching.engine.deduplication.ProcessedMessagesCache
 import com.lykke.matching.engine.fee.FeeProcessor
 import com.lykke.matching.engine.holders.*
+import com.lykke.matching.engine.incoming.MessageRouter
 import com.lykke.matching.engine.incoming.data.LimitOrderCancelOperationParsedData
 import com.lykke.matching.engine.incoming.data.LimitOrderMassCancelOperationParsedData
 import com.lykke.matching.engine.incoming.parsers.ContextParser
@@ -20,7 +21,9 @@ import com.lykke.matching.engine.incoming.parsers.impl.*
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashInOutPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.CashTransferPreprocessor
 import com.lykke.matching.engine.incoming.preprocessor.impl.SingleLimitOrderPreprocessor
+import com.lykke.matching.engine.messages.MessageWrapper
 import com.lykke.matching.engine.notification.*
+import com.lykke.matching.engine.order.ExpiryOrdersQueue
 import com.lykke.matching.engine.order.GenericLimitOrderProcessorFactory
 import com.lykke.matching.engine.order.cancel.GenericLimitOrdersCancellerFactory
 import com.lykke.matching.engine.order.process.LimitOrdersProcessorFactory
@@ -278,13 +281,14 @@ open class TestApplicationContext {
                                       assetsPairsHolder: AssetsPairsHolder,
                                       balancesHolder: BalancesHolder,
                                       tradeInfoQueue: BlockingQueue<TradeInfo>,
-                                      applicationSettingsCache: ApplicationSettingsCache): GenericLimitOrderService {
+                                      applicationSettingsCache: ApplicationSettingsCache,
+                                      expiryOrdersQueue: ExpiryOrdersQueue): GenericLimitOrderService {
         return GenericLimitOrderService(testOrderDatabaseAccessor,
                 assetsHolder,
                 assetsPairsHolder,
                 balancesHolder,
                 tradeInfoQueue,
-                applicationSettingsCache)
+                applicationSettingsCache, expiryOrdersQueue)
     }
 
     @Bean
@@ -377,8 +381,9 @@ open class TestApplicationContext {
     @Bean
     open fun genericStopLimitOrderService(persistenceManager: TestPersistenceManager,
                                           stopOrdersDatabaseAccessorsHolder: StopOrdersDatabaseAccessorsHolder,
-                                          genericLimitOrderService: GenericLimitOrderService): GenericStopLimitOrderService {
-        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService, persistenceManager)
+                                          genericLimitOrderService: GenericLimitOrderService,
+                                          expiryOrdersQueue: ExpiryOrdersQueue): GenericStopLimitOrderService {
+        return GenericStopLimitOrderService(stopOrdersDatabaseAccessorsHolder, genericLimitOrderService, persistenceManager, expiryOrdersQueue)
     }
 
     @Bean
@@ -445,7 +450,6 @@ open class TestApplicationContext {
     open fun feeProcessor(balancesHolder: BalancesHolder, assetsHolder: AssetsHolder, assetsPairsHolder: AssetsPairsHolder, genericLimitOrderService: GenericLimitOrderService): FeeProcessor {
         return FeeProcessor(balancesHolder, assetsHolder, assetsPairsHolder, genericLimitOrderService)
     }
-
 
     @Bean
     open fun cashInOutContextParser(assetsHolder: AssetsHolder): CashInOutContextParser {
@@ -605,5 +609,23 @@ open class TestApplicationContext {
                                           genericLimitOrdersCancellerFactory: GenericLimitOrdersCancellerFactory,
                                           applicationSettingsCache: ApplicationSettingsCache): MultiLimitOrderCancelService {
         return MultiLimitOrderCancelService(genericLimitOrderService, genericLimitOrdersCancellerFactory, applicationSettingsCache)
+    }
+
+    @Bean
+    open fun expiryOrdersQueue() = ExpiryOrdersQueue()
+
+    @Bean
+    open fun messageRouter(limitOrderInputQueue: BlockingQueue<MessageWrapper>,
+                           cashInOutInputQueue: BlockingQueue<MessageWrapper>,
+                           cashTransferInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           limitOrderMassCancelInputQueue: BlockingQueue<MessageWrapper>,
+                           preProcessedMessageQueue: BlockingQueue<MessageWrapper>): MessageRouter {
+        return MessageRouter(limitOrderInputQueue,
+                cashInOutInputQueue,
+                cashTransferInputQueue,
+                limitOrderCancelInputQueue,
+                limitOrderMassCancelInputQueue,
+                preProcessedMessageQueue)
     }
 }
