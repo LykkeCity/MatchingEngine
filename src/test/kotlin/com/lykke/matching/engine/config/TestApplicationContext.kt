@@ -567,8 +567,10 @@ open class TestApplicationContext {
                                      cancellerFactory: GenericLimitOrdersCancellerFactory,
                                      validator: LimitOrderCancelOperationBusinessValidator,
                                      limitOrdersCancelHelper: LimitOrdersCancelHelper,
+                                     midPriceHolder: MidPriceHolder,
+                                     assetsPairsHolder: AssetsPairsHolder,
                                      persistenceManager: PersistenceManager): LimitOrderCancelService {
-        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, persistenceManager)
+        return LimitOrderCancelService(genericLimitOrderService, genericStopLimitOrderService, validator, limitOrdersCancelHelper, midPriceHolder, assetsPairsHolder, persistenceManager)
     }
 
     @Bean

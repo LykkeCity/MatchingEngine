@@ -262,7 +262,11 @@ class LimitOrdersProcessor(private val isTrustedClient: Boolean,
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))
                 }
-                OrderStatus.TooHighPriceDeviation,
+                OrderStatus.TooHighPriceDeviation -> {
+                    LOGGER.info("Limit order (id: ${order.externalId}) is rejected: too high price deviation")
+                    addToReportIfNotTrusted(order)
+                    processedOrders.add(ProcessedOrder(order, false))
+                }
                 OrderStatus.InvalidFee -> {
                     addToReportIfNotTrusted(order)
                     processedOrders.add(ProcessedOrder(order, false))

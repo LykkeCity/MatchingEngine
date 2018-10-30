@@ -183,7 +183,6 @@ class MarketOrderService @Autowired constructor(
                 val clientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 val trustedClientLimitOrdersReport = LimitOrdersReport(messageWrapper.messageId!!)
                 if (preProcessResult) {
-                    matchingResult.apply()
                     val completedOrders = matchingResult.completedLimitOrders.map { it.origin!! }
                     val ordersToCancel = matchingResult.cancelledLimitOrders.map { it.origin!! }.toMutableList()
                     orderServiceHelper.processUncompletedOrder(matchingResult, preProcessUncompletedOrderResult, ordersToCancel)
@@ -193,10 +192,13 @@ class MarketOrderService @Autowired constructor(
                             matchingResult.orderBook.peek()?.price ?: BigDecimal.ZERO)
 
                     if (!OrderValidationUtils.isMidPriceValid(newMidPrice, lowerMidPriceBound, upperMidPriceBound)) {
+                        LOGGER.info("Market order (id: ${order.externalId}) is rejected: too high price deviation")
                         order.updateStatus(TooHighPriceDeviation, matchingResult.timestamp)
                         writeErrorNotification(messageWrapper, order, now)
                         return
                     }
+
+                    matchingResult.apply()
 
                     val orderBookPersistenceDataList = mutableListOf<OrderBookPersistenceData>()
                     val ordersToSave = mutableListOf<LimitOrder>()

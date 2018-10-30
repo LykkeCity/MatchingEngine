@@ -1,7 +1,5 @@
 package com.lykke.matching.engine.config.spring
 
-import com.lykke.matching.engine.database.*
-import com.lykke.matching.engine.database.azure.*
 import com.lykke.matching.engine.common.QueueConsumer
 import com.lykke.matching.engine.common.SimpleApplicationEventPublisher
 import com.lykke.matching.engine.common.impl.ApplicationEventPublisherImpl
@@ -19,6 +17,7 @@ import com.lykke.matching.engine.database.reconciliation.events.OrderBookPersist
 import com.lykke.matching.engine.database.reconciliation.events.StopOrderBookPersistEvent
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisCashOperationIdDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisMessageSequenceNumberDatabaseAccessor
+import com.lykke.matching.engine.database.redis.accessor.impl.RedisMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.redis.accessor.impl.RedisProcessedMessagesDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.holders.BalancesDatabaseAccessorsHolder
@@ -30,7 +29,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import java.util.*
 import java.util.*
 import java.util.concurrent.BlockingQueue
 
@@ -103,6 +101,15 @@ open class DatabaseAccessorConfig {
             Storage.Azure -> fileProcessedMessagesDatabaseAccessor()
             Storage.RedisWithoutOrders,
             Storage.Redis -> redisProcessedMessagesDatabaseAccessor.get()
+        }
+    }
+
+    @Bean
+    open fun readOnlyMidPriceDatabaseAccessor(redisMidPriceDatabaseAccessor: Optional<RedisMidPriceDatabaseAccessor>): ReadOnlyMidPriceDatabaseAccessor {
+        return when (config.me.storage) {
+            Storage.Azure -> AzureReadOnlyMidPriceDatabaseAccessor()
+            Storage.RedisWithoutOrders,
+            Storage.Redis -> redisMidPriceDatabaseAccessor.get()
         }
     }
 

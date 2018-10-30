@@ -2,6 +2,7 @@ package com.lykke.matching.engine.database.redis.accessor.impl
 
 import com.lykke.matching.engine.daos.MidPrice
 import com.lykke.matching.engine.database.MidPriceDatabaseAccessor
+import com.lykke.matching.engine.database.ReadOnlyMidPriceDatabaseAccessor
 import com.lykke.matching.engine.database.redis.connection.RedisConnection
 import com.lykke.matching.engine.database.redis.utils.KeyUtils
 import org.apache.log4j.Logger
@@ -16,7 +17,8 @@ import kotlin.math.sign
 
 class RedisMidPriceDatabaseAccessor(private val dbIndex: Int,
                                     private val midPriceTTL: Long,
-                                    private val redisConnection: RedisConnection): MidPriceDatabaseAccessor {
+                                    private val redisConnection: RedisConnection) : MidPriceDatabaseAccessor,
+        ReadOnlyMidPriceDatabaseAccessor {
     private companion object {
         val KEY_FORMAT = "MID_PRICE:%s:%s"
         val KEY_PREFIX = "MID_PRICE"
