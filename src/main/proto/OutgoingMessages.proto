@@ -193,6 +193,7 @@ message ExecutionEvent {
              GTC = 1;
              GTD = 2;
              IOC = 3;
+             FOK = 4;
         }
         int32 timeInForce = 23;
         google.protobuf.Timestamp expiryTime = 24;

@@ -6,7 +6,9 @@ enum class OrderTimeInForce(val externalId: Int) {
     /** Good till date */
     GTD(1),
     /** Immediate or Cancel */
-    IOC(2);
+    IOC(2),
+    /** Fill or Kill */
+    FOK(3);
 
     companion object {
         fun getByExternalId(externalId: Int): OrderTimeInForce {
