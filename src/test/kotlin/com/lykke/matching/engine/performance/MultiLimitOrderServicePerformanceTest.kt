@@ -164,11 +164,10 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchLimitOrder3(): Double {
         val counter = ActionTimeCounter()
 
+        initServices()
         testBalanceHolderWrapper.updateBalance("Client5", "USD", 18.6)
         testBalanceHolderWrapper.updateBalance("Client5", "TIME", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "TIME", 1000.0)
-
-        initServices()
 
         counter.executeAction { multiLimitOrderService.processMessage(buildMultiLimitOrderWrapper(pair = "TIMEUSD", clientId = "Client5", orders =
         listOf(IncomingLimitOrder(-100.0, 26.955076)),
@@ -187,10 +186,10 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
     fun testAddAndMatchLimitOrderZeroVolumes(): Double {
         val counter = ActionTimeCounter()
 
+        initServices()
+
         testBalanceHolderWrapper.updateBalance("Client5", "BTC", 1000.0)
         testBalanceHolderWrapper.updateBalance("Client2", "EUR", 1000.0)
-
-        initServices()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(assetId = "BTCEUR", clientId = "Client2", price = 3629.355, volume = 0.19259621)))
 
@@ -220,11 +219,12 @@ class MultiLimitOrderServicePerformanceTest: AbstractPerformanceTest() {
 
         testSettingsDatabaseAccessor.createOrUpdateSetting(AvailableSettingGroup.TRUSTED_CLIENTS.settingGroupName, getSetting("Client3"))
 
+        initServices()
+
         testBalanceHolderWrapper.updateBalance("Client2", "BTC", 0.26170853)
         testBalanceHolderWrapper.updateReservedBalance("Client2", "BTC",  0.001)
         testBalanceHolderWrapper.updateBalance("Client3", "CHF", 1000.0)
 
-        initServices()
 
         singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(MessageBuilder.buildLimitOrder(clientId = "Client2", assetId = "BTCCHF", uid = "1", price = 4384.15, volume = -0.26070853)))
 

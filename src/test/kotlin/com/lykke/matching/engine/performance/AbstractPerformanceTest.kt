@@ -120,8 +120,23 @@ abstract class AbstractPerformanceTest {
 
     val tradeInfoQueue = LinkedBlockingQueue<TradeInfo>()
 
+    private fun clearMessageQueues() {
+        rabbitEventsQueue.clear()
+        rabbitTrustedClientsEventsQueue.clear()
+        balanceUpdateQueue.clear()
+        balanceUpdateNotificationQueue.clear()
+        clientLimitOrdersQueue.clear()
+        lkkTradesQueue.clear()
+        orderBookQueue.clear()
+        rabbitOrderBookQueue.clear()
+        rabbitSwapQueue.clear()
+        trustedClientsLimitOrdersQueue.clear()
+        quotesUpdateQueue.clear()
+        tradeInfoQueue.clear()
+    }
 
     open fun initServices() {
+        clearMessageQueues()
         testSettingsDatabaseAccessor = TestSettingsDatabaseAccessor()
         applicationSettingsCache = ApplicationSettingsCache(testSettingsDatabaseAccessor)
 
