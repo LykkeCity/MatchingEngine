@@ -17,7 +17,7 @@ abstract class Order(
         val volume: BigDecimal,
         status: String,
         val createdAt: Date,
-        val registered: Date,
+        var registered: Date?,
         var reservedLimitVolume: BigDecimal?,
         val fee: FeeInstruction?,
         val fees: List<NewFeeInstruction>?,
@@ -46,21 +46,17 @@ abstract class Order(
     abstract fun updatePrice(price: BigDecimal)
     abstract fun updateRemainingVolume(volume: BigDecimal)
 
-    fun checkMinVolume(assetPair: AssetPair): Boolean {
-        val volume = getAbsVolume()
-        val minVolume = if (isStraight()) assetPair.minVolume else assetPair.minInvertedVolume
-        return minVolume == null || volume >= minVolume
-    }
-
-    fun checkMinVolume(assetsPairsHolder: AssetsPairsHolder): Boolean {
-        return checkMinVolume(assetsPairsHolder.getAssetPair(assetPairId))
-    }
 
     fun updateStatus(status: OrderStatus, date: Date) {
         if (status.name != this.status) {
             this.status = status.name
             this.statusDate = date
         }
+    }
+
+    fun register(registrationDate: Date) {
+        registered = registrationDate
+        statusDate = registrationDate
     }
 
     override fun applyToOrigin(origin: Copyable) {

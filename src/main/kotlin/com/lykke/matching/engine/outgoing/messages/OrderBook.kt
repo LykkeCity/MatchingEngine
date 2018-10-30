@@ -1,15 +1,19 @@
 package com.lykke.matching.engine.outgoing.messages
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lykke.matching.engine.daos.LimitOrder
 import java.math.BigDecimal
 import java.util.ArrayList
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
 
-class OrderBook: JsonSerializable {
-
+class OrderBook {
     val assetPair: String
+
+    @get:JsonProperty("isBuy")
+    @JsonProperty("isBuy")
     val isBuy: Boolean
+
     val timestamp: Date
 
     val prices: MutableList<Order> = ArrayList()

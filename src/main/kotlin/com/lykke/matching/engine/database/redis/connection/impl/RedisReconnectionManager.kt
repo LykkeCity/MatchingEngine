@@ -52,7 +52,7 @@ class RedisReconnectionManager(private val config: MatchingEngineConfig,
 
     @PostConstruct
     fun init() {
-        if (config.storage != Storage.Redis) {
+        if (config.storage != Storage.Redis && config.storage != Storage.RedisWithoutOrders) {
             return
         }
 

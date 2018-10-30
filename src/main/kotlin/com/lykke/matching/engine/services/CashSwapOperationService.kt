@@ -93,19 +93,15 @@ class CashSwapOperationService @Autowired constructor (private val balancesHolde
     private fun processSwapOperation(operation: SwapOperation, messageWrapper: MessageWrapper) {
         val operations = LinkedList<WalletOperation>()
 
-        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset1,
-                operation.dateTime, -operation.volume1))
-        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset1,
-                operation.dateTime, operation.volume1))
+        operations.add(WalletOperation(operation.clientId1, operation.asset1, -operation.volume1))
+        operations.add(WalletOperation(operation.clientId2, operation.asset1, operation.volume1))
 
-        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId1, operation.asset2,
-                operation.dateTime, operation.volume2))
-        operations.add(WalletOperation(UUID.randomUUID().toString(), operation.externalId, operation.clientId2, operation.asset2,
-                operation.dateTime, -operation.volume2))
+        operations.add(WalletOperation(operation.clientId1, operation.asset2, operation.volume2))
+        operations.add(WalletOperation(operation.clientId2, operation.asset2, -operation.volume2))
 
         val walletProcessor = balancesHolder.createWalletProcessor(LOGGER)
         walletProcessor.preProcess(operations)
-        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage(), null)
+        val updated = walletProcessor.persistBalances(messageWrapper.processedMessage, null, null, null)
         messageWrapper.triedToPersist = true
         messageWrapper.persisted = updated
         if (!updated) {
