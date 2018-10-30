@@ -1729,7 +1729,7 @@ class LimitOrderServiceTest: AbstractTest() {
         testDictionariesDatabaseAccessor.addAssetPair(AssetPair("BTCUSD", "BTC", "USD", 8,
                 limitOrderPriceDeviationThreshold = BigDecimal.valueOf(0.07)))
         assetPairsCache.update()
-        singleLimitOrderService.processMessage(buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
+        singleLimitOrderService.processMessage(messageBuilder.buildLimitOrderWrapper(buildLimitOrder(clientId = "Client1", assetId = "BTCUSD", price = 12000.0, volume = -1.0)))
 
         assertEquals(1, clientsEventsQueue.size)
         executionEvent = clientsEventsQueue.poll() as ExecutionEvent
